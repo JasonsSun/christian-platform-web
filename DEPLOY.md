@@ -1,72 +1,77 @@
 # 在 Ubuntu / Debian VPS 部署基督教内容平台
 
-容器化部署（推荐）：应用 + MySQL 用 Docker Compose 一条命令起；nginx 在宿主机做反代 + HTTPS。
-端口约定：应用在容器内监听 **3000**，仅对宿主机 `127.0.0.1` 开放，公网流量走 nginx(443)。
+**全 Docker 方案**：宿主机只需装 Docker，应用 + MySQL + nginx 全部在容器里。
+Gitee 仓库：`https://gitee.com/jason-suns/christian-platform-web.git`
+
+架构：`nginx(80/443)` → `web(3000)` → `db(3306)`，均在 Docker 内网，只有 nginx 对公网开放。
 
 ## 0. 准备 VPS
 - 系统：Ubuntu 22.04/24.04 或 Debian 12
-- 安全组/防火墙放行：`22`(SSH)、`80`、`443`；**不要**放行 3000/3306 到公网
-- 域名 A 记录指向该 VPS 公网 IP（HTTPS 需要）
+- 安全组/防火墙放行：`22`(SSH)、`80`、`443`（不要放行 3000/3306）
+- 域名 A 记录指向 VPS 公网 IP（启用 HTTPS 时需要；先用 IP 访问可跳过）
 
 ## 1. 安装 Docker
 ```bash
-# Ubuntu/Debian 通用
 curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker $USER   # 退出重登后免 sudo
-docker compose version          # 确认 compose 插件可用
+sudo usermod -aG docker $USER     # 退出重登后免 sudo
+docker compose version            # 确认 compose 插件可用
 ```
 
-## 2. 上传代码
-方式 A（有 git）：把仓库 clone 到 VPS，再 `cd platform-v1.10/apps/web`。
-方式 B（无 git）：本地把 `platform-v1.10/apps/web` 打成 zip，scp 上去解压。
+## 2. 拉取代码
+```bash
+sudo mkdir -p /opt && cd /opt
+git clone https://gitee.com/jason-suns/christian-platform-web.git christian-platform
+cd christian-platform
+```
 
 ## 3. 配置环境变量
 ```bash
-cd platform-v1.10/apps/web
 cp deploy/env.example .env
-# 编辑 .env：DB_PASSWORD / JWT_SECRET 务必改成强随机值
-nano .env
+openssl rand -base64 48           # 复制输出，作为 JWT_SECRET
+nano .env                         # 填 DB_PASSWORD 与 JWT_SECRET
 ```
+`.env` 是敏感文件，已被 `.gitignore` 排除，不会进仓库。
 
 ## 4. 启动
 ```bash
 docker compose up -d --build
-docker compose logs -f web      # 看到 "服务器已就绪 http://localhost:3000" 即成功
+docker compose logs -f web        # 看到"服务器已就绪"即成功，Ctrl+C 退出日志
+docker compose ps                 # 三个容器应为 Up
 ```
-- 应用镜像构建时会跑 `npm run build`，这一步在本机/VPS 正常，个别沙箱环境因文件删除保护会失败（你本地 Windows 沙箱遇到过），**真实 VPS 不受影响**。
-- 首次启动会自动建 `christian_platform` 库；若需导入既有数据，先把 SQL 灌进 `cp_db` 容器。
 
-## 5. 反代 + HTTPS（宿主机 nginx）
+## 5. 验证
 ```bash
-sudo apt install -y nginx
-sudo cp deploy/nginx-proxy.conf /etc/nginx/sites-available/christian-platform
-sudo ln -s /etc/nginx/sites-available/christian-platform /etc/nginx/sites-enabled/
-sudo sed -i 's/your-domain.com/你的域名/g' /etc/nginx/sites-available/christian-platform
-sudo nginx -t && sudo systemctl reload nginx
-
-# 申请免费证书
-sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d 你的域名
+curl -I http://127.0.0.1          # 经 nginx 返回 200/307
 ```
-证书每 90 天自动续期。
+浏览器访问 `http://你的VPS公网IP` → 应看到首页。
+管理员账号：`jasonssun` / `Hang.0212`（首次启动自动创建）。
 
-## 6. 验证
-浏览器打开 `https://你的域名`，应能访问首页；`/admin` 为后台。
-
-## 不用 MySQL 的极简模式（演示/内网）
-若只想先跑起来、不要数据库：删掉 `docker-compose.yml` 里的 `db` 服务，并把 `web` 的
-`DB_HOST` 去掉，应用会自动回退到内置 mock 数据层（零依赖可演示）。生产环境建议用真实 MySQL。
-
-## 直播功能（可选）
-直播用到 MediaMTX（仓库 `bin/mediamtx/`）。需要：
-- 在 `.env` 注入 `MEDIAMTX_API / MEDIAMTX_USER / MEDIAMTX_PASS / MEDIAMTX_PUBLIC_HOST`；
-- 防火墙放行 `1935`(RTMP 推流)、`8888`(HLS 播放) 给对应用户。
-不开直播可忽略。
+## 6. 启用 HTTPS（有域名后）
+1. 把域名 A 记录指向 VPS，等解析生效
+2. 生成证书（宿主机装 certbot，或用任意方式拿到 fullchain.pem / privkey.pem）
+3. 放进 `deploy/certs/`，编辑 `deploy/nginx.conf` 取消 HTTPS 段注释并改 `server_name`
+4. `docker compose restart nginx`
 
 ## 日常运维
 ```bash
-docker compose ps
-docker compose logs -f web
-docker compose down          # 停止
-docker compose up -d --build # 更新代码后重建
+docker compose ps                    # 查看状态
+docker compose logs -f web           # 应用日志
+docker compose restart web           # 重启应用
+git pull && docker compose up -d --build   # 更新代码
+docker compose down                  # 停止全部
 ```
+
+## 数据备份
+```bash
+# 导出数据库
+docker exec cp_db mysqldump -uroot -p"$DB_PASSWORD" christian_platform > backup.sql
+# 恢复
+docker exec -i cp_db mysql -uroot -p"$DB_PASSWORD" christian_platform < backup.sql
+```
+
+## 常见问题
+- **构建慢**：Next.js 首次 `npm ci` + `build` 需几分钟，属正常。
+- **内存不足**：构建阶段建议 VPS ≥ 2GB 内存；1GB 机器可先加 swap。
+- **数据库连不上**：确认 `cp_db` 健康（`docker compose ps` 显示 healthy）后再看 web 日志。
+- **不用 MySQL 演示**：删掉 compose 里 `db` 服务并去掉 web 的 `DB_HOST`，应用会回退内置 mock 数据层（仅演示）。
+- **直播（MediaMTX）**：可选，需额外放行 1935/8888 端口并注入 `MEDIAMTX_*` 环境变量；不做直播可忽略。
