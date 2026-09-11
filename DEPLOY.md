@@ -62,12 +62,35 @@ docker compose down                  # 停止全部
 ```
 
 ## 数据备份
+
+### 手动备份 / 恢复
 ```bash
-# 导出数据库
-docker exec cp_db mysqldump -uroot -p"$DB_PASSWORD" christian_platform > backup.sql
-# 恢复
-docker exec -i cp_db mysql -uroot -p"$DB_PASSWORD" christian_platform < backup.sql
+# 手动备份（脚本自动压缩 + 命名 + 保留 7 天）
+bash deploy/backup.sh
+
+# 手动恢复
+gunzip -c backups/christian_platform_YYYYmmdd_HHMMSS.sql.gz | \
+  docker exec -i cp_db mysql -uroot -p"$DB_PASSWORD" christian_platform
 ```
+
+### 自动备份（crontab，每天凌晨 3 点）
+```bash
+crontab -e
+```
+添加一行（路径改成你的项目实际路径）：
+```
+0 3 * * * cd /opt/christian-platform && bash deploy/backup.sh >> backups/backup.log 2>&1
+```
+- 备份落在 `backups/`，默认保留 7 天，可在脚本里改 `KEEP_DAYS`
+- 验证定时任务：`crontab -l`
+
+## 开机自启
+容器已配 `restart: unless-stopped`，机器重启会自动拉起。只需确认 Docker 服务本身开机自启：
+```bash
+sudo systemctl enable docker
+sudo systemctl enable containerd   # 若为独立 containerd 服务
+```
+重启验证：`sudo reboot` 后 `docker compose ps` 三个容器应为 Up。
 
 ## 常见问题
 - **构建慢**：Next.js 首次 `npm ci` + `build` 需几分钟，属正常。

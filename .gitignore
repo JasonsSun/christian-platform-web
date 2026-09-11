@@ -23,6 +23,9 @@ prod.log
 /data/
 /_deploy_env_backup/
 
+# 数据库备份产物
+/backups/
+
 # 用户上传的媒体文件：属运行时数据，不入库（保留目录占位）
 /public/uploads/
 !/public/uploads/.gitkeep
