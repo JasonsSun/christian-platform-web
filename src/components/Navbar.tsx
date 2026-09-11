@@ -28,11 +28,6 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
-  // 调试:Navbar 挂载/卸载
-  useEffect(() => {
-    if (typeof console !== 'undefined') console.log('[Navbar] MOUNTED');
-    return () => { if (typeof console !== 'undefined') console.log('[Navbar] UNMOUNTED'); };
-  }, []);
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -280,7 +275,7 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-      <ShareModal open={shareOpen} onClose={() => { if (typeof console !== 'undefined') console.log('[Navbar] onClose -> setShareOpen(false) t=' + Math.round(performance.now())); setShareOpen(false); }} />
+      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
     </nav>
   );
 }

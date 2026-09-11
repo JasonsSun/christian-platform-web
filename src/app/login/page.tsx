@@ -7,12 +7,6 @@ import { useAuth } from '@/lib/auth';
 import { apiGet } from '@/lib/api';
 import { safeNext } from '@/lib/nav';
 
-const DEMO = [
-  { label: '管理员', identifier: 'admin', password: 'admin123' },
-  { label: '审核员', identifier: 'moderator', password: 'mod123' },
-  { label: '普通用户', identifier: 'grace', password: 'user123' },
-];
-
 function LoginInner() {
   const params = useSearchParams();
   const modeParam = params.get('mode');
@@ -108,13 +102,6 @@ function LoginInner() {
     }
   }
 
-  function fillDemo(d: { identifier: string; password: string }) {
-    setMode('login');
-    setIdentifier(d.identifier);
-    setPassword(d.password);
-    setError('');
-  }
-
   return (
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center py-20">
       <div className="absolute inset-0 bg-animated-gradient" />
@@ -202,21 +189,6 @@ function LoginInner() {
               {loading ? (mode === 'login' ? '登录中…' : '注册中…') : mode === 'login' ? '登录' : '注册并登录'}
             </button>
           </form>
-
-          {/* 演示账号 */}
-          <div className="my-6 flex items-center gap-4">
-            <div className="flex-1 divider-gradient" />
-            <span className="text-xs text-ink-400">演示账号一键填充</span>
-            <div className="flex-1 divider-gradient" />
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {DEMO.map((d) => (
-              <button key={d.identifier} onClick={() => fillDemo(d)} className="px-2 py-2.5 rounded-xl bg-white/70 border border-ink-200 text-xs font-medium text-ink-600 hover:bg-primary-50 hover:border-primary-300 transition-all">
-                {d.label}
-                <span className="block text-[10px] text-ink-400 mt-0.5">{d.identifier}/{d.password}</span>
-              </button>
-            ))}
-          </div>
         </div>
 
         <p className="text-center mt-6 text-white/70 text-sm">

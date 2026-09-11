@@ -11,14 +11,14 @@ type U = {
 };
 
 const USERS: U[] = [
-  { username: 'admin', email: 'admin@platform.dev', password: 'admin123', name: '张牧者', role: 'admin', bio: '平台管理员 · 负责内容与权限治理', city: '上海', church: '恩典堂' },
-  { username: 'moderator', email: 'moderator@platform.dev', password: 'mod123', name: '李同工', role: 'moderator', bio: '内容审核同工 · 守护社区纯净', city: '北京', church: '守望教会' },
-  { username: 'grace', email: 'grace@platform.dev', password: 'user123', name: '陈恩惠', role: 'member', bio: '蒙恩的罪人，两个孩子的妈妈', city: '上海', church: '恩典堂' },
-  { username: 'david', email: 'david@platform.dev', password: 'user123', name: '王大卫', role: 'member', bio: '青年团契带领者 · 爱读诗篇', city: '杭州', church: '迦南堂' },
-  { username: 'sarah', email: 'sarah@platform.dev', password: 'user123', name: '刘撒拉', role: 'member', bio: '敬拜主领 · 用诗歌服事', city: '广州', church: '锡安堂' },
-  { username: 'timothy', email: 'timothy@platform.dev', password: 'user123', name: '赵提摩', role: 'member', bio: '神学生 · 正在学习系统神学', city: '成都', church: '生命堂' },
-  { username: 'mary', email: 'mary@platform.dev', password: 'user123', name: '孙马利亚', role: 'member', bio: '退休教师 · 每日灵修不间断', city: '南京', church: '以马内利堂' },
-  { username: 'peter', email: 'peter@platform.dev', password: 'user123', name: '周彼得', role: 'member', bio: '职场弟兄 · 周三小组组长', city: '深圳', church: '光盐教会' },
+  { username: 'jasonssun', email: '18639246787@163.com', password: 'Hang.0212', name: '平台管理员', role: 'admin', bio: '平台管理员 · 负责内容与权限治理', city: '上海', church: '恩典堂' },
+  { username: 'moderator', email: 'moderator@platform.dev', password: 'Mod.2026#init', name: '李同工', role: 'moderator', bio: '内容审核同工 · 守护社区纯净', city: '北京', church: '守望教会' },
+  { username: 'grace', email: 'grace@platform.dev', password: 'User.2026#init', name: '陈恩惠', role: 'member', bio: '蒙恩的罪人，两个孩子的妈妈', city: '上海', church: '恩典堂' },
+  { username: 'david', email: 'david@platform.dev', password: 'User.2026#init', name: '王大卫', role: 'member', bio: '青年团契带领者 · 爱读诗篇', city: '杭州', church: '迦南堂' },
+  { username: 'sarah', email: 'sarah@platform.dev', password: 'User.2026#init', name: '刘撒拉', role: 'member', bio: '敬拜主领 · 用诗歌服事', city: '广州', church: '锡安堂' },
+  { username: 'timothy', email: 'timothy@platform.dev', password: 'User.2026#init', name: '赵提摩', role: 'member', bio: '神学生 · 正在学习系统神学', city: '成都', church: '生命堂' },
+  { username: 'mary', email: 'mary@platform.dev', password: 'User.2026#init', name: '孙马利亚', role: 'member', bio: '退休教师 · 每日灵修不间断', city: '南京', church: '以马内利堂' },
+  { username: 'peter', email: 'peter@platform.dev', password: 'User.2026#init', name: '周彼得', role: 'member', bio: '职场弟兄 · 周三小组组长', city: '深圳', church: '光盐教会' },
 ];
 
 type C = {
@@ -93,7 +93,7 @@ const CONTENTS: C[] = [
     title: '主日讲章：彼此相爱的新命令',
     body: '"我赐给你们一条新命令，乃是叫你们彼此相爱。"这条命令"新"在哪里？不是因为爱是新事，而是因为爱的标准被更新了——"像我爱你们一样"。\n\n基督的爱是舍己的爱、主动的爱、不计代价的爱。这就是教会在世人面前的见证。',
     type: 'devotion', status: 'published', tags: '讲章,爱,约翰福音', cover: '✝️',
-    author: 'admin', likes: 150, createdDaysAgo: 5,
+    author: 'jasonssun', likes: 150, createdDaysAgo: 5,
     comments: ['主日听这篇讲道很得着。'],
   },
   {
@@ -127,7 +127,7 @@ const ACTIVITIES: A[] = [
     title: '主日联合崇拜 · 复活节的盼望',
     desc: '四堂联合崇拜，主题信息：空坟墓带来的改变。设有儿童主日学与爱筵。',
     category: 'worship', location: '恩典堂主堂', city: '上海', startInDays: 3, hours: 2,
-    capacity: 300, cover: '⛪', organizer: 'admin', registrants: ['grace', 'david', 'sarah', 'timothy', 'mary', 'peter'],
+    capacity: 300, cover: '⛪', organizer: 'jasonssun', registrants: ['grace', 'david', 'sarah', 'timothy', 'mary', 'peter'],
   },
   {
     title: '青年团契：查经《腓立比书》',
@@ -145,7 +145,7 @@ const ACTIVITIES: A[] = [
     title: '户外洗礼 & 郊游',
     desc: '本年度第二次洗礼，随后有午餐与交通分享。受洗者请提前参加两次慕道班。',
     category: 'fellowship', location: '青浦淀山湖', city: '上海', startInDays: 16, hours: 6,
-    capacity: 80, cover: '💧', organizer: 'admin', registrants: ['grace', 'peter'],
+    capacity: 80, cover: '💧', organizer: 'jasonssun', registrants: ['grace', 'peter'],
   },
   {
     title: '职场门徒训练营（周六全天）',
@@ -452,9 +452,9 @@ export async function seedIfEmpty(pool: Pool) {
 
   // ---------- 关注关系 ----------
   const followPairs: [string, string][] = [
-    ['grace', 'david'], ['grace', 'mary'], ['david', 'admin'], ['david', 'timothy'],
-    ['sarah', 'david'], ['timothy', 'admin'], ['peter', 'grace'], ['mary', 'grace'],
-    ['peter', 'timothy'], ['sarah', 'admin'], ['grace', 'admin'], ['mary', 'sarah'],
+    ['grace', 'david'], ['grace', 'mary'], ['david', 'jasonssun'], ['david', 'timothy'],
+    ['sarah', 'david'], ['timothy', 'jasonssun'], ['peter', 'grace'], ['mary', 'grace'],
+    ['peter', 'timothy'], ['sarah', 'jasonssun'], ['grace', 'jasonssun'], ['mary', 'sarah'],
   ];
   for (const [a, b] of followPairs) {
     await pool.query(
@@ -515,11 +515,11 @@ export async function seedIfEmpty(pool: Pool) {
   // ---------- 捐赠记录(自愿捐赠,金额仅管理员可见) ----------
   // 字段顺序: donor_id, display_name, donor_type, church_name, amount_cents, message, anonymous, status, reviewed_by, reviewed_at, created_at
   const DONATIONS: [string, string, string, string, number, string, number, string, string | null, number | null, number][] = [
-    ['grace',   '陈恩惠',   'personal', '',        50000, '愿平台成为更多人的祝福',            0, 'confirmed', 'admin', 0, 12],
-    ['david',   '王大卫',   'personal', '',        20000, '感谢同工们的摆上',                0, 'confirmed', 'admin', 1, 10],
-    [ 'peter',  '光盐教会', 'church',   '光盐',    100000, '以教会名义支持福音事工',          0, 'confirmed', 'admin', 2, 8],
-    ['sarah',   '刘撒拉',   'personal', '',        10000, '一点心意,求主使用',               0, 'confirmed', 'admin', 3, 6],
-    ['timothy', '',         'personal', '',        30000, '愿主纪念每一位奉献的肢体',        1, 'confirmed', 'admin', 4, 4],
+    ['grace',   '陈恩惠',   'personal', '',        50000, '愿平台成为更多人的祝福',            0, 'confirmed', 'jasonssun', 0, 12],
+    ['david',   '王大卫',   'personal', '',        20000, '感谢同工们的摆上',                0, 'confirmed', 'jasonssun', 1, 10],
+    [ 'peter',  '光盐教会', 'church',   '光盐',    100000, '以教会名义支持福音事工',          0, 'confirmed', 'jasonssun', 2, 8],
+    ['sarah',   '刘撒拉',   'personal', '',        10000, '一点心意,求主使用',               0, 'confirmed', 'jasonssun', 3, 6],
+    ['timothy', '',         'personal', '',        30000, '愿主纪念每一位奉献的肢体',        1, 'confirmed', 'jasonssun', 4, 4],
     ['mary',    '孙马利亚', 'personal', '',        8000,  '退休了也要尽一份心',              0, 'pending',   null,  null, 2],
     ['moderator','守望教会','church',   '守望',    60000, '守望教会同工共同奉献',            0, 'pending',   null,  null, 1],
   ];

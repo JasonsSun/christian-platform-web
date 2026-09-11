@@ -13,47 +13,40 @@ type Props = {
   text?: string;
 };
 
-function resolveShareUrl(url?: string): string {
-  if (url) return url;
-  if (typeof window === 'undefined') return '';
-  return window.location.href;
-}
-
 export default function ShareModal({ open, onClose, url, title, text }: Props) {
+  // 分享链接只在挂载时解析一次,避免渲染期反复读取 window.location 造成依赖抖动
+  const [shareUrl, setShareUrl] = useState('');
   const [qr, setQr] = useState('');
   const [copied, setCopied] = useState(false);
-  const shareUrl = resolveShareUrl(url);
+
   const shareTitle = title || '圣约社区 - 基督教内容传播与社交社区';
   const shareText = text || '推荐给你一个基督徒的灵修与团契社区：读经、圣诗、见证、活动、直播，欢迎来一起建造。';
+
+  // 解析分享链接:显式传入优先,否则取当前页面地址(仅在客户端执行一次)
+  useEffect(() => {
+    if (url) { setShareUrl(url); return; }
+    if (typeof window !== 'undefined') setShareUrl(window.location.href);
+  }, [url, open]);
 
   // 打开时生成二维码
   useEffect(() => {
     if (!open || !shareUrl) return;
     let alive = true;
-    if (typeof console !== 'undefined') console.log('[SM] qr effect start, about to import qrcode');
     import('qrcode')
-      .then((mod) => {
-        if (typeof console !== 'undefined') console.log('[SM] qrcode module loaded');
-        return mod.default.toDataURL(shareUrl, {
-          margin: 1,
-          width: 240,
-          errorCorrectionLevel: 'M',
-          color: { dark: '#1e2664', light: '#ffffff' },
-        });
-      })
-      .then((u) => { if (typeof console !== 'undefined') console.log('[SM] qr generated len=' + u.length); if (alive) setQr(u); })
-      .catch((err) => { if (alive) setQr(''); if (typeof console !== 'undefined') console.error('[ShareModal] qr failed', err && err.message); });
+      .then((mod) => mod.default.toDataURL(shareUrl, {
+        margin: 1,
+        width: 240,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#1e2664', light: '#ffffff' },
+      }))
+      .then((u) => { if (alive) setQr(u); })
+      .catch(() => { if (alive) setQr(''); });
     return () => { alive = false; };
   }, [open, shareUrl]);
 
-  // 关闭时清空复制状态
+  // 关闭时复位复制状态
   useEffect(() => {
     if (!open) setCopied(false);
-  }, [open]);
-
-  // 调试:记录 open 变化
-  useEffect(() => {
-    if (typeof console !== 'undefined') console.log('[SM] open=' + open + ' t=' + Math.round(performance.now()));
   }, [open]);
 
   if (!open) return null;
@@ -82,7 +75,7 @@ export default function ShareModal({ open, onClose, url, title, text }: Props) {
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      {/* 遮罩:仅在点击遮罩自身时关闭,避免打开弹窗的那次点击冒泡到此而立即关闭 */}
+      {/* 遮罩:仅在点击遮罩自身时关闭 */}
       <div
         className="absolute inset-0 bg-ink-900/50 backdrop-blur-sm"
         onClick={(e) => {
