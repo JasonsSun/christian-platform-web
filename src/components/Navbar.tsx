@@ -58,6 +58,7 @@ export default function Navbar() {
   const isStaff = user?.role === 'admin' || user?.role === 'moderator';
 
   return (
+    <>
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         isScrolled
@@ -275,7 +276,8 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
     </nav>
+    <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
+    </>
   );
 }

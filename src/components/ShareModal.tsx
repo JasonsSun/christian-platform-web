@@ -74,7 +74,12 @@ export default function ShareModal({ open, onClose, url, title, text }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div
+      data-guard="share-modal"
+      className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+    >
       {/* 遮罩:仅在点击遮罩自身时关闭 */}
       <div
         className="absolute inset-0 bg-ink-900/50 backdrop-blur-sm"

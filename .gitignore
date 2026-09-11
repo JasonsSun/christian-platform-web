@@ -1,4 +1,4 @@
-# 依赖与构建产物
+# ===== 依赖与构建产物 =====
 node_modules/
 .next/
 .next.*
@@ -11,26 +11,31 @@ prod.log
 
 # TypeScript 增量缓存
 *.tsbuildinfo
-tsconfig.tsbuildinfo
 
-# 环境变量与密钥（绝不能提交）
+# ===== 环境变量与密钥（绝不能提交）=====
 .env
 .env.local
 .env.*.local
 .env.production
 
-# 运行时数据 / 上传媒体
-uploads/
-media/
-data/
-_deploy_env_backup/
+# ===== 运行时上传数据（仅根级目录，避免误伤 src/app/media 等源码）=====
+/uploads/
+/data/
+/_deploy_env_backup/
 
-# 编辑器与系统
+# 用户上传的媒体文件：属运行时数据，不入库（保留目录占位）
+/public/uploads/
+!/public/uploads/.gitkeep
+
+# ===== 编辑器与系统 =====
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
 
-# 临时文件
+# ===== 临时文件 =====
+# 注意：绝不使用裸 `_*`，会误伤 src/app/admin/_components.tsx 等源码
 *.tmp
-_*
+*.pma
+/_shots/
+/_aud2/

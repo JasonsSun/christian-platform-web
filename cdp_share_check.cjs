@@ -1,3 +1,4 @@
+// p2
 'use strict';
 const http = require('http');
 const { spawn } = require('child_process');
@@ -62,7 +63,15 @@ async function main() {
   await sleep(2500);
 
   const tl = await srpc('Runtime.evaluate', { expression: 'JSON.stringify(window.__tl)', returnByValue: true });
+  
   console.log('TIMELINE', tl.result.value);
+  const navInfo = await srpc('Runtime.evaluate', { expression: 'JSON.stringify(Array.prototype.map.call(document.querySelectorAll("nav"), function(n,i){return {i:i, cls:(n.className||"").slice(0,60), kids:n.children.length, hasShareBtn:!!n.querySelector("button[title=\\"推荐给朋友\\"]"), txt:n.innerText.slice(0,40)};}))', returnByValue: true });
+  
+  console.log('NAVS', navInfo.result.value);
+  const fin = await srpc('Runtime.evaluate', { expression: 'JSON.stringify({dlg: document.querySelectorAll("[role=dialog]").length, qrImg: !!document.querySelector("img[alt=\\"分享二维码\\"]"), shareText: document.body.innerText.indexOf("推荐给朋友")>=0, hasDataGuard: !!document.querySelector("[data-guard=\\"share-modal\\"]"}), copyBtn: !!Array.prototype.find.call(document.querySelectorAll("button"), function(b){return b.textContent.indexOf("复制链接")>=0;})})', returnByValue: true });
+  console.log('FINAL', fin.result.value);
+
+
   console.log('===LOGS===');
   logs.forEach((l) => console.log(l));
 
