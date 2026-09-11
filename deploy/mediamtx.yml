@@ -1,0 +1,38 @@
+# MediaMTX 配置 — 基督教内容平台直播
+# 挂载到容器 /mediamtx.yml。官方默认配置基础上精简，端口与应用代码(src/server/mediamtx.ts)对齐。
+#
+# 鉴权模型：媒体流(RTMP 推流 / HLS 拉流)匿名开放，安全靠「随机不可猜的 streamKey」隔离；
+# 控制 API 需 Basic Auth，凭证与应用代码 MEDIAMTX_USER/MEDIAMTX_PASS 一致，仅服务端调用。
+
+logLevel: info
+
+# ---- 各协议监听地址 ----
+rtmp:
+  listenAddr: ":1935"
+
+hls:
+  listenAddr: ":8888"
+
+webrtc:
+  listenAddr: ":8889"
+
+# 控制 API（REST），v1.21+ 前缀 /v3
+api:
+  listenAddr: ":9997"
+
+# 控制 API 鉴权：Basic Auth（live / syq_live_2026），与应用代码默认值一致
+authMethods:
+  - basic
+authBasic:
+  user: live
+  pass: syq_live_2026
+
+# 录制（可选）：开启后直播结束自动存 mp4 到 /recordings，供转待审媒体库
+record:
+  enabled: false
+  path: /recordings
+  format: fmp4
+
+# 路径默认策略：匿名可推流/拉流。安全由随机 streamKey 保证（应用层 registerPath 显式创建）。
+paths:
+  all_others:

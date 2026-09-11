@@ -20,6 +20,9 @@ const API = process.env.MEDIAMTX_API || 'http://127.0.0.1:9997';
 const HLS_PORT = process.env.MEDIAMTX_HLS_PORT || '8888';
 const RTMP_PORT = process.env.MEDIAMTX_RTMP_PORT || '1935';
 const PUBLIC_HOST = process.env.MEDIAMTX_PUBLIC_HOST || 'localhost';
+// 网页 HLS 播放：生产走 nginx HTTPS 反代（/hls/<key>/index.m3u8），避免 HTTP 混入被 CDN 拦；
+// 本地开发无 nginx 时直连 MediaMTX 的 :8888。
+const HLS_VIA_PROXY = process.env.MEDIAMTX_HLS_VIA_PROXY !== 'false';
 
 /** 平台控制用户(仅用于服务端调用 REST API) */
 const MEDIAMTX_USER = process.env.MEDIAMTX_USER || 'live';
@@ -35,8 +38,9 @@ export function rtmpPushUrl(streamKey: string): string {
   return `rtmp://${PUBLIC_HOST}:${RTMP_PORT}/${streamKey}`;
 }
 
-/** 网页 HLS 播放地址(浏览器直连,匿名可读,MediaMTX 自带 CORS) */
+/** 网页 HLS 播放地址。生产经 nginx HTTPS 反代(/hls/...)，本地开发直连 MediaMTX :8888。 */
 export function hlsPlayUrl(streamKey: string): string {
+  if (HLS_VIA_PROXY) return `https://${PUBLIC_HOST}/hls/${streamKey}/index.m3u8`;
   return `http://${PUBLIC_HOST}:${HLS_PORT}/${streamKey}/index.m3u8`;
 }
 

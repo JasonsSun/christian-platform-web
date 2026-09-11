@@ -32,6 +32,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mediamtx:
+        condition: service_started
     environment:
       DB_HOST: db          # 容器内用服务名访问
       DB_PORT: "3306"
@@ -40,6 +42,12 @@ services:
       DB_NAME: ${DB_NAME:-christian_platform}
       JWT_SECRET: ${JWT_SECRET:-please-set-a-long-random-secret}
       PORT: "3000"
+      # 直播：控制 API 走内网 mediamtx:9997；公网推流地址用域名
+      MEDIAMTX_API: http://mediamtx:9997
+      MEDIAMTX_PUBLIC_HOST: ${MEDIAMTX_PUBLIC_HOST:-${DOMAIN:-localhost}}
+      MEDIAMTX_HLS_VIA_PROXY: "true"
+      MEDIAMTX_USER: ${MEDIAMTX_USER:-live}
+      MEDIAMTX_PASS: ${MEDIAMTX_PASS:-syq_live_2026}
       # NODE_ENV 由 server.js --prod 设置，无需在此覆盖
     expose:
       - "3000"             # 只给 nginx 用，不映射到宿主机
@@ -56,6 +64,22 @@ services:
     volumes:
       - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - ./deploy/certs:/etc/nginx/certs:ro   # 证书目录；无 HTTPS 时为空即可
+
+  # 直播媒体服务器：RTMP 推流(1935) + HLS 播放(8888) + WebRTC(8889) + 控制 API(9997)
+  # 1935/8889 直连公网（OBS/手机推流、WebRTC 必须直连端口）；
+  # 8888 HLS 不暴露公网，由 nginx 443 反代到 /hls/，保证浏览器全程 HTTPS。
+  mediamtx:
+    image: bluenviron/mediamtx:latest
+    container_name: cp_mediamtx
+    restart: unless-stopped
+    ports:
+      - "1935:1935"   # RTMP 推流
+      - "8889:8889"   # WebRTC 播放
+      - "9997:9997"   # 控制 API（仅内网给 web 用；映射到宿主机便于 curl 排障）
+    expose:
+      - "8888"        # HLS 只给 nginx 反代用，不暴露公网
+    volumes:
+      - ./deploy/mediamtx.yml:/mediamtx.yml:ro
 
 volumes:
   db_data:

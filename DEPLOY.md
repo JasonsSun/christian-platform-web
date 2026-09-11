@@ -52,6 +52,27 @@ curl -I http://127.0.0.1          # 经 nginx 返回 200/307
 3. 放进 `deploy/certs/`，编辑 `deploy/nginx.conf` 取消 HTTPS 段注释并改 `server_name`
 4. `docker compose restart nginx`
 
+## 7. 直播（MediaMTX）
+平台内置直播：OBS/手机推 RTMP → MediaMTX 转 HLS → 网页播放。`docker-compose.yml` 已含 `mediamtx` 服务。
+
+- **推流地址**：`rtmp://<DOMAIN>:1935/<streamKey>`（OBS 服务器填 `rtmp://<DOMAIN>:1935`，串流密钥填随机 streamKey）
+- **网页播放**：浏览器经 `https://<DOMAIN>/hls/<streamKey>/index.m3u8`（nginx 443 反代到 mediamtx:8888，全程 HTTPS）
+- **控制 API**：`mediamtx:9997`，仅 web 容器内网调用，不暴露公网
+
+### 7.1 首次启用
+1. 确保 `.env` 有 `DOMAIN=<你的域名>`（或 `MEDIAMTX_PUBLIC_HOST=<域名>`）
+2. 确认 Cloudflare 放行 1935 端口（RTMP 直连，不走代理，A 记录设为「仅 DNS / Grey cloud」）
+3. `docker compose up -d --build` 拉起 mediamtx
+4. 验证：`curl http://127.0.0.1:9997/v3/info` 应返回服务信息
+
+### 7.2 直播流程
+1. 登录平台 → 创建直播间 → 复制推流地址与串流密钥
+2. OBS 填服务器 + 串流密钥 → 开始推流
+3. 直播页自动检测在线状态（`/api/v1/live` 轮询 MediaMTX path 状态），观众即可播放
+
+### 7.3 录制（可选）
+`deploy/mediamtx.yml` 里 `record.enabled` 改 `true` 并挂载 recordings 卷，直播结束自动存 mp4，可对接待审媒体库。
+
 ## 日常运维
 ```bash
 docker compose ps                    # 查看状态
