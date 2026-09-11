@@ -2,7 +2,7 @@
 const http = require('http');
 const { spawn } = require('child_process');
 const WebSocket = require('ws');
-const PORT = 3021;
+const PORT = 3023;
 const APP = __dirname;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function httpGetText(url) { return new Promise((res, rej) => { http.get(url, (r) => { let d = ''; r.on('data', (c) => d += c); r.on('end', () => res(d)); }).on('error', rej); }); }
@@ -25,36 +25,43 @@ async function main() {
 
   await srpc('Page.enable', {});
   await srpc('Runtime.enable', {});
+
+  const logs = [];
+  ws.on('message', (d) => {
+    const m = JSON.parse(d.toString());
+    if (m.sessionId !== sess) return;
+    if (m.method === 'Runtime.consoleAPICalled') {
+      const txt = (m.params.args || []).map((a) => a.value !== undefined ? a.value : (a.description || a.type)).join(' ');
+      logs.push('[' + m.params.type + '] ' + txt);
+    }
+    if (m.method === 'Runtime.exceptionThrown') {
+      const ed = m.params.exceptionDetails;
+      logs.push('[THROWN] ' + ((ed.exception && ed.exception.description) ? ed.exception.description.split('\n')[0] : ed.text));
+    }
+  });
+
   await srpc('Emulation.setDeviceMetricsOverride', { width: 1400, height: 900, deviceScaleFactor: 1, mobile: false });
   await srpc('Page.navigate', { url: 'http://localhost:' + PORT + '/' });
   await sleep(4000);
 
-  // 用 Input.dispatchMouseEvent 模拟真实鼠标点击分享按钮(坐标来自 getBoundingClientRect)
-  const pos = await srpc('Runtime.evaluate', {
-    expression: `(function(){var b=document.querySelector('button[title="推荐给朋友"]');if(!b)return null;var r=b.getBoundingClientRect();return JSON.stringify({x:Math.round(r.left+r.width/2), y:Math.round(r.top+r.height/2)});})()`,
+  await srpc('Runtime.evaluate', {
+    expression: `window.__tl=[];new MutationObserver(function(ms){ms.forEach(function(m){(m.addedNodes||[]).forEach(function(n){if(n.nodeType===1)window.__tl.push('+'+n.tagName+(n.getAttribute&&n.getAttribute('role')?'['+n.getAttribute('role')+']':'')+' @'+Math.round(performance.now()));});(m.removedNodes||[]).forEach(function(n){if(n.nodeType===1)window.__tl.push('-'+n.tagName+(n.getAttribute&&n.getAttribute('role')?'['+n.getAttribute('role')+']':'')+' @'+Math.round(performance.now()));});});}).observe(document.body,{childList:true,subtree:true});`,
     returnByValue: true,
   });
-  console.log('POS', pos.result.value);
+
+  const pos = await srpc('Runtime.evaluate', { expression: `(function(){var b=document.querySelector('button[title="推荐给朋友"]');var r=b.getBoundingClientRect();return JSON.stringify({x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)});})()`, returnByValue: true });
   const p = JSON.parse(pos.result.value);
   await srpc('Input.dispatchMouseEvent', { type: 'mouseMoved', x: p.x, y: p.y });
   await srpc('Input.dispatchMouseEvent', { type: 'mousePressed', x: p.x, y: p.y, button: 'left', clickCount: 1 });
   await srpc('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p.x, y: p.y, button: 'left', clickCount: 1 });
-  await sleep(800);
+  await sleep(2500);
 
-  const s1 = await srpc('Runtime.evaluate', { expression: 'JSON.stringify({d80ms: document.querySelectorAll("[role=dialog]").length})', returnByValue: true });
-  console.log('T_800ms', s1.result.value);
-  await sleep(2000);
-  const s2 = await srpc('Runtime.evaluate', {
-    expression: `JSON.stringify({
-      dlg: document.querySelectorAll('[role=dialog]').length,
-      qr: !!document.querySelector('img[alt="分享二维码"]'),
-      qrOk: (function(){var i=document.querySelector('img[alt="分享二维码"]');return i? i.src.indexOf('data:image/png')===0 : false;})(),
-      copyBtn: !!Array.prototype.find.call(document.querySelectorAll('button'), function(b){return b.textContent.indexOf('复制链接')>=0;}),
-      shareBtn: !!Array.prototype.find.call(document.querySelectorAll('button'), function(b){return b.textContent.indexOf('系统分享')>=0;})
-    })`,
-    returnByValue: true,
-  });
-  console.log('T_2_8s', s2.result.value);
+  const tl = await srpc('Runtime.evaluate', { expression: 'JSON.stringify(window.__tl)', returnByValue: true });
+  console.log('TIMELINE', tl.result.value);
+  const st = await srpc('Runtime.evaluate', { expression: 'JSON.stringify({dlg: document.querySelectorAll("[role=dialog]").length})', returnByValue: true });
+  console.log('STATE', st.result.value);
+  console.log('===CONSOLE===');
+  logs.forEach((l) => console.log(l));
 
   srv.kill('SIGKILL');
   process.exit(0);

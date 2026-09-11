@@ -30,21 +30,30 @@ export default function ShareModal({ open, onClose, url, title, text }: Props) {
   useEffect(() => {
     if (!open || !shareUrl) return;
     let alive = true;
+    if (typeof console !== 'undefined') console.log('[SM] qr effect start, about to import qrcode');
     import('qrcode')
-      .then((mod) => mod.default.toDataURL(shareUrl, {
-        margin: 1,
-        width: 240,
-        errorCorrectionLevel: 'M',
-        color: { dark: '#1e2664', light: '#ffffff' },
-      }))
-      .then((u) => { if (alive) setQr(u); })
-      .catch((err) => { if (alive) setQr(''); if (typeof console !== 'undefined') console.error('[ShareModal] qr failed', err); });
+      .then((mod) => {
+        if (typeof console !== 'undefined') console.log('[SM] qrcode module loaded');
+        return mod.default.toDataURL(shareUrl, {
+          margin: 1,
+          width: 240,
+          errorCorrectionLevel: 'M',
+          color: { dark: '#1e2664', light: '#ffffff' },
+        });
+      })
+      .then((u) => { if (typeof console !== 'undefined') console.log('[SM] qr generated len=' + u.length); if (alive) setQr(u); })
+      .catch((err) => { if (alive) setQr(''); if (typeof console !== 'undefined') console.error('[ShareModal] qr failed', err && err.message); });
     return () => { alive = false; };
   }, [open, shareUrl]);
 
   // 关闭时清空复制状态
   useEffect(() => {
     if (!open) setCopied(false);
+  }, [open]);
+
+  // 调试:记录 open 变化
+  useEffect(() => {
+    if (typeof console !== 'undefined') console.log('[SM] open=' + open + ' t=' + Math.round(performance.now()));
   }, [open]);
 
   if (!open) return null;
