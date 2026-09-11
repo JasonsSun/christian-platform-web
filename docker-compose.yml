@@ -1,0 +1,61 @@
+# 基督教内容平台 — VPS 一键部署（全 Docker，宿主机零依赖）
+# 用法:
+#   1) cp deploy/env.example .env  然后填好 DB_PASSWORD / JWT_SECRET / DOMAIN
+#   2) docker compose up -d --build
+#   3) 浏览器访问 http://<VPS_IP>   （先用 IP 验证；有域名再跑 certbot 上 HTTPS）
+#
+# 架构: nginx(80/443) -> web(3000) -> db(3306) 全部在 Docker 内网，互不暴露公网。
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: cp_db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-change-me-now}
+      MYSQL_DATABASE: ${DB_NAME:-christian_platform}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      # 用 MYSQL_ROOT_PASSWORD 环境变量，避免 compose 二次转义问题
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+
+  web:
+    build: .
+    container_name: cp_web
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db          # 容器内用服务名访问
+      DB_PORT: "3306"
+      DB_USER: root
+      DB_PASSWORD: ${DB_PASSWORD:-change-me-now}
+      DB_NAME: ${DB_NAME:-christian_platform}
+      JWT_SECRET: ${JWT_SECRET:-please-set-a-long-random-secret}
+      PORT: "3000"
+      # NODE_ENV 由 server.js --prod 设置，无需在此覆盖
+    expose:
+      - "3000"             # 只给 nginx 用，不映射到宿主机
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: cp_nginx
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./deploy/certs:/etc/nginx/certs:ro   # 证书目录；无 HTTPS 时为空即可
+
+volumes:
+  db_data:

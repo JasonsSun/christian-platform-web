@@ -1,0 +1,32 @@
+import { NextRequest } from 'next/server';
+import { ok, withApi, notFound } from '@/server/http';
+import { requireUser, findUserById } from '@/server/auth';
+import { getRoom, publicRoomView, countViewers, listMessages } from '@/server/live';
+import { isPathLive, hlsPlayUrl, rtmpPushUrl } from '@/server/mediamtx';
+
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
+/** 直播间详情:公开可见 HLS 播放地址与聊天;主播/管理员额外可见推流地址与密钥 */
+export const GET = withApi(async (req: NextRequest, ctx: any) => {
+  const id = ctx.params.id as string;
+  const room = await getRoom(id);
+  if (!room) throw notFound('直播间不存在');
+
+  const user = await requireUser(req).catch(() => null);
+  const isStaffOrOwner = !!user && (user.role === 'admin' || user.role === 'moderator' || user.id === room.owner_id);
+
+  const live = room.status === 'live' ? await isPathLive(room.stream_key) : false;
+  const vc = room.status === 'live' ? await countViewers(room.id) : 0;
+  const messages = await listMessages(room.id);
+  const owner = await findUserById(room.owner_id).catch(() => null);
+
+  return ok(publicRoomView(room, isStaffOrOwner, {
+    hlsUrl: hlsPlayUrl(room.stream_key),
+    rtmpUrl: rtmpPushUrl(room.stream_key),
+    viewerCount: vc,
+    messages,
+    live,
+    owner: owner ? { id: owner.id, displayName: owner.display_name, avatarColor: owner.avatar_color } : undefined,
+  }));
+});

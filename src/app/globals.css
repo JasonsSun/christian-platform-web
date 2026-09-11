@@ -1,0 +1,262 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+/* 基础样式重置 */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f6f7fb;
+  color: #1f2339;
+  line-height: 1.6;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0px);
+}
+
+/* 移动端禁用滚动条显示 */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+}
+
+/* 禁止页面横向溢出 */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #eef0f7;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #4f6df5 0%, #3d52d9 100%);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3d52d9 0%, #3242b0 100%);
+}
+
+/* 选中文本样式 */
+::selection {
+  background: #4f6df5;
+  color: white;
+}
+
+/* 玻璃态效果 */
+@layer utilities {
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .glass-dark {
+    background: rgba(31, 35, 57, 0.8);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #4f6df5 0%, #6b8eff 50%, #fbbf24 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .bg-animated-gradient {
+    background: linear-gradient(-45deg, #1e2664, #3d52d9, #4f6df5, #6b8eff);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+  }
+
+  .card-hover {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 30px 60px -15px rgba(30, 38, 100, 0.2);
+  }
+
+  .input-styled {
+    @apply w-full px-4 py-3 rounded-xl border-2 border-ink-200 bg-white/70 backdrop-blur-sm
+           text-ink-900 placeholder:text-ink-400
+           transition-all duration-300 ease-out
+           focus:outline-none focus:border-primary-500 focus:bg-white
+           focus:ring-4 focus:ring-primary-100
+           hover:border-primary-300;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+           font-semibold text-white
+           bg-gradient-to-r from-primary-600 to-primary-500
+           shadow-lg shadow-primary-500/25
+           transition-all duration-300 ease-out
+           hover:shadow-xl hover:shadow-primary-500/40
+           hover:from-primary-700 hover:to-primary-600
+           hover:-translate-y-0.5
+           active:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+           font-semibold text-primary-700
+           bg-white border-2 border-primary-200
+           shadow-sm
+           transition-all duration-300 ease-out
+           hover:shadow-lg hover:border-primary-400 hover:bg-primary-50
+           hover:-translate-y-0.5
+           active:translate-y-0;
+  }
+
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+           font-semibold text-white
+           bg-gradient-to-r from-gold-500 to-gold-400
+           shadow-lg shadow-gold-500/25
+           transition-all duration-300 ease-out
+           hover:shadow-xl hover:shadow-gold-500/40
+           hover:from-gold-600 hover:to-gold-500
+           hover:-translate-y-0.5
+           active:translate-y-0;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
+           font-semibold text-white
+           bg-gradient-to-r from-rose-600 to-rose-500
+           shadow-lg shadow-rose-500/25
+           transition-all duration-300 ease-out
+           hover:shadow-xl hover:shadow-rose-500/40
+           hover:from-rose-700 hover:to-rose-600
+           hover:-translate-y-0.5
+           active:translate-y-0;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg
+           text-sm font-medium text-ink-600
+           bg-ink-100/70 border border-ink-200
+           transition-colors duration-200
+           hover:bg-ink-200/70 hover:text-ink-900
+           active:bg-ink-200
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .divider-gradient {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #c2d4ff, transparent);
+  }
+}
+
+/* 非模态提示条（Notice）入场动画 */
+@keyframes notice-in {
+  from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 移动端：底部导航(64px) + 悬浮迷你播放器(右下角卡片) 同时存在时留足空间 */
+@media (max-width: 767px) {
+  html.has-player main { padding-bottom: 176px; }
+  html.has-player footer { padding-bottom: 176px; }
+}
+
+/* 悬浮迷你播放器出现时，桌面端底部留出空间，避免遮挡右下角内容 */
+@media (min-width: 768px) {
+  html.has-player main { padding-bottom: 128px; }
+  html.has-player footer { padding-bottom: 128px; }
+}
+
+/* 移动端全局优化：更大点击热区 + 禁用长按选中导致的误操作 */
+@media (max-width: 767px) {
+  html { -webkit-text-size-adjust: 100%; }
+  button, a { -webkit-tap-highlight-color: transparent; }
+  input, textarea, select { font-size: 16px; } /* 防止 iOS 聚焦时页面缩放 */
+}
+
+/* ===== 圣经阅读优化样式 ===== */
+
+/* 首字母下沉效果 */
+.first-letter-drop-cap:first-letter {
+  float: left;
+  font-size: 3.5em;
+  line-height: 0.85;
+  padding-right: 0.12em;
+  padding-top: 0.08em;
+  font-weight: 700;
+  color: #d97706;
+  font-family: 'Playfair Display', 'Noto Serif SC', Georgia, serif;
+  text-shadow: 2px 2px 4px rgba(217, 119, 6, 0.2);
+}
+
+/* 经文段落悬停效果 */
+article p.group:hover {
+  background: linear-gradient(to right, transparent, rgba(251, 191, 36, 0.05), transparent);
+}
+
+/* 节号样式优化 */
+article p span[class*="absolute"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 朗读高亮平滑过渡 */
+article p.bg-amber-50 {
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+/* 经文字体优化 */
+article.font-serif {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.01em;
+}
+
+/* 暗色模式支持 */
+[data-theme="dark"] .bg-stone-50 {
+  background-color: #0f172a;
+}
+[data-theme="dark"] .bg-white {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+[data-theme="dark"] .text-stone-800 {
+  color: #f1f5f9;
+}
+[data-theme="dark"] .text-stone-500 {
+  color: #94a3b8;
+}
+[data-theme="dark"] .border-stone-200 {
+  border-color: #334155;
+}

@@ -1,0 +1,97 @@
+import { NextRequest } from 'next/server';
+import { newId, one, ts, tx } from '@/server/db';
+import { ok, withApi, notFound, conflict } from '@/server/http';
+import { requireUser } from '@/server/auth';
+import { dispatchOutbox, emit, audit } from '@/server/services';
+
+export const dynamic = 'force-dynamic';
+
+type Ctx = { params: { id: string } };
+
+/**
+ * 并发报名:事务内 SELECT ... FOR UPDATE 串行化,
+ * 保证 confirmed 人数 <= capacity(超出进入候补队列),且同一用户幂等。
+ */
+export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
+  const user = await requireUser(req);
+  const activityId = ctx.params.id;
+
+  const result = await tx(async (conn) => {
+    const [actRows] = await conn.query<any[]>(
+      `SELECT id, title, capacity, start_at FROM activities WHERE id = ? FOR UPDATE`, [activityId]
+    );
+    const act = actRows[0];
+    if (!act) throw notFound('活动不存在');
+
+    const [existRows] = await conn.query<any[]>(
+      `SELECT id, status FROM activity_registrations WHERE activity_id = ? AND user_id = ?`, [activityId, user.id]
+    );
+    const exist = existRows[0];
+    if (exist && exist.status !== 'cancelled') {
+      throw conflict('你已报名该活动');
+    }
+
+    const [countRows] = await conn.query<any[]>(
+      `SELECT COUNT(*) AS c FROM activity_registrations WHERE activity_id = ? AND status = 'confirmed'`, [activityId]
+    );
+    const confirmed = Number(countRows[0].c);
+    const status = confirmed < Number(act.capacity) ? 'confirmed' : 'waitlist';
+
+    if (exist) {
+      await conn.query(`UPDATE activity_registrations SET status = ?, created_at = ? WHERE id = ?`,
+        [status, ts(), exist.id]);
+    } else {
+      await conn.query(
+        `INSERT INTO activity_registrations (id, activity_id, user_id, status, created_at) VALUES (?,?,?,?,?)`,
+        [newId('reg'), activityId, user.id, status, ts()]
+      );
+    }
+    return { status, confirmed: confirmed + (status === 'confirmed' ? 1 : 0), title: act.title };
+  });
+
+  await emit('activity.registered',
+    { activityId, actorId: user.id, actorName: user.display_name, status: result.status });
+  await dispatchOutbox();
+  await audit(user.id, 'ACTIVITY_REGISTER', 'activity', activityId,
+    `报名《${result.title}》(${result.status})`, '');
+
+  const row = await one<any>(
+    `SELECT (SELECT COUNT(*) FROM activity_registrations WHERE activity_id = ? AND status='confirmed') AS confirmed_count,
+            (SELECT COUNT(*) FROM activity_registrations WHERE activity_id = ? AND status='waitlist') AS waitlist_count`,
+    [activityId, activityId]
+  );
+  return ok({
+    status: result.status,
+    confirmedCount: Number(row?.confirmed_count || 0),
+    waitlistCount: Number(row?.waitlist_count || 0),
+  });
+});
+
+export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
+  const user = await requireUser(req);
+  const activityId = ctx.params.id;
+
+  await tx(async (conn) => {
+    const [rows] = await conn.query<any[]>(
+      `SELECT id, status FROM activity_registrations WHERE activity_id = ? AND user_id = ? FOR UPDATE`,
+      [activityId, user.id]
+    );
+    const reg = rows[0];
+    if (!reg || reg.status === 'cancelled') throw notFound('你没有报名该活动');
+    await conn.query(`UPDATE activity_registrations SET status = 'cancelled' WHERE id = ?`, [reg.id]);
+
+    // 释放名额后,将最早的候补转为正式
+    if (reg.status === 'confirmed') {
+      const [wait] = await conn.query<any[]>(
+        `SELECT id FROM activity_registrations WHERE activity_id = ? AND status = 'waitlist' ORDER BY created_at ASC LIMIT 1 FOR UPDATE`,
+        [activityId]
+      );
+      if (wait[0]) {
+        await conn.query(`UPDATE activity_registrations SET status = 'confirmed' WHERE id = ?`, [wait[0].id]);
+      }
+    }
+  });
+
+  await audit(user.id, 'ACTIVITY_CANCEL', 'activity', activityId, '取消报名', '');
+  return ok({ cancelled: true });
+});

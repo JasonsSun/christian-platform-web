@@ -1,0 +1,36 @@
+# 依赖与构建产物
+node_modules/
+.next/
+.next.*
+out/
+build_output.txt
+.build-trash/
+.build.log
+prod.log
+*.log
+
+# TypeScript 增量缓存
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# 环境变量与密钥（绝不能提交）
+.env
+.env.local
+.env.*.local
+.env.production
+
+# 运行时数据 / 上传媒体
+uploads/
+media/
+data/
+_deploy_env_backup/
+
+# 编辑器与系统
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+_*

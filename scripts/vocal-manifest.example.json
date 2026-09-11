@@ -1,0 +1,30 @@
+{
+  "_说明": "把每首诗的授权演唱录音填进来，然后运行 node scripts/import-vocal-audio.mjs <本文件>。先用 node scripts/import-vocal-audio.mjs --list 看库里有哪些标题。",
+  "_字段": {
+    "title": "库里已有的诗歌标题，需完全一致",
+    "file": "本地音频文件路径(推荐，会复制到站内托管)。与 url 二选一",
+    "url": "外链地址，与 file 二选一",
+    "audioType": "vocal(真人演唱，默认) | instrumental(伴奏) | none",
+    "credit": "必填。演唱者 + 授权依据，会显示在详情页"
+  },
+  "songs": [
+    {
+      "title": "奇异恩典",
+      "file": "D:/hymns/amazing-grace-vocal.mp3",
+      "audioType": "vocal",
+      "credit": "演唱：光盐诗班 / 已获教会授权在本平台发布"
+    },
+    {
+      "title": "平安夜",
+      "file": "D:/hymns/silent-night-vocal.mp3",
+      "audioType": "vocal",
+      "credit": "本人演唱，授权平台使用"
+    },
+    {
+      "title": "你真伟大",
+      "url": "https://example.org/how-great-thou-art-vocal.mp3",
+      "audioType": "vocal",
+      "credit": "公有领域录音，来源：archive.org"
+    }
+  ]
+}

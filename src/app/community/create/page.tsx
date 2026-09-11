@@ -1,0 +1,293 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { apiGet, apiPatch, apiPost } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
+import { useAction, useApi } from '@/lib/useApi';
+import { useNotice } from '@/lib/notice';
+import { useGoLogin } from '@/lib/nav';
+import type { ContentItem, MediaItem } from '@/lib/types';
+
+const CONTENT_TYPES = [
+  { id: 'article', label: '文章', icon: '📝' },
+  { id: 'testimony', label: '见证', icon: '✨' },
+  { id: 'devotion', label: '灵修', icon: '🙏' },
+];
+
+const COVER_EMOJIS = ['📖', '✨', '🙏', '🌿', '❤️', '🌟', '☀️', '🌈', '🔥', '💡', '🌸', '🕊️'];
+
+export default function CreateContentPage() {
+  const router = useRouter();
+  const { user, loading } = useAuth();
+  const notice = useNotice();
+  const goLogin = useGoLogin();
+  const [formError, setFormError] = useState('');
+
+  const [editId, setEditId] = useState('');
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [editError, setEditError] = useState('');
+
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const [contentType, setContentType] = useState<'article' | 'testimony' | 'devotion'>('article');
+  const [tagsInput, setTagsInput] = useState('');
+  const [cover, setCover] = useState(COVER_EMOJIS[0]);
+  const [mediaIds, setMediaIds] = useState<string[]>([]);
+
+  const { data: mediaData } = useApi<{ items: MediaItem[] }>(user && !editId ? '/media/mine?pageSize=30' : null, [user?.id]);
+  const myMedia = (mediaData?.items || []).filter((m) => m.status !== 'trashed');
+
+  const toggleMedia = (id: string) =>
+    setMediaIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+  const action = useAction();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      notice.info('请先登录后再发布内容');
+      goLogin();
+    }
+  }, [loading, user, goLogin, notice]);
+
+  // 编辑模式：从 URL ?edit=<id> 载入原文
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('edit') || '';
+    if (!id || !user) return;
+    setEditId(id);
+    setLoadingEdit(true);
+    setEditError('');
+    apiGet<ContentItem>(`/contents/${id}`)
+      .then((c) => {
+        setTitle(c.title || '');
+        setBody(c.body || '');
+        setContentType((c.contentType as any) || 'article');
+        setTagsInput((c.tags || []).join('，'));
+        setCover(c.cover || COVER_EMOJIS[0]);
+      })
+      .catch((e) => setEditError(e?.message || '加载内容失败'))
+      .finally(() => setLoadingEdit(false));
+  }, [user]);
+
+  const submit = async (status: 'draft' | 'pending_review') => {
+    setFormError('');
+    if (!user) {
+      notice.info('请先登录后再发布内容');
+      goLogin();
+      return;
+    }
+    if (!title.trim()) {
+      setFormError('请填写标题');
+      notice.error('请填写标题');
+      return;
+    }
+    if (!body.trim()) {
+      setFormError('请填写正文');
+      notice.error('请填写正文');
+      return;
+    }
+    const tags = tagsInput
+      .split(/[,，]/)
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    // 编辑模式：PATCH 更新已有内容
+    if (editId) {
+      const res = await action.run(() =>
+        apiPatch<ContentItem>(`/contents/${editId}`, {
+          title: title.trim(),
+          body: body.trim(),
+          contentType,
+          tags,
+          cover,
+        })
+      );
+      if (res?.id) router.push(`/contents/${res.id}`);
+      return;
+    }
+
+    const res = await action.run(() =>
+      apiPost<ContentItem>('/contents', {
+        title: title.trim(),
+        body: body.trim(),
+        contentType,
+        tags,
+        cover,
+        status,
+        mediaIds,
+      })
+    );
+    if (res?.id) {
+      router.push(`/contents/${res.id}`);
+    }
+  };
+
+  return (
+    <div className="min-h-screen">
+      <section className="relative py-8 md:py-12 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800" />
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">{editId ? '编辑内容' : '发布内容'}</h1>
+          <p className="text-white/80 mt-2 text-sm">{editId ? '修改后重新提交审核' : '与主内肢体分享你的文章、见证或灵修'}</p>
+        </div>
+      </section>
+
+      <section className="py-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 space-y-6">
+            {loadingEdit && (
+              <div className="text-center text-ink-400 py-6">正在载入原文…</div>
+            )}
+            {editError && (
+              <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3">{editError}</div>
+            )}
+            {/* 表单内联错误提示（不使用弹框） */}
+            {formError && (
+              <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3">
+                {formError}
+              </div>
+            )}
+            {/* 类型选择 */}
+            <div>
+              <label className="block text-sm font-semibold text-ink-700 mb-2">内容类型</label>
+              <div className="flex gap-2">
+                {CONTENT_TYPES.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setContentType(t.id as any)}
+                    className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                      contentType === t.id
+                        ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/25'
+                        : 'bg-white text-ink-600 border border-ink-200 hover:border-primary-300'
+                    }`}
+                  >
+                    <span>{t.icon}</span>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 标题 */}
+            <div>
+              <label className="block text-sm font-semibold text-ink-700 mb-2">标题</label>
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="给你的内容起个标题…"
+                className="input-styled"
+              />
+            </div>
+
+            {/* 正文 */}
+            <div>
+              <label className="block text-sm font-semibold text-ink-700 mb-2">正文</label>
+              <textarea
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="在这里写下你的内容…"
+                rows={10}
+                className="input-styled resize-y leading-relaxed"
+              />
+            </div>
+
+            {/* 标签 */}
+            <div>
+              <label className="block text-sm font-semibold text-ink-700 mb-2">标签（逗号分隔）</label>
+              <input
+                value={tagsInput}
+                onChange={(e) => setTagsInput(e.target.value)}
+                placeholder="例如：信心, 祷告, 恩典"
+                className="input-styled"
+              />
+            </div>
+
+            {/* 封面 emoji */}
+            <div>
+              <label className="block text-sm font-semibold text-ink-700 mb-2">封面 Emoji</label>
+              <div className="flex flex-wrap gap-2">
+                {COVER_EMOJIS.map((e) => (
+                  <button
+                    key={e}
+                    onClick={() => setCover(e)}
+                    className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all ${
+                      cover === e
+                        ? 'bg-primary-100 border-2 border-primary-500'
+                        : 'bg-ink-50 border-2 border-transparent hover:border-primary-200'
+                    }`}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 附带媒体（编辑模式不更改附件） */}
+            {!editId && (
+            <div>
+              <label className="block text-sm font-semibold text-ink-700 mb-2">
+                附带媒体（可选）
+                <span className="ml-2 font-normal text-xs text-ink-400">从「我的上传」选择图片/视频/音乐/资料</span>
+              </label>
+              {myMedia.length === 0 ? (
+                <div className="text-sm text-ink-400 border border-dashed border-ink-200 rounded-xl px-4 py-3">
+                  还没有可用的文件，<Link href="/upload" className="text-primary-600 hover:underline">去上传</Link>
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {myMedia.map((m) => {
+                    const on = mediaIds.includes(m.id);
+                    return (
+                      <button
+                        key={m.id}
+                        onClick={() => toggleMedia(m.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition ${
+                          on ? 'bg-primary-50 border-primary-400 text-primary-700' : 'bg-ink-50 border-transparent text-ink-600 hover:border-primary-200'
+                        }`}
+                      >
+                        <span>{m.kind === 'image' ? '🖼️' : m.kind === 'audio' ? '🎵' : m.kind === 'video' ? '🎬' : m.kind === 'score' ? '🎼' : '📄'}</span>
+                        <span className="max-w-[140px] truncate">{m.title}</span>
+                        {on ? <span className="text-primary-600">✓</span> : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            )}
+
+            {action.error && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl p-3 text-sm">{action.error}</div>
+            )}
+
+            <div className="divider-gradient" />
+
+            {editId ? (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button onClick={() => router.push(`/contents/${editId}`)} className="btn-secondary flex-1">
+                  取消
+                </button>
+                <button onClick={() => submit('pending_review')} disabled={action.pending} className="btn-primary flex-1">
+                  {action.pending ? '保存中…' : '保存修改'}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button onClick={() => submit('draft')} disabled={action.pending} className="btn-secondary flex-1">
+                    存草稿
+                  </button>
+                  <button onClick={() => submit('pending_review')} disabled={action.pending} className="btn-primary flex-1">
+                    {action.pending ? '提交中…' : '提交审核'}
+                  </button>
+                </div>
+                <p className="text-center text-xs text-ink-400">提交后将进入审核，通过后会展示在社区中。</p>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
