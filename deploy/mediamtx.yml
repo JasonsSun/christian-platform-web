@@ -20,9 +20,9 @@ webrtc:
 api:
   listenAddr: ":9997"
   # 控制 API 鉴权：Basic Auth（live / syq_live_2026），与应用代码默认值一致
-  auth: yes
-  user: live
-  pass: syq_live_2026
+  auth:
+    user: live
+    pass: syq_live_2026
 
 # 录制（可选）：开启后直播结束自动存 mp4 到 /recordings，供转待审媒体库
 record:
