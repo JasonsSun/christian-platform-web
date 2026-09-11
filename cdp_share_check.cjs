@@ -2,7 +2,7 @@
 const http = require('http');
 const { spawn } = require('child_process');
 const WebSocket = require('ws');
-const PORT = 3023;
+const PORT = 3024;
 const APP = __dirname;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 function httpGetText(url) { return new Promise((res, rej) => { http.get(url, (r) => { let d = ''; r.on('data', (c) => d += c); r.on('end', () => res(d)); }).on('error', rej); }); }
@@ -25,27 +25,28 @@ async function main() {
 
   await srpc('Page.enable', {});
   await srpc('Runtime.enable', {});
-
-  const logs = [];
-  ws.on('message', (d) => {
-    const m = JSON.parse(d.toString());
-    if (m.sessionId !== sess) return;
-    if (m.method === 'Runtime.consoleAPICalled') {
-      const txt = (m.params.args || []).map((a) => a.value !== undefined ? a.value : (a.description || a.type)).join(' ');
-      logs.push('[' + m.params.type + '] ' + txt);
-    }
-    if (m.method === 'Runtime.exceptionThrown') {
-      const ed = m.params.exceptionDetails;
-      logs.push('[THROWN] ' + ((ed.exception && ed.exception.description) ? ed.exception.description.split('\n')[0] : ed.text));
-    }
-  });
-
   await srpc('Emulation.setDeviceMetricsOverride', { width: 1400, height: 900, deviceScaleFactor: 1, mobile: false });
   await srpc('Page.navigate', { url: 'http://localhost:' + PORT + '/' });
   await sleep(4000);
 
+  // 监听: 一旦 dialog 出现, 保存引用; 一旦被移除, 记录 previousParent 与是否仍在 document
   await srpc('Runtime.evaluate', {
-    expression: `window.__tl=[];new MutationObserver(function(ms){ms.forEach(function(m){(m.addedNodes||[]).forEach(function(n){if(n.nodeType===1)window.__tl.push('+'+n.tagName+(n.getAttribute&&n.getAttribute('role')?'['+n.getAttribute('role')+']':'')+' @'+Math.round(performance.now()));});(m.removedNodes||[]).forEach(function(n){if(n.nodeType===1)window.__tl.push('-'+n.tagName+(n.getAttribute&&n.getAttribute('role')?'['+n.getAttribute('role')+']':'')+' @'+Math.round(performance.now()));});});}).observe(document.body,{childList:true,subtree:true});`,
+    expression: `(function(){
+      window.__ev = [];
+      window.__dlg = null;
+      function scan(){
+        var d = document.querySelector('[role=dialog]');
+        if (d && !window.__dlg) { window.__dlg = d; window.__ev.push('FOUND dialog @'+Math.round(performance.now())); }
+        if (!d && window.__dlg) {
+          var dlg = window.__dlg;
+          window.__ev.push('GONE from doc @'+Math.round(performance.now())+' connected='+dlg.isConnected+' parent='+(dlg.parentNode?dlg.parentNode.tagName+'.'+((dlg.parentNode.className&&typeof dlg.parentNode.className==='string')?dlg.parentNode.className.slice(0,40):''):'NULL'));
+          window.__dlg = null;
+        }
+      }
+      var iv = setInterval(scan, 8);
+      window.__stopScan = function(){ clearInterval(iv); };
+      return 'SCAN';
+    })()`,
     returnByValue: true,
   });
 
@@ -56,12 +57,17 @@ async function main() {
   await srpc('Input.dispatchMouseEvent', { type: 'mouseReleased', x: p.x, y: p.y, button: 'left', clickCount: 1 });
   await sleep(2500);
 
-  const tl = await srpc('Runtime.evaluate', { expression: 'JSON.stringify(window.__tl)', returnByValue: true });
-  console.log('TIMELINE', tl.result.value);
-  const st = await srpc('Runtime.evaluate', { expression: 'JSON.stringify({dlg: document.querySelectorAll("[role=dialog]").length})', returnByValue: true });
-  console.log('STATE', st.result.value);
-  console.log('===CONSOLE===');
-  logs.forEach((l) => console.log(l));
+  const ev = await srpc('Runtime.evaluate', { expression: 'JSON.stringify(window.__ev)', returnByValue: true });
+  console.log('EVENTS', ev.result.value);
+  const fin = await srpc('Runtime.evaluate', {
+    expression: `JSON.stringify({
+      dlgInDoc: document.querySelectorAll('[role=dialog]').length,
+      textHasShare: document.body.innerText.indexOf('推荐给朋友') >= 0,
+      navInnerLen: (function(){var n=document.querySelector('nav');return n? n.innerHTML.length : -1;})()
+    })`,
+    returnByValue: true,
+  });
+  console.log('FINAL', fin.result.value);
 
   srv.kill('SIGKILL');
   process.exit(0);
