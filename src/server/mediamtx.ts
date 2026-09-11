@@ -25,8 +25,8 @@ const PUBLIC_HOST = process.env.MEDIAMTX_PUBLIC_HOST || 'localhost';
 const HLS_VIA_PROXY = process.env.MEDIAMTX_HLS_VIA_PROXY !== 'false';
 
 /** 平台控制用户(仅用于服务端调用 REST API) */
-const MEDIAMTX_USER = process.env.MEDIAMTX_USER || 'live';
-const MEDIAMTX_PASS = process.env.MEDIAMTX_PASS || 'syq_live_2026';
+const MEDIAMTX_USER = process.env.MEDIAMTX_USER || 'admin';
+const MEDIAMTX_PASS = process.env.MEDIAMTX_PASS || 'admin';
 
 /** 供服务端调用 REST API 使用的 Basic Auth 头 */
 export const MEDIAMTX_AUTH =

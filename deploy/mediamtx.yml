@@ -17,12 +17,9 @@ webrtc:
   listenAddr: ":8889"
 
 # 控制 API（REST），v1.21+ 前缀 /v3
+# 不启用鉴权：API 只在内网给 web 容器调用（docker 内网隔离），不暴露公网。
 api:
   listenAddr: ":9997"
-  # 控制 API 鉴权：Basic Auth（live / syq_live_2026），与应用代码默认值一致
-  auth:
-    user: live
-    pass: syq_live_2026
 
 # 录制（可选）：开启后直播结束自动存 mp4 到 /recordings，供转待审媒体库
 record:

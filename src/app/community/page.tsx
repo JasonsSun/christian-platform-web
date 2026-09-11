@@ -147,11 +147,11 @@ export default function CommunityPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-3 gap-6 md:gap-8">
             {/* 左侧内容流 */}
-            <div className="lg:col-span-2 space-y-5">
+            <div className="lg:col-span-2 space-y-5 min-w-0">
               {/* 筛选栏 */}
               <div className="bg-white rounded-2xl p-4 border border-ink-100 shadow-soft space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
+                  <div className="flex flex-wrap gap-2 min-w-0">
                     {TYPE_TABS.map((t) => (
                       <button
                         key={t.id}
@@ -338,7 +338,7 @@ export default function CommunityPage() {
                     value={prayerBody}
                     onChange={(e) => setPrayerBody(e.target.value)}
                     placeholder="写下你的代祷事项…"
-                    className="input-styled py-2 text-sm"
+                    className="input-styled py-2 text-sm min-w-0 flex-1"
                     onKeyDown={(e) => e.key === 'Enter' && submitPrayer()}
                   />
                   <button onClick={submitPrayer} disabled={prayerAction.pending} className="btn-primary px-4 py-2 text-sm flex-shrink-0">

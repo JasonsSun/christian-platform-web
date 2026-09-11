@@ -46,8 +46,8 @@ services:
       MEDIAMTX_API: http://mediamtx:9997
       MEDIAMTX_PUBLIC_HOST: ${MEDIAMTX_PUBLIC_HOST:-${DOMAIN:-localhost}}
       MEDIAMTX_HLS_VIA_PROXY: "true"
-      MEDIAMTX_USER: ${MEDIAMTX_USER:-live}
-      MEDIAMTX_PASS: ${MEDIAMTX_PASS:-syq_live_2026}
+      MEDIAMTX_USER: ${MEDIAMTX_USER:-admin}
+      MEDIAMTX_PASS: ${MEDIAMTX_PASS:-admin}
       # NODE_ENV 由 server.js --prod 设置，无需在此覆盖
     expose:
       - "3000"             # 只给 nginx 用，不映射到宿主机
@@ -72,14 +72,14 @@ services:
     image: bluenviron/mediamtx:latest
     container_name: cp_mediamtx
     restart: unless-stopped
+    # 用镜像内置默认配置即可：RTMP 1935 / HLS 8888 / WebRTC 8889 / API 9997 与应用代码对齐。
+    # 不挂载自定义 yml，避免配置 schema 版本差异导致启动失败。
     ports:
       - "1935:1935"   # RTMP 推流
       - "8889:8889"   # WebRTC 播放
       - "9997:9997"   # 控制 API（仅内网给 web 用；映射到宿主机便于 curl 排障）
     expose:
       - "8888"        # HLS 只给 nginx 反代用，不暴露公网
-    volumes:
-      - ./deploy/mediamtx.yml:/mediamtx.yml:ro
 
 volumes:
   db_data:

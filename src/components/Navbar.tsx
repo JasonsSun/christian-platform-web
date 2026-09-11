@@ -221,7 +221,7 @@ export default function Navbar() {
           </button>
         </div>
 
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[32rem] pb-4' : 'max-h-0'}`}>
+        <div className={`md:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[80vh] overflow-y-auto pb-4' : 'max-h-0'}`}>
           <div className="glass rounded-2xl p-4 space-y-2 shadow-card">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
