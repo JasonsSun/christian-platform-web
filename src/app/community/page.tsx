@@ -289,7 +289,7 @@ export default function CommunityPage() {
                         <div className="ml-auto flex items-center gap-4">
                           <button
                             onClick={() => handleLike(item)}
-                            className={`flex items-center gap-1 transition-all ${
+                            className={`flex items-center gap-1 py-1.5 -my-1.5 transition-all ${
                               item.liked ? 'text-rose-500 scale-105' : 'text-ink-500 hover:text-rose-500'
                             }`}
                           >
@@ -298,13 +298,13 @@ export default function CommunityPage() {
                             </svg>
                             {item.likeCount}
                           </button>
-                          <Link href={`/contents/${item.id}`} className="flex items-center gap-1 py-1 -my-1 text-ink-500 hover:text-primary-600 transition-colors">
+                          <Link href={`/contents/${item.id}`} className="flex items-center gap-1 py-2 -my-2 text-ink-500 hover:text-primary-600 transition-colors">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8M8 14h6m-6 6h8a2 2 0 002-2V8l-4-4H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             {item.commentCount}
                           </Link>
-                          <span className="flex items-center gap-1 py-1 -my-1">
+                          <span className="flex items-center gap-1 py-2 -my-2">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -367,7 +367,7 @@ export default function CommunityPage() {
                           <p className="text-ink-700 text-sm mt-1 leading-relaxed">{p.body}</p>
                           <button
                             onClick={() => handleAmen(p)}
-                            className={`mt-2 flex items-center gap-1.5 text-sm font-medium transition-colors ${
+                            className={`mt-2 flex items-center gap-1.5 text-sm font-medium py-1.5 -my-1.5 transition-colors ${
                               p.amened ? 'text-gold-600' : 'text-ink-500 hover:text-gold-600'
                             }`}
                           >

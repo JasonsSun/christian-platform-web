@@ -42,3 +42,6 @@ Thumbs.db
 *.pma
 /_shots/
 /_aud2/
+
+# 无头浏览器用户数据目录（手机端审计用，体积大）
+.chrome-test/

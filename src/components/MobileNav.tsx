@@ -87,7 +87,7 @@ export default function MobileNav() {
               <div className={`transition-transform duration-200 ${isActive ? 'scale-110' : ''}`}>
                 {item.icon(isActive)}
               </div>
-              <span className={`mt-0.5 text-[10px] font-medium ${isActive ? 'text-primary-600' : ''}`}>
+              <span className={`mt-0.5 text-xs font-medium ${isActive ? 'text-primary-600' : ''}`}>
                 {item.label}
               </span>
               {isActive && (

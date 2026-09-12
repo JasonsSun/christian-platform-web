@@ -69,7 +69,7 @@ function SongCard({ s, onRequestVocal }: { s: SongItem; onRequestVocal?: (title:
                   onRequestVocal(s.title);
                 }}
                 title={VOCAL_WANTED_HINT}
-                className="hover:underline truncate"
+                className="hover:underline truncate py-1.5 -my-1.5"
               >
                 🎤 我来投稿
               </button>
@@ -87,7 +87,7 @@ function SongCard({ s, onRequestVocal }: { s: SongItem; onRequestVocal?: (title:
                   ? `管理员已核实是人声演唱（${listen.source}）`
                   : `去${listen.source}找这首的人声版`
               }
-              className="hover:underline truncate"
+              className="hover:underline truncate py-1.5 -my-1.5"
             >
               🎧 {listen.verified ? '在线听人声版' : '找人声版'}
             </button>

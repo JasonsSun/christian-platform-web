@@ -58,7 +58,7 @@ export default function Footer() {
                 <li key={item.href}>
                   <Link
                     href={item.href}
-                    className="text-ink-400 hover:text-white transition-colors flex items-center gap-2 group"
+                    className="text-ink-400 hover:text-white transition-colors flex items-center gap-2 group py-1.5"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-ink-600 group-hover:bg-primary-400 group-hover:scale-150 transition-all" />
                     {t(item.key)}
@@ -68,7 +68,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/donate/transparency"
-                  className="text-ink-400 hover:text-white transition-colors flex items-center gap-2 group"
+                  className="text-ink-400 hover:text-white transition-colors flex items-center gap-2 group py-1.5"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-ink-600 group-hover:bg-primary-400 group-hover:scale-150 transition-all" />
                   {t('footer.features.transparency')}
@@ -93,7 +93,7 @@ export default function Footer() {
                 <li key={item.tkey}>
                   <Link
                     href={item.href}
-                    className="text-ink-400 hover:text-white transition-colors flex items-center gap-2 group"
+                    className="text-ink-400 hover:text-white transition-colors flex items-center gap-2 group py-1.5"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-ink-600 group-hover:bg-primary-400 group-hover:scale-150 transition-all" />
                     {t(item.tkey)}
@@ -141,9 +141,9 @@ export default function Footer() {
             {t('footer.copyright')}
           </p>
           <div className="flex gap-6 text-sm">
-            <Link href="#" className="text-ink-500 hover:text-white transition-colors">{t('footer.privacy')}</Link>
-            <Link href="#" className="text-ink-500 hover:text-white transition-colors">{t('footer.terms')}</Link>
-            <Link href="#" className="text-ink-500 hover:text-white transition-colors">{t('footer.help')}</Link>
+            <Link href="#" className="text-ink-500 hover:text-white transition-colors py-2">{t('footer.privacy')}</Link>
+            <Link href="#" className="text-ink-500 hover:text-white transition-colors py-2">{t('footer.terms')}</Link>
+            <Link href="#" className="text-ink-500 hover:text-white transition-colors py-2">{t('footer.help')}</Link>
           </div>
         </div>
       </div>

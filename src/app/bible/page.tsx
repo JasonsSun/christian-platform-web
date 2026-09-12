@@ -457,9 +457,9 @@ export default function BibleHome() {
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-ink-400">{b.chapters} 章</span>
                           {b.readable ? (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-medium">可读</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-medium">可读</span>
                           ) : (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-ink-100 text-ink-400">暂无</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-ink-100 text-ink-400">暂无</span>
                           )}
                         </div>
                       </Link>
