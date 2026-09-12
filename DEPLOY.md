@@ -70,7 +70,18 @@ curl -I http://127.0.0.1          # 经 nginx 返回 200/307
 2. OBS 填服务器 + 串流密钥 → 开始推流
 3. 直播页自动检测在线状态（`/api/v1/live` 轮询 MediaMTX path 状态），观众即可播放
 
-### 7.3 配置方式（重要）
+### 7.3 播放地址必须带 `?cookieCheck=1`（踩过的坑）
+MediaMTX（v1.21）首次请求 `index.m3u8` 会先返回 **302**，且 `Location` 是**相对路径**
+（`/live/<key>/index.m3u8?cookieCheck=1`），用于探测浏览器是否支持 Partitioned Cookie。
+nginx **不会改写相对 Location**，浏览器于是跳到 `https://<域名>/live/...` —— 那是平台直播页路由，
+返回 404，hls.js 只能永远停在「等待主播开始推流…」。
+
+处理（两层都做了）：
+- 应用侧 `hlsPlayUrl()` 直接拼 `.../index.m3u8?cookieCheck=1`，跳过探测重定向；
+  MediaMTX 随后改用查询串下发会话密钥（`?_session=xxx`），鉴权一样通。
+- nginx `/hls/` 段加 `proxy_redirect / /hls/;`，兜住手工打开裸地址的场景。
+
+### 7.4 配置方式（重要）
 配置文件 `deploy/mediamtx.yml` 是**基于 MediaMTX 官方默认配置生成**的，只改了两处：
 
 | 改动 | 原因 |
