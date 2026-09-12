@@ -57,7 +57,10 @@ services:
     container_name: cp_nginx
     restart: unless-stopped
     depends_on:
+      # nginx 用 proxy_pass http://mediamtx:8888，启动时必须能解析到该主机，
+      # 否则会报 "host not found in upstream" 而启动失败 —— 故显式依赖。
       - web
+      - mediamtx
     ports:
       - "80:80"
       - "443:443"
