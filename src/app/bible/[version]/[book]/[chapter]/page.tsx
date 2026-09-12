@@ -110,11 +110,28 @@ export default function ReadChapter() {
     try { localStorage.setItem('bible:announceVerse', next ? '1' : '0'); } catch { /* ignore */ }
   };
 
+  // 「读完自动下一章」：朗读自然读完时触发，用 ref 取最新值避免回调闭包过期
+  const autoNextRef = useRef(false);
+  const nextChapterRef = useRef<number | null>(null);
+
   // 语音朗读：逐节朗读。播报文案随开关变化（换章时 leadText 自动变为新章节名）
   const speech = useSpeech(speechItems, {
     lang: 'zh-CN',
     leadText: announceChapter && data ? `${data.book.name} 第 ${data.chapter} 章` : null,
     announceKey: announceVerse,
+    onEnd: () => {
+      if (!autoNextRef.current) return;
+      const n = nextChapterRef.current;
+      if (n) {
+        setToast(`本章读完，自动进入第 ${n} 章`);
+        setTimeout(() => setToast(null), 2000);
+        router.push(`/bible/${version}/${book}/${n}?autoread=1`);
+      } else {
+        setAutoNextChapter(false);
+        setToast('已读到本卷最后一章');
+        setTimeout(() => setToast(null), 2000);
+      }
+    },
   });
 
   /** 跳到指定节：滚动定位 + 高亮 + 写入 URL（不触发导航，便于分享到某节） */
@@ -168,27 +185,9 @@ export default function ReadChapter() {
   const prev = idx > 0 ? chapters[idx - 1] : null;
   const next = idx >= 0 && idx < chapters.length - 1 ? chapters[idx + 1] : null;
 
-  // 朗读读完最后一节 → 自动进入下一章并继续朗读
-  const lastKeyRef = useRef<number | null>(null);
-  useEffect(() => {
-    if (speech.speakingKey != null) lastKeyRef.current = speech.speakingKey;
-  }, [speech.speakingKey]);
-  useEffect(() => {
-    if (!autoNextChapter) return;
-    if (speech.state !== 'idle' || speech.speakingKey != null) return;
-    const last = lastKeyRef.current;
-    if (last == null) return;
-    const maxVerse = data?.verses?.length ? data.verses[data.verses.length - 1].verse : 0;
-    if (last !== maxVerse) return;
-    lastKeyRef.current = null;
-    if (next) {
-      router.push(`/bible/${version}/${book}/${next}?autoread=1`);
-    } else {
-      setAutoNextChapter(false);
-      showToast('已读到本卷最后一章');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [speech.state, speech.speakingKey]);
+  // 把最新状态同步给 onEnd 回调（朗读自然读完时决定是否跳下一章）
+  useEffect(() => { autoNextRef.current = autoNextChapter; }, [autoNextChapter]);
+  useEffect(() => { nextChapterRef.current = next; }, [next]);
 
   // 记住阅读位置（供「继续阅读」使用，未登录也能用）
   useEffect(() => {
@@ -255,12 +254,15 @@ export default function ReadChapter() {
   }, [speech.speakingKey, speech.wordSync]);
 
   // 由上一章自动连播跳转而来时，内容就绪后自动开读
-  const autoReadDone = useRef(false);
+  // 由上一章自动连播跳转而来时，内容就绪后自动开读。
+  // 注意：换章是同一路由段、组件实例复用，去重必须按「章号」记，不能只记 boolean
+  // （否则只能自动连播一章，第二章起就停住）。
+  const autoReadDone = useRef<number | null>(null);
   useEffect(() => {
     if (searchParams.get('autoread') !== '1') return;
     if (!data?.hasContent || !speech.supported) return;
-    if (autoReadDone.current) return;
-    autoReadDone.current = true;
+    if (autoReadDone.current === chapter) return;
+    autoReadDone.current = chapter;
     setAutoNextChapter(true);
     const t = setTimeout(() => speech.start(), 400);
     return () => clearTimeout(t);

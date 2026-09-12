@@ -28,6 +28,12 @@ export interface SpeechOptions {
   announceKey?: boolean;
   /** 序号播报文案,默认「第 N 节」 */
   formatKey?: (key: number) => string;
+  /**
+   * 整段自然读完(而非被 stop/cancel/换内容打断)时触发一次。
+   * 页面据此实现「读完自动下一章」——不要靠 speakingKey 是否到达最后一节判断,
+   * 时间估算可能落后于真实朗读,最后一节的 key 未必被记录到。
+   */
+  onEnd?: () => void;
 }
 
 /**
@@ -76,9 +82,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   const leadTextRef = useRef<string | null>(opts.leadText ?? null);
   const announceKeyRef = useRef(!!opts.announceKey);
   const formatKeyRef = useRef(formatKey);
+  const onEndRef = useRef<(() => void) | undefined>(opts.onEnd);
   useEffect(() => { leadTextRef.current = opts.leadText ?? null; }, [opts.leadText]);
   useEffect(() => { announceKeyRef.current = !!opts.announceKey; }, [opts.announceKey]);
   useEffect(() => { formatKeyRef.current = formatKey; }, [formatKey]);
+  useEffect(() => { onEndRef.current = opts.onEnd; }, [opts.onEnd]);
 
   useEffect(() => { itemsRef.current = items; }, [items]);
   useEffect(() => { rateRef.current = rate; }, [rate]);
@@ -302,6 +310,8 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         speakingKeyRef.current = null;
         setState('idle');
         setSpeakingKey(null);
+        // 自然读完(未停止、未被换章打断)→ 通知页面,用于「读完自动下一章」
+        if (alive()) onEndRef.current?.();
       };
       u.onerror = () => {
         stopTick();
