@@ -62,7 +62,6 @@ export default function ReadChapter() {
     () => (data?.verses ?? []).map((v) => ({ key: v.verse, text: stripNotes(v.text) })),
     [data?.verses]
   );
-  const speech = useSpeech(speechItems, 'zh-CN');
   const articleRef = useRef<HTMLDivElement>(null);
 
   // 跳节阅读：选中的节会滚动定位 + 高亮，并作为朗读起点
@@ -87,6 +86,36 @@ export default function ReadChapter() {
     setSkipNotes(next);
     try { localStorage.setItem('bible:skipNotes', next ? '1' : '0'); } catch { /* ignore */ }
   };
+
+  // 朗读播报：开头念「书名 第 N 章」；每节前念「第 N 节」。
+  // 两者都可关，偏好记在 localStorage。
+  const [announceChapter, setAnnounceChapter] = useState(true);
+  const [announceVerse, setAnnounceVerse] = useState(true);
+  useEffect(() => {
+    try {
+      const a = localStorage.getItem('bible:announceChapter');
+      if (a === '0' || a === '1') setAnnounceChapter(a === '1');
+      const b = localStorage.getItem('bible:announceVerse');
+      if (b === '0' || b === '1') setAnnounceVerse(b === '1');
+    } catch { /* ignore */ }
+  }, []);
+  const toggleAnnounceChapter = () => {
+    const next = !announceChapter;
+    setAnnounceChapter(next);
+    try { localStorage.setItem('bible:announceChapter', next ? '1' : '0'); } catch { /* ignore */ }
+  };
+  const toggleAnnounceVerse = () => {
+    const next = !announceVerse;
+    setAnnounceVerse(next);
+    try { localStorage.setItem('bible:announceVerse', next ? '1' : '0'); } catch { /* ignore */ }
+  };
+
+  // 语音朗读：逐节朗读。播报文案随开关变化（换章时 leadText 自动变为新章节名）
+  const speech = useSpeech(speechItems, {
+    lang: 'zh-CN',
+    leadText: announceChapter && data ? `${data.book.name} 第 ${data.chapter} 章` : null,
+    announceKey: announceVerse,
+  });
 
   /** 跳到指定节：滚动定位 + 高亮 + 写入 URL（不触发导航，便于分享到某节） */
   const scrollToVerse = (n: number) => {
@@ -192,7 +221,8 @@ export default function ReadChapter() {
         .querySelectorAll('.verse-char.read, .verse-char.active')
         .forEach((e) => e.classList.remove('read', 'active'));
     };
-    if (speech.speakingKey == null) {
+    // 语速不是 1.0x 时只保留整节(整行)高亮,不做逐字着色(倍速下逐字位置会漂移)
+    if (speech.speakingKey == null || !speech.wordSync) {
       clearAll();
       return;
     }
@@ -222,7 +252,7 @@ export default function ReadChapter() {
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [speech.speakingKey]);
+  }, [speech.speakingKey, speech.wordSync]);
 
   // 由上一章自动连播跳转而来时，内容就绪后自动开读
   const autoReadDone = useRef(false);
@@ -489,16 +519,33 @@ export default function ReadChapter() {
                   跳过括号注释
                 </label>
               )}
-              {speech.state !== 'idle' && (
+              {/* 朗读设置：是否播报章节 / 节号、语速、自动下一章 */}
+              {speech.supported && (
                 <>
-                  <button
-                    onClick={speech.stop}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border bg-white border-ink-200 text-ink-500 hover:text-rose-600 hover:border-rose-300 transition-colors"
-                    title="停止朗读"
+                  <label
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
+                    title={`朗读前先播报「${data?.book.name ?? ''} 第 ${chapter} 章」`}
                   >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6V6z" /></svg>
-                    停止
-                  </button>
+                    <input
+                      type="checkbox"
+                      checked={announceChapter}
+                      onChange={toggleAnnounceChapter}
+                      className="accent-primary-600"
+                    />
+                    念书名章
+                  </label>
+                  <label
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
+                    title="每节正文前播报「第 3 节」"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={announceVerse}
+                      onChange={toggleAnnounceVerse}
+                      className="accent-primary-600"
+                    />
+                    念节号
+                  </label>
                   <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500">
                     语速
                     <input
@@ -511,6 +558,12 @@ export default function ReadChapter() {
                       className="w-20 accent-primary-600"
                     />
                     <span className="w-8 tabular-nums">{speech.rate.toFixed(1)}x</span>
+                    <span
+                      className="text-[11px] text-ink-400"
+                      title="1.0x 时逐字高亮（读到哪个字亮哪个字）；其他倍速只高亮整节"
+                    >
+                      {speech.wordSync ? '逐字高亮' : '整节高亮'}
+                    </span>
                   </label>
                   <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer">
                     <input
@@ -522,6 +575,16 @@ export default function ReadChapter() {
                     读完自动下一章
                   </label>
                 </>
+              )}
+              {speech.state !== 'idle' && (
+                <button
+                  onClick={speech.stop}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border bg-white border-ink-200 text-ink-500 hover:text-rose-600 hover:border-rose-300 transition-colors"
+                  title="停止朗读"
+                >
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6V6z" /></svg>
+                  停止
+                </button>
               )}
               <button
                 onClick={markRead}
@@ -558,7 +621,9 @@ export default function ReadChapter() {
                     id={`v${v.verse}`}
                     className={`mb-5 group relative pl-10 pr-12 py-2 rounded-xl transition-all duration-200 scroll-mt-24 ${
                       speaking
-                        ? 'bg-amber-50/80 border-l-2 border-amber-400 shadow-sm'
+                        ? speech.wordSync
+                          ? 'bg-amber-50/80 border-l-2 border-amber-400 shadow-sm'
+                          : 'bg-amber-100/90 border-l-4 border-amber-500 shadow-sm'
                         : targeted
                           ? 'bg-primary-50/70 border-l-2 border-primary-400'
                           : 'hover:bg-ink-50/50'
@@ -580,7 +645,7 @@ export default function ReadChapter() {
                     </button>
                     
                     {/* 经文内容 */}
-                    <span className={`block leading-loose ${speaking ? 'text-amber-900' : ''}`}>
+                    <span className={`block leading-loose ${speaking ? 'text-amber-900' : ''} ${speaking && !speech.wordSync ? 'font-medium' : ''}`}>
                       {toks.map((t, ti) => {
                         if (t.note) {
                           if (skipNotes) return null;
