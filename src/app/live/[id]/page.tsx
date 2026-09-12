@@ -296,7 +296,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
         : room.reviewStatus === 'pending'
           ? { text: '待审核', cls: 'bg-amber-400 text-white' }
           : room.live
-            ? { text: '● LIVE', cls: 'bg-rose-500 text-white' }
+            ? { text: '● 直播中', cls: 'bg-rose-500 text-white' }
             : room.status === 'ended'
               ? { text: '已结束', cls: 'bg-ink-300 text-white' }
               : { text: '预告', cls: 'bg-ink-700/80 text-white/90' };

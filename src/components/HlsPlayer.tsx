@@ -14,7 +14,7 @@ interface Props {
 const LIVE_WINDOW_SEC = 8;
 
 /** 网页 HLS 播放器:Chrome/Firefox 用 hls.js,Safari 走原生 HLS。
- *  主播未推流时显示「等待直播信号」。
+ *  主播未开播时显示「等待主播开播…」。
  *
  *  健壮性说明:MediaMTX 在长时间无观众后,首个 HLS 连接可能因切片尚未就绪
  *  触发一次 DEMUXER_ERROR_COULD_NOT_PARSE(实测:第二次连接即正常)。
@@ -249,7 +249,7 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500" />
             </span>
-            LIVE
+            直播中
           </span>
           {behindSec > 0 && (
             <button
@@ -285,7 +285,7 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-rose-500" />
               </span>
               <p className="text-white/90 text-sm">
-                {state === 'loading' ? '正在连接直播信号…' : '等待主播开始推流…'}
+                {state === 'loading' ? '正在连接直播…' : '等待主播开播…'}
               </p>
               {live && <p className="text-white/50 text-xs">直播即将开始,请稍候</p>}
             </>

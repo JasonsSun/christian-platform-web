@@ -80,7 +80,7 @@ export default function AdminLivePage() {
     if (r.cancelled) return { text: '已取消', cls: 'bg-ink-400 text-white' };
     if (r.expired) return { text: '已过期', cls: 'bg-ink-500 text-white' };
     if (r.reviewStatus === 'rejected') return { text: '已驳回', cls: 'bg-rose-500 text-white' };
-    if (r.status === 'live') return { text: '● LIVE', cls: 'bg-rose-500 text-white' };
+    if (r.status === 'live') return { text: '● 直播中', cls: 'bg-rose-500 text-white' };
     if (r.status === 'ended') return { text: '已结束', cls: 'bg-ink-300 text-white' };
     if (r.reviewStatus === 'pending') return { text: '待审核', cls: 'bg-amber-400 text-white' };
     return { text: '预告', cls: 'bg-ink-700/80 text-white/90' };
