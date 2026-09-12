@@ -329,3 +329,97 @@ article.font-serif {
 @media (min-width: 768px) {
   .read-progress { top: 5rem; }
 }
+
+/* ===================================================================
+   全局暗色 / 护眼主题
+   作用于 <html data-theme>，覆盖全站使用的语义色工具类
+   （bg-white / text-ink-* / border-* / divide-* 等），
+   与读经页专属 .read-page[data-read-theme] 互不冲突：
+   读经页元素优先匹配特异性更高的 .read-page 规则。
+   =================================================================== */
+
+/* —— 基础画布 —— */
+[data-theme="dark"] body { background-color: #0f1116; color: #e6e8ef; }
+[data-theme="sepia"] body { background-color: #f3ead6; color: #4a3f2f; }
+
+/* —— 玻璃态在暗色下转暗 —— */
+[data-theme="dark"] .glass {
+  background: rgba(22, 26, 35, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+[data-theme="sepia"] .glass {
+  background: rgba(255, 250, 240, 0.80);
+  border: 1px solid rgba(184, 134, 11, 0.18);
+}
+
+/* —— 卡片 / 表面 —— */
+[data-theme="dark"] .bg-white { background-color: #171b22 !important; border-color: #2a2f3a !important; }
+[data-theme="dark"] .bg-ink-50 { background-color: #161a23 !important; }
+[data-theme="dark"] .bg-ink-100 { background-color: #1c2029 !important; }
+[data-theme="dark"] .bg-primary-50 { background-color: rgba(99, 134, 255, 0.08) !important; }
+[data-theme="dark"] .bg-primary-100 { background-color: rgba(99, 134, 255, 0.14) !important; }
+[data-theme="dark"] .bg-stone-50 { background-color: #0f172a !important; }
+[data-theme="dark"] .bg-stone-100 { background-color: #1e293b !important; }
+[data-theme="dark"] .bg-slate-50 { background-color: #0f172a !important; }
+[data-theme="dark"] .bg-slate-100 { background-color: #1e293b !important; }
+[data-theme="dark"] .bg-gray-50 { background-color: #1a1f2b !important; }
+[data-theme="dark"] .bg-gray-100 { background-color: #1e293b !important; }
+[data-theme="dark"] .bg-amber-50 { background-color: #2a2410 !important; }
+
+/* —— 文字 —— */
+[data-theme="dark"] .text-ink-900 { color: #f1efe9 !important; }
+[data-theme="dark"] .text-ink-800 { color: #dcdbd4 !important; }
+[data-theme="dark"] .text-ink-700 { color: #c9cdd6 !important; }
+[data-theme="dark"] .text-ink-600 { color: #aeb4c2 !important; }
+[data-theme="dark"] .text-ink-500 { color: #9aa0ad !important; }
+[data-theme="dark"] .text-ink-400 { color: #8b91a0 !important; }
+[data-theme="dark"] .text-ink-300 { color: #6b7280 !important; }
+[data-theme="dark"] .text-primary-600 { color: #aab8ff !important; }
+[data-theme="dark"] .text-primary-700 { color: #b9c4ff !important; }
+[data-theme="dark"] .text-stone-800 { color: #f1f5f9 !important; }
+[data-theme="dark"] .text-stone-500 { color: #94a3b8 !important; }
+[data-theme="dark"] .text-slate-600 { color: #cbd5e1 !important; }
+[data-theme="dark"] .text-slate-500 { color: #94a3b8 !important; }
+[data-theme="dark"] .text-gray-600 { color: #cbd5e1 !important; }
+[data-theme="dark"] .text-gray-500 { color: #94a3b8 !important; }
+[data-theme="dark"] .text-gray-400 { color: #9aa0ad !important; }
+
+/* —— 边框 / 分割线 —— */
+[data-theme="dark"] .border-ink-200 { border-color: #2a2f3a !important; }
+[data-theme="dark"] .border-ink-100 { border-color: #222732 !important; }
+[data-theme="dark"] .border-primary-100 { border-color: rgba(99, 134, 255, 0.30) !important; }
+[data-theme="dark"] .border-primary-400 { border-color: rgba(99, 134, 255, 0.45) !important; }
+[data-theme="dark"] .border-stone-200 { border-color: #334155 !important; }
+[data-theme="dark"] .border-slate-200 { border-color: #334155 !important; }
+[data-theme="dark"] .border-gray-200 { border-color: #334155 !important; }
+[data-theme="dark"] .divide-ink-200 > * + * { border-color: #2a2f3a !important; }
+[data-theme="dark"] .divide-ink-100 > * + * { border-color: #222732 !important; }
+[data-theme="dark"] .divide-stone-200 > * + * { border-color: #334155 !important; }
+
+/* —— 输入框 —— */
+[data-theme="dark"] .input-styled { background-color: #1c2029 !important; color: #e6e8ef !important; border-color: #2a2f3a !important; }
+[data-theme="dark"] .input-styled::placeholder { color: #8b91a0 !important; }
+
+/* —— 滚动条 —— */
+[data-theme="dark"] ::-webkit-scrollbar-track { background: #161a23; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #3d52d9 0%, #2a3a9e 100%); }
+
+/* —— 护眼（羊皮纸）语义色 —— */
+[data-theme="sepia"] .bg-white { background-color: #fbf4e6 !important; border-color: #e6d8bd !important; }
+[data-theme="sepia"] .bg-ink-50 { background-color: #f5ecd8 !important; }
+[data-theme="sepia"] .bg-ink-100 { background-color: #ece1c8 !important; }
+[data-theme="sepia"] .bg-primary-50 { background-color: rgba(184, 134, 11, 0.10) !important; }
+[data-theme="sepia"] .bg-primary-100 { background-color: rgba(184, 134, 11, 0.16) !important; }
+[data-theme="sepia"] .text-ink-900 { color: #5b4a32 !important; }
+[data-theme="sepia"] .text-ink-800 { color: #4a3f2f !important; }
+[data-theme="sepia"] .text-ink-700 { color: #6b5a3f !important; }
+[data-theme="sepia"] .text-ink-600 { color: #85744f !important; }
+[data-theme="sepia"] .text-ink-500 { color: #9b8a6c !important; }
+[data-theme="sepia"] .text-ink-400 { color: #a4936f !important; }
+[data-theme="sepia"] .text-primary-600 { color: #9a7b3f !important; }
+[data-theme="sepia"] .text-primary-700 { color: #86692f !important; }
+[data-theme="sepia"] .border-ink-200 { border-color: #e6d8bd !important; }
+[data-theme="sepia"] .border-ink-100 { border-color: #e0d1b3 !important; }
+[data-theme="sepia"] .border-primary-100 { border-color: rgba(184, 134, 11, 0.30) !important; }
+[data-theme="sepia"] .divide-ink-200 > * + * { border-color: #e6d8bd !important; }
+[data-theme="sepia"] .input-styled { background-color: #fbf4e6 !important; color: #4a3f2f !important; border-color: #e6d8bd !important; }

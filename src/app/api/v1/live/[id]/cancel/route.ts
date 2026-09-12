@@ -17,15 +17,16 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const room = await getRoom(id);
   if (!room) throw notFound('直播间不存在');
 
-  const isStaff = user.role === 'admin' || user.role === 'moderator';
+  // 取消/强制关闭权限:仅创建人本人或超管(moderator 仅能看开播指南,不参与管理)
+  const isAdmin = user.role === 'admin';
   const isOwner = user.id === room.owner_id;
-  if (!isStaff && !isOwner) throw new HttpError(403, 'FORBIDDEN', '只有创建人本人或管理员可以取消直播间');
+  if (!isAdmin && !isOwner) throw new HttpError(403, 'FORBIDDEN', '只有创建人本人或管理员可以取消直播间');
 
   const b = await readJson<{ reason?: string }>(req);
   const reason = (b.reason || '').trim();
 
   // 直播中:创建人无权强制取消,只有管理员可以(结束 + 标记取消)
-  if (room.status === 'live' && !isStaff) {
+  if (room.status === 'live' && !isAdmin) {
     throw new HttpError(403, 'FORBIDDEN', '直播正在进行,只有管理员可以强制关闭');
   }
 
@@ -42,13 +43,10 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
     }
     await audit(user.id, 'LIVE_CANCEL', 'live', room.id,
       `取消直播间:${room.title}${reason ? `(${reason})` : ''}${room.status === 'live' ? '[强制]' : ''}`, clientIp(req));
-    return ok(publicRoomView(updated || room, isStaffOrOwner(user, room)));
+    // 推流字段仅对超管/房主可见
+    return ok(publicRoomView(updated || room, isAdmin || isOwner));
   } catch (e) {
     if (e instanceof LiveConflictError) throw new HttpError(409, 'LIVE_BLOCKED', e.message);
     throw e;
   }
 });
-
-function isStaffOrOwner(user: any, room: any) {
-  return user.role === 'admin' || user.role === 'moderator' || user.id === room.owner_id;
-}

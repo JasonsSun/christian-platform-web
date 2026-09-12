@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useApi } from '@/lib/useApi';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import { useTheme } from '@/lib/theme';
 import LocaleSwitcher from '@/components/LocaleSwitcher';
 import ShareModal from '@/components/ShareModal';
 
@@ -31,6 +32,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const { theme, cycle } = useTheme();
   const { t } = useI18n();
 
   const { data: notif } = useApi<{ unread: number }>(user ? '/notifications?pageSize=1' : null, [user?.id]);
@@ -56,6 +58,15 @@ export default function Navbar() {
   }, []);
 
   const isStaff = user?.role === 'admin' || user?.role === 'moderator';
+
+  const themeIcon = theme === 'dark' ? (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>
+  ) : theme === 'sepia' ? (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+  ) : (
+    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+  );
+  const themeLabel = theme === 'dark' ? '深色模式' : theme === 'sepia' ? '护眼模式' : '浅色模式';
 
   return (
     <>
@@ -112,6 +123,17 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-2">
             <LocaleSwitcher tone="light" />
+            <button
+              type="button"
+              onClick={cycle}
+              title={themeLabel}
+              className={`p-2 rounded-lg transition-colors ${
+                isScrolled ? 'text-ink-600 hover:text-primary-600 hover:bg-primary-50' : 'text-white/85 hover:text-white hover:bg-white/10'
+              }`}
+              aria-label="切换主题"
+            >
+              {themeIcon}
+            </button>
             {isStaff && (
               <Link href="/admin" className={`px-3 py-2 rounded-lg text-sm font-medium ${
                 isScrolled ? 'text-ink-600 hover:text-primary-600' : 'text-white/85 hover:text-white'
@@ -233,6 +255,14 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            <button
+              type="button"
+              onClick={cycle}
+              className="flex items-center justify-between w-full px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100"
+            >
+              <span>{theme === 'dark' ? '🌙 深色模式' : theme === 'sepia' ? '📜 护眼模式' : '☀ 浅色模式'}</span>
+              <span className="text-xs text-ink-400">点击切换</span>
+            </button>
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setShareOpen(true); setIsMobileMenuOpen(false); }}

@@ -14,14 +14,15 @@ export const GET = withApi(async (req: NextRequest, ctx: any) => {
   if (!room) throw notFound('直播间不存在');
 
   const user = await requireUser(req).catch(() => null);
-  const isStaffOrOwner = !!user && (user.role === 'admin' || user.role === 'moderator' || user.id === room.owner_id);
+  // 主播本人 + 超管可见推流信息;审核员(moderator)不含在内(仅能看开播指南)
+  const canSeeStream = !!user && (user.role === 'admin' || user.id === room.owner_id);
 
   const live = room.status === 'live' ? await isPathLive(room.stream_key) : false;
   const vc = room.status === 'live' ? await countViewers(room.id) : 0;
   const messages = await listMessages(room.id);
   const owner = await findUserById(room.owner_id).catch(() => null);
 
-  return ok(publicRoomView(room, isStaffOrOwner, {
+  return ok(publicRoomView(room, canSeeStream, {
     hlsUrl: hlsPlayUrl(room.stream_key),
     rtmpUrl: rtmpPushUrl(room.stream_key),
     viewerCount: vc,

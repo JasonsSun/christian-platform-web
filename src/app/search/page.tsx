@@ -7,6 +7,7 @@ import { useApi } from '@/lib/useApi';
 import { qs } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import type { ContentItem, SongItem, ActivityItem, GroupItem } from '@/lib/types';
+import { SearchSectionSkeleton } from '@/components/Skeleton';
 
 type SearchUser = { id: string; username: string; displayName: string; avatarColor: string; city: string; church: string };
 type VerseHit = { bookId: string; bookName: string; chapter: number; verse: number; text: string };
@@ -199,10 +200,11 @@ function SearchInner() {
       {q && error && <p className="text-rose-600 text-sm mb-6">搜索失败：{error}</p>}
 
       {q && loading && (
-        <div className="space-y-6 animate-pulse">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-32 bg-ink-100 rounded-2xl" />
-          ))}
+        <div className="space-y-10">
+          <SearchSectionSkeleton rows={2} />
+          <SearchSectionSkeleton rows={2} />
+          <SearchSectionSkeleton rows={2} />
+          <SearchSectionSkeleton rows={3} />
         </div>
       )}
 

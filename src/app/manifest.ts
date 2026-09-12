@@ -15,5 +15,8 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: 'zh-CN',
     orientation: 'portrait',
     categories: ['social', 'lifestyle', 'books'],
+    icons: [
+      { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+    ],
   };
 }

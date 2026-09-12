@@ -11,6 +11,7 @@ import RecentPlays from '@/components/RecentPlays';
 import SubmitSongModal from '@/components/SubmitSongModal';
 import { IconMusicNote, IconPlay, IconPause, IconSearch, IconPlus, IconMicrophone, IconEye, IconStar, IconSparkles, IconUpload } from '@/components/icons';
 import type { SongItem } from '@/lib/types';
+import { SongCardSkeleton } from '@/components/Skeleton';
 
 type SongsResp = {
   items: SongItem[];
@@ -305,7 +306,7 @@ export default function SongsPage() {
         {isList && loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="h-24 bg-ink-100 rounded-2xl animate-pulse" />
+              <SongCardSkeleton key={i} />
             ))}
           </div>
         ) : isList && data && data.items.length === 0 ? (
@@ -364,7 +365,7 @@ export default function SongsPage() {
             {favLoading && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-24 bg-ink-100 rounded-2xl animate-pulse" />
+                  <SongCardSkeleton key={i} />
                 ))}
               </div>
             )}

@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { useSpeech, type SpeechItem } from '@/lib/useSpeech';
 import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
 import ReadingAngel from '@/components/ReadingAngel';
+import { useTheme } from '@/lib/theme';
 
 type VerseItem = { verse: number; text: string };
 type ChapterResp = {
@@ -60,7 +61,15 @@ export default function ReadChapter() {
   const [lineHeight, setLineHeight] = useState<LineHeight>('normal');
   const [serifFont, setSerifFont] = useState(true);
   const [readWidth, setReadWidth] = useState<ReadWidth>('medium');
-  const [readTheme, setReadTheme] = useState<ReadTheme>('light');
+  const { theme: globalTheme } = useTheme();
+  // 读经页主题默认跟随全站主题；用户若曾在读经页单独选过（bible:theme），以该选择为准
+  const [readTheme, setReadTheme] = useState<ReadTheme>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('bible:theme');
+      if (saved === 'light' || saved === 'dark' || saved === 'sepia') return saved as ReadTheme;
+    }
+    return (globalTheme as ReadTheme) || 'light';
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -669,7 +678,7 @@ export default function ReadChapter() {
               </button>
 
               {/* 语音朗读 */}
-              {speech.supported && (
+              {speech.supported ? (
                 <button
                   onClick={() => {
                     if (speech.state === 'playing') speech.pause();
@@ -696,6 +705,13 @@ export default function ReadChapter() {
                         ? `从第 ${startVerse} 节朗读`
                         : '朗读本章'}
                 </button>
+              ) : (
+                <span
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-ink-100 border border-ink-200 text-ink-400"
+                  title="当前浏览器未提供语音合成接口,建议用 Chrome 打开,或把本页添加到主屏幕后用"
+                >
+                  🔇 当前浏览器不支持语音朗读
+                </span>
               )}
 
               {/* 轻提示：点击任意一节即可从那里开始朗读 */}
@@ -720,7 +736,7 @@ export default function ReadChapter() {
                 </label>
               )}
               {/* 朗读设置：是否播报章节 / 节号、语速、自动下一章 */}
-              {speech.supported && (
+              {speech.supported ? (
                 <>
                   <label
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
@@ -775,6 +791,10 @@ export default function ReadChapter() {
                     读完自动下一章
                   </label>
                 </>
+              ) : (
+                <span className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-400">
+                  语音朗读需在 Chrome 或 Safari 中打开本页
+                </span>
               )}
               {speech.state !== 'idle' && (
                 <button

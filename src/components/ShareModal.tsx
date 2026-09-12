@@ -113,7 +113,7 @@ export default function ShareModal({ open, onClose, url, title, text }: Props) {
           <div className="bg-white rounded-2xl p-3 shadow-soft border border-ink-100">
             {qr ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={qr} alt="分享二维码" className="w-48 h-48" width={192} height={192} />
+              <img loading="lazy" src={qr} alt="分享二维码" className="w-48 h-48" width={192} height={192} />
             ) : (
               <div className="w-48 h-48 flex items-center justify-center text-ink-300 text-sm">生成中…</div>
             )}

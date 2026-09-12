@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { Loading, Empty, ErrorBox } from '@/components/ui';
+import { FeedCardSkeleton } from '@/components/Skeleton';
 
 export default function FeedPage() {
   const { data, loading, error, reload } = useApi<{ items: any[] }>('/feed', []);
@@ -13,7 +14,13 @@ export default function FeedPage() {
       <h1 className="font-display text-2xl font-bold text-ink-900 mb-1">关注动态</h1>
       <p className="text-sm text-ink-500 mb-6">你关注的弟兄姐妹发布的内容与代祷，按时间合并呈现。</p>
 
-      {loading ? <Loading /> : null}
+      {loading ? (
+        <div className="space-y-4 mt-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <FeedCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : null}
       {error ? <ErrorBox message={error} onRetry={reload} /> : null}
       {!loading && !items.length ? (
         <div className="text-center py-16">

@@ -40,5 +40,7 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
       `/live/${room.id}`);
   }
 
-  return ok(publicRoomView(updated || room, true, { hlsUrl: hlsPlayUrl(room.stream_key), rtmpUrl: rtmpPushUrl(room.stream_key) }), 201);
+  // 审核员(moderator)仅参与审核,按权限模型不返回推流信息;超管/房主可见
+  const canSeeStream = user.role === 'admin' || user.id === room.owner_id;
+  return ok(publicRoomView(updated || room, canSeeStream, { hlsUrl: hlsPlayUrl(room.stream_key), rtmpUrl: rtmpPushUrl(room.stream_key) }), 201);
 });

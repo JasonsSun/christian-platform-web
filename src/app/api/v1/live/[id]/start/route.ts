@@ -14,8 +14,9 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const user = await requireUser(req);
   const room = await getRoom(id);
   if (!room) throw notFound('直播间不存在');
-  const isStaffOrOwner = user.role === 'admin' || user.role === 'moderator' || user.id === room.owner_id;
-  if (!isStaffOrOwner) throw new HttpError(403, 'FORBIDDEN', '只有主播或管理员可以开播');
+  // 开播管理权限:仅主播本人或超管(不含审核员)
+  const canManage = user.role === 'admin' || user.id === room.owner_id;
+  if (!canManage) throw new HttpError(403, 'FORBIDDEN', '只有主播或管理员可以开播');
 
   if (room.status === 'ended') throw new HttpError(409, 'CONFLICT', '该直播间已结束,请新建一场');
 
@@ -23,7 +24,9 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
     const { live } = await startRoom(room);
     await audit(user.id, 'LIVE_START', 'live', room.id, `开播:${room.title}`, clientIp(req));
     const fresh = await getRoom(id);
-    return ok(publicRoomView(fresh || room, true, { hlsUrl: hlsPlayUrl(room.stream_key), rtmpUrl: rtmpPushUrl(room.stream_key), live }));
+    // 推流字段仅超管/房主可见;审核员开播后亦不返回密钥
+    const canSeeStream = user.role === 'admin' || user.id === room.owner_id;
+    return ok(publicRoomView(fresh || room, canSeeStream, { hlsUrl: hlsPlayUrl(room.stream_key), rtmpUrl: rtmpPushUrl(room.stream_key), live }));
   } catch (e) {
     if (e instanceof LiveConflictError) throw new HttpError(409, 'LIVE_BLOCKED', e.message);
     throw e;

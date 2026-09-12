@@ -208,7 +208,9 @@ export async function listMessages(roomId: string, since?: string, limit = 200) 
 
 /* ---------------- 对外视图 ---------------- */
 
-export function publicRoomView(room: LiveRoomRow, isStaffOrOwner: boolean, extra: {
+/** canSeeStream: 仅主播本人 + 超管可见推流字段(streamKey/publishSecret/rtmpUrl/rtmpServerUrl)。
+ *  审核员(moderator)虽属 staff,但按权限模型不含在内 —— 审核员只能看开播指南,看不到推流信息。 */
+export function publicRoomView(room: LiveRoomRow, canSeeStream: boolean, extra: {
   owner?: any; hlsUrl?: string; rtmpUrl?: string; viewerCount?: number; messages?: any[]; live?: boolean;
 } = {}) {
   const expired = isRoomExpired(room);
@@ -236,7 +238,7 @@ export function publicRoomView(room: LiveRoomRow, isStaffOrOwner: boolean, extra
     live: extra.live ?? room.status === 'live',
     hlsUrl: extra.hlsUrl,
   };
-  if (isStaffOrOwner) {
+  if (canSeeStream) {
     base.streamKey = room.stream_key;
     base.publishSecret = room.publish_secret;
     base.rtmpUrl = extra.rtmpUrl ?? rtmpPushUrl(room.stream_key);

@@ -421,7 +421,7 @@ export default function Home() {
                     <Link href={`/media/${m.id}`} className="block relative bg-black" style={{ height: 176 }}>
                       {m.posterUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={m.posterUrl} alt={m.title} className="w-full h-full object-cover opacity-90" />
+                        <img loading="lazy" src={m.posterUrl} alt={m.title} className="w-full h-full object-cover opacity-90" />
                       ) : null}
                       <span className="absolute inset-0 flex items-center justify-center">
                         <span className="w-14 h-14 rounded-full bg-black/45 text-white flex items-center justify-center text-xl backdrop-blur-sm">▶</span>

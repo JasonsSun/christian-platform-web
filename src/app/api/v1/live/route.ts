@@ -69,7 +69,7 @@ export const POST = withApi(async (req: NextRequest) => {
     await exec(`UPDATE live_rooms SET record_enabled = 1, updated_at = ? WHERE id = ?`, [ts(), room.id]);
     (room as any).record_enabled = 1;
   }
-  const isOwner = true;
-  const view = publicRoomView(room, isOwner, { hlsUrl: hlsPlayUrl(room.stream_key) });
+  const canSeeStream = true; // 创建者即房主本人,可见自己的推流信息
+  const view = publicRoomView(room, canSeeStream, { hlsUrl: hlsPlayUrl(room.stream_key) });
   return ok(view, 201);
 });

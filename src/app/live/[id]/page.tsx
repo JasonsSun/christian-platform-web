@@ -76,7 +76,12 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
 
   const room = data as LiveRoom | undefined;
   const isStaff = !!user && (user.role === 'admin' || user.role === 'moderator');
-  const isStaffOrOwner = !!user && !!room && (isStaff || user.id === room.owner?.id);
+  const isOwner = !!user && !!room && user.id === room.owner?.id;
+  // 权限模型:主播本人 + 超管可管理/看推流信息(不含审核员);审核员仅可看开播指南;
+  // 普通用户/游客无权观看进行中的直播流,但回放视频所有人可看。
+  const canManage = !!user && (user.role === 'admin' || isOwner);
+  const canSeeGuide = canManage || (!!user && user.role === 'moderator');
+  const canWatchLive = canManage || (!!user && user.role === 'moderator');
 
   // 开播拦截原因(审核/取消/过期)
   const startBlock = room
@@ -301,7 +306,6 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               ? { text: '已结束', cls: 'bg-ink-300 text-white' }
               : { text: '预告', cls: 'bg-ink-700/80 text-white/90' };
 
-  const isOwner = !!user && user.id === room.owner?.id;
   const ownerCancelable = isOwner && room.status === 'created' && !room.cancelled && !room.expired;
 
   return (
@@ -316,7 +320,17 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}
           >
-            <HlsPlayer src={room.live ? room.hlsUrl || null : null} poster={room.coverUrl} live={room.status === 'live'} />
+            {room.live && canWatchLive ? (
+              <HlsPlayer src={room.hlsUrl || null} poster={room.coverUrl} live={room.status === 'live'} />
+            ) : room.live && !canWatchLive ? (
+              <div className="relative aspect-video bg-ink-900/90 rounded-xl flex flex-col items-center justify-center text-center px-6">
+                <span className="text-5xl mb-3" aria-hidden="true">🔒</span>
+                <p className="text-white/90 font-medium">无权限观看直播</p>
+                <p className="text-white/50 text-sm mt-1">仅主播本人与超管可观看进行中的直播;回放视频所有人可看。</p>
+              </div>
+            ) : (
+              <HlsPlayer src={null} poster={room.coverUrl} live={false} />
+            )}
 
             {/* 弹幕覆盖层:绝对定位于视频之上,pointer-events-none 不挡播放器控制条 */}
             <Danmaku
@@ -347,6 +361,16 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               </button>
             </div>
           </div>
+
+          {/* 回放视频:已结束且已生成录像的直播,所有人(含普通用户)均可观看 */}
+          {room.status === 'ended' && room.recordingMediaId && (
+            <Link
+              href={`/media/${room.recordingMediaId}`}
+              className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+            >
+              📼 观看回放视频
+            </Link>
+          )}
 
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
@@ -394,54 +418,62 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
 
           {room.description && <p className="text-sm text-ink-600 whitespace-pre-wrap">{room.description}</p>}
 
-          {/* 主播/管理员控制台 */}
-          {isStaffOrOwner && (
+          {/* 控制台 / 审核员开播指南 */}
+          {(canManage || canSeeGuide) && (
             <div className="glass rounded-2xl p-5 space-y-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                {room.live && (
-                  <span className="text-sm text-ink-700 font-medium">🔗 直播间链接</span>
-                )}
-                {room.status !== 'ended' && !room.cancelled && (
-                  room.live
-                    ? <button className="btn-danger" disabled={pending} onClick={endLive}>结束直播</button>
-                    : <button className="btn-primary" disabled={pending || !!startBlock} onClick={startLive}>开始直播</button>
-                )}
-                {startBlock && room.status !== 'ended' && !room.cancelled && (
-                  <p className="text-xs text-rose-600 w-full">⚠ {startBlock}</p>
-                )}
-                {room.reviewStatus === 'pending' && room.reviewVideoId && (
-                  <div className="w-full text-sm space-y-2 border-t border-ink-100 pt-3">
-                    <p className="text-ink-500">已提交现场视频审核材料:</p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">media/{room.reviewVideoId}</code>
-                      <Link href={`/media/${room.reviewVideoId}`} target="_blank" className="btn-ghost">查看视频</Link>
-                    </div>
-                    <p className="text-xs text-amber-600">审核通过后系统会发通知，点通知回到本页即可开播。</p>
-                  </div>
-                )}
-                {room.status === 'ended' && <span className="text-sm text-ink-400">本场已结束</span>}
-                {ownerCancelable && (
-                  <button className="btn-ghost text-rose-600" disabled={pending} onClick={() => cancelRoom(false)}>取消本场直播</button>
-                )}
-                {isStaff && room.status === 'live' && (
-                  <button className="btn-danger" disabled={pending} onClick={() => cancelRoom(true)}>强制关闭</button>
-                )}
-                {room.recordEnabled && room.status === 'ended' && (
-                  room.recordingMediaId
-                    ? <Link href={`/media/${room.recordingMediaId}`} className="btn-secondary text-sm">📼 查看录像</Link>
-                    : recordTimeout
-                      ? <span className="text-xs text-ink-400">本次未生成录像（服务端未录制或时长过短），可在管理台手动上传回放</span>
-                      : <span className="text-xs text-amber-600">⏳ 录像生成中,自动刷新…</span>
-                )}
-                {room.recordEnabled && room.status !== 'ended' && (
-                  <span className="text-xs text-ink-400">本场已开启保存录像,结束后自动入库审核</span>
-                )}
-                {isStaff && !isOwner && (
-                  <Link href="/admin/live" className="text-xs text-ink-400 hover:text-ink-600 ml-auto">批量管理 →</Link>
-                )}
-              </div>
+              {!canManage && canSeeGuide && (
+                <p className="text-sm text-ink-500">审核员视角:您可查看开播指南,但不具备开播与推流权限。</p>
+              )}
 
-              {room.status !== 'ended' && !room.cancelled && !startBlock && room.rtmpUrl && (
+              {/* 开播 / 推流 / 管理:仅主播本人 + 超管(不含审核员) */}
+              {canManage && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {room.live && (
+                    <span className="text-sm text-ink-700 font-medium">🔗 直播间链接</span>
+                  )}
+                  {room.status !== 'ended' && !room.cancelled && (
+                    room.live
+                      ? <button className="btn-danger" disabled={pending} onClick={endLive}>结束直播</button>
+                      : <button className="btn-primary" disabled={pending || !!startBlock} onClick={startLive}>开始直播</button>
+                  )}
+                  {startBlock && room.status !== 'ended' && !room.cancelled && (
+                    <p className="text-xs text-rose-600 w-full">⚠ {startBlock}</p>
+                  )}
+                  {room.reviewStatus === 'pending' && room.reviewVideoId && (
+                    <div className="w-full text-sm space-y-2 border-t border-ink-100 pt-3">
+                      <p className="text-ink-500">已提交现场视频审核材料:</p>
+                      <div className="flex items-center gap-2">
+                        <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">media/{room.reviewVideoId}</code>
+                        <Link href={`/media/${room.reviewVideoId}`} target="_blank" className="btn-ghost">查看视频</Link>
+                      </div>
+                      <p className="text-xs text-amber-600">审核通过后系统会发通知，点通知回到本页即可开播。</p>
+                    </div>
+                  )}
+                  {room.status === 'ended' && <span className="text-sm text-ink-400">本场已结束</span>}
+                  {ownerCancelable && (
+                    <button className="btn-ghost text-rose-600" disabled={pending} onClick={() => cancelRoom(false)}>取消本场直播</button>
+                  )}
+                  {isStaff && room.status === 'live' && (
+                    <button className="btn-danger" disabled={pending} onClick={() => cancelRoom(true)}>强制关闭</button>
+                  )}
+                  {room.recordEnabled && room.status === 'ended' && (
+                    room.recordingMediaId
+                      ? <Link href={`/media/${room.recordingMediaId}`} className="btn-secondary text-sm">📼 查看录像</Link>
+                      : recordTimeout
+                        ? <span className="text-xs text-ink-400">本次未生成录像（服务端未录制或时长过短），可在管理台手动上传回放</span>
+                        : <span className="text-xs text-amber-600">⏳ 录像生成中,自动刷新…</span>
+                  )}
+                  {room.recordEnabled && room.status !== 'ended' && (
+                    <span className="text-xs text-ink-400">本场已开启保存录像,结束后自动入库审核</span>
+                  )}
+                  {isStaff && !isOwner && (
+                    <Link href="/admin/live" className="text-xs text-ink-400 hover:text-ink-600 ml-auto">批量管理 →</Link>
+                  )}
+                </div>
+              )}
+
+              {/* 推流信息:仅主播本人 + 超管可见(后端 canSeeStream 控制 room.rtmpUrl 是否存在,审核员拿不到) */}
+              {canManage && room.status !== 'ended' && !room.cancelled && !startBlock && room.rtmpUrl && (
                 <div className="text-sm space-y-2">
                   <p className="text-ink-500">在 OBS / 手机推流软件中填入以下信息即可开播:</p>
                   <div className="flex items-center gap-2">
@@ -460,7 +492,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               )}
 
               {/* 开播后:展示直播间链接,方便主播分享给会友 */}
-              {room.live && (
+              {canManage && room.live && (
                 <div className="text-sm space-y-2 border-t border-ink-100 pt-3">
                   <p className="text-ink-500">本场正在直播,把下面的链接发给会友即可观看:</p>
                   <div className="flex items-center gap-2">
@@ -474,7 +506,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                 </div>
               )}
 
-              {/* 开播指南:仅未开播时展示,主播对照步骤开播 */}
+              {/* 开播指南:主播 / 超管 / 审核员可见;直播进行中不展示 */}
               {!room.live && <LiveGuide defaultOpen />}
             </div>
           )}

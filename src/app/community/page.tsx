@@ -9,6 +9,7 @@ import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
 import { timeAgo } from '@/lib/format';
 import type { Author, ContentItem, PrayerItem, GroupItem, ListResult } from '@/lib/types';
+import { ContentCardSkeleton, Skeleton } from '@/components/Skeleton';
 
 function Avatar({ user, size = 36 }: { user: Author; size?: number }) {
   return (
@@ -219,17 +220,7 @@ export default function CommunityPage() {
               {loading && (
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="bg-white rounded-2xl p-5 border border-ink-100 animate-pulse">
-                      <div className="flex gap-4">
-                        <div className="w-16 h-16 rounded-2xl bg-ink-100 flex-shrink-0" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-5 bg-ink-100 rounded w-3/4" />
-                          <div className="h-4 bg-ink-100 rounded w-full" />
-                          <div className="h-4 bg-ink-100 rounded w-2/3" />
-                        </div>
-                      </div>
-                      <div className="h-8 bg-ink-100 rounded mt-4 w-1/3" />
-                    </div>
+                    <ContentCardSkeleton key={i} />
                   ))}
                 </div>
               )}
@@ -347,7 +338,22 @@ export default function CommunityPage() {
                 </div>
                 {prayerAction.error && <p className="text-rose-500 text-xs mb-2">{prayerAction.error}</p>}
 
-                {prayersLoading && <div className="text-center py-4 text-ink-400 text-sm">加载中…</div>}
+                {prayersLoading && (
+                  <div className="space-y-3">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <div key={i} className="p-4 rounded-2xl bg-rose-50/60 border border-rose-100">
+                        <div className="flex items-start gap-3">
+                          <Skeleton className="w-8 h-8 rounded-full shrink-0" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-3 w-24" />
+                            <Skeleton className="h-3 w-full" />
+                            <Skeleton className="h-3 w-3/4" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 {!prayersLoading && prayers.length === 0 && (
                   <p className="text-center py-4 text-ink-400 text-sm">还没有代祷，成为第一个吧～</p>
                 )}

@@ -6,6 +6,8 @@ import { AuthProvider } from '@/lib/auth'
 import { PlayerProvider } from '@/lib/player'
 import { NoticeProvider } from '@/lib/notice'
 import { I18nProvider } from '@/lib/i18n/I18nProvider'
+import { ThemeProvider, themeNoFlashScript } from '@/lib/theme'
+import SWRegister from '@/components/SWRegister'
 import { cookies } from 'next/headers'
 import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale } from '@/lib/i18n/config'
 import ActivityTracker from '@/components/ActivityTracker'
@@ -29,21 +31,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const initialLocale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
   return (
     <html lang={initialLocale === 'zh' ? 'zh-CN' : initialLocale}>
+      <head>
+        {/* 字体预连接：提前完成 Google Fonts 的 DNS+TLS 握手，缩短首屏字体加载 */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
       <body className="overflow-x-hidden">
-        <I18nProvider initialLocale={initialLocale}>
-          <AuthProvider>
-            <PlayerProvider>
-              <NoticeProvider>
-                <Guards />
-                <ActivityTracker />
-                <Navbar />
-                <main className="pt-16 md:pt-20 pb-20 md:pb-0">{children}</main>
-                <Footer />
-                <MobileNav />
-              </NoticeProvider>
-            </PlayerProvider>
-          </AuthProvider>
-        </I18nProvider>
+        {/* 首屏前无闪烁设置 <html data-theme>，避免暗色模式刷新白屏 */}
+        <script dangerouslySetInnerHTML={{ __html: themeNoFlashScript }} />
+        <ThemeProvider>
+          <SWRegister />
+          <I18nProvider initialLocale={initialLocale}>
+            <AuthProvider>
+              <PlayerProvider>
+                <NoticeProvider>
+                  <Guards />
+                  <ActivityTracker />
+                  <Navbar />
+                  <main className="pt-16 md:pt-20 pb-20 md:pb-0">{children}</main>
+                  <Footer />
+                  <MobileNav />
+                </NoticeProvider>
+              </PlayerProvider>
+            </AuthProvider>
+          </I18nProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

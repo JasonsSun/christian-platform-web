@@ -767,7 +767,7 @@ function MyUploads() {
             <div className="w-20 h-20 rounded-xl bg-ink-100 flex items-center justify-center overflow-hidden flex-shrink-0">
               {m.kind === 'image' ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={m.url} alt={m.title} className="w-full h-full object-cover" />
+                <img loading="lazy" src={m.url} alt={m.title} className="w-full h-full object-cover" />
               ) : (
                 <span className="text-2xl">{m.kind === 'audio' ? '🎵' : m.kind === 'video' ? '🎬' : m.kind === 'score' ? '🎼' : '📄'}</span>
               )}

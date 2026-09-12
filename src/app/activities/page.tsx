@@ -208,7 +208,7 @@ function ActivityCard({ a }: { a: ActivityItem }) {
         )}
         {a.cover && a.cover.startsWith('http') && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={a.cover} alt={a.title} className="absolute inset-0 w-full h-full object-cover" />
+          <img loading="lazy" src={a.cover} alt={a.title} className="absolute inset-0 w-full h-full object-cover" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
         <div className="absolute top-4 left-4 flex gap-2">
