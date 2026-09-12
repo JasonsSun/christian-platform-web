@@ -345,7 +345,10 @@ hlsAlwaysRemux: false
 # * mpegts - uses MPEG-TS segments, for maximum compatibility.
 # * fmp4 - uses fragmented MP4 segments, more efficient.
 # * lowLatency - uses Low-Latency HLS.
-hlsVariant: lowLatency
+# 原默认值是 lowLatency(LL-HLS,fMP4 + EXT-X-PART)。
+# VLC 不支持 LL-HLS(表现=能连上但全黑),部分播放器/hls.js 也会卡在分片上。
+# 直播场景兼容性优先,改回 mpegts(经典 .ts 分片,音视频复用在同一条流里)。
+hlsVariant: mpegts
 # Number of HLS segments to keep on the server.
 # Segments allow to seek through the stream.
 # Their number doesn't influence latency.
@@ -355,7 +358,7 @@ hlsSegmentCount: 7
 # The final segment duration is also influenced by the interval between IDR frames,
 # since the server changes the duration in order to include at least one IDR frame
 # in each segment.
-hlsSegmentDuration: 1s
+hlsSegmentDuration: 2s
 # Minimum duration of each part.
 # A player usually puts 3 parts in a buffer before reproducing the stream.
 # Parts are used in Low-Latency HLS in place of segments.
