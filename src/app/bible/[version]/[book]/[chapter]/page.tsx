@@ -8,6 +8,7 @@ import { apiPost, qs } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useSpeech, type SpeechItem } from '@/lib/useSpeech';
 import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
+import ReadingAngel from '@/components/ReadingAngel';
 
 type VerseItem = { verse: number; text: string };
 type ChapterResp = {
@@ -147,6 +148,22 @@ export default function ReadChapter() {
       url.searchParams.set('v', String(n));
       window.history.replaceState({}, '', url.toString());
     } catch { /* ignore */ }
+  };
+
+  /** 点击某节经文：滚动定位 + 写入 URL + 从这一节开始朗读 */
+  const startFrom = (verse: number) => {
+    if (!verse || verse <= 0) return;
+    setStartVerse(verse);
+    const el = document.getElementById(`v${verse}`);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('v', String(verse));
+      window.history.replaceState({}, '', url.toString());
+    } catch { /* ignore */ }
+    if (speech.supported) speech.start(verse);
   };
 
   // 带 ?v=N 进入时定位到该节
@@ -487,24 +504,11 @@ export default function ReadChapter() {
                 </button>
               )}
 
-              {/* 跳到某一节 */}
-              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500">
-                跳到
-                <select
-                  value={startVerse ?? ''}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    if (n > 0) scrollToVerse(n);
-                    else setStartVerse(null);
-                  }}
-                  className="bg-transparent text-ink-700 text-sm font-medium outline-none cursor-pointer"
-                >
-                  <option value="">选择节…</option>
-                  {(data?.verses ?? []).map((v) => (
-                    <option key={v.verse} value={v.verse}>第 {v.verse} 节</option>
-                  ))}
-                </select>
-              </label>
+              {/* 轻提示：点击任意一节即可从那里开始朗读 */}
+              <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-50/80 border border-primary-100 text-xs text-primary-600">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                轻触任意一节，即从该节开始朗读
+              </span>
 
               {/* 括号注释开关 */}
               {chapterHasNotes && (
@@ -621,7 +625,12 @@ export default function ReadChapter() {
                   <p
                     key={v.verse}
                     id={`v${v.verse}`}
-                    className={`mb-5 group relative pl-10 pr-12 py-2 rounded-xl transition-all duration-200 scroll-mt-24 ${
+                    onClick={(e) => {
+                      // 用户正在拖选文字复制时不触发朗读
+                      if (typeof window !== 'undefined' && (window.getSelection()?.toString() || '').trim()) return;
+                      startFrom(v.verse);
+                    }}
+                    className={`mb-5 group relative pl-10 pr-12 py-2 rounded-xl transition-all duration-200 scroll-mt-24 cursor-pointer ${
                       speaking
                         ? speech.wordSync
                           ? 'bg-amber-50/80 border-l-2 border-amber-400 shadow-sm'
@@ -631,10 +640,10 @@ export default function ReadChapter() {
                           : 'hover:bg-ink-50/50'
                     }`}
                   >
-                    {/* 节号：点击跳到本节并设为朗读起点 */}
+                    {/* 节号：点击从本节开始朗读 */}
                     <button
-                      onClick={() => scrollToVerse(v.verse)}
-                      title="跳到本节（并可从本节开始朗读）"
+                      onClick={(e) => { e.stopPropagation(); startFrom(v.verse); }}
+                      title="点击从本节开始朗读"
                       className={`absolute left-0 top-2 w-7 h-7 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
                         speaking
                           ? 'bg-amber-500 text-white scale-110 shadow-md'
@@ -691,7 +700,7 @@ export default function ReadChapter() {
                     
                     {/* 收藏按钮 */}
                     <button
-                      onClick={() => toggleVerseBookmark(v.verse)}
+                      onClick={(e) => { e.stopPropagation(); toggleVerseBookmark(v.verse); }}
                       disabled={!user || bookmarkAction.pending || bmLoading}
                       className={`absolute right-2 top-2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-amber-100 ${
                         vb 
@@ -771,6 +780,16 @@ export default function ReadChapter() {
           </button>
         </div>
       </div>
+
+      {/* 读经小天使：可拖动；朗读时指字/指行，未朗读时趴着休息 */}
+      {data?.hasContent && (
+        <ReadingAngel
+          state={speech.state}
+          speakingKey={speech.speakingKey}
+          speakCharRef={speech.speakCharRef}
+          wordSync={speech.wordSync}
+        />
+      )}
 
       {/* 轻提示 */}
       {toast && (
