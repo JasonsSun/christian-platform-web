@@ -55,13 +55,16 @@ curl -I http://127.0.0.1          # 经 nginx 返回 200/307
 ## 7. 直播（MediaMTX）
 平台内置直播：OBS/手机推 RTMP → MediaMTX 转 HLS → 网页播放。`docker-compose.yml` 已含 `mediamtx` 服务。
 
-- **推流地址**：`rtmp://<DOMAIN>:1935/<streamKey>`（OBS 服务器填 `rtmp://<DOMAIN>:1935`，串流密钥填随机 streamKey）
+- **推流地址**：`rtmp://<DOMAIN>:8080/<streamKey>`（OBS 服务器填 `rtmp://<DOMAIN>:8080`，串流密钥填随机 streamKey）
+  > 端口是 **8080** 不是默认的 1935：国内/跨境链路上 1935 的明文 RTMP 握手常被识别丢包，
+  > 表现为「刚连上就断开」+ 日志 `closed: ... i/o timeout`（10s readTimeout）。
+  > 三处必须一致：`deploy/mediamtx.yml` 的 `rtmpAddress`、compose 的端口映射、compose 里 web 的 `MEDIAMTX_RTMP_PORT`。
 - **网页播放**：浏览器经 `https://<DOMAIN>/hls/<streamKey>/index.m3u8`（nginx 443 反代到 mediamtx:8888，全程 HTTPS）
 - **控制 API**：`mediamtx:9997`，仅 web 容器内网调用，不暴露公网
 
 ### 7.1 首次启用
 1. 确保 `.env` 有 `DOMAIN=<你的域名>`（或 `MEDIAMTX_PUBLIC_HOST=<域名>`）
-2. 确认 Cloudflare 放行 1935 端口（RTMP 直连，不走代理，A 记录设为「仅 DNS / Grey cloud」）
+2. 确认 Cloudflare 放行 8080 端口（RTMP 直连，不走代理，A 记录设为「仅 DNS / Grey cloud」）
 3. `docker compose up -d --build` 拉起 mediamtx
 4. 验证：`curl http://127.0.0.1:9997/v3/info` 应返回服务信息
 
@@ -139,4 +142,4 @@ sudo systemctl enable containerd   # 若为独立 containerd 服务
 - **内存不足**：构建阶段建议 VPS ≥ 2GB 内存；1GB 机器可先加 swap。
 - **数据库连不上**：确认 `cp_db` 健康（`docker compose ps` 显示 healthy）后再看 web 日志。
 - **不用 MySQL 演示**：删掉 compose 里 `db` 服务并去掉 web 的 `DB_HOST`，应用会回退内置 mock 数据层（仅演示）。
-- **直播（MediaMTX）**：可选，需额外放行 1935/8888 端口并注入 `MEDIAMTX_*` 环境变量；不做直播可忽略。
+- **直播（MediaMTX）**：可选，需额外放行 8080(RTMP)/8888(HLS，走 nginx 反代可不对外) 端口并注入 `MEDIAMTX_*` 环境变量；不做直播可忽略。

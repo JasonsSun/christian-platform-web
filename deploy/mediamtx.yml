@@ -299,7 +299,11 @@ rtmp: true
 # Available values are "no", "strict", "optional".
 rtmpEncryption: "no"
 # Address of the TCP/RTMP listener. This is needed only when encryption is "no" or "optional".
-rtmpAddress: :1935
+rtmpAddress: :8080
+# ↑ 默认 1935。国内网络(含跨境链路)常对 1935 的 RTMP 明文握手做识别丢包:
+#   表现为 TCP 能连上、但握手数据永远不到 → 10s 后被 readTimeout 踢掉(日志 i/o timeout)。
+#   换一个常见端口(8080)通常立刻恢复；改端口时记得同步改 docker-compose 的端口映射
+#   和 web 服务的 MEDIAMTX_RTMP_PORT(直播页展示的推流地址靠它拼)。
 # Address of the TCP/RTMPS listener. This is needed only when encryption is "strict" or "optional".
 rtmpsAddress: :1936
 # Path to the server key. This is needed only when encryption is "strict" or "optional".
