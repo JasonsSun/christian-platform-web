@@ -6,23 +6,27 @@
  *  - 直播结束时,删除该 path;
  *  - 探测某路流是否真正有主播在推(publisher 已连接)。
  *
- * 鉴权模型(见 bin/mediamtx/mediamtx.yml):
- *  - 媒体流(RTMP 推流 / HLS 拉流)对匿名开放,与各推流客户端(OBS/ffmpeg/手机)完全兼容。
- *    安全由「随机不可猜的 streamKey」隔离:他人无法猜到具体直播间路径;
- *    且平台应用层已限制谁能创建/开播直播间、谁能看到推流地址。
- *  - 控制 API 需要 live 用户凭证(服务端 Basic Auth),凭证不面向最终用户暴露。
- *
- * 网页播放:浏览器直连 HLS(:8888),MediaMTX 自带 CORS 支持;
- *           HLS 首次请求会 302 做 cookie 校验,浏览器/xhr 自动跟随即可(无需带凭证)。
+ * 鉴权模型:
+ *  - 媒体流(RTMP 推流 / HLS 拉流)匿名开放,兼容 OBS/手机推流 App。
+ *    安全由「随机不可猜的 streamKey」隔离。
+ *  - 控制 API 需服务端调用(内网),凭证不面向最终用户暴露。
  */
 
 const API = process.env.MEDIAMTX_API || 'http://127.0.0.1:9997';
 const HLS_PORT = process.env.MEDIAMTX_HLS_PORT || '8888';
 const RTMP_PORT = process.env.MEDIAMTX_RTMP_PORT || '1935';
 const PUBLIC_HOST = process.env.MEDIAMTX_PUBLIC_HOST || 'localhost';
-// 网页 HLS 播放：生产走 nginx HTTPS 反代（/hls/<key>/index.m3u8），避免 HTTP 混入被 CDN 拦；
+// 网页 HLS 播放：生产走 nginx HTTPS 反代（/hls/<path>/index.m3u8），避免 HTTP 混入被 CDN 拦；
 // 本地开发无 nginx 时直连 MediaMTX 的 :8888。
 const HLS_VIA_PROXY = process.env.MEDIAMTX_HLS_VIA_PROXY !== 'false';
+
+/**
+ * RTMP app 段。
+ * 多数推流软件(OBS)允许「服务器 + 串流密钥」两栏填写、app 段可为空；
+ * 但 Larix 等手机 App 强制 URL 形如 rtmp://host:1935/<app>/<stream>，不接受裸路径。
+ * 统一约定 app='live' 后，MediaMTX 内部 path 即为 'live/<streamKey>'，两种客户端都能推。
+ */
+const RTMP_APP = process.env.MEDIAMTX_RTMP_APP || 'live';
 
 /** 平台控制用户(仅用于服务端调用 REST API) */
 const MEDIAMTX_USER = process.env.MEDIAMTX_USER || 'admin';
@@ -32,21 +36,36 @@ const MEDIAMTX_PASS = process.env.MEDIAMTX_PASS || 'admin';
 export const MEDIAMTX_AUTH =
   'Basic ' + Buffer.from(`${MEDIAMTX_USER}:${MEDIAMTX_PASS}`).toString('base64');
 
-/** RTMP 推流地址 / 串流密钥(OBS/手机用,匿名推流)。
- *  OBS 用法: 服务器=rtmp://<host>:1935 ,串流密钥=<streamKey> */
+/** 平台 streamKey → MediaMTX 内部 path */
+export function mediaPath(streamKey: string): string {
+  return `${RTMP_APP}/${streamKey}`;
+}
+
+/** MediaMTX path → 平台 streamKey(剥掉 app 前缀) */
+export function streamKeyFromPath(path: string): string {
+  return path.startsWith(`${RTMP_APP}/`) ? path.slice(RTMP_APP.length + 1) : path;
+}
+
+/** 推流软件填的「服务器」地址(含 app 段)。OBS: 服务器填此项,串流密钥填 streamKey。 */
+export function rtmpServerUrl(): string {
+  return `rtmp://${PUBLIC_HOST}:${RTMP_PORT}/${RTMP_APP}`;
+}
+
+/** 完整推流地址:服务器栏填这个时,串流密钥留空(部分手机 App 只接受完整 URL) */
 export function rtmpPushUrl(streamKey: string): string {
-  return `rtmp://${PUBLIC_HOST}:${RTMP_PORT}/${streamKey}`;
+  return `${rtmpServerUrl()}/${streamKey}`;
 }
 
 /** 网页 HLS 播放地址。生产经 nginx HTTPS 反代(/hls/...)，本地开发直连 MediaMTX :8888。 */
 export function hlsPlayUrl(streamKey: string): string {
-  if (HLS_VIA_PROXY) return `https://${PUBLIC_HOST}/hls/${streamKey}/index.m3u8`;
-  return `http://${PUBLIC_HOST}:${HLS_PORT}/${streamKey}/index.m3u8`;
+  const p = mediaPath(streamKey);
+  if (HLS_VIA_PROXY) return `https://${PUBLIC_HOST}/hls/${p}/index.m3u8`;
+  return `http://${PUBLIC_HOST}:${HLS_PORT}/${p}/index.m3u8`;
 }
 
 /** WebRTC 播放地址(低延迟,可选) */
 export function webrtcPlayUrl(streamKey: string): string {
-  return `ws://${PUBLIC_HOST}:8889/${streamKey}/ws`;
+  return `ws://${PUBLIC_HOST}:8889/${mediaPath(streamKey)}/ws`;
 }
 
 async function api(method: string, path: string, body?: unknown): Promise<{ ok: boolean; status: number; data: any }> {
@@ -72,7 +91,7 @@ async function api(method: string, path: string, body?: unknown): Promise<{ ok: 
 
 /** 注册一条直播路径(接受推流)。安全由随机不可猜的 streamKey 保证。 */
 export async function registerPath(streamKey: string): Promise<boolean> {
-  const r = await api('POST', `/v3/config/paths/add/${encodeURIComponent(streamKey)}`, {
+  const r = await api('POST', `/v3/config/paths/add/${encodeURIComponent(mediaPath(streamKey))}`, {
     source: 'publisher',
   });
   return r.ok || r.status === 200;
@@ -80,21 +99,21 @@ export async function registerPath(streamKey: string): Promise<boolean> {
 
 /** 移除一条直播路径 */
 export async function removePath(streamKey: string): Promise<boolean> {
-  const r = await api('DELETE', `/v3/config/paths/delete/${encodeURIComponent(streamKey)}`);
+  const r = await api('DELETE', `/v3/config/paths/delete/${encodeURIComponent(mediaPath(streamKey))}`);
   return r.ok || r.status === 200 || r.status === 404;
 }
 
-/** 该路径是否有主播在推流(publisher 已连接) */
+/** 该路径是否有主播在推流(publisher 已连接)。
+ *  注意:path 含 app 段(如 live/xxx)时,MediaMTX 单条查询 API 对斜杠支持不可靠,
+ *  故统一走 /v3/paths/list 批量接口(该接口已验证可用)。 */
 export async function isPathLive(streamKey: string): Promise<boolean> {
-  const r = await api('GET', `/v3/paths/get/${encodeURIComponent(streamKey)}`);
-  if (!r.ok || !r.data || typeof r.data !== 'object') return false;
-  const d = r.data as any;
-  return d.ready === true || d.online === true;
+  const all = await listPathsLive();
+  return all.get(streamKey) === true || all.get(mediaPath(streamKey)) === true;
 }
 
 /**
  * 批量取所有路径的在线状态(一次 HTTP,替代列表页对每个房间各查一次)。
- * 返回 Map<pathName, 是否在线>。
+ * 返回 Map:key 同时支持「MediaMTX 原始 path」与「平台 streamKey」两种查法,便于兼容。
  */
 export async function listPathsLive(): Promise<Map<string, boolean>> {
   const out = new Map<string, boolean>();
@@ -103,7 +122,9 @@ export async function listPathsLive(): Promise<Map<string, boolean>> {
   const items: any[] = Array.isArray(r.data.items) ? r.data.items : [];
   for (const it of items) {
     if (!it || typeof it.name !== 'string') continue;
-    out.set(it.name, it.ready === true || it.online === true);
+    const live = it.ready === true || it.online === true;
+    out.set(it.name, live);                    // 形如 live/5c33aa27f6b39a5b10
+    out.set(streamKeyFromPath(it.name), live); // 形如 5c33aa27f6b39a5b10
   }
   return out;
 }

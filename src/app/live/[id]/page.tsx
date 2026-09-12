@@ -20,7 +20,7 @@ interface LiveRoom {
   recordEnabled?: boolean; recordingMediaId?: string | null;
   owner?: { id: string; displayName: string; avatarColor: string | null };
   viewerCount: number; messages: ChatMsg[]; live: boolean; hlsUrl?: string;
-  streamKey?: string; publishSecret?: string; rtmpUrl?: string;
+  streamKey?: string; publishSecret?: string; rtmpUrl?: string; rtmpServerUrl?: string;
   reviewStatus?: 'pending' | 'approved' | 'rejected';
   reviewNote?: string | null;
   reviewVideoId?: string | null;
@@ -431,8 +431,8 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                 <div className="text-sm space-y-2">
                   <p className="text-ink-500">在 OBS / 手机推流软件中填入以下信息即可开播:</p>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">服务器: rtmp://{location.hostname}:1935</code>
-                    <button className="btn-ghost" onClick={() => copy(`rtmp://${location.hostname}:1935`, 'srv')}>{copied === 'srv' ? '已复制' : '复制'}</button>
+                    <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">服务器: {room.rtmpServerUrl || `rtmp://${location.hostname}:1935/live`}</code>
+                    <button className="btn-ghost" onClick={() => copy(room.rtmpServerUrl || `rtmp://${location.hostname}:1935/live`, 'srv')}>{copied === 'srv' ? '已复制' : '复制'}</button>
                   </div>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">串流密钥: {room.streamKey}</code>

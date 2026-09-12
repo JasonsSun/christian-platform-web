@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { q, one, exec, ts, newId } from './db';
 import { cacheGetOrSet } from './cache';
-import { registerPath, removePath, isPathLive, rtmpPushUrl } from './mediamtx';
+import { registerPath, removePath, isPathLive, rtmpPushUrl, rtmpServerUrl } from './mediamtx';
 import { finalizeLiveRecording } from './liveRecord';
 
 export interface LiveRoomRow {
@@ -240,6 +240,8 @@ export function publicRoomView(room: LiveRoomRow, isStaffOrOwner: boolean, extra
     base.streamKey = room.stream_key;
     base.publishSecret = room.publish_secret;
     base.rtmpUrl = extra.rtmpUrl ?? rtmpPushUrl(room.stream_key);
+    // 服务器地址(含 app 段),供 OBS「服务器 + 串流密钥」两栏填法使用
+    base.rtmpServerUrl = rtmpServerUrl();
   }
   return base;
 }
