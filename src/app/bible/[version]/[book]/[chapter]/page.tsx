@@ -7,6 +7,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { apiPost, qs } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useSpeech, type SpeechItem } from '@/lib/useSpeech';
+import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
 
 type VerseItem = { verse: number; text: string };
 type ChapterResp = {
@@ -56,13 +57,69 @@ export default function ReadChapter() {
   const bookmarkAction = useAction();
   const readAction = useAction();
 
-  // 语音朗读：逐节朗读，读到哪节就高亮哪节
+  // 语音朗读：逐节朗读，读到哪节就高亮哪节（朗读文本剔除括号注释）
   const speechItems = useMemo<SpeechItem[]>(
-    () => (data?.verses ?? []).map((v) => ({ key: v.verse, text: v.text })),
+    () => (data?.verses ?? []).map((v) => ({ key: v.verse, text: stripNotes(v.text) })),
     [data?.verses]
   );
   const speech = useSpeech(speechItems, 'zh-CN');
   const articleRef = useRef<HTMLDivElement>(null);
+
+  // 跳节阅读：选中的节会滚动定位 + 高亮，并作为朗读起点
+  const [startVerse, setStartVerse] = useState<number | null>(null);
+  // 括号注释（译注）：true = 阅读时隐藏；朗读无论开关都跳过注释。
+  // 偏好记在 localStorage，默认隐藏以得到更纯净的读经体验。
+  const [skipNotes, setSkipNotes] = useState(true);
+  // 本章是否含括号注释（决定要不要显示开关）
+  const chapterHasNotes = useMemo(
+    () => (data?.verses ?? []).some((v) => hasNotes(v.text)),
+    [data?.verses]
+  );
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('bible:skipNotes');
+      if (v === '0' || v === '1') setSkipNotes(v === '1');
+    } catch { /* ignore */ }
+  }, []);
+  const toggleSkipNotes = () => {
+    const next = !skipNotes;
+    setSkipNotes(next);
+    try { localStorage.setItem('bible:skipNotes', next ? '1' : '0'); } catch { /* ignore */ }
+  };
+
+  /** 跳到指定节：滚动定位 + 高亮 + 写入 URL（不触发导航，便于分享到某节） */
+  const scrollToVerse = (n: number) => {
+    if (!n || n <= 0) return;
+    setStartVerse(n);
+    const el = document.getElementById(`v${n}`);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('v', String(n));
+      window.history.replaceState({}, '', url.toString());
+    } catch { /* ignore */ }
+  };
+
+  // 带 ?v=N 进入时定位到该节
+  useEffect(() => {
+    if (!data?.hasContent) return;
+    const v = Number(searchParams.get('v'));
+    if (!v || v <= 0) {
+      // 换章且未指定节时清掉上一章的选中态
+      setStartVerse(null);
+      return;
+    }
+    setStartVerse(v);
+    const t = setTimeout(() => {
+      const el = document.getElementById(`v${v}`);
+      if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'center' });
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.hasContent, data?.chapter, book, version]);
 
   // 进入时根据本章书签列表初始化高亮状态（verse=0 视为整章收藏）
   useEffect(() => {
@@ -374,22 +431,63 @@ export default function ReadChapter() {
                   onClick={() => {
                     if (speech.state === 'playing') speech.pause();
                     else if (speech.state === 'paused') speech.resume();
-                    else speech.start();
+                    else speech.start(startVerse ?? undefined);
                   }}
                   className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
                     speech.state !== 'idle'
                       ? 'bg-primary-600 border-primary-600 text-white'
                       : 'bg-white border-ink-200 text-ink-700 hover:border-primary-400 hover:text-primary-600'
                   }`}
-                  title="语音朗读本章"
+                  title={startVerse ? `从第 ${startVerse} 节开始朗读` : '从头朗读本章'}
                 >
                   {speech.state === 'playing' ? (
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
                   ) : (
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z" /></svg>
                   )}
-                  {speech.state === 'playing' ? '暂停朗读' : speech.state === 'paused' ? '继续朗读' : '朗读本章'}
+                  {speech.state === 'playing'
+                    ? '暂停朗读'
+                    : speech.state === 'paused'
+                      ? '继续朗读'
+                      : startVerse
+                        ? `从第 ${startVerse} 节朗读`
+                        : '朗读本章'}
                 </button>
+              )}
+
+              {/* 跳到某一节 */}
+              <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500">
+                跳到
+                <select
+                  value={startVerse ?? ''}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (n > 0) scrollToVerse(n);
+                    else setStartVerse(null);
+                  }}
+                  className="bg-transparent text-ink-700 text-sm font-medium outline-none cursor-pointer"
+                >
+                  <option value="">选择节…</option>
+                  {(data?.verses ?? []).map((v) => (
+                    <option key={v.verse} value={v.verse}>第 {v.verse} 节</option>
+                  ))}
+                </select>
+              </label>
+
+              {/* 括号注释开关 */}
+              {chapterHasNotes && (
+                <label
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
+                  title="经文中的括号多是译注/补注。勾选后阅读时隐藏，朗读时始终跳过。"
+                >
+                  <input
+                    type="checkbox"
+                    checked={skipNotes}
+                    onChange={toggleSkipNotes}
+                    className="accent-primary-600"
+                  />
+                  跳过括号注释
+                </label>
               )}
               {speech.state !== 'idle' && (
                 <>
@@ -448,47 +546,80 @@ export default function ReadChapter() {
                 const vb = verseBookmarks.has(v.verse);
                 const speaking = speech.speakingKey === v.verse;
                 const seg = speech.segments[v.verse];
-                const chars = Array.from((v.text || '').trim());
+                const toks = splitVerse(v.text || '');
+                const firstTextTok = toks.findIndex((t) => !t.note);
                 const isFirstVerse = i === 0;
+                const targeted = startVerse === v.verse;
+                // 全局字符游标：注释段不占索引（朗读时也不读），保证高亮与朗读对齐
+                let raw = seg ? seg.start : 0;
                 return (
                   <p
                     key={v.verse}
                     id={`v${v.verse}`}
-                    className={`mb-5 group relative pl-10 pr-12 py-2 rounded-xl transition-all duration-200 ${
-                      speaking 
-                        ? 'bg-amber-50/80 border-l-2 border-amber-400 shadow-sm' 
-                        : isFirstVerse 
-                          ? 'first-line:bg-gradient-to-r first-line:from-amber-50/30 first-line:to-transparent' 
+                    className={`mb-5 group relative pl-10 pr-12 py-2 rounded-xl transition-all duration-200 scroll-mt-24 ${
+                      speaking
+                        ? 'bg-amber-50/80 border-l-2 border-amber-400 shadow-sm'
+                        : targeted
+                          ? 'bg-primary-50/70 border-l-2 border-primary-400'
                           : 'hover:bg-ink-50/50'
                     }`}
                   >
-                    {/* 节号 - 装饰性样式 */}
-                    <span className={`absolute left-0 top-2 w-6 h-6 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
-                      speaking 
-                        ? 'bg-amber-500 text-white scale-110 shadow-md' 
-                        : 'text-amber-600/70 group-hover:text-amber-600 group-hover:bg-amber-100'
-                    }`}>
+                    {/* 节号：点击跳到本节并设为朗读起点 */}
+                    <button
+                      onClick={() => scrollToVerse(v.verse)}
+                      title="跳到本节（并可从本节开始朗读）"
+                      className={`absolute left-0 top-2 w-7 h-7 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
+                        speaking
+                          ? 'bg-amber-500 text-white scale-110 shadow-md'
+                          : targeted
+                            ? 'bg-primary-600 text-white'
+                            : 'text-amber-600/70 group-hover:text-amber-700 group-hover:bg-amber-100'
+                      }`}
+                    >
                       {v.verse}
-                    </span>
+                    </button>
                     
                     {/* 经文内容 */}
                     <span className={`block leading-loose ${speaking ? 'text-amber-900' : ''}`}>
-                      {isFirstVerse && (
-                        <span className="float-left text-5xl font-bold text-amber-600 mr-2 mt-[-8px] font-serif leading-none">
-                          {chars[0]}
-                        </span>
-                      )}
-                      {chars.slice(isFirstVerse ? 1 : 0).map((ch, j) => (
-                        <span 
-                          key={j} 
-                          className={`verse-char inline transition-all duration-150 ${
-                            seg ? 'hover:text-amber-700' : ''
-                          }`}
-                          data-raw={seg ? seg.start + j : undefined}
-                        >
-                          {ch}
-                        </span>
-                      ))}
+                      {toks.map((t, ti) => {
+                        if (t.note) {
+                          if (skipNotes) return null;
+                          return (
+                            <span
+                              key={ti}
+                              className="text-ink-400 text-[0.8em] italic px-0.5"
+                              title="译注（朗读时跳过）"
+                            >
+                              {t.text}
+                            </span>
+                          );
+                        }
+                        const cs = Array.from(t.text);
+                        return (
+                          <span key={ti}>
+                            {cs.map((ch, j) => {
+                              const r = raw++;
+                              const dropCap = isFirstVerse && ti === firstTextTok && j === 0;
+                              return dropCap ? (
+                                <span
+                                  key={j}
+                                  className="float-left text-5xl font-bold text-amber-600 mr-2 mt-[-8px] leading-none"
+                                >
+                                  {ch}
+                                </span>
+                              ) : (
+                                <span
+                                  key={j}
+                                  className="verse-char inline transition-all duration-150"
+                                  data-raw={seg ? r : undefined}
+                                >
+                                  {ch}
+                                </span>
+                              );
+                            })}
+                          </span>
+                        );
+                      })}
                     </span>
                     
                     {/* 收藏按钮 */}

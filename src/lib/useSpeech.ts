@@ -20,14 +20,22 @@ export interface SpeechSegment {
 
 /**
  * 经文朗读(浏览器内置 TTS,无需联网)。
- * 将整章(或自某节起的余下各节)拼接为【单一 utterance】一次朗读,
- * 彻底规避 Chromium 逐节朗读时"每一节开头首字被裁掉"的缺陷;
- * 同时按全局字符索引暴露当前朗读进度,供页面实现"逐字高亮"特效。
+ *
+ * 两个关键设计:
+ * 1) 分批朗读:每 CHUNK_VERSES 节拼成一个 utterance,批末自动接下一批。
+ *    既规避 Chromium「逐节朗读时每节首字被裁掉」的缺陷,又避免整章拼成
+ *    超长 utterance(Chrome 对超长 utterance 有静默中断的已知问题)。
+ * 2) 进度回传:实时维护「当前朗读到的节」(speakingKey)与「全局字符索引」
+ *    (speakCharRef),页面据此实现逐节高亮 + 自动滚动 + 逐字高亮。
  */
+const CHUNK_VERSES = 4;
+
 export function useSpeech(items: SpeechItem[], lang = 'zh-CN') {
   const [speakingKey, setSpeakingKey] = useState<number | null>(null);
   const [state, setState] = useState<SpeechState>('idle');
   const [rate, setRateState] = useState(1);
+  // 与 speakingKey 同步的 ref,用于高频进度更新时判断是否真换节(避免多余重渲)
+  const speakingKeyRef = useRef<number | null>(null);
   // 每节在全局字符空间中的区间,供页面把单字映射成全局索引做逐字高亮
   const [segments, setSegments] = useState<Record<number, SpeechSegment>>({});
   // 当前朗读到的全局字符索引(实时,经 ref 暴露以避免逐字重渲整棵树)
@@ -75,6 +83,22 @@ export function useSpeech(items: SpeechItem[], lang = 'zh-CN') {
     }
   }, []);
 
+  /** 朗读进度推进到哪一节就高亮哪一节(页面据此自动滚动到当前节) */
+  const syncSpeakingKey = useCallback(
+    (raw: number, spans: { key: number; start: number; end: number }[]) => {
+      let k: number | null = null;
+      for (const s of spans) {
+        if (raw >= s.start && raw < s.end) { k = s.key; break; }
+      }
+      if (k == null) return;
+      if (k !== speakingKeyRef.current) {
+        speakingKeyRef.current = k;
+        setSpeakingKey(k);
+      }
+    },
+    []
+  );
+
   // 时间估算 tick:根据已用时间推算当前全局字符索引(节边界对齐,避免跨节漂移)
   const tick = useCallback(() => {
     const est = estRef.current;
@@ -97,9 +121,11 @@ export function useSpeech(items: SpeechItem[], lang = 'zh-CN') {
     }
     if (!done) raw = est.baseChar + est.total;
     const maxRaw = est.baseChar + est.total;
-    speakCharRef.current = Math.max(0, Math.min(maxRaw, raw));
+    const cur = Math.max(0, Math.min(maxRaw, raw));
+    speakCharRef.current = cur;
+    syncSpeakingKey(cur, est.spans);
     rafRef.current = requestAnimationFrame(tick);
-  }, []);
+  }, [syncSpeakingKey]);
 
   const startTick = useCallback(
     (est: NonNullable<typeof estRef.current>) => {
@@ -128,16 +154,17 @@ export function useSpeech(items: SpeechItem[], lang = 'zh-CN') {
         return;
       }
       posRef.current = fromIndex;
+      const endIdx = Math.min(list.length, fromIndex + CHUNK_VERSES);
       // 被跳过的节的总字数(全局偏移)
       let baseChar = 0;
       for (let k = 0; k < fromIndex; k++) {
         baseChar += Array.from((list[k].text || '').trim()).length;
       }
-      // 拼接 [fromIndex, end) 为单 utterance,并记录 tts 字符 -> 全局 raw 的映射
+      // 拼接 [fromIndex, endIdx) 为单 utterance,并记录 tts 字符 -> 全局 raw 的映射
       const spans: { key: number; start: number; end: number }[] = [];
       const mapTtsToRaw: number[] = []; // 长度=buf.length,值为全局raw或-1(分隔符)
       let buf = '';
-      for (let k = fromIndex; k < list.length; k++) {
+      for (let k = fromIndex; k < endIdx; k++) {
         const raw0 = baseChar + Array.from(buf).length; // 该节在全局的起始(raw)
         const chars = Array.from((list[k].text || '').trim());
         if (!chars.length) continue;
@@ -155,6 +182,7 @@ export function useSpeech(items: SpeechItem[], lang = 'zh-CN') {
         speakCharRef.current = null;
         return;
       }
+      speakingKeyRef.current = spans[0].key;
       setSpeakingKey(spans[0].key);
       const u = new SpeechSynthesisUtterance(buf);
       u.lang = lang;
@@ -177,6 +205,7 @@ export function useSpeech(items: SpeechItem[], lang = 'zh-CN') {
           const r = mapTtsToRaw[idx];
           if (r >= 0) {
             speakCharRef.current = r;
+            syncSpeakingKey(r, spans);
             boundarySeenRef.current = true; // 引擎给出真实进度,停止时间估算
             stopRaf();
           }
@@ -185,13 +214,23 @@ export function useSpeech(items: SpeechItem[], lang = 'zh-CN') {
       u.onend = () => {
         stopTick();
         if (stoppedRef.current) return;
+        // 本批读完 → 自动接下一批(分批是为了避免超长 utterance 被浏览器静默掐断)
+        if (endIdx < list.length) {
+          posRef.current = endIdx;
+          setTimeout(() => {
+            if (!stoppedRef.current) speakRangeRef.current?.(endIdx);
+          }, 60);
+          return;
+        }
         speakCharRef.current = null;
+        speakingKeyRef.current = null;
         setState('idle');
         setSpeakingKey(null);
       };
       u.onerror = () => {
         stopTick();
         speakCharRef.current = null;
+        speakingKeyRef.current = null;
         setState('idle');
         setSpeakingKey(null);
       };
@@ -211,14 +250,19 @@ export function useSpeech(items: SpeechItem[], lang = 'zh-CN') {
         startTick({ t0, perChar, baseChar, spans, total: totalChars });
       }, 120);
     },
-    [lang, supported, startTick, stopTick, stopRaf]
+    [lang, supported, startTick, stopTick, stopRaf, syncSpeakingKey]
   );
+
+  // 分批链式朗读时,下一批要从 onend 回调里再次调用 speakRange
+  const speakRangeRef = useRef(speakRange);
+  useEffect(() => { speakRangeRef.current = speakRange; }, [speakRange]);
 
   /** 从头开始(或停止后从指定节重新开始) */
   const start = useCallback(
     (fromKey?: number) => {
       if (!supported || !itemsRef.current.length) return;
       stoppedRef.current = false;
+      speakingKeyRef.current = null;
       stopRaf();
       window.speechSynthesis.cancel();
       let i = 0;
@@ -255,6 +299,7 @@ export function useSpeech(items: SpeechItem[], lang = 'zh-CN') {
     stopTick();
     stoppedRef.current = true;
     speakCharRef.current = null;
+    speakingKeyRef.current = null;
     window.speechSynthesis.cancel();
     setState('idle');
     setSpeakingKey(null);
@@ -295,6 +340,7 @@ export function useSpeech(items: SpeechItem[], lang = 'zh-CN') {
     stoppedRef.current = true;
     stopTick();
     if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
+    speakingKeyRef.current = null;
     setState('idle');
     setSpeakingKey(null);
     speakCharRef.current = null;
