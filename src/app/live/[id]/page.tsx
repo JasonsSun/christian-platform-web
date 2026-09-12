@@ -488,9 +488,12 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               <p className="text-sm text-ink-400">该直播间已取消,聊天已关闭。</p>
             ) : messages.length === 0 ? <p className="text-sm text-ink-400">还没有人发言,来抢沙发~</p> : null}
             {messages.map((m) => (
-              <div key={m.id} className="text-sm">
-                <span className="font-semibold text-ink-700" style={{ color: m.avatarColor || undefined }}>{m.displayName}</span>
-                <span className="text-ink-600 ml-1 break-words">{m.content}</span>
+              <div key={m.id} className="text-sm flex items-start gap-1">
+                <span
+                  className="font-semibold shrink-0"
+                  style={{ color: m.avatarColor || undefined }}
+                >{m.displayName || '匿名'}：</span>
+                <span className="text-ink-600 break-words min-w-0">{m.content}</span>
               </div>
             ))}
             <div ref={chatEndRef} />
