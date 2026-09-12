@@ -56,11 +56,21 @@ export function rtmpPushUrl(streamKey: string): string {
   return `${rtmpServerUrl()}/${streamKey}`;
 }
 
-/** 网页 HLS 播放地址。生产经 nginx HTTPS 反代(/hls/...)，本地开发直连 MediaMTX :8888。 */
+/**
+ * 网页 HLS 播放地址。生产经 nginx HTTPS 反代(/hls/...)，本地开发直连 MediaMTX :8888。
+ *
+ * 关键坑(必须带 cookieCheck=1)：
+ * MediaMTX(v1.21) 首次请求 index.m3u8 时会先返回 302,Location 为「相对路径」
+ * (/live/<key>/index.m3u8?cookieCheck=1) 用来探测浏览器是否支持 Partitioned Cookie。
+ * nginx 不会改写相对 Location,浏览器会跳到 https://域名/live/... —— 该前缀是平台
+ * 直播页路由而非 HLS,直接 404,hls.js 永久停在「等待推流」。
+ * 带上 cookieCheck=1 可跳过这次探测重定向;MediaMTX 会改用 URL 查询串(?_session=xxx)
+ * 下发会话密钥,同样能正常鉴权拉流。
+ */
 export function hlsPlayUrl(streamKey: string): string {
   const p = mediaPath(streamKey);
-  if (HLS_VIA_PROXY) return `https://${PUBLIC_HOST}/hls/${p}/index.m3u8`;
-  return `http://${PUBLIC_HOST}:${HLS_PORT}/${p}/index.m3u8`;
+  if (HLS_VIA_PROXY) return `https://${PUBLIC_HOST}/hls/${p}/index.m3u8?cookieCheck=1`;
+  return `http://${PUBLIC_HOST}:${HLS_PORT}/${p}/index.m3u8?cookieCheck=1`;
 }
 
 /** WebRTC 播放地址(低延迟,可选) */
