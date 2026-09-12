@@ -24,10 +24,25 @@ type BookmarkResp = { items: BookmarkItem[] };
 type ToggleBookmarkResp = { bookmarked: boolean };
 
 const FONT: Record<string, string> = {
-  sm: 'text-base sm:text-lg leading-loose',
-  md: 'text-lg sm:text-xl leading-loose',
-  lg: 'text-xl sm:text-2xl leading-loose',
+  sm: 'text-base sm:text-lg',
+  md: 'text-lg sm:text-xl',
+  lg: 'text-xl sm:text-2xl',
+  xl: 'text-2xl sm:text-3xl',
 };
+const LH: Record<string, string> = {
+  tight: 'leading-relaxed',
+  normal: 'leading-loose',
+  loose: 'leading-[2.2]',
+};
+const WIDTH: Record<string, string> = {
+  narrow: 'max-w-2xl',
+  medium: 'max-w-3xl',
+  wide: 'max-w-4xl',
+};
+type ReadTheme = 'light' | 'dark' | 'sepia';
+type FontSize = 'sm' | 'md' | 'lg' | 'xl';
+type LineHeight = 'tight' | 'normal' | 'loose';
+type ReadWidth = 'narrow' | 'medium' | 'wide';
 
 export default function ReadChapter() {
   const params = useParams();
@@ -41,7 +56,12 @@ export default function ReadChapter() {
   const path = `/bible/chapter${qs({ version, book, chapter })}`;
   const { data, loading, error, reload } = useApi<ChapterResp>(path);
 
-  const [fontSize, setFontSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [fontSize, setFontSize] = useState<FontSize>('md');
+  const [lineHeight, setLineHeight] = useState<LineHeight>('normal');
+  const [serifFont, setSerifFont] = useState(true);
+  const [readWidth, setReadWidth] = useState<ReadWidth>('medium');
+  const [readTheme, setReadTheme] = useState<ReadTheme>('light');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [autoNextChapter, setAutoNextChapter] = useState(false);
@@ -63,7 +83,7 @@ export default function ReadChapter() {
     () => (data?.verses ?? []).map((v) => ({ key: v.verse, text: stripNotes(v.text) })),
     [data?.verses]
   );
-  const articleRef = useRef<HTMLDivElement>(null);
+  const articleRef = useRef<HTMLElement>(null);
 
   // 跳节阅读：选中的节会滚动定位 + 高亮，并作为朗读起点
   const [startVerse, setStartVerse] = useState<number | null>(null);
@@ -110,6 +130,28 @@ export default function ReadChapter() {
     setAnnounceVerse(next);
     try { localStorage.setItem('bible:announceVerse', next ? '1' : '0'); } catch { /* ignore */ }
   };
+
+  // 读取排版与主题偏好（首次挂载时）
+  useEffect(() => {
+    try {
+      const f = localStorage.getItem('bible:font');
+      if (f === 'sm' || f === 'md' || f === 'lg' || f === 'xl') setFontSize(f);
+      const lh = localStorage.getItem('bible:lh');
+      if (lh === 'tight' || lh === 'normal' || lh === 'loose') setLineHeight(lh);
+      const sf = localStorage.getItem('bible:serif');
+      if (sf === '0' || sf === '1') setSerifFont(sf === '1');
+      const w = localStorage.getItem('bible:width');
+      if (w === 'narrow' || w === 'medium' || w === 'wide') setReadWidth(w);
+      const th = localStorage.getItem('bible:theme');
+      if (th === 'light' || th === 'dark' || th === 'sepia') setReadTheme(th);
+    } catch { /* ignore */ }
+  }, []);
+  // 排版/主题偏好变化即持久化
+  useEffect(() => { try { localStorage.setItem('bible:font', fontSize); } catch { /* ignore */ } }, [fontSize]);
+  useEffect(() => { try { localStorage.setItem('bible:lh', lineHeight); } catch { /* ignore */ } }, [lineHeight]);
+  useEffect(() => { try { localStorage.setItem('bible:serif', serifFont ? '1' : '0'); } catch { /* ignore */ } }, [serifFont]);
+  useEffect(() => { try { localStorage.setItem('bible:width', readWidth); } catch { /* ignore */ } }, [readWidth]);
+  useEffect(() => { try { localStorage.setItem('bible:theme', readTheme); } catch { /* ignore */ } }, [readTheme]);
 
   // 「读完自动下一章」：朗读自然读完时触发，用 ref 取最新值避免回调闭包过期
   const autoNextRef = useRef(false);
@@ -286,6 +328,68 @@ export default function ReadChapter() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data?.hasContent, data?.chapter]);
 
+  // 阅读进度条（按本章内容在视口中的滚动比例）
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    if (!data?.hasContent) { setProgress(0); return; }
+    const onScroll = () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      setProgress(max > 0 ? Math.min(100, Math.max(0, (h.scrollTop / max) * 100)) : 0);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [data?.hasContent, data?.chapter]);
+
+  // 朗读时保持屏幕常亮（WakeLock；Safari/iOS 不支持则静默降级）
+  useEffect(() => {
+    if (speech.state !== 'playing') return;
+    let lock: { release: () => Promise<void> } | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const acquire = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          lock = await navigator.wakeLock.request('screen');
+        }
+      } catch { /* 不支持或被拒：忽略 */ }
+    };
+    acquire();
+    // 页面切回前台后重新申请（系统会在后台自动释放）
+    const onVis = () => { if (document.visibilityState === 'visible') acquire(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      if (timer) clearTimeout(timer);
+      if (lock) lock.release().catch(() => {});
+    };
+  }, [speech.state]);
+
+  // 键盘快捷键：←/→ 翻章，空格 播放/暂停（输入框聚焦时忽略）
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.key === 'ArrowLeft' && prev) {
+        router.push(`/bible/${version}/${book}/${prev}`);
+      } else if (e.key === 'ArrowRight' && next) {
+        router.push(`/bible/${version}/${book}/${next}`);
+      } else if (e.key === ' ' && speech.supported) {
+        e.preventDefault();
+        if (speech.state === 'playing') speech.pause();
+        else if (speech.state === 'paused') speech.resume();
+        else speech.start(startVerse ?? undefined);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prev, next, speech.state, speech.supported, startVerse]);
+
   const buildText = () => {
     if (!data) return '';
     const head = `${data.book.name} 第 ${data.chapter} 章（${data.version}）\n`;
@@ -370,8 +474,11 @@ export default function ReadChapter() {
   };
 
   return (
-    <div className="min-h-screen bg-ink-50/60">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className={`read-page min-h-screen ${readTheme === 'dark' ? 'text-[#dcdbd4]' : readTheme === 'sepia' ? 'text-[#4a3f2f]' : ''}`} data-read-theme={readTheme}>
+      {data?.hasContent && (
+        <div className="read-progress" style={{ width: `${progress}%` }} aria-hidden />
+      )}
+      <div className={`max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${WIDTH[readWidth] === 'max-w-3xl' ? '' : WIDTH[readWidth]}`}>
         {/* 顶部导航 */}
         <div className="flex items-center justify-between mb-6">
           <Link
@@ -382,19 +489,106 @@ export default function ReadChapter() {
             {version}
           </Link>
 
-          {/* 字号调节 */}
-          <div className="flex items-center gap-1 bg-white rounded-full p-1 shadow-soft border border-ink-100">
-            {(['sm', 'md', 'lg'] as const).map((size) => (
+          {/* 字号调节 + 排版/主题设置 */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-white rounded-full p-1 shadow-soft border border-ink-100">
+              {(['sm', 'md', 'lg', 'xl'] as const).map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setFontSize(size)}
+                  className={`w-9 h-8 inline-flex items-center justify-center rounded-full font-bold font-serif transition-colors ${
+                    fontSize === size ? 'bg-primary-600 text-white' : 'text-ink-500 hover:text-primary-600'
+                  }`}
+                  title={size === 'sm' ? '小号字' : size === 'md' ? '中号字' : size === 'lg' ? '大号字' : '特大号字'}
+                >
+                  <span className={size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : size === 'lg' ? 'text-lg' : 'text-xl'}>A</span>
+                </button>
+              ))}
+            </div>
+            <div className="relative">
               <button
-                key={size}
-                onClick={() => setFontSize(size)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                  fontSize === size ? 'bg-primary-600 text-white' : 'text-ink-500 hover:text-primary-600'
+                onClick={() => setSettingsOpen((v) => !v)}
+                className={`inline-flex items-center justify-center w-10 h-10 rounded-full shadow-soft border transition-colors ${
+                  settingsOpen ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-ink-600 border-ink-100 hover:text-primary-600'
                 }`}
+                title="阅读排版与主题"
               >
-                {size === 'sm' ? '小' : size === 'md' ? '中' : '大'}
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               </button>
-            ))}
+              {settingsOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setSettingsOpen(false)} />
+                  <div className="absolute right-0 top-12 z-40 w-72 bg-white rounded-2xl shadow-card-hover border border-ink-100 p-4 text-ink-800">
+                    {/* 主题 */}
+                    <div className="text-xs font-semibold text-ink-500 mb-2">主题</div>
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {([
+                        { k: 'light', label: '日间', bg: 'linear-gradient(135deg,#ffffff,#f1f5f9)', fg: '#1f2339' },
+                        { k: 'dark', label: '夜间', bg: 'linear-gradient(135deg,#1b2230,#0e1116)', fg: '#dcdbd4' },
+                        { k: 'sepia', label: '护眼', bg: 'linear-gradient(135deg,#fbf4e6,#efe2c6)', fg: '#5b4a32' },
+                      ] as const).map((t) => (
+                        <button
+                          key={t.k}
+                          onClick={() => setReadTheme(t.k)}
+                          className={`flex flex-col items-center gap-1 py-2 rounded-xl border transition-all ${
+                            readTheme === t.k ? 'border-primary-500 ring-2 ring-primary-200' : 'border-ink-200 hover:border-primary-300'
+                          }`}
+                        >
+                          <span className="w-10 h-10 rounded-lg border border-black/5" style={{ background: t.bg }} />
+                          <span className="text-xs text-ink-600">{t.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                    {/* 行距 */}
+                    <div className="text-xs font-semibold text-ink-500 mb-2">行距</div>
+                    <div className="flex gap-2 mb-4">
+                      {([['tight', '紧凑'], ['normal', '舒适'], ['loose', '宽松']] as const).map(([k, label]) => (
+                        <button
+                          key={k}
+                          onClick={() => setLineHeight(k)}
+                          className={`flex-1 py-1.5 rounded-lg text-sm border transition-colors ${
+                            lineHeight === k ? 'bg-primary-600 text-white border-primary-600' : 'bg-ink-50 text-ink-600 border-ink-200 hover:border-primary-300'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {/* 字体 */}
+                    <div className="text-xs font-semibold text-ink-500 mb-2">字体</div>
+                    <div className="flex gap-2 mb-4">
+                      {([['serif', '衬线'], ['sans', '黑体']] as const).map(([k, label]) => (
+                        <button
+                          key={k}
+                          onClick={() => setSerifFont(k === 'serif')}
+                          className={`flex-1 py-1.5 rounded-lg text-sm border transition-colors ${
+                            (k === 'serif') === serifFont ? 'bg-primary-600 text-white border-primary-600' : 'bg-ink-50 text-ink-600 border-ink-200 hover:border-primary-300'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {/* 宽度 */}
+                    <div className="text-xs font-semibold text-ink-500 mb-2">正文宽度</div>
+                    <div className="flex gap-2">
+                      {([['narrow', '窄'], ['medium', '标准'], ['wide', '宽']] as const).map(([k, label]) => (
+                        <button
+                          key={k}
+                          onClick={() => setReadWidth(k)}
+                          className={`flex-1 py-1.5 rounded-lg text-sm border transition-colors ${
+                            readWidth === k ? 'bg-primary-600 text-white border-primary-600' : 'bg-ink-50 text-ink-600 border-ink-200 hover:border-primary-300'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-ink-400 mt-3 leading-relaxed">设置自动保存，下次打开读经页沿用。</p>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -610,7 +804,11 @@ export default function ReadChapter() {
               {readAction.error && <span className="text-rose-600 text-xs">已读：{readAction.error}</span>}
             </div>
 
-            <article className={`font-serif text-ink-800 ${FONT[fontSize]} leading-relaxed`} style={{ fontFamily: '"Noto Serif SC", "Songti SC", "SimSun", Georgia, serif' }}>
+            <article
+              ref={articleRef}
+              className={`${serifFont ? 'font-serif' : 'font-sans'} text-ink-800 ${FONT[fontSize]} ${LH[lineHeight]}`}
+              style={{ fontFamily: serifFont ? '"Noto Serif SC","Songti SC","SimSun",Georgia,serif' : '"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif' }}
+            >
               {data.verses.map((v, i) => {
                 const vb = verseBookmarks.has(v.verse);
                 const speaking = speech.speakingKey === v.verse;
@@ -630,7 +828,7 @@ export default function ReadChapter() {
                       if (typeof window !== 'undefined' && (window.getSelection()?.toString() || '').trim()) return;
                       startFrom(v.verse);
                     }}
-                    className={`mb-5 group relative pl-10 pr-12 py-2 rounded-xl transition-all duration-200 scroll-mt-24 cursor-pointer ${
+                    className={`read-verse mb-5 group relative pl-10 pr-12 py-2 rounded-xl transition-all duration-200 scroll-mt-24 cursor-pointer ${
                       speaking
                         ? speech.wordSync
                           ? 'bg-amber-50/80 border-l-2 border-amber-400 shadow-sm'
@@ -656,7 +854,7 @@ export default function ReadChapter() {
                     </button>
                     
                     {/* 经文内容 */}
-                    <span className={`block leading-loose ${speaking ? 'text-amber-900' : ''} ${speaking && !speech.wordSync ? 'font-medium' : ''}`}>
+                    <span className={`block ${speaking ? 'text-amber-900' : ''} ${speaking && !speech.wordSync ? 'font-medium' : ''}`}>
                       {toks.map((t, ti) => {
                         if (t.note) {
                           if (skipNotes) return null;

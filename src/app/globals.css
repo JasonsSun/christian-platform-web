@@ -260,3 +260,72 @@ article.font-serif {
 [data-theme="dark"] .border-stone-200 {
   border-color: #334155;
 }
+
+/* ===== 读经主题（仅作用于读经页，不影响全局导航）=====
+   通过外层 .read-page 上的 data-read-theme 切换，覆盖本页用到的工具类颜色 */
+.read-page {
+  background: #f6f7fb;
+  transition: background-color 0.3s ease;
+}
+.read-page[data-read-theme="dark"] {
+  background: #0e1116 !important;
+}
+.read-page[data-read-theme="sepia"] {
+  background: #f3ead6 !important;
+}
+
+/* —— 夜间 —— */
+.read-page[data-read-theme="dark"] .bg-white { background-color: #171b22 !important; }
+.read-page[data-read-theme="dark"] .bg-ink-100 { background-color: #1c2029 !important; }
+.read-page[data-read-theme="dark"] .bg-primary-50\/80 { background-color: rgba(99,134,255,0.10) !important; }
+.read-page[data-read-theme="dark"] .bg-primary-50\/70 { background-color: rgba(99,134,255,0.12) !important; }
+.read-page[data-read-theme="dark"] .border-ink-200 { border-color: #2a2f3a !important; }
+.read-page[data-read-theme="dark"] .border-ink-100 { border-color: #222732 !important; }
+.read-page[data-read-theme="dark"] .border-primary-100 { border-color: rgba(99,134,255,0.30) !important; }
+.read-page[data-read-theme="dark"] .border-primary-400 { border-color: rgba(99,134,255,0.45) !important; }
+.read-page[data-read-theme="dark"] .text-ink-900 { color: #f1efe9 !important; }
+.read-page[data-read-theme="dark"] .text-ink-800 { color: #dcdbd4 !important; }
+.read-page[data-read-theme="dark"] .text-ink-700 { color: #c9cdd6 !important; }
+.read-page[data-read-theme="dark"] .text-ink-600 { color: #aeb4c2 !important; }
+.read-page[data-read-theme="dark"] .text-ink-500 { color: #9aa0ad !important; }
+.read-page[data-read-theme="dark"] .text-ink-400 { color: #8b91a0 !important; }
+.read-page[data-read-theme="dark"] .text-ink-300 { color: #6b7280 !important; }
+.read-page[data-read-theme="dark"] .text-primary-600 { color: #aab8ff !important; }
+.read-page[data-read-theme="dark"] .text-primary-700 { color: #b9c4ff !important; }
+.read-page[data-read-theme="dark"] .read-verse:hover { background: rgba(255,255,255,0.04) !important; }
+
+/* —— 护眼（羊皮纸） —— */
+.read-page[data-read-theme="sepia"] .bg-white { background-color: #fbf4e6 !important; }
+.read-page[data-read-theme="sepia"] .bg-ink-100 { background-color: #ece1c8 !important; }
+.read-page[data-read-theme="sepia"] .bg-primary-50\/80 { background-color: rgba(184,134,11,0.10) !important; }
+.read-page[data-read-theme="sepia"] .bg-primary-50\/70 { background-color: rgba(184,134,11,0.12) !important; }
+.read-page[data-read-theme="sepia"] .border-ink-200 { border-color: #e6d8bd !important; }
+.read-page[data-read-theme="sepia"] .border-ink-100 { border-color: #e0d1b3 !important; }
+.read-page[data-read-theme="sepia"] .border-primary-100 { border-color: rgba(184,134,11,0.30) !important; }
+.read-page[data-read-theme="sepia"] .border-primary-400 { border-color: rgba(184,134,11,0.45) !important; }
+.read-page[data-read-theme="sepia"] .text-ink-900 { color: #5b4a32 !important; }
+.read-page[data-read-theme="sepia"] .text-ink-800 { color: #4a3f2f !important; }
+.read-page[data-read-theme="sepia"] .text-ink-700 { color: #6b5a3f !important; }
+.read-page[data-read-theme="sepia"] .text-ink-600 { color: #85744f !important; }
+.read-page[data-read-theme="sepia"] .text-ink-500 { color: #9b8a6c !important; }
+.read-page[data-read-theme="sepia"] .text-ink-400 { color: #a4936f !important; }
+.read-page[data-read-theme="sepia"] .text-ink-300 { color: #bda878 !important; }
+.read-page[data-read-theme="sepia"] .text-primary-600 { color: #9a7b3f !important; }
+.read-page[data-read-theme="sepia"] .text-primary-700 { color: #86692f !important; }
+.read-page[data-read-theme="sepia"] .read-verse:hover { background: rgba(184,134,11,0.06) !important; }
+
+/* 读经顶部进度条 */
+.read-progress {
+  position: fixed;
+  left: 0;
+  top: 4rem;
+  height: 3px;
+  background: linear-gradient(90deg, #f59e0b, #4f6df5);
+  width: 0;
+  z-index: 40;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px rgba(79,109,245,0.4);
+}
+@media (min-width: 768px) {
+  .read-progress { top: 5rem; }
+}
