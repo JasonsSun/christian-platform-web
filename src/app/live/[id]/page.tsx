@@ -207,6 +207,18 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
+  // 录像生成：后端落盘最长约 15 秒，期间自动刷新房间状态；
+  // 超过 2 分钟仍没有 recordingMediaId 就判定失败，避免页面永久停在「生成中」。
+  const recordPending = !!room && !!room.recordEnabled && room.status === 'ended' && !room.recordingMediaId;
+  // 后端 ts() 写的是 UTC 的 "YYYY-MM-DD HH:mm:ss"，前端必须按 UTC 解析，否则会差 8 小时
+  const endedAtMs = room?.endedAt ? Date.parse(room.endedAt.replace(' ', 'T') + 'Z') || 0 : 0;
+  const recordTimeout = !!recordPending && endedAtMs > 0 && Date.now() - endedAtMs > 120_000;
+  useEffect(() => {
+    if (!recordPending || recordTimeout) return;
+    const t = setInterval(() => reload(), 6000);
+    return () => clearInterval(t);
+  }, [recordPending, recordTimeout, reload]);
+
   async function sendMsg() {
     const c = draft.trim();
     if (!c) return;
@@ -417,7 +429,9 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                 {room.recordEnabled && room.status === 'ended' && (
                   room.recordingMediaId
                     ? <Link href={`/media/${room.recordingMediaId}`} className="btn-secondary text-sm">📼 查看录像</Link>
-                    : <span className="text-xs text-amber-600">⏳ 录像生成中,稍后刷新本页…</span>
+                    : recordTimeout
+                      ? <span className="text-xs text-ink-400">本次未生成录像（服务端未录制或时长过短），可在管理台手动上传回放</span>
+                      : <span className="text-xs text-amber-600">⏳ 录像生成中,自动刷新…</span>
                 )}
                 {room.recordEnabled && room.status !== 'ended' && (
                   <span className="text-xs text-ink-400">本场已开启保存录像,结束后自动入库审核</span>

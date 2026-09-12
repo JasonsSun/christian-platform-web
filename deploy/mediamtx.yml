@@ -584,12 +584,17 @@ pathDefaults:
   # Default path settings -> Record
 
   # Record streams to disk.
-  record: false
+  # 【本项目改动】官方默认 false：不开则直播结束不会生成录像，平台「保存录像」形同虚设。
+  # 落盘目录 /recordings 由 docker-compose 挂载到宿主机 ./data/recordings，
+  # 且必须同时挂给 web 容器（见 compose 的 RECORD_DIR），否则 web 读不到 mediamtx 写的文件。
+  record: true
   # Path of recording segments.
   # Extension is added automatically.
   # Available variables are %path (path name), %Y %m %d (year, month, day),
   # %H %M %S (hours, minutes, seconds), %f (microseconds), %z (time zone), %s (unix epoch).
-  recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  # 【本项目改动】用绝对路径，避免相对 ./ 受容器工作目录影响。
+  # 注意 %path 会展开为 "live/<streamKey>"，即多一层子目录 —— 平台侧已按此递归查找。
+  recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f
   # Format of recorded segments.
   # Available formats are "fmp4" (fragmented MP4) and "mpegts" (MPEG-TS).
   recordFormat: fmp4

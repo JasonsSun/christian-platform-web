@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { exec, q, one, newId, ts } from './db';
 import { absFromStorageKey, kindLabel } from './media';
+import { mediaPath } from './mediamtx';
 import type { LiveRoomRow } from './live';
 
 /** MediaMTX 录像落盘目录(与 mediamtx.yml 中的 recordPath 一致) */
@@ -25,42 +26,53 @@ const RECORD_DIR = (() => {
   return path.join(process.cwd(), 'bin', 'mediamtx', 'recordings');
 })();
 
-/** MediaMTX 录像文件命名格式:
- *   <pathName>-<YYYY-MM-DD_HH-MM-SS>.<ext>
- * 详见 MediaMTX 官方文档 record pathTemplate。 */
-const RECORD_NAME_RE = /^([^-]+(?:-[^-]+)*)-(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2})\.(mp4|m4s|mp3|ts|mkv)$/i;
-
-function findRecordingFile(streamKey: string): string | null {
-  let dir = RECORD_DIR;
-  if (!fs.existsSync(dir)) {
-    // 兜底:相对 mediamtx.yml 所在目录
-    const alt = path.join(process.cwd(), 'bin', 'mediamtx', 'recordings');
-    if (fs.existsSync(alt)) dir = alt;
-    else return null;
-  }
-  let names: string[];
+/** 递归收集目录下的媒体文件（recordPath 含 %path，会多一层子目录） */
+function walkMedia(dir: string, out: string[] = []): string[] {
+  let entries: fs.Dirent[];
   try {
-    names = fs.readdirSync(dir);
+    entries = fs.readdirSync(dir, { withFileTypes: true });
   } catch {
-    return null;
+    return out;
   }
-  const matches: { file: string; mtimeMs: number }[] = [];
-  for (const n of names) {
-    const m = n.match(RECORD_NAME_RE);
-    if (!m) continue;
-    if (m[1] !== streamKey) continue;
-    if (!/\.(mp4|m4s|mkv)$/i.test(m[3])) continue; // 视频
-    const full = path.join(dir, n);
-    try {
-      const st = fs.statSync(full);
-      if (st.isFile() && st.size > 0) {
-        matches.push({ file: full, mtimeMs: st.mtimeMs });
-      }
-    } catch { /* ignore */ }
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) walkMedia(full, out);
+    else if (/\.(mp4|m4s|mkv|ts)$/i.test(e.name)) out.push(full);
   }
-  if (!matches.length) return null;
-  matches.sort((a, b) => b.mtimeMs - a.mtimeMs);
-  return matches[0].file;
+  return out;
+}
+
+/**
+ * 找到该 streamKey 对应的录像文件。
+ *
+ * MediaMTX 的 recordPath 模板是 `/recordings/%path/%Y-%m-%d_%H-%M-%S-%f`，
+ * 其中 %path 展开为 "live/<streamKey>"（多一层子目录），文件名是**纯时间戳**、
+ * 不含 streamKey。旧实现只扫根目录且用 `<streamKey>-<时间戳>` 去匹配文件名，
+ * 因此永远匹配不到 —— 页面就一直卡在「录像生成中」。
+ */
+function findRecordingFile(streamKey: string): string | null {
+  const dir = RECORD_DIR;
+  if (!fs.existsSync(dir)) return null;
+  const relDir = path.join(dir, ...mediaPath(streamKey).split('/')); // <dir>/live/<key>
+  const all = walkMedia(dir);
+
+  // 1) 优先：该 path 子目录（含更深层级）下的文件
+  let matched = all.filter((f) => {
+    const d = path.dirname(f);
+    return d === relDir || d.startsWith(relDir + path.sep);
+  });
+  // 2) 兜底：老命名 `<streamKey>-<时间戳>.<ext>` 直接躺在根目录
+  if (!matched.length) {
+    matched = all.filter((f) => {
+      const b = path.basename(f);
+      return b.startsWith(`${streamKey}-`) || b.startsWith(`${streamKey}_`);
+    });
+  }
+  if (!matched.length) return null;
+
+  const mtime = (f: string) => { try { return fs.statSync(f).mtimeMs; } catch { return 0; } };
+  matched.sort((a, b) => mtime(b) - mtime(a));
+  return matched[0];
 }
 
 /** 移动录制文件到公共媒体库 uploads/YYYYMM/<id>.mp4,返回 storage_key */
@@ -89,9 +101,9 @@ export async function finalizeLiveRecording(room: LiveRoomRow): Promise<string |
   // 已有录像不重复生成
   if (room.recording_media_id) return room.recording_media_id;
 
-  // 等待 MediaMTX 落盘(流断开后通常 1~3 秒完成)
+  // 等待 MediaMTX 落盘 / 收尾(流断开后通常 1~3 秒完成,弱网下给足 15 秒)
   let recorded: string | null = null;
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 15; i++) {
     recorded = findRecordingFile(room.stream_key);
     if (recorded) break;
     await new Promise((r) => setTimeout(r, 1000));

@@ -50,7 +50,12 @@ services:
       MEDIAMTX_RTMP_PORT: "8080"
       MEDIAMTX_USER: ${MEDIAMTX_USER:-admin}
       MEDIAMTX_PASS: ${MEDIAMTX_PASS:-admin}
+      # 直播录像目录：必须与 mediamtx 的 recordPath(/recordings) 挂载同一个宿主机目录，
+      # 否则 web 容器读不到 mediamtx 写出的录像，页面会一直卡在「录像生成中」。
+      RECORD_DIR: /recordings
       # NODE_ENV 由 server.js --prod 设置，无需在此覆盖
+    volumes:
+      - ./data/recordings:/recordings   # 与 mediamtx 共享录像目录
     expose:
       - "3000"             # 只给 nginx 用，不映射到宿主机
 
@@ -83,6 +88,7 @@ services:
     # 另：API 默认关闭、默认只允许 127.0.0.1 调用，两处都已在配置文件里放开。
     volumes:
       - ./deploy/mediamtx.yml:/mediamtx.yml:ro
+      - ./data/recordings:/recordings   # 录像落盘；与 web 容器共享（web 侧 RECORD_DIR=/recordings）
     ports:
       - "8080:8080"   # RTMP 推流（避开 1935：明文 RTMP 握手在该端口易被识别丢包）
       - "8889:8889"   # WebRTC 播放

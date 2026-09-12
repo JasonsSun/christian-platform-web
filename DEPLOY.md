@@ -146,6 +146,29 @@ docker exec cp_web node -e "fetch('http://mediamtx:8888/live/<KEY>/index.m3u8?co
 
 > 判断「手机有没有推成功」只看第 3 条 + 第 4 条，App 显示「推流中」不可信（弱网下会一直重连但 UI 不变）。
 
+### 7.7 直播录像（"保存录像"要能落地，必须做三件事）
+主播创建直播间时勾选「保存录像」，结束后平台会把 MediaMTX 录的文件搬进媒体库待审。
+**三个断点缺一个都不会生成录像**（页面会一直显示「录像生成中」）：
+
+| 断点 | 要求 |
+|------|------|
+| MediaMTX 开启录制 | `deploy/mediamtx.yml` 的 `record: true`（官方默认 `false`），`recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f` |
+| 两个容器共享录像目录 | compose 中 mediamtx 与 web **都要**挂 `./data/recordings:/recordings`；web 侧还要设 `RECORD_DIR=/recordings` |
+| 平台能找到文件 | `recordPath` 里的 `%path` 会展开成 `live/<streamKey>`，即文件落在 `.../live/<key>/` 子目录且文件名是**纯时间戳**（不含 key）。`src/server/liveRecord.ts` 已按「path 子目录 + 递归」查找 |
+
+其它行为：
+- 结束直播后最长等 15 秒落盘；前端每 6 秒自动刷新一次，**超过 2 分钟仍无录像就判定失败**，
+  提示改为「本次未生成录像」，不再无限转圈
+- 录像入库后 `review_status='pending'`，需管理员在审核台通过才公开；
+  **24 小时未审会被 `cleanupExpiredLiveRecordings` 自动清理**（含物理文件）
+- 短期大量直播注意磁盘：`recordDeleteAfter: 1d` 只清理 MediaMTX 原始片段，
+  已入库的媒体文件不受它管
+
+验证：
+```bash
+ls -R /opt/christian-platform/data/recordings     # 直播中应能看到 live/<key>/ 下的文件
+```
+
 ## 日常运维
 ```bash
 docker compose ps                    # 查看状态
