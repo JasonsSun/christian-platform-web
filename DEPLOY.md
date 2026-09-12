@@ -71,17 +71,17 @@ curl -I http://127.0.0.1          # 经 nginx 返回 200/307
 3. 直播页自动检测在线状态（`/api/v1/live` 轮询 MediaMTX path 状态），观众即可播放
 
 ### 7.3 配置方式（重要）
-MediaMTX 配置是**扁平式**（`api` / `rtmpAddress` / `hlsAddress`…），**不是**嵌套式，且 **API 默认关闭**。
-因此本部署**不挂载自定义 yml**，只用镜像内置默认配置 + 环境变量覆盖（`MTX_<字段名大写>`）：
+配置文件 `deploy/mediamtx.yml` 是**基于 MediaMTX 官方默认配置生成**的，只改了两处：
 
-```yaml
-environment:
-  MTX_API: "true"          # 必须！默认 api: false，不开 web 容器无法管理直播
-  MTX_APIADDRESS: ":9997"  # 监听全部网卡，供跨容器访问
-```
+| 改动 | 原因 |
+|------|------|
+| `api: false` → `true` | API 默认关闭，不开则 web 容器无法管理直播（9997 连不上） |
+| 管理员用户 `ips: ["127.0.0.1","::1"]` → `[]` | 默认只放行容器本机，宿主机 curl / web 容器跨容器访问会 `authentication error` |
 
-如需其它配置（如录制），追加环境变量即可，例如 `MTX_RECORD=true` / `MTX_RECORDPATH=/recordings`。
-手写 `mediamtx.yml` 极易因字段名或类型不对（`api` 写成对象会报 `cannot unmarshal object into Go value of type bool`）导致容器反复重启。
+配置是**扁平式**（`api` / `rtmpAddress` / `hlsAddress`…），**不是**嵌套式。
+切勿手写字段名——类型写错（如把 `api` 写成对象）会报
+`cannot unmarshal object into Go value of type bool` 并导致容器反复重启。
+要改配置：基于本文件改，或用环境变量 `MTX_<字段名大写>` 覆盖。
 
 ## 日常运维
 ```bash
