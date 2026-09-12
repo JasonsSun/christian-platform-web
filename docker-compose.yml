@@ -72,8 +72,15 @@ services:
     image: bluenviron/mediamtx:latest
     container_name: cp_mediamtx
     restart: unless-stopped
-    # 用镜像内置默认配置即可：RTMP 1935 / HLS 8888 / WebRTC 8889 / API 9997 与应用代码对齐。
-    # 不挂载自定义 yml，避免配置 schema 版本差异导致启动失败。
+    # 用镜像内置默认配置 + 环境变量覆盖即可，不挂载自定义 yml：
+    # MediaMTX 配置是「扁平式」(api/rtmpAddress/hlsAddress...)，不是嵌套式，
+    # 手写 yml 极易因字段名/类型不对导致启动失败。环境变量 MTX_<字段名大写> 最稳。
+    # 默认 RTMP 1935 / HLS 8888 / WebRTC 8889 已与应用代码对齐，无需覆盖。
+    # 关键：API 默认关闭(api: false)，必须显式开启，否则 web 容器管理直播会失败。
+    environment:
+      MTX_API: "true"
+      MTX_APIADDRESS: ":9997"   # 监听全部网卡，供 web/nginx 跨容器访问（默认即为 :9997）
+      MTX_LOGLEVEL: info
     ports:
       - "1935:1935"   # RTMP 推流
       - "8889:8889"   # WebRTC 播放

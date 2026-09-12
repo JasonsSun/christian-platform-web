@@ -70,8 +70,18 @@ curl -I http://127.0.0.1          # 经 nginx 返回 200/307
 2. OBS 填服务器 + 串流密钥 → 开始推流
 3. 直播页自动检测在线状态（`/api/v1/live` 轮询 MediaMTX path 状态），观众即可播放
 
-### 7.3 录制（可选）
-`deploy/mediamtx.yml` 里 `record.enabled` 改 `true` 并挂载 recordings 卷，直播结束自动存 mp4，可对接待审媒体库。
+### 7.3 配置方式（重要）
+MediaMTX 配置是**扁平式**（`api` / `rtmpAddress` / `hlsAddress`…），**不是**嵌套式，且 **API 默认关闭**。
+因此本部署**不挂载自定义 yml**，只用镜像内置默认配置 + 环境变量覆盖（`MTX_<字段名大写>`）：
+
+```yaml
+environment:
+  MTX_API: "true"          # 必须！默认 api: false，不开 web 容器无法管理直播
+  MTX_APIADDRESS: ":9997"  # 监听全部网卡，供跨容器访问
+```
+
+如需其它配置（如录制），追加环境变量即可，例如 `MTX_RECORD=true` / `MTX_RECORDPATH=/recordings`。
+手写 `mediamtx.yml` 极易因字段名或类型不对（`api` 写成对象会报 `cannot unmarshal object into Go value of type bool`）导致容器反复重启。
 
 ## 日常运维
 ```bash
