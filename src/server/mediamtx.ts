@@ -16,6 +16,14 @@ const API = process.env.MEDIAMTX_API || 'http://127.0.0.1:9997';
 const HLS_PORT = process.env.MEDIAMTX_HLS_PORT || '8888';
 const RTMP_PORT = process.env.MEDIAMTX_RTMP_PORT || '1935';
 const PUBLIC_HOST = process.env.MEDIAMTX_PUBLIC_HOST || 'localhost';
+/**
+ * HLS 播放专用域名，默认回退 PUBLIC_HOST。
+ * 拆分域名部署时才需要：推流域名必须「灰云 DNS only」（RTMP 不走 CDN），
+ * 而播放域名可以走「橙云 Proxied」拿 Cloudflare 的公共可信证书。
+ * 两个域名不同就必须显式设 MEDIAMTX_HLS_HOST，否则播放会落到灰云域名的自签/源站证书上，
+ * 浏览器和 VLC 都不信任 → 黑屏。
+ */
+const HLS_HOST = process.env.MEDIAMTX_HLS_HOST || PUBLIC_HOST;
 // 网页 HLS 播放：生产走 nginx HTTPS 反代（/hls/<path>/index.m3u8），避免 HTTP 混入被 CDN 拦；
 // 本地开发无 nginx 时直连 MediaMTX 的 :8888。
 const HLS_VIA_PROXY = process.env.MEDIAMTX_HLS_VIA_PROXY !== 'false';
@@ -69,8 +77,8 @@ export function rtmpPushUrl(streamKey: string): string {
  */
 export function hlsPlayUrl(streamKey: string): string {
   const p = mediaPath(streamKey);
-  if (HLS_VIA_PROXY) return `https://${PUBLIC_HOST}/hls/${p}/index.m3u8?cookieCheck=1`;
-  return `http://${PUBLIC_HOST}:${HLS_PORT}/${p}/index.m3u8?cookieCheck=1`;
+  if (HLS_VIA_PROXY) return `https://${HLS_HOST}/hls/${p}/index.m3u8?cookieCheck=1`;
+  return `http://${HLS_HOST}:${HLS_PORT}/${p}/index.m3u8?cookieCheck=1`;
 }
 
 /** WebRTC 播放地址(低延迟,可选) */

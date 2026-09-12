@@ -97,6 +97,55 @@ nginx **不会改写相对 Location**，浏览器于是跳到 `https://<域名>/
 `cannot unmarshal object into Go value of type bool` 并导致容器反复重启。
 要改配置：基于本文件改，或用环境变量 `MTX_<字段名大写>` 覆盖。
 
+另外两个**非默认值**（已在仓库里改好，升级配置时别被官方默认值覆盖回去）：
+
+| 字段 | 官方默认 | 本项目 | 原因 |
+|------|---------|--------|------|
+| `hlsVariant` | `lowLatency` | **`mpegts`** | LL-HLS 用 fMP4 + `EXT-X-PART`，VLC 完全不支持（表现：能连上、能拉数据、纯黑屏）；hls.js 也易卡死 |
+| `rtmpAddress` | `:1935` | **`:8080`** | 明文 RTMP 握手特征明显，部分网络对 1935 做丢包干扰（表现：TCP 连上但握手字节不到，`i/o timeout` 被踢） |
+
+### 7.5 Cloudflare 必须「仅 DNS / 灰云」（不拆域名的前提）
+RTMP 不是 HTTP，Cloudflare **只代理 HTTP/HTTPS 的特定端口**，1935/8080 一律不代理。
+`amen` 若为橙云（Proxied），域名解析到 CF 的 IP，推流必然连不上。所以：
+
+- **推流**：域名必须灰云（DNS only），解析直达 VPS
+- **代价**：灰云后 HTTPS 不再由 CF 出证书，源站证书必须换成公网可信证书（Let's Encrypt）。
+  Cloudflare Origin CA 证书**只有 CF 自己信任**，公网客户端（尤其 VLC）会直接 TLS 失败 → 黑屏
+- **不会报红**：换 LE 证书后浏览器访问 `https://...` 是绿锁；用 `http://` 访问会跳 301 到 HTTPS，
+  nginx 已配 80 → 443 强制跳转
+
+若既要 CF 加速又要直播，只能拆域名（`www` 橙云 + `live` 灰云），此时需在 `.env` 设置
+`MEDIAMTX_PUBLIC_HOST=live.xxx`（推流域名）与 `MEDIAMTX_HLS_HOST=www.xxx`（播放域名）。
+
+### 7.6 直播排障速查
+手机**保持推流状态**时，一次性跑完：
+
+```bash
+cd /opt/christian-platform
+echo "== 1. 公网证书 =="
+openssl s_client -connect amen.dpdns.org:443 -servername amen.dpdns.org </dev/null 2>/dev/null | openssl x509 -noout -issuer -dates
+echo "== 2. nginx 容器内的证书文件时间（应与宿主机 deploy/certs 一致）=="
+docker exec cp_nginx ls -l /etc/nginx/certs/ ; ls -l deploy/certs/
+echo "== 3. 推流是否真的进来 =="
+curl -s http://127.0.0.1:9997/v3/paths/list | grep -o '"name":"[^"]*","confName":"[^"]*","ready":[a-z]*'
+echo "== 4. MediaMTX 日志 =="
+docker logs cp_mediamtx --tail 12
+echo "== 5. 内网直取 m3u8（绕开证书/DNS，看分片格式）=="
+docker exec cp_web node -e "fetch('http://mediamtx:8888/live/<KEY>/index.m3u8?cookieCheck=1').then(r=>r.text()).then(t=>console.log(t.slice(0,300)))"
+```
+
+判定：
+
+| 现象 | 结论 | 处理 |
+|------|------|------|
+| 1 的 issuer 仍是 `CloudFlare Origin` | 证书没换成 LE | 重跑 certbot，cp 后 `docker compose restart nginx` |
+| 1 已是 Let's Encrypt 但 2 的文件时间旧 | nginx 没重载 | `docker compose restart nginx` |
+| 3 没有 `live/<KEY>`，或 `ready:false` | **推流根本没进来**，与播放无关 | 看 4：`is publishing` 才算成功；只有 `opened` 无 publishing＝握手没完成 |
+| 3 `ready:true` 但 5 出现 `EXT-X-PART` / `.mp4` 分片 | HLS 变体还是 lowLatency，配置没生效 | 检查 `hlsVariant` 并 `--force-recreate mediamtx` |
+| 3 `ready:true` 且 5 是 `#EXTM3U` + `.ts` | 服务端 100% 正常 | 去 VLC，**关掉所有窗口重开**再填地址 |
+
+> 判断「手机有没有推成功」只看第 3 条 + 第 4 条，App 显示「推流中」不可信（弱网下会一直重连但 UI 不变）。
+
 ## 日常运维
 ```bash
 docker compose ps                    # 查看状态
