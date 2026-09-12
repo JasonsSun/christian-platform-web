@@ -487,15 +487,28 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
             {room.cancelled ? (
               <p className="text-sm text-ink-400">该直播间已取消,聊天已关闭。</p>
             ) : messages.length === 0 ? <p className="text-sm text-ink-400">还没有人发言,来抢沙发~</p> : null}
-            {messages.map((m) => (
-              <div key={m.id} className="text-sm flex items-start gap-1">
-                <span
-                  className="font-semibold shrink-0"
-                  style={{ color: m.avatarColor || undefined }}
-                >{m.displayName || '匿名'}：</span>
-                <span className="text-ink-600 break-words min-w-0">{m.content}</span>
-              </div>
-            ))}
+            {messages.map((m) => {
+              const mine = !!user?.id && !!m.userId && m.userId === user.id;
+              return (
+                <div key={m.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
+                  <span
+                    className="text-[11px] px-1 mb-0.5 font-medium"
+                    style={{ color: mine ? undefined : (m.avatarColor || undefined) }}
+                  >
+                    {mine ? '我' : (m.displayName || '匿名')}
+                  </span>
+                  <div
+                    className={`max-w-[80%] px-3 py-1.5 text-sm break-words whitespace-pre-wrap ${
+                      mine
+                        ? 'bg-sky-500 text-white rounded-2xl rounded-br-sm'
+                        : 'bg-ink-100 text-ink-800 rounded-2xl rounded-bl-sm'
+                    }`}
+                  >
+                    {m.content}
+                  </div>
+                </div>
+              );
+            })}
             <div ref={chatEndRef} />
           </div>
           {!room.cancelled && (

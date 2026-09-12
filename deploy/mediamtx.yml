@@ -356,7 +356,10 @@ hlsVariant: mpegts
 # Number of HLS segments to keep on the server.
 # Segments allow to seek through the stream.
 # Their number doesn't influence latency.
-hlsSegmentCount: 7
+hlsSegmentCount: 4
+# ↑ 原默认 7(≈14s 窗口)。窗口越宽,播放器落后时能播的"旧内容"越多,
+#   断流重连后观众就越容易听到几十秒前说过的话。压到 4(≈8s)以贴合直播语义。
+#   需与 src/components/HlsPlayer.tsx 的 LIVE_WINDOW_SEC 保持一致。
 # Minimum duration of each segment.
 # A player usually puts 3 segments in a buffer before reproducing the stream.
 # The final segment duration is also influenced by the interval between IDR frames,
