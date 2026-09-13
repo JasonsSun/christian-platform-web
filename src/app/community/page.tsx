@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
@@ -10,6 +10,7 @@ import { useGoLogin } from '@/lib/nav';
 import { timeAgo } from '@/lib/format';
 import type { Author, ContentItem, PrayerItem, GroupItem, ListResult } from '@/lib/types';
 import { ContentCardSkeleton, Skeleton } from '@/components/Skeleton';
+import RichText from '@/components/RichText';
 
 function Avatar({ user, size = 36 }: { user: Author; size?: number }) {
   return (
@@ -45,6 +46,14 @@ export default function CommunityPage() {
   const [type, setType] = useState<string>('all');
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<'new' | 'hot'>('new');
+
+  // 支持 /community?q=话题 直达（#话题 链接的落点）。
+  // 用 window.location 而非 useSearchParams，避免触发 Suspense 边界要求。
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const kw = new URLSearchParams(window.location.search).get('q');
+    if (kw) setQ(kw);
+  }, []);
 
   const contentsPath =
     '/contents' +
@@ -370,7 +379,7 @@ export default function CommunityPage() {
                               <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">已应允</span>
                             )}
                           </div>
-                          <p className="text-ink-700 text-sm mt-1 leading-relaxed">{p.body}</p>
+                          <RichText text={p.body} className="block text-ink-700 text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words" />
                           <button
                             onClick={() => handleAmen(p)}
                             className={`mt-2 flex items-center gap-1.5 text-sm font-medium py-1.5 -my-1.5 transition-colors ${

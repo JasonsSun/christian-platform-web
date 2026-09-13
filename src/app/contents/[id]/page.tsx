@@ -12,6 +12,7 @@ import { useGoLogin } from '@/lib/nav';
 import { timeAgo, formatDateTime } from '@/lib/format';
 import type { Author, Comment, ContentItem, ListResult } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
+import RichText from '@/components/RichText';
 
 function Avatar({ user, size = 36 }: { user: Author; size?: number }) {
   return (
@@ -366,7 +367,7 @@ export default function ContentDetailPage() {
               <input
                 value={commentBody}
                 onChange={(e) => setCommentBody(e.target.value)}
-                placeholder={user ? '写下你的评论…' : '登录后可发表评论'}
+                placeholder={user ? '写下你的评论…（支持 @用户名 提及、#话题）' : '登录后可发表评论'}
                 disabled={!user}
                 className="input-styled"
                 onKeyDown={(e) => e.key === 'Enter' && submitComment()}
@@ -400,7 +401,7 @@ export default function ContentDetailPage() {
                         </button>
                       )}
                     </div>
-                    <p className="text-ink-700 text-sm mt-1 leading-relaxed">{c.body}</p>
+                    <RichText text={c.body} className="block text-ink-700 text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words" />
                   </div>
                 </div>
               ))}

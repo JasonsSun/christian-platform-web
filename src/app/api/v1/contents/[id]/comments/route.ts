@@ -3,7 +3,7 @@ import { exec, newId, one, q, ts } from '@/server/db';
 import { ok, withApi, notFound, readJson, HttpError } from '@/server/http';
 import { currentUser, requireUser, UserRow } from '@/server/auth';
 import { mapComment } from '@/server/mappers';
-import { dispatchOutbox, emit } from '@/server/services';
+import { dispatchOutbox, emit, notify } from '@/server/services';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +35,23 @@ export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
   await exec(`INSERT INTO comments (id, content_id, user_id, body, created_at) VALUES (?,?,?,?,?)`,
     [cid, id, user.id, text, ts()]);
   await exec(`UPDATE contents SET comment_count = comment_count + 1 WHERE id = ?`, [id]);
+
+  // @提及：解析 @username / @昵称，给被提及的人发站内通知（去重、最多 10 个、排除自己）
+  const mentions = Array.from(
+    new Set(Array.from(text.matchAll(/@([A-Za-z0-9_\u4e00-\u9fa5-]{1,32})/g)).map((m) => m[1]))
+  ).slice(0, 10);
+  if (mentions.length) {
+    const ph = mentions.map(() => '?').join(',');
+    const mentioned = await q<{ id: string }>(
+      `SELECT id FROM users WHERE status = 'active' AND (username IN (${ph}) OR display_name IN (${ph}))`,
+      [...mentions, ...mentions]
+    );
+    for (const m of mentioned) {
+      if (m.id === user.id) continue;
+      await notify(m.id, 'mention', `${user.display_name} 在评论中提到了你`, text.slice(0, 80), `/contents/${id}`);
+    }
+  }
+
   await emit('comment.created', { contentId: id, actorId: user.id, actorName: user.display_name });
   await dispatchOutbox();
 

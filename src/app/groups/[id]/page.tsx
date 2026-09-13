@@ -10,6 +10,7 @@ import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
 import { timeAgo } from '@/lib/format';
 import type { Author, GroupItem } from '@/lib/types';
+import RichText from '@/components/RichText';
 
 interface Member {
   id: string;
@@ -207,7 +208,7 @@ export default function GroupDetailPage() {
                         <span className="font-semibold text-ink-900 text-sm">{p.user.displayName}</span>
                         <span className="text-xs text-ink-400">{timeAgo(p.createdAt)}</span>
                       </div>
-                      <p className="text-ink-700 text-sm mt-1 leading-relaxed whitespace-pre-wrap">{p.body}</p>
+                      <RichText text={p.body} className="block text-ink-700 text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words" />
                     </div>
                   </div>
                 ))}

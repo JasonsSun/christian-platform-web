@@ -10,16 +10,18 @@ type Ctx = { params: { id: string } };
 
 export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
   const viewer = (await currentUser(req)) as UserRow | null;
-  const id = ctx.params.id;
+  const key = ctx.params.id;
   const row = await one<any>(
     `SELECT u.id, u.username, u.display_name, u.role, u.status, u.avatar_color, u.bio, u.city, u.church,
             DATE_FORMAT(u.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
             ${viewer ? `EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = ? AND f.followee_id = u.id)` : '0'} AS following,
             ${viewer ? `EXISTS(SELECT 1 FROM user_blocks b WHERE b.blocker_id = ? AND b.blocked_id = u.id)` : '0'} AS blocked
-     FROM users u WHERE u.id = ?`,
-    viewer ? [viewer.id, viewer.id, id] : [id]
+     FROM users u WHERE u.id = ? OR u.username = ?`,
+    viewer ? [viewer.id, viewer.id, key, key] : [key, key]
   );
   if (!row) throw notFound('用户不存在');
+  // 支持 /users/<id> 与 /users/<username> 两种访问方式（@提及链接用 username 更友好）
+  const id = row.id;
 
   const stats = await userStats(id);
   const contents = await q<any>(

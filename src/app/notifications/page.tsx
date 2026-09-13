@@ -37,6 +37,7 @@ function iconFor(type: string): string {
     case 'content_rejected': return '⚠️';
     case 'content_removed': return '🗑️';
     case 'new_comment': return '💬';
+    case 'mention': return '💬';
     case 'new_like': return '❤️';
     case 'activity_registered': return '📅';
     case 'activity_checkin': return '📍';
