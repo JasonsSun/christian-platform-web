@@ -4,13 +4,20 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useApi, useAction } from '@/lib/useApi';
-import { apiPost, qs } from '@/lib/api';
+import { api, apiPost, qs } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useSpeech, type SpeechItem } from '@/lib/useSpeech';
 import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
 import ReadingAngel from '@/components/ReadingAngel';
 import ShareModal from '@/components/ShareModal';
 import { useTheme } from '@/lib/theme';
+
+/** 可供「对照阅读」的译本（与 @/server/bible 的 VERSIONS 保持一致） */
+const CMP_VERSIONS = [
+  { id: 'cuv', label: '和合本' },
+  { id: 'cuvs', label: '和合本修订版' },
+  { id: 'kjv', label: 'KJV 钦定本' },
+];
 
 type VerseItem = { verse: number; text: string };
 type ChapterResp = {
@@ -82,6 +89,43 @@ export default function ReadChapter() {
   const [noteEditing, setNoteEditing] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
   const [shareOpen, setShareOpen] = useState(false);
+
+  // ---- 多译本对照阅读 ----
+  // 选定第二译本后，逐节在正文下方附上对照译文（不改动原有排版，移动端友好）。
+  const [cmpVersion, setCmpVersion] = useState<string>(() => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('bible:cmpVersion');
+      if (saved && CMP_VERSIONS.some((v) => v.id === saved)) return saved;
+    }
+    return '';
+  });
+  const [cmpVerses, setCmpVerses] = useState<Record<number, string>>({});
+  const [cmpLoading, setCmpLoading] = useState(false);
+
+  const changeCmpVersion = (v: string) => {
+    setCmpVersion(v);
+    try { localStorage.setItem('bible:cmpVersion', v); } catch { /* ignore */ }
+  };
+
+  // 拉取对照译本内容（同一书卷同一章）；切章 / 切换译本时自动重取
+  useEffect(() => {
+    if (!cmpVersion || cmpVersion === version) {
+      setCmpVerses({});
+      return;
+    }
+    let alive = true;
+    setCmpLoading(true);
+    api<ChapterResp>(`/bible/chapter${qs({ version: cmpVersion, book, chapter })}`)
+      .then((res) => {
+        if (!alive) return;
+        const map: Record<number, string> = {};
+        for (const v of res?.verses ?? []) map[v.verse] = stripNotes(v.text);
+        setCmpVerses(map);
+      })
+      .catch(() => { if (alive) setCmpVerses({}); })
+      .finally(() => { if (alive) setCmpLoading(false); });
+    return () => { alive = false; };
+  }, [cmpVersion, version, book, chapter]);
 
   const bmPath = user ? `/bible/bookmarks${qs({ book, chapter })}` : null;
   const { data: bmList, loading: bmLoading, error: bmError, reload: reloadBm } = useApi<BookmarkResp>(
@@ -774,6 +818,26 @@ export default function ReadChapter() {
                   跳过括号注释
                 </label>
               )}
+
+              {/* 多译本对照：一键逐节对照另一译本 */}
+              <label
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
+                title="选择另一译本，逐节对照阅读"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5h6M9 12h6M9 19h6M4 5h.01M4 12h.01M4 19h.01" /></svg>
+                <span>对照</span>
+                <select
+                  value={cmpVersion}
+                  onChange={(e) => changeCmpVersion(e.target.value)}
+                  className="bg-transparent outline-none text-ink-600"
+                >
+                  <option value="">关闭</option>
+                  {CMP_VERSIONS.filter((v) => v.id !== version).map((v) => (
+                    <option key={v.id} value={v.id}>{v.label}</option>
+                  ))}
+                </select>
+                {cmpLoading && <span className="text-ink-400">…</span>}
+              </label>
               {/* 朗读设置：是否播报章节 / 节号、语速、自动下一章 */}
               <>
                   <label
@@ -954,7 +1018,17 @@ export default function ReadChapter() {
                         );
                       })}
                     </span>
-                    
+
+                    {/* 对照译本：仅在开启对照且该节有译文时显示（英文自动用衬线体） */}
+                    {cmpVersion && cmpVerses[v.verse] && (
+                      <span className="block mt-1.5 text-[0.88em] leading-relaxed text-ink-500 border-l-2 border-primary-200 pl-2.5">
+                        <span className="text-[0.9em] font-medium text-primary-500/80 mr-1.5">
+                          {CMP_VERSIONS.find((x) => x.id === cmpVersion)?.label || cmpVersion}
+                        </span>
+                        <span className={cmpVersion === 'kjv' ? 'italic' : ''}>{cmpVerses[v.verse]}</span>
+                      </span>
+                    )}
+
                     {/* 收藏按钮 */}
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleVerseBookmark(v.verse); }}
