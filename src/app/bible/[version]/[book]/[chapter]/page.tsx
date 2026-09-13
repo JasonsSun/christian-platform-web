@@ -781,8 +781,8 @@ export default function ReadChapter() {
               </button>
               {speech.ttsMode === 'server' && !speech.ttsError && !speech.ttsLoading && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-400">
-                  🎧 服务端语音（微信内也能听）
-                  {speech.ttsProvider === 'cache' ? '·已缓存' : speech.ttsProvider === 'baidu' ? '·百度' : speech.ttsProvider === 'edge' ? '·微软' : ''}
+                  🎧 语音朗读（微信内也能听）
+                  {speech.ttsProvider === 'cache' ? '·已缓存' : speech.ttsProvider === 'baidu' ? '·百度' : speech.ttsProvider === 'edge' ? '·微软' : speech.ttsProvider === 'client' ? '·直连' : ''}
                 </span>
               )}
               {speech.ttsMode === 'server' && speech.ttsLoading && (
@@ -791,9 +791,19 @@ export default function ReadChapter() {
                   正在合成语音，首次约需 10 秒，请稍候…
                 </span>
               )}
-              {speech.ttsError && (
+              {/* 服务端合成失败 → 浏览器直连兜底（请求走用户自身网络，通常不受机房 IP 风控影响） */}
+              {speech.clientReady && (
+                <button
+                  type="button"
+                  onClick={speech.clientPlay}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-600 text-white text-xs font-medium hover:bg-primary-700 transition-colors"
+                >
+                  ▶ 点此播放（用你的网络直接合成）
+                </button>
+              )}
+              {speech.ttsError && !speech.clientReady && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-500">
-                  ⚠ 语音合成暂不可用（服务端网络问题），请稍后重试；持续失败可改用 Chrome / Safari 的本地语音
+                  ⚠ 语音合成暂不可用，请稍后重试；也可改用 Chrome / Safari 的本地语音
                 </span>
               )}
 

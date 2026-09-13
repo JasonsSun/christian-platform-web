@@ -27,6 +27,10 @@ export const metadata: Metadata = {
   authors: [{ name: '圣约社区' }],
   icons: { icon: '/icon.svg', apple: '/icon.svg' },
   alternates: { canonical: '/' },
+  // 不发送 Referer：朗读的「浏览器直连兜底」会从本站请求百度 TTS，
+  // 百度对携带非自身域 Referer 的请求返回 HTML 风控页（音频加载失败 code=4）；
+  // 不带 Referer 才返回 audio/mpeg。全站资源均为同源，去掉 Referer 无副作用。
+  referrer: 'no-referrer',
   openGraph: {
     type: 'website',
     siteName: '圣约社区',

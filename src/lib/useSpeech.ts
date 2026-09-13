@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { splitBySentence, baiduTtsUrl } from './ttsSplit';
 
 export interface SpeechItem {
   /** 用于高亮定位的序号(如经节号) */
@@ -50,11 +51,17 @@ export interface SpeechOptions {
  * 4) 服务端 TTS 兜底:无 speechSynthesis 时(安卓微信 WebView 等)请求后端合成音频。
  *    这条链路**必须有超时**——历史上后端因微软 TTS 建连挂起而永不返回,
  *    前端就一直停在「合成中…」,所以这里加了 AbortController 硬超时。
+ * 5) 浏览器直连兜底:服务端全部 TTS 源都不可用(云机房 IP 被风控/出境被丢包)时,
+ *    改由**浏览器自己**请求同一免密钥接口——请求来自用户网络,通常能通。
+ *    这是"无论如何都能听"的最后一道防线。
  */
 const CHUNK_VERSES = 4;
 
 /** 服务端合成请求的硬超时(含 mid-tier 代理不返回的情况) */
-const TTS_FETCH_TIMEOUT_MS = 60000;
+const TTS_FETCH_TIMEOUT_MS = 45000;
+
+/** 浏览器直连兜底的分段字数:URL 会把中文 3 倍编码,取小值避免超长 URL */
+const CLIENT_SEG_CHARS = 200;
 
 export function useSpeech(items: SpeechItem[], options: SpeechOptions | string = {}) {
   const opts: SpeechOptions = typeof options === 'string' ? { lang: options } : options;
@@ -81,8 +88,10 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   const abortRef = useRef<AbortController | null>(null);
   const [ttsLoading, setTtsLoading] = useState(false);
   const [ttsError, setTtsError] = useState(false);
-  // 实际合成来源(edge/baidu/cache),由响应头回传,便于排障与提示
+  // 实际合成来源(edge/baidu/cache/client),由响应头回传,便于排障与提示
   const [ttsProvider, setTtsProvider] = useState<string | null>(null);
+  // 浏览器直连兜底:已就绪但自动播放被拦,等用户点一下
+  const [clientReady, setClientReady] = useState(false);
   const ttsMode: 'browser' | 'server' = supported ? 'browser' : 'server';
 
   const itemsRef = useRef<SpeechItem[]>(items);
@@ -394,6 +403,136 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     audioRef.current = null;
   }, []);
 
+  // ---- 浏览器直连兜底 ----
+  // 服务端合成全部失败时(云机房 IP 被风控 / 出境被丢包),改由**用户自己的浏览器**
+  // 直接请求同一免密钥 TTS 接口:请求来自用户网络(家宽/4G),通常不受机房风控限制。
+  // 长文本分段串行播放;若自动播放被浏览器拦截(异步失败已脱离用户手势),
+  // 保留当前段并置 clientReady,由页面提示「点此播放」。
+  const clientSegsRef = useRef<{ text: string; charStart: number }[]>([]);
+  const clientIdxRef = useRef(0);
+  const pendingAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  const clientStart = useCallback(
+    (fromIndex: number) => {
+      const list = itemsRef.current;
+      if (!list.length) return;
+      const { text, spans } = buildText(fromIndex);
+      const rawSegs = splitBySentence(text, CLIENT_SEG_CHARS);
+      if (!rawSegs.length) {
+        setTtsLoading(false);
+        setTtsError(true);
+        setState('idle');
+        setSpeakingKey(null);
+        return;
+      }
+      // 计算每段在整段文本中的字符偏移(播放进度 → 节级高亮)
+      let off = 0;
+      clientSegsRef.current = rawSegs.map((s) => {
+        const at = text.indexOf(s, off);
+        const start = at >= 0 ? at : off;
+        off = start + s.length;
+        return { text: s, charStart: start };
+      });
+      clientIdxRef.current = 0;
+
+      stoppedRef.current = false;
+      genRef.current += 1;
+      const gen = genRef.current;
+
+      setTtsError(false);
+      setTtsLoading(true);
+
+      const fail = () => {
+        setTtsLoading(false);
+        setClientReady(false);
+        pendingAudioRef.current = null;
+        audioRef.current = null;
+        setState('idle');
+        setSpeakingKey(null);
+        speakCharRef.current = null;
+        if (!stoppedRef.current && genRef.current === gen) setTtsError(true);
+      };
+
+      const step = () => {
+        if (stoppedRef.current || genRef.current !== gen) return;
+        const segs = clientSegsRef.current;
+        const i = clientIdxRef.current;
+        if (i >= segs.length) {
+          setTtsLoading(false);
+          setClientReady(false);
+          pendingAudioRef.current = null;
+          audioRef.current = null;
+          speakCharRef.current = null;
+          speakingKeyRef.current = null;
+          setState('idle');
+          setSpeakingKey(null);
+          onEndRef.current?.();
+          return;
+        }
+        const seg = segs[i];
+        const audio = new Audio(baiduTtsUrl(seg.text));
+        audio.preload = 'auto';
+        audio.playbackRate = rateRef.current;
+        audioRef.current = audio;
+        pendingAudioRef.current = null;
+        audio.ontimeupdate = () => {
+          if (!audio.duration) return;
+          const at =
+            seg.charStart + Math.floor((audio.currentTime / audio.duration) * seg.text.length);
+          syncSpeakingKey(at, spans);
+        };
+        audio.onended = () => {
+          if (stoppedRef.current || genRef.current !== gen) return;
+          clientIdxRef.current = i + 1;
+          step();
+        };
+        audio.onerror = () => fail();
+        // 预取下一段,缩短段间间隙
+        if (i + 1 < segs.length) {
+          try {
+            const pre = new Audio(baiduTtsUrl(segs[i + 1].text));
+            pre.preload = 'auto';
+            pre.load();
+          } catch { /* ignore */ }
+        }
+        const p = audio.play();
+        if (p && typeof p.then === 'function') {
+          p.then(() => {
+            if (stoppedRef.current || genRef.current !== gen) return;
+            setTtsLoading(false);
+            setClientReady(false);
+            pendingAudioRef.current = null;
+            setTtsError(false);
+            setTtsProvider('client');
+            setState('playing');
+          }).catch(() => {
+            if (stoppedRef.current || genRef.current !== gen) return;
+            // 自动播放被拦(无用户手势) → 保留该段,等用户点一下即可播放
+            setTtsLoading(false);
+            pendingAudioRef.current = audio;
+            setClientReady(true);
+          });
+        }
+      };
+      step();
+    },
+    [buildText, syncSpeakingKey]
+  );
+
+  /** 用户点击「点此播放」:播放已就绪但被自动播放策略拦下的兜底音频 */
+  const clientPlay = useCallback(() => {
+    const a = pendingAudioRef.current;
+    if (!a) return;
+    setClientReady(false);
+    setTtsError(false);
+    setState('playing');
+    setTtsProvider('client');
+    const p = a.play();
+    if (p && typeof p.then === 'function') {
+      p.catch(() => setTtsError(true));
+    }
+  }, []);
+
   const serverStart = useCallback(async (fromKey?: number) => {
     const list = itemsRef.current;
     if (!list.length) return;
@@ -406,6 +545,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     }
     const { text, spans } = buildText(i);
     setTtsError(false);
+    setClientReady(false);
     setTtsLoading(true);
     setState('playing');
     const gen = genRef.current;
@@ -456,13 +596,20 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       setSpeakingKey(null);
       speakCharRef.current = null;
       // 用户主动停止 / 换章引发的中断不算故障,不弹错误提示
-      if (!stoppedRef.current && genRef.current === gen) setTtsError(true);
+      if (!stoppedRef.current && genRef.current === gen) {
+        // 服务端不可用(机房 IP 被风控 / 出境被丢包) → 交给浏览器直连兜底。
+        // 延后一拍,避免被下面 finally 的 setTtsLoading(false) 覆盖。
+        const idx = i;
+        setTimeout(() => {
+          if (!stoppedRef.current && genRef.current === gen) clientStart(idx);
+        }, 0);
+      }
     } finally {
       clearTimeout(timer);
       if (abortRef.current === ctrl) abortRef.current = null;
       setTtsLoading(false);
     }
-  }, [buildText, syncSpeakingKey, serverStopInner]);
+  }, [buildText, syncSpeakingKey, serverStopInner, clientStart]);
 
   const serverPause = useCallback(() => {
     audioRef.current?.pause();
@@ -478,6 +625,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     stoppedRef.current = true;
     genRef.current += 1;
     serverStopInner();
+    setClientReady(false);
     setState('idle');
     setSpeakingKey(null);
     speakCharRef.current = null;
@@ -588,6 +736,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     speakingKeyRef.current = null;
     setState('idle');
     setSpeakingKey(null);
+    setClientReady(false);
     speakCharRef.current = null;
   }, [items, stopTick]);
 
@@ -599,8 +748,12 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     ttsLoading,
     /** 服务端合成失败(如所有 TTS 源都不可达),前端据此提示 */
     ttsError,
-    /** 实际合成来源(edge/baidu/cache),由响应头回传 */
+    /** 实际合成来源(edge/baidu/cache/client),由响应头回传 */
     ttsProvider,
+    /** 浏览器直连兜底已就绪但被自动播放策略拦下,等待用户点击播放 */
+    clientReady,
+    /** 触发浏览器直连播放(走用户自身网络合成) */
+    clientPlay,
     state,
     speakingKey,
     rate,

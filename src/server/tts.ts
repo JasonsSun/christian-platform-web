@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
+import { splitBySentence, baiduTtsUrl } from '../lib/ttsSplit';
 
 /**
  * 服务端语音合成（供无 Web Speech API 的浏览器，如安卓微信 WebView 使用）。
@@ -19,11 +20,15 @@ import path from 'path';
  * 2) 熔断：Edge 连续失败后短期内直接走国内可达的降级源，不让用户白等；
  * 3) 降级源：百度翻译 TTS（免密钥、国内可达），按标点分段合成后拼接为单个 mp3。
  *
+ * 注意：云机房 IP 访问百度翻译也可能被风控（返回 JSON/HTML 而非音频）。
+ * 因此前端还有一层「浏览器直连」兜底（见 @/lib/useSpeech），
+ * 用**用户自己的网络**请求同一接口，通常能成功。
+ *
  * 环境变量（均可选）：
  * - TTS_PROVIDER=edge|baidu|auto（默认 auto：edge 优先，失败自动降级 baidu）
  * - TTS_PROXY=http://host:port（Edge 走代理，适用于 VPS 无法出境的情况）
- * - TTS_EDGE_TIMEOUT_MS（默认 12000）
- * - TTS_BAIDU_TIMEOUT_MS（默认 12000）
+ * - TTS_EDGE_TIMEOUT_MS（默认 8000）
+ * - TTS_BAIDU_TIMEOUT_MS（默认 10000）
  */
 
 const CACHE_DIR = path.join(os.tmpdir(), 'covenant-tts');
@@ -35,13 +40,25 @@ const EDGE_SEG_CHARS = 1200;
 /** 百度接口实测 ~500 字上限，取保守值避免 503 */
 const BAIDU_SEG_CHARS = 350;
 
+/**
+ * 百度对「无浏览器头的裸请求」与「数据中心 IP」会风控，
+ * 带上正常浏览器头能显著降低被拦概率（返回 ratelimit / HTML 验证页）。
+ */
+const BROWSER_UA =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+const BAIDU_HEADERS: Record<string, string> = {
+  'User-Agent': BROWSER_UA,
+  Referer: 'https://fanyi.baidu.com/',
+  Accept: 'audio/mpeg,audio/*;q=0.9,*/*;q=0.8',
+};
+
 function envNum(v: string | undefined, fallback: number): number {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-const EDGE_TIMEOUT_MS = envNum(process.env.TTS_EDGE_TIMEOUT_MS, 12000);
-const BAIDU_TIMEOUT_MS = envNum(process.env.TTS_BAIDU_TIMEOUT_MS, 12000);
+const EDGE_TIMEOUT_MS = envNum(process.env.TTS_EDGE_TIMEOUT_MS, 8000);
+const BAIDU_TIMEOUT_MS = envNum(process.env.TTS_BAIDU_TIMEOUT_MS, 10000);
 
 export type TtsProvider = 'edge' | 'baidu' | 'cache';
 
@@ -55,35 +72,15 @@ export interface TtsResult {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const md5 = (s: string) => createHash('md5').update(s).digest('hex');
 
-/** 按句末标点切分长文本，再累积到不超过 max 字（保持语义完整） */
-function splitText(text: string, max: number): string[] {
-  const t = (text || '').trim();
-  if (!t) return [];
-  if (t.length <= max) return [t];
-  const sents = t.split(/(?<=[。！？!?；;\n])/).filter((s) => s.length > 0);
-  const out: string[] = [];
-  let buf = '';
-  for (const s of sents) {
-    if (buf && buf.length + s.length > max) {
-      out.push(buf);
-      buf = '';
-    }
-    buf += s;
-    // 单句本身超长（如无标点的长串）→ 硬切
-    while (buf.length > max) {
-      out.push(buf.slice(0, max));
-      buf = buf.slice(max);
-    }
-  }
-  if (buf.trim()) out.push(buf);
-  return out.map((x) => x.trim()).filter(Boolean);
-}
-
-async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+async function fetchWithTimeout(
+  url: string,
+  timeoutMs: number,
+  headers?: Record<string, string>
+): Promise<Response> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    return await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+    return await fetch(url, { signal: ctrl.signal, cache: 'no-store', headers });
   } finally {
     clearTimeout(timer);
   }
@@ -122,7 +119,7 @@ async function synthesizeEdge(text: string, voice: string, opts: EdgeOpts): Prom
 }
 
 async function synthesizeEdgeLong(text: string, voice: string, opts: EdgeOpts): Promise<Buffer> {
-  const segs = splitText(text, EDGE_SEG_CHARS);
+  const segs = splitBySentence(text, EDGE_SEG_CHARS);
   if (segs.length <= 1) return synthesizeEdge(segs[0] || '', voice, opts);
   const parts: Buffer[] = [];
   for (const s of segs) parts.push(await synthesizeEdge(s, voice, opts));
@@ -131,20 +128,31 @@ async function synthesizeEdgeLong(text: string, voice: string, opts: EdgeOpts): 
 
 // ---------------------------------------------------------------- 百度 TTS（国内可达降级源）
 
+/** 单段合成，失败自动重试一次（机房 IP 偶发风控多为瞬时的） */
+async function synthesizeBaiduSeg(seg: string, timeoutMs: number): Promise<Buffer> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetchWithTimeout(baiduTtsUrl(seg), timeoutMs, BAIDU_HEADERS);
+      if (!res.ok) throw new Error(`baidu_http_${res.status}`);
+      const ct = res.headers.get('content-type') || '';
+      if (!ct.includes('audio')) throw new Error('baidu_not_audio');
+      const ab = await res.arrayBuffer();
+      if (!ab.byteLength) throw new Error('baidu_empty_audio');
+      return Buffer.from(ab);
+    } catch (e) {
+      lastErr = e;
+      if (attempt === 0) await sleep(250);
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('baidu_failed');
+}
+
 async function synthesizeBaidu(text: string, opts: { timeoutMs: number }): Promise<Buffer> {
-  const segs = splitText(text, BAIDU_SEG_CHARS);
+  const segs = splitBySentence(text, BAIDU_SEG_CHARS);
   const parts: Buffer[] = [];
   for (let i = 0; i < segs.length; i++) {
-    const url =
-      'https://fanyi.baidu.com/gettts?lan=zh&spd=5&source=web&text=' +
-      encodeURIComponent(segs[i]);
-    const res = await fetchWithTimeout(url, opts.timeoutMs);
-    if (!res.ok) throw new Error(`baidu_http_${res.status}`);
-    const ct = res.headers.get('content-type') || '';
-    if (!ct.includes('audio')) throw new Error('baidu_not_audio');
-    const ab = await res.arrayBuffer();
-    if (!ab.byteLength) throw new Error('baidu_empty_audio');
-    parts.push(Buffer.from(ab));
+    parts.push(await synthesizeBaiduSeg(segs[i], opts.timeoutMs));
     if (i < segs.length - 1) await sleep(150); // 轻节流，避免被限流 503
   }
   return Buffer.concat(parts);
@@ -210,8 +218,9 @@ export async function synthesizeTts(
   const file = path.join(CACHE_DIR, `${key}.mp3`);
   await fs.mkdir(CACHE_DIR, { recursive: true });
 
+  const t0 = Date.now();
   const cached = await readCache(file);
-  if (cached) return { buf: cached, provider: 'cache', cached: true, ms: 0 };
+  if (cached) return { buf: cached, provider: 'cache', cached: true, ms: Date.now() - t0 };
 
   let task = inflight.get(key);
   if (!task) {
@@ -243,7 +252,28 @@ export async function synthesizeTts(
   }
 
   const { buf, provider } = await task;
-  return { buf, provider, cached: false, ms: 0 };
+  return { buf, provider, cached: false, ms: Date.now() - t0 };
+}
+
+/**
+ * 服务启动后首次请求时调用（幂等）：后台先探一次 Edge。
+ *
+ * Edge 在多数国内机房直连不通，若不预热，第一个用户要白等一整个 Edge 超时
+ * 才降级到百度；预热失败即熔断，后续请求直接走百度。
+ */
+let warmupStarted = false;
+export function warmupTts(): void {
+  if (warmupStarted) return;
+  warmupStarted = true;
+  if ((process.env.TTS_PROVIDER || 'auto').toLowerCase() === 'baidu') return;
+  setTimeout(() => {
+    synthesizeEdge('预热', DEFAULT_VOICE, {
+      proxy: process.env.TTS_PROXY,
+      timeoutMs: envNum(process.env.TTS_EDGE_TIMEOUT_MS, EDGE_TIMEOUT_MS),
+    })
+      .then(() => markEdgeOk())
+      .catch(() => markEdgeFail());
+  }, 1500);
 }
 
 /** 连通性自检：部署后在浏览器访问 GET /api/v1/bible/tts?diag=1 即可看到各源状态 */
@@ -260,6 +290,7 @@ export async function diagnoseTts(): Promise<Record<string, unknown>> {
   const sample = '语音合成连通性测试。';
   return {
     provider: process.env.TTS_PROVIDER || 'auto',
+    order: providerOrder(),
     proxyConfigured: !!process.env.TTS_PROXY,
     edgeBlocked: Date.now() < edgeBlockedUntil,
     edgeFailStreak,
