@@ -4,13 +4,14 @@ import type { MetadataRoute } from 'next';
  * sitemap.xml：只收录公开、无需登录的页面。
  * 登录态页面（/me、/messages、/admin 等）不进 sitemap。
  */
-const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://amen.dpdns.org';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
   const publicPaths: { path: string; priority: number; changeFrequency: 'daily' | 'weekly' | 'monthly' }[] = [
     { path: '/', priority: 1, changeFrequency: 'daily' },
     { path: '/bible', priority: 0.9, changeFrequency: 'weekly' },
+    { path: '/plans', priority: 0.8, changeFrequency: 'weekly' },
     { path: '/songs', priority: 0.9, changeFrequency: 'daily' },
     { path: '/community', priority: 0.8, changeFrequency: 'daily' },
     { path: '/feed', priority: 0.8, changeFrequency: 'daily' },

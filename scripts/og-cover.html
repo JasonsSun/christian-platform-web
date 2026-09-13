@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>og-cover</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    font-family: "Microsoft YaHei", "Noto Sans SC", "PingFang SC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    position: relative;
+    width: 1200px;
+    height: 630px;
+    padding: 70px 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background:
+      radial-gradient(1100px 560px at 12% -10%, #33429b 0%, #1e2664 46%, #121840 100%);
+    color: #fff;
+    overflow: hidden;
+  }
+  .glow { position: absolute; border-radius: 50%; filter: blur(95px); }
+  .g1 { width: 540px; height: 540px; background: #d4a643; top: -190px; right: -120px; opacity: .30; }
+  .g2 { width: 440px; height: 440px; background: #4f6df5; bottom: -180px; left: -110px; opacity: .40; }
+
+  .brand { position: relative; z-index: 2; display: flex; align-items: center; gap: 18px; }
+  .mark {
+    width: 66px; height: 66px; border-radius: 20px;
+    background: linear-gradient(135deg, #efd07a 0%, #c9962f 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 700; color: #1e2664;
+    box-shadow: 0 10px 30px rgba(212, 166, 67, .35);
+  }
+  .name { font-size: 31px; font-weight: 700; letter-spacing: 3px; }
+  .en { font-size: 16px; color: #9fb0e8; letter-spacing: 4px; margin-top: 3px; }
+
+  .headline { position: relative; z-index: 2; }
+  h1 { font-size: 82px; line-height: 1.1; font-weight: 800; letter-spacing: 3px; }
+  h1 .accent { color: #eccd72; }
+  .sub { margin-top: 20px; font-size: 25px; color: #bdc8ee; letter-spacing: 1px; }
+
+  .foot { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; }
+  .tags { display: flex; gap: 11px; }
+  .tag {
+    font-size: 18px; padding: 9px 19px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.26); color: #e6ebff; background: rgba(255,255,255,.05);
+  }
+  .url { font-size: 20px; color: #9fb0e8; letter-spacing: 1.5px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="glow g1"></div>
+    <div class="glow g2"></div>
+
+    <div class="brand">
+      <div class="mark">约</div>
+      <div>
+        <div class="name">圣约社区</div>
+        <div class="en">COVENANT COMMUNITY</div>
+      </div>
+    </div>
+
+    <div class="headline">
+      <h1>连接信徒 <span class="accent">传播福音</span><br />建立团契 同奔天路</h1>
+      <div class="sub">圣经 · 诗歌 · 见证 · 活动 · 直播 · 代祷</div>
+    </div>
+
+    <div class="foot">
+      <div class="tags">
+        <span class="tag">每日读经</span>
+        <span class="tag">读经计划</span>
+        <span class="tag">诗歌</span>
+        <span class="tag">代祷</span>
+      </div>
+      <div class="url">amen.dpdns.org</div>
+    </div>
+  </div>
+</body>
+</html>
