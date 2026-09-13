@@ -53,6 +53,14 @@ services:
       # 直播录像目录：必须与 mediamtx 的 recordPath(/recordings) 挂载同一个宿主机目录，
       # 否则 web 容器读不到 mediamtx 写出的录像，页面会一直卡在「录像生成中」。
       RECORD_DIR: /recordings
+      # 服务端语音合成（朗读兜底）。默认 auto：先试微软 Edge TTS，失败自动降级百度 TTS。
+      # 国内机房直连微软 TTS 常不通，可设 TTS_PROVIDER=baidu 直接走百度，
+      # 或设 TTS_PROXY=http://user:pass@host:port 让 Edge 走代理出境。
+      # 部署后可访问 /api/v1/bible/tts?diag=1 查看各合成源的连通性与耗时。
+      TTS_PROVIDER: ${TTS_PROVIDER:-auto}
+      TTS_PROXY: ${TTS_PROXY:-}
+      # 站点对外地址：影响 sitemap.xml / robots.txt / og:image 的绝对地址
+      SITE_URL: ${SITE_URL:-https://amen.dpdns.org}
       # NODE_ENV 由 server.js --prod 设置，无需在此覆盖
     volumes:
       - ./data/recordings:/recordings   # 与 mediamtx 共享录像目录
