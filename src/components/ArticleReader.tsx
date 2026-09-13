@@ -78,8 +78,14 @@ export default function ArticleReader({ title, body }: { title: string; body: st
           className="px-3 py-2 rounded-xl text-xs text-ink-500 border border-ink-200 hover:border-primary-300 hover:text-primary-600"
           title="本机缺少中文语音时浏览器朗读会完全无声，点此改用服务器合成"
         >
-          🔊 没声音？用服务器语音
+          🔊 没声音？改用在线语音
         </button>
+      )}
+
+      {speech.ttsMode === 'server' && !speech.ttsLoading && (
+        <span className="px-3 py-2 rounded-xl text-xs text-ink-400">
+          当前使用在线语音（服务器合成，需联网）
+        </span>
       )}
 
       {speech.clientReady && (

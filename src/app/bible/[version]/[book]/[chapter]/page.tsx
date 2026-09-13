@@ -853,8 +853,14 @@ export default function ReadChapter() {
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
                   title="本机缺少中文语音时浏览器朗读会完全无声，点此改用服务器合成"
                 >
-                  🔊 没声音？用服务器语音
+                  🔊 没声音？改用在线语音
                 </button>
+              )}
+              {/* 服务器语音模式下的说明：让用户知道这是网络合成的、为什么用它 */}
+              {speech.ttsMode === 'server' && !speech.ttsLoading && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-50 border border-ink-100 text-xs text-ink-400">
+                  当前使用在线语音（服务器合成，需联网）
+                </span>
               )}
               {speech.ttsError && !speech.clientReady && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-500">

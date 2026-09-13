@@ -280,6 +280,19 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     };
   }, []);
 
+  /**
+   * 微信 / QQ / 微博等 App 内置浏览器:X5、WKWebView 常常**没有中文语音引擎**,
+   * 甚至 speechSynthesis 存在但 speak() 完全静默。与其等 3 秒看门狗,直接判定
+   * 走服务端合成——这些环境同时也是最需要「服务器语音」的场景。
+   */
+  useEffect(() => {
+    if (typeof navigator === 'undefined') return;
+    const ua = navigator.userAgent || '';
+    if (/MicroMessenger|QQ\/|Weibo|DingTalk|AlipayClient|baiduboxapp|UCBrowser/i.test(ua)) {
+      setForceServer(true);
+    }
+  }, []);
+
   // 浏览器引擎静默失败 → 由 speakRange 调用服务端兜底(用 ref 打破定义顺序依赖)
   const serverStartRef = useRef<(fromKey?: number) => void>(() => {});
   /** 标记浏览器 TTS 不可用并交给服务端合成;page 可调用它做「没声音?」手动切换 */
@@ -654,9 +667,27 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     }
   }, []);
 
+  /**
+   * 极短静音 WAV(约 4ms)。iOS / 微信内置浏览器要求 <audio> 的首次播放必须发生在
+   * 用户手势的同步调用栈内,而服务端合成是异步的(fetch → blob → play),等到那时
+   * 手势上下文已丢失,play() 会被静默拒绝。这里在点击栈内先播一次静音解锁,
+   * 后续再播放真实音频就不会被拦。
+   */
+  const SILENT_WAV =
+    'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+  const unlockAudio = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const a = new Audio(SILENT_WAV);
+      const p = a.play();
+      if (p && typeof (p as Promise<void>).catch === 'function') (p as Promise<void>).catch(() => {});
+    } catch { /* ignore */ }
+  }, []);
+
   const serverStart = useCallback(async (fromKey?: number) => {
     const list = itemsRef.current;
     if (!list.length) return;
+    unlockAudio(); // 必须在第一个 await 之前,处于用户点击的同步栈内
     stoppedRef.current = false;
     genRef.current += 1;
     let i = 0;
@@ -730,7 +761,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       if (abortRef.current === ctrl) abortRef.current = null;
       setTtsLoading(false);
     }
-  }, [buildText, syncSpeakingKey, serverStopInner, clientStart]);
+  }, [buildText, syncSpeakingKey, serverStopInner, clientStart, unlockAudio]);
 
   // 浏览器引擎静默失败时由 speakRange 调用(用 ref 打破定义顺序依赖)
   useEffect(() => {
