@@ -6,6 +6,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { apiPost } from '@/lib/api';
 import { useConfirmNav } from '@/lib/confirm';
 import { useNotice } from '@/lib/notice';
+import { useAuth } from '@/lib/auth';
 import { AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox } from '../_components';
 import type { LiveRoomListItem } from '@/lib/types';
 
@@ -15,8 +16,10 @@ export default function AdminLivePage() {
   // review=1:管理端可见全部房间(含待审/驳回/取消/过期)
   const { data, loading, error, reload } = useApi<{ rooms: LiveRoomListItem[] }>(`/live?review=1`, []);
   const { run, pending: busy } = useAction();
+  const { user } = useAuth();
   const confirmNav = useConfirmNav();
   const notice = useNotice();
+  const canManage = user?.role === 'admin';
   const [tab, setTab] = useState<Tab>('all');
 
   const all = data?.rooms || [];
@@ -92,7 +95,7 @@ export default function AdminLivePage() {
   return (
     <AdminLayout>
       <SectionTitle>直播管理</SectionTitle>
-      <p className="text-sm text-ink-500 -mt-2 mb-5">审核直播间、强制关闭违规直播、取消预约。取消/过期不删除数据,只对外隐藏。</p>
+      <p className="text-sm text-ink-500 -mt-2 mb-5">审核直播间、强制关闭违规直播、取消预约。取消/过期不删除数据,只对外隐藏。<span className="text-ink-400">（审核员仅可审核,强制关闭与取消由管理员操作）</span></p>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="直播间总数" value={all.length} />
@@ -159,10 +162,10 @@ export default function AdminLivePage() {
                       <button className="btn-danger" disabled={busy} onClick={() => reviewAsk(r, false)}>驳回</button>
                     </>
                   )}
-                  {r.status === 'live' && (
+                  {canManage && r.status === 'live' && (
                     <button className="btn-danger" disabled={busy} onClick={() => cancelAsk(r, true)}>强制关闭</button>
                   )}
-                  {cancellable && (
+                  {canManage && cancellable && (
                     <button className="btn-ghost text-rose-600" disabled={busy} onClick={() => cancelAsk(r, false)}>取消</button>
                   )}
                 </div>

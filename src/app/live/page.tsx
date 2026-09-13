@@ -190,9 +190,11 @@ export default function LiveListPage() {
                 {pending ? '创建中…' : '创建直播间'}
               </button>
               <span className="text-xs text-ink-400">
-                {isStaff
+                {user?.role === 'admin'
                   ? '管理员创建免审核，创建后即可在详情页拿到 OBS 推流地址与密钥'
-                  : '创建后需管理员审核通过才能开播；创建后也可随时取消'}
+                  : user?.role === 'moderator'
+                    ? '审核员创建后需超管审核通过方可开播'
+                    : '创建后需管理员审核通过才能开播；创建后也可随时取消'}
               </span>
             </div>
           </div>
