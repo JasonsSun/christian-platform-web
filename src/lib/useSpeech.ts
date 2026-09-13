@@ -47,8 +47,14 @@ export interface SpeechOptions {
  *    (speakCharRef),页面据此实现逐节高亮 + 自动滚动 + 逐字高亮。
  * 3) 逐字高亮仅在语速 1.0x 时启用(wordSync):倍速下引擎的时间不再线性,
  *    逐字位置会明显漂移,此时只做整节(整行)高亮。
+ * 4) 服务端 TTS 兜底:无 speechSynthesis 时(安卓微信 WebView 等)请求后端合成音频。
+ *    这条链路**必须有超时**——历史上后端因微软 TTS 建连挂起而永不返回,
+ *    前端就一直停在「合成中…」,所以这里加了 AbortController 硬超时。
  */
 const CHUNK_VERSES = 4;
+
+/** 服务端合成请求的硬超时(含 mid-tier 代理不返回的情况) */
+const TTS_FETCH_TIMEOUT_MS = 60000;
 
 export function useSpeech(items: SpeechItem[], options: SpeechOptions | string = {}) {
   const opts: SpeechOptions = typeof options === 'string' ? { lang: options } : options;
@@ -71,8 +77,12 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
 
   // 服务端 TTS 兜底:无 speechSynthesis 时(如安卓微信 WebView)改用后端合成的音频播放
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  // 正在飞行中的合成请求,停止/换章/卸载时需要 abort,避免它继续占用连接
+  const abortRef = useRef<AbortController | null>(null);
   const [ttsLoading, setTtsLoading] = useState(false);
   const [ttsError, setTtsError] = useState(false);
+  // 实际合成来源(edge/baidu/cache),由响应头回传,便于排障与提示
+  const [ttsProvider, setTtsProvider] = useState<string | null>(null);
   const ttsMode: 'browser' | 'server' = supported ? 'browser' : 'server';
 
   const itemsRef = useRef<SpeechItem[]>(items);
@@ -376,6 +386,9 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   }, []);
 
   const serverStopInner = useCallback(() => {
+    // 中断仍在飞行中的合成请求(否则停止后连接还占着,浪费流量且可能串音)
+    abortRef.current?.abort();
+    abortRef.current = null;
     const a = audioRef.current;
     if (a) { a.pause(); a.src = ''; }
     audioRef.current = null;
@@ -396,13 +409,24 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     setTtsLoading(true);
     setState('playing');
     const gen = genRef.current;
+
+    // 取消上一个仍在飞行中的请求,并为本次请求装上硬超时
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    const timer = setTimeout(() => {
+      try { ctrl.abort(); } catch { /* ignore */ }
+    }, TTS_FETCH_TIMEOUT_MS);
+
     try {
       const res = await fetch('/api/v1/bible/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text }),
+        signal: ctrl.signal,
       });
       if (!res.ok) throw new Error('tts_failed');
+      setTtsProvider(res.headers.get('x-tts-provider'));
       const blob = await res.blob();
       if (stoppedRef.current || genRef.current !== gen) return; // 已停止/换章
       const url = URL.createObjectURL(blob);
@@ -431,8 +455,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       setState('idle');
       setSpeakingKey(null);
       speakCharRef.current = null;
-      setTtsError(true);
+      // 用户主动停止 / 换章引发的中断不算故障,不弹错误提示
+      if (!stoppedRef.current && genRef.current === gen) setTtsError(true);
     } finally {
+      clearTimeout(timer);
+      if (abortRef.current === ctrl) abortRef.current = null;
       setTtsLoading(false);
     }
   }, [buildText, syncSpeakingKey, serverStopInner]);
@@ -544,6 +571,8 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
+      abortRef.current?.abort();
+      abortRef.current = null;
       if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
     };
   }, [stopRaf, stopTick]);
@@ -554,6 +583,8 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     genRef.current += 1;
     stopTick();
     if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
+    abortRef.current?.abort();
+    abortRef.current = null;
     speakingKeyRef.current = null;
     setState('idle');
     setSpeakingKey(null);
@@ -566,8 +597,10 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     ttsMode,
     /** 服务端合成中(首屏等待) */
     ttsLoading,
-    /** 服务端合成失败(如微软 TTS 不可达),前端据此提示「请用 Chrome 打开」 */
+    /** 服务端合成失败(如所有 TTS 源都不可达),前端据此提示 */
     ttsError,
+    /** 实际合成来源(edge/baidu/cache),由响应头回传 */
+    ttsProvider,
     state,
     speakingKey,
     rate,
