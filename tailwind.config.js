@@ -59,10 +59,11 @@ module.exports = {
         },
       },
       // 字体
+      // 字体栈全部走本地系统字体，不依赖 Google Fonts（境内不可达会阻塞首屏）
       fontFamily: {
-        sans: ['Inter', 'Noto Sans SC', 'system-ui', 'sans-serif'],
-        serif: ['Noto Serif SC', 'Georgia', 'serif'],
-        display: ['"Playfair Display"', 'Noto Serif SC', 'serif'],
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'system-ui', 'sans-serif'],
+        serif: ['Noto Serif SC', 'Songti SC', 'SimSun', 'Georgia', 'serif'],
+        display: ['"Playfair Display"', 'Noto Serif SC', 'Songti SC', 'Georgia', 'serif'],
       },
       // 自定义阴影
       boxShadow: {

@@ -31,7 +31,12 @@ export function withApi<T extends any[]>(fn: (...args: T) => Promise<Response>) 
       // 兼容 `throw notFound(...)` 这类直接抛出 Response 的写法
       if (e instanceof Response) return e;
       console.error('[api-error]', e);
-      return fail(500, 'INTERNAL_ERROR', e?.message || '服务器内部错误');
+      // 生产环境不回传内部异常信息（避免泄漏 SQL/路径等细节给客户端）
+      const detail =
+        process.env.NODE_ENV === 'production'
+          ? '服务器内部错误，请稍后重试'
+          : e?.message || '服务器内部错误';
+      return fail(500, 'INTERNAL_ERROR', detail);
     }
   };
 }

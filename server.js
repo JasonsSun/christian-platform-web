@@ -20,6 +20,17 @@ const { WebSocketServer } = require('ws');
 // 不手写 res.write/end 补丁:Next 的响应管线有多种写入路径,手写极易漏掉首 chunk 导致响应损坏。
 const compression = require('compression');
 
+// ---- 全局异常兜底 ----
+// 部分第三方库的失败发生在异步流内部（业务层 try/catch 捕获不到，例如 next/og 在异常
+// 平台下的字体加载），Node 默认会以 unhandledRejection 直接终止进程 → 整站 502。
+// 这里统一落日志并保持服务存活；容器重启策略作为最后兜底。
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason instanceof Error ? reason.stack || reason.message : reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err && err.stack ? err.stack : err);
+});
+
 const dev = process.env.NODE_ENV !== 'production';
 const port = parseInt(process.env.PORT || '3000', 10);
 const app = next({ dev });

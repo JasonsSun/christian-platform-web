@@ -34,13 +34,13 @@ export const metadata: Metadata = {
     url: '/',
     title: SITE_TITLE,
     description: SITE_DESC,
-    images: [{ url: '/og-cover.png', width: 1200, height: 630, alt: '圣约社区 - 连接信徒，传播福音，建立团契' }],
+    images: [{ url: `${SITE_URL}/og-cover.png`, width: 1200, height: 630, alt: '圣约社区 - 连接信徒，传播福音，建立团契' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: SITE_TITLE,
     description: SITE_DESC,
-    images: ['/og-cover.png'],
+    images: [`${SITE_URL}/og-cover.png`],
   },
 }
 
@@ -57,11 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const initialLocale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
   return (
     <html lang={initialLocale === 'zh' ? 'zh-CN' : initialLocale}>
-      <head>
-        {/* 字体预连接：提前完成 Google Fonts 的 DNS+TLS 握手，缩短首屏字体加载 */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
+      {/* 不再预连接 Google Fonts：境内不可达，预连接反而产生无谓的挂起请求 */}
       <body className="overflow-x-hidden">
         {/* 首屏前无闪烁设置 <html data-theme>，避免暗色模式刷新白屏 */}
         <script dangerouslySetInnerHTML={{ __html: themeNoFlashScript }} />

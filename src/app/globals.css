@@ -2,8 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+/* 字体策略（2026-09-13 调整）
+   原先用 @import 阻塞式加载 Google Fonts，但 fonts.googleapis.com 在境内不可达（实测 HTTP 000），
+   浏览器构建 CSSOM 时会先等它超时，导致首屏样式延迟生效、控制台报字体加载失败。
+   现改为系统字体栈：不发起任何外部字体请求，境内首屏零阻塞，离线/弱网同样可用。 */
 
 /* 基础样式重置 */
 * {
@@ -15,7 +17,7 @@ html {
 }
 
 body {
-  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f6f7fb;
@@ -217,7 +219,7 @@ html, body {
   padding-top: 0.08em;
   font-weight: 700;
   color: #d97706;
-  font-family: 'Playfair Display', 'Noto Serif SC', Georgia, serif;
+  font-family: 'Playfair Display', 'Noto Serif SC', 'Songti SC', 'SimSun', Georgia, serif;
   text-shadow: 2px 2px 4px rgba(217, 119, 6, 0.2);
 }
 
