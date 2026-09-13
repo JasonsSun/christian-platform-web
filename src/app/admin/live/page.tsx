@@ -20,7 +20,9 @@ export default function AdminLivePage() {
   const confirmNav = useConfirmNav();
   const notice = useNotice();
   const canManage = user?.role === 'admin';
-  const [tab, setTab] = useState<Tab>('all');
+  const isModerator = user?.role === 'moderator';
+  // 审核员只需处理待审核,默认锁定在「待审核」tab,且不可切换到其他管理视角
+  const [tab, setTab] = useState<Tab>(isModerator ? 'pending' : 'all');
 
   const all = data?.rooms || [];
   const pendingCount = all.filter((r) => r.reviewStatus === 'pending' && !r.cancelled && r.status === 'created').length;
@@ -97,20 +99,26 @@ export default function AdminLivePage() {
       <SectionTitle>直播管理</SectionTitle>
       <p className="text-sm text-ink-500 -mt-2 mb-5">审核直播间、强制关闭违规直播、取消预约。取消/过期不删除数据,只对外隐藏。<span className="text-ink-400">（审核员仅可审核,强制关闭与取消由管理员操作）</span></p>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard title="直播间总数" value={all.length} />
-        <StatCard title="待审核" value={pendingCount} hint="普通用户创建需审核" />
-        <StatCard title="直播中" value={liveCount} hint="当前进行" />
-        <StatCard title="已关闭/取消" value={closedCount} hint="含驳回与过期" />
-      </div>
+      {/* 超管看完整管理统计;审核员仅看「待审核」数,不暴露总数/直播中/已关闭等管理视角 */}
+      {canManage ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatCard title="直播间总数" value={all.length} />
+          <StatCard title="待审核" value={pendingCount} hint="普通用户创建需审核" />
+          <StatCard title="直播中" value={liveCount} hint="当前进行" />
+          <StatCard title="已关闭/取消" value={closedCount} hint="含驳回与过期" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatCard title="待审核" value={pendingCount} hint="待你审核的直播间" />
+        </div>
+      )}
 
       <div className="flex gap-2 mb-4 flex-wrap">
-        {([
-          ['all', '全部'],
-          ['pending', '待审核'],
-          ['live', '直播中'],
-          ['closed', '已关闭'],
-        ] as [Tab, string][]).map(([k, label]) => (
+        {/* 审核员仅可看「待审核」;全部/直播中/已关闭为管理视角,仅超管可见 */}
+        {(canManage
+          ? ([['all', '全部'], ['pending', '待审核'], ['live', '直播中'], ['closed', '已关闭']] as [Tab, string][])
+          : ([['pending', '待审核']] as [Tab, string][])
+        ).map(([k, label]) => (
           <button
             key={k}
             className={`px-3 py-1.5 rounded-full text-sm ${tab === k ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`}
