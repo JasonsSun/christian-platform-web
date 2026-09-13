@@ -137,6 +137,11 @@ export default function SongDetailPage() {
             <ShareButton
               title={data ? `圣诗 · ${data.title}` : '圣约社区 · 诗歌'}
               text="推荐给你一首圣诗，愿诗歌的旋律伴你灵修。"
+              card={data ? {
+                eyebrow: '圣诗推荐',
+                text: (data.lyrics || '').split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 4).join('\n') || data.title,
+                reference: `《${data.title}》${data.author ? ` · ${data.author}` : ''}`,
+              } : undefined}
               className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-white/20 transition-all duration-300"
             />
           </div>

@@ -7,6 +7,7 @@ import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { countdown, timeAgo } from '@/lib/format';
 import { usePlayer, formatTime } from '@/lib/player';
+import ShareButton from '@/components/ShareButton';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import type { ActivityItem, ContentItem, GroupItem, MediaItem, PrayerItem, SongItem } from '@/lib/types';
 
@@ -167,9 +168,22 @@ export default function Home() {
                 ) : data?.verse ? (
                   <>
                     <div className="font-serif text-lg text-ink-800 leading-relaxed mb-4">“{data.verse.text}”</div>
-                    <Link href={`/bible/cuv/${data.verse.bookId}/${data.verse.chapter}`} className="text-sm text-primary-600 font-medium hover:underline">
-                      —— {data.verse.bookName} {data.verse.chapter}:{data.verse.verse}
-                    </Link>
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
+                      <Link href={`/bible/cuv/${data.verse.bookId}/${data.verse.chapter}`} className="text-sm text-primary-600 font-medium hover:underline">
+                        —— {data.verse.bookName} {data.verse.chapter}:{data.verse.verse}
+                      </Link>
+                      <ShareButton
+                        label="分享卡片"
+                        withText
+                        className="inline-flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                        title={`${data.verse.bookName} ${data.verse.chapter}:${data.verse.verse}`}
+                        card={{
+                          eyebrow: '每日经文',
+                          text: data.verse.text,
+                          reference: `${data.verse.bookName} ${data.verse.chapter}:${data.verse.verse}`,
+                        }}
+                      />
+                    </div>
                   </>
                 ) : (
                   <div className="text-ink-400 text-sm">{t('home.noVerse')}</div>

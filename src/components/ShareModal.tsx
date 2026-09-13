@@ -2,6 +2,16 @@
 
 import { useEffect, useState } from 'react';
 
+/** 生成分享卡片图所需数据（经文/诗歌/金句） */
+export type ShareCard = {
+  /** 顶部小字，如「每日经文」「约翰福音 3:16」 */
+  eyebrow?: string;
+  /** 正文（经文/歌词/金句） */
+  text: string;
+  /** 出处，如「约翰福音 3:16 · 和合本」 */
+  reference?: string;
+};
+
 type Props = {
   open: boolean;
   onClose: () => void;
@@ -11,13 +21,172 @@ type Props = {
   title?: string;
   /** 分享文案,默认一段推荐语 */
   text?: string;
+  /** 传入后会生成一张可保存/长按转发的分享卡片图 */
+  card?: ShareCard;
 };
 
-export default function ShareModal({ open, onClose, url, title, text }: Props) {
+/* ---------------- canvas 绘制帮助函数 ---------------- */
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const chars = Array.from(text.replace(/\s+/g, ' ').trim());
+  const lines: string[] = [];
+  let cur = '';
+  for (const ch of chars) {
+    if (ch === '\n') { lines.push(cur); cur = ''; continue; }
+    const test = cur + ch;
+    if (ctx.measureText(test).width > maxWidth && cur) {
+      lines.push(cur);
+      cur = ch;
+    } else {
+      cur = test;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+const SERIF = '"Songti SC","SimSun",serif';
+const SANS = '"PingFang SC","Microsoft YaHei",sans-serif';
+
+/** 生成一张 1080×1440 的分享卡片图（返回 PNG dataURL） */
+async function buildCardImage(card: ShareCard, qr?: string): Promise<string> {
+  const W = 1080;
+  const H = 1440;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('no_ctx');
+
+  // 背景：深蓝渐变 + 金色光晕
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, '#141b3d');
+  g.addColorStop(0.55, '#1e2664');
+  g.addColorStop(1, '#2a2f6b');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  const rg = ctx.createRadialGradient(W * 0.5, H * 0.26, 40, W * 0.5, H * 0.26, W * 0.85);
+  rg.addColorStop(0, 'rgba(212,164,0,0.20)');
+  rg.addColorStop(1, 'rgba(212,164,0,0)');
+  ctx.fillStyle = rg;
+  ctx.fillRect(0, 0, W, H);
+
+  // 金色内框
+  ctx.strokeStyle = 'rgba(212,164,0,0.55)';
+  ctx.lineWidth = 3;
+  roundRect(ctx, 46, 46, W - 92, H - 92, 40);
+  ctx.stroke();
+
+  const padX = 120;
+  const maxW = W - padX * 2;
+
+  // 顶部小字
+  let y = 200;
+  if (card.eyebrow) {
+    ctx.fillStyle = '#e9c66a';
+    ctx.font = `600 40px ${SANS}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(card.eyebrow, padX, y);
+    y += 30;
+  }
+
+  // 大引号装饰
+  ctx.fillStyle = 'rgba(212,164,0,0.22)';
+  ctx.font = `200px ${SERIF}`;
+  ctx.textAlign = 'left';
+  ctx.fillText('\u201C', padX - 8, y + 170);
+
+  // 正文：按长度自适应字号+行高
+  const text = (card.text || '').trim();
+  const len = Array.from(text).length;
+  let fontSize = 46;
+  if (len > 120) fontSize = 40;
+  if (len > 200) fontSize = 34;
+  if (len > 320) fontSize = 30;
+  if (len > 480) fontSize = 26;
+  const lineH = Math.round(fontSize * 1.7);
+  ctx.font = `${fontSize}px ${SERIF}`;
+  const lines = wrapText(ctx, text, maxW);
+  const maxLines = 20;
+  const shown = lines.slice(0, maxLines);
+  if (lines.length > maxLines && shown.length) {
+    shown[maxLines - 1] = shown[maxLines - 1].slice(0, -1) + '…';
+  }
+  ctx.fillStyle = '#f5f2e8';
+  ctx.textAlign = 'left';
+  // 正文垂直起点：留出顶部区域后开始
+  let ty = y + 210;
+  for (const ln of shown) {
+    ctx.fillText(ln, padX, ty);
+    ty += lineH;
+  }
+
+  // 出处（右下）
+  if (card.reference) {
+    ctx.fillStyle = '#e9c66a';
+    ctx.font = `600 40px ${SANS}`;
+    ctx.textAlign = 'right';
+    ctx.fillText(`—— ${card.reference}`, W - padX, ty + 30);
+  }
+
+  // 底部品牌区
+  const fy = H - 210;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `700 48px ${SANS}`;
+  ctx.fillText('圣约社区', padX, fy);
+  ctx.fillStyle = 'rgba(255,255,255,0.72)';
+  ctx.font = `30px ${SANS}`;
+  ctx.fillText('读经 · 圣诗 · 见证 · 团契', padX, fy + 54);
+  ctx.fillText('扫一扫，一起灵修', padX, fy + 102);
+
+  // 二维码（右下角，白色圆角底）
+  if (qr) {
+    try {
+      const img = await loadImage(qr);
+      const qs = 180;
+      const qx = W - padX - qs;
+      const qy = fy - qs + 42;
+      ctx.fillStyle = '#ffffff';
+      roundRect(ctx, qx - 18, qy - 18, qs + 36, qs + 36, 22);
+      ctx.fill();
+      ctx.drawImage(img, qx, qy, qs, qs);
+    } catch {
+      /* 二维码加载失败则跳过 */
+    }
+  }
+
+  return canvas.toDataURL('image/png');
+}
+
+export default function ShareModal({ open, onClose, url, title, text, card }: Props) {
   // 分享链接只在挂载时解析一次,避免渲染期反复读取 window.location 造成依赖抖动
   const [shareUrl, setShareUrl] = useState('');
   const [qr, setQr] = useState('');
   const [copied, setCopied] = useState(false);
+  const [cardImg, setCardImg] = useState('');
+  const [cardBusy, setCardBusy] = useState(false);
 
   const shareTitle = title || '圣约社区 - 基督教内容传播与社交社区';
   const shareText = text || '推荐给你一个基督徒的灵修与团契社区：读经、圣诗、见证、活动、直播，欢迎来一起建造。';
@@ -43,6 +212,18 @@ export default function ShareModal({ open, onClose, url, title, text }: Props) {
       .catch(() => { if (alive) setQr(''); });
     return () => { alive = false; };
   }, [open, shareUrl]);
+
+  // 生成分享卡片图（需等二维码就绪，把站点二维码嵌进卡片）
+  useEffect(() => {
+    if (!open || !card || !card.text) { setCardImg(''); return; }
+    let alive = true;
+    setCardBusy(true);
+    buildCardImage(card, qr || undefined)
+      .then((img) => { if (alive) setCardImg(img); })
+      .catch(() => { if (alive) setCardImg(''); })
+      .finally(() => { if (alive) setCardBusy(false); });
+    return () => { alive = false; };
+  }, [open, card, qr]);
 
   // 关闭时复位复制状态
   useEffect(() => {
@@ -73,6 +254,16 @@ export default function ShareModal({ open, onClose, url, title, text }: Props) {
     }
   };
 
+  const saveCard = () => {
+    if (!cardImg) return;
+    const a = document.createElement('a');
+    a.href = cardImg;
+    a.download = `圣约社区-${(card?.reference || '分享卡片').replace(/[\\/:*?"<>|]/g, '')}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   return (
     <div
       data-guard="share-modal"
@@ -90,7 +281,7 @@ export default function ShareModal({ open, onClose, url, title, text }: Props) {
       />
 
       {/* 面板 */}
-      <div className="relative glass rounded-3xl p-6 sm:p-8 shadow-card-hover max-w-sm w-full">
+      <div className="relative glass rounded-3xl p-6 sm:p-8 shadow-card-hover max-w-sm w-full max-h-[92vh] overflow-y-auto">
         <button
           type="button"
           onClick={onClose}
@@ -106,16 +297,45 @@ export default function ShareModal({ open, onClose, url, title, text }: Props) {
           <span className="text-lg" aria-hidden="true">📤</span>
           <h2 className="font-display text-lg font-bold text-ink-900">推荐给朋友</h2>
         </div>
-        <p className="text-sm text-ink-500 mb-5">扫码或复制链接，把圣约社区分享给主内肢体</p>
+        <p className="text-sm text-ink-500 mb-5">保存卡片图或扫码，把圣约社区分享给主内肢体</p>
+
+        {/* 分享卡片图（仅传入 card 时显示） */}
+        {card && (
+          <div className="mb-5">
+            <div className="rounded-2xl overflow-hidden border border-ink-100 bg-ink-50 flex items-center justify-center min-h-[160px]">
+              {cardImg ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img loading="lazy" src={cardImg} alt="分享卡片" className="w-full h-auto" />
+              ) : (
+                <div className="text-ink-300 text-sm py-10">{cardBusy ? '卡片生成中…' : '暂无卡片'}</div>
+              )}
+            </div>
+            {cardImg && (
+              <>
+                <button
+                  type="button"
+                  onClick={saveCard}
+                  className="mt-3 w-full btn-gold flex items-center justify-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-5l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  保存卡片图
+                </button>
+                <p className="text-xs text-ink-400 mt-2 text-center">手机端也可长按上图保存或转发到微信</p>
+              </>
+            )}
+          </div>
+        )}
 
         {/* 二维码 */}
         <div className="flex flex-col items-center mb-5">
           <div className="bg-white rounded-2xl p-3 shadow-soft border border-ink-100">
             {qr ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img loading="lazy" src={qr} alt="分享二维码" className="w-48 h-48" width={192} height={192} />
+              <img loading="lazy" src={qr} alt="分享二维码" className="w-40 h-40" width={160} height={160} />
             ) : (
-              <div className="w-48 h-48 flex items-center justify-center text-ink-300 text-sm">生成中…</div>
+              <div className="w-40 h-40 flex items-center justify-center text-ink-300 text-sm">生成中…</div>
             )}
           </div>
           <p className="text-xs text-ink-400 mt-2 break-all text-center max-w-[16rem]">{shareUrl}</p>

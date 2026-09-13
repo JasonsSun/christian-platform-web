@@ -186,6 +186,11 @@ export default function ContentDetailPage() {
             <ShareButton
               title={data ? `见证 · ${data.title}` : '圣约社区 · 见证'}
               text={data ? `推荐给你一篇主内见证「${data.title}」，愿与你一同分享。` : '推荐给你圣约社区的一篇主内见证。'}
+              card={data ? {
+                eyebrow: '主内见证',
+                text: (data.excerpt || data.body || data.title || '').slice(0, 220),
+                reference: `《${data.title}》${data.author?.displayName ? ` · ${data.author.displayName}` : ''}`,
+              } : undefined}
               className="w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/15 transition-colors"
             />
             {reportMsg ? (

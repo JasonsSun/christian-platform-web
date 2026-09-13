@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import ShareModal from '@/components/ShareModal';
+import ShareModal, { type ShareCard } from '@/components/ShareModal';
 
 type Props = {
   /** 要分享的链接,默认取当前页面地址 */
@@ -10,6 +10,8 @@ type Props = {
   title?: string;
   /** 分享文案 */
   text?: string;
+  /** 传入后弹窗内会生成一张可保存/长按转发的分享卡片图 */
+  card?: ShareCard;
   /** 图标按钮样式类(由调用方按所在页面配色传入) */
   className?: string;
   /** 图标按钮 aria-label */
@@ -26,6 +28,7 @@ export default function ShareButton({
   url,
   title,
   text,
+  card,
   className,
   label = '分享',
   withText = false,
@@ -57,7 +60,7 @@ export default function ShareButton({
         </svg>
         {withText && <span className="ml-1.5">{label}</span>}
       </button>
-      <ShareModal open={open} onClose={() => setOpen(false)} url={url} title={title} text={text} />
+      <ShareModal open={open} onClose={() => setOpen(false)} url={url} title={title} text={text} card={card} />
     </>
   );
 }

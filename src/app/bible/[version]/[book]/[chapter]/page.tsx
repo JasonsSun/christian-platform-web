@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { useSpeech, type SpeechItem } from '@/lib/useSpeech';
 import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
 import ReadingAngel from '@/components/ReadingAngel';
+import ShareModal from '@/components/ShareModal';
 import { useTheme } from '@/lib/theme';
 
 type VerseItem = { verse: number; text: string };
@@ -80,6 +81,7 @@ export default function ReadChapter() {
   const [verseBookmarks, setVerseBookmarks] = useState<Set<number>>(new Set());
   const [noteEditing, setNoteEditing] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState('');
+  const [shareOpen, setShareOpen] = useState(false);
 
   const bmPath = user ? `/bible/bookmarks${qs({ book, chapter })}` : null;
   const { data: bmList, loading: bmLoading, error: bmError, reload: reloadBm } = useApi<BookmarkResp>(
@@ -418,18 +420,22 @@ export default function ReadChapter() {
     }
   };
 
-  const handleShare = async () => {
-    const text = buildText();
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({ title: `${data?.book.name} ${chapter}章`, text });
-        return;
-      } catch {
-        /* 用户取消则回退到复制 */
-      }
-    }
-    handleCopy();
+  // 打开分享弹窗（内含「生成经文分享卡片图」+ 二维码 + 复制/系统分享）
+  const handleShare = () => {
+    setShareOpen(true);
   };
+
+  // 分享卡片内容：优先当前选中节，否则第一章第 1 节
+  const shareCard = (() => {
+    if (!data?.verses?.length) return undefined;
+    const v = (startVerse && data.verses.find((x) => x.verse === startVerse)) || data.verses[0];
+    if (!v) return undefined;
+    return {
+      eyebrow: `${data.book.name} 第 ${chapter} 章`,
+      text: v.text,
+      reference: `${data.book.name} ${chapter}:${v.verse}${data.version ? ` · ${data.version.toUpperCase()}` : ''}`,
+    };
+  })();
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -1088,6 +1094,15 @@ export default function ReadChapter() {
           {toast}
         </div>
       )}
+
+      {/* 分享弹窗：含「生成经文分享卡片图」 */}
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        title={data ? `${data.book.name} ${chapter}章` : undefined}
+        text={data ? `来自圣约社区：${data.book.name} ${chapter}章` : undefined}
+        card={shareCard}
+      />
     </div>
   );
 }
