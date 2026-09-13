@@ -41,10 +41,26 @@ export const POST = withApi(async (req: NextRequest) => {
   if (!b.bookId || !b.chapter) throw badRequest('缺少书卷或章节');
   const version = b.version || 'cuv';
   const verse = Number(b.verse || 0);
+  // 显式携带 note 字段 = 笔记保存/编辑操作: upsert, 保留收藏(允许把笔记清空)
+  const note = b.note === undefined ? undefined : (b.note || '').slice(0, 280);
   const existing = await one<any>(
     `SELECT id FROM bible_bookmarks WHERE user_id=? AND version=? AND book_id=? AND chapter=? AND verse=?`,
     [user.id, version, b.bookId, b.chapter, verse]
   );
+  if (note !== undefined) {
+    if (existing) {
+      await exec(`UPDATE bible_bookmarks SET note=? WHERE id=?`, [note, existing.id]);
+      return ok({ bookmarked: true, id: existing.id });
+    }
+    const id = newId('bm');
+    await exec(
+      `INSERT INTO bible_bookmarks (id, user_id, version, book_id, chapter, verse, note, created_at)
+       VALUES (?,?,?,?,?,?,?,?)`,
+      [id, user.id, version, b.bookId, b.chapter, verse, note, ts()]
+    );
+    return ok({ bookmarked: true, id });
+  }
+  // 不带 note = 收藏切换(原语义): 已收藏则删除, 未收藏则新增
   if (existing) {
     await exec(`DELETE FROM bible_bookmarks WHERE id=?`, [existing.id]);
     return ok({ bookmarked: false, id: existing.id });
@@ -53,7 +69,7 @@ export const POST = withApi(async (req: NextRequest) => {
   await exec(
     `INSERT INTO bible_bookmarks (id, user_id, version, book_id, chapter, verse, note, created_at)
      VALUES (?,?,?,?,?,?,?,?)`,
-    [id, user.id, version, b.bookId, b.chapter, verse, (b.note || '').slice(0, 280), ts()]
+    [id, user.id, version, b.bookId, b.chapter, verse, '', ts()]
   );
   return ok({ bookmarked: true, id });
 });

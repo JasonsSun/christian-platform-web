@@ -78,9 +78,11 @@ export default function ReadChapter() {
   // 本章书签状态：0 表示整章收藏，>0 表示单节收藏
   const [chapterBookmarked, setChapterBookmarked] = useState(false);
   const [verseBookmarks, setVerseBookmarks] = useState<Set<number>>(new Set());
+  const [noteEditing, setNoteEditing] = useState<number | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
 
   const bmPath = user ? `/bible/bookmarks${qs({ book, chapter })}` : null;
-  const { data: bmList, loading: bmLoading, error: bmError } = useApi<BookmarkResp>(
+  const { data: bmList, loading: bmLoading, error: bmError, reload: reloadBm } = useApi<BookmarkResp>(
     bmPath,
     [user, book, chapter]
   );
@@ -471,6 +473,24 @@ export default function ReadChapter() {
     }
   };
 
+  const saveNote = async (verse: number) => {
+    if (!user) {
+      showToast('请先登录');
+      return;
+    }
+    const note = noteDraft; // 允许清空笔记(后端 upsert 不再删除收藏)
+    const res = await bookmarkAction.run(() =>
+      apiPost<ToggleBookmarkResp>('/bible/bookmarks', { version, bookId: book, chapter, verse, note })
+    );
+    if (res) {
+      // 笔记与书签绑定: 保存成功后重新拉取书签列表, 后续 effect 会同步高亮
+      await reloadBm();
+      setNoteEditing(null);
+      setNoteDraft('');
+      showToast('笔记已保存');
+    }
+  };
+
   const markRead = async () => {
     if (!user) {
       showToast('请先登录');
@@ -845,6 +865,7 @@ export default function ReadChapter() {
                 // 全局字符游标：注释段不占索引（朗读时也不读），保证高亮与朗读对齐
                 let raw = seg ? seg.start : 0;
                 return (
+                  <>
                   <p
                     key={v.verse}
                     id={`v${v.verse}`}
@@ -933,10 +954,57 @@ export default function ReadChapter() {
                       title={vb ? '取消本节书签' : '收藏本节'}
                     >
                       <svg className="w-4 h-4" fill={vb ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.098 10.1c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.95-.69l1.519-4.674z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}                         d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118L2.098 10.1c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.95-.69l1.519-4.674z" />
+                      </svg>
+                    </button>
+                    {/* 笔记按钮：点击展开内联编辑,与本节书签绑定保存 */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const cur = bmList?.items.find((b) => b.verse === v.verse)?.note || '';
+                        setNoteDraft(cur);
+                        setNoteEditing(noteEditing === v.verse ? null : v.verse);
+                      }}
+                      disabled={!user}
+                      className={`absolute right-9 top-2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-primary-100 ${
+                        noteEditing === v.verse
+                          ? 'opacity-100 text-primary-600'
+                          : 'text-ink-300 hover:text-primary-600'
+                      } ${!user ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                      title="写笔记"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </button>
                   </p>
+                  {noteEditing === v.verse && (
+                    <div className="mt-2 ml-10 mr-4" onClick={(e) => e.stopPropagation()}>
+                      <textarea
+                        value={noteDraft}
+                        autoFocus
+                        onChange={(e) => setNoteDraft(e.target.value)}
+                        placeholder="写点笔记，与本节书签一起保存…"
+                        className="input-styled w-full min-h-[72px] resize-y text-sm"
+                      />
+                      <div className="flex gap-2 mt-1.5">
+                        <button
+                          disabled={bookmarkAction.pending}
+                          onClick={() => saveNote(v.verse)}
+                          className="btn-primary text-xs py-1.5 px-3"
+                        >
+                          {bookmarkAction.pending ? '保存中…' : '保存笔记'}
+                        </button>
+                        <button
+                          onClick={() => { setNoteEditing(null); setNoteDraft(''); }}
+                          className="btn-ghost text-xs py-1.5 px-3"
+                        >
+                          取消
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  </>
                 );
               })}
               <style jsx>{`
