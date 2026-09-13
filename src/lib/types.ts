@@ -303,6 +303,8 @@ export interface LiveRoom {
   streamKey?: string;
   publishSecret?: string;
   rtmpUrl?: string;
+  reminderCount?: number;
+  reminded?: boolean;
 }
 
 export interface LiveRoomListItem {
@@ -325,6 +327,7 @@ export interface LiveRoomListItem {
   viewerCount: number;
   live: boolean;
   hlsUrl?: string;
+  reminderCount?: number;
 }
 
 /* ---------------- 捐赠专区 ---------------- */

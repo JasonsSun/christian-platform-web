@@ -3,7 +3,7 @@ import { ok, withApi, HttpError, readJson } from '@/server/http';
 import { requireUser, requireRole } from '@/server/auth';
 import { createRoom, listRooms, publicRoomView, countViewersBatch, listMessages, isRoomExpired } from '@/server/live';
 import { listPathsLive, hlsPlayUrl } from '@/server/mediamtx';
-import { ts, exec } from '@/server/db';
+import { ts, exec, q } from '@/server/db';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

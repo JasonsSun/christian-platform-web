@@ -3,7 +3,8 @@ import { ok, withApi, notFound, HttpError, clientIp } from '@/server/http';
 import { requireUser } from '@/server/auth';
 import { getRoom, startRoom, publicRoomView, LiveConflictError } from '@/server/live';
 import { hlsPlayUrl, rtmpPushUrl } from '@/server/mediamtx';
-import { audit } from '@/server/services';
+import { q } from '@/server/db';
+import { audit, notify } from '@/server/services';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';

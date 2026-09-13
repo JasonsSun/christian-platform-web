@@ -3,6 +3,7 @@ import { ok, withApi, notFound } from '@/server/http';
 import { requireUser, findUserById } from '@/server/auth';
 import { getRoom, publicRoomView, countViewers, listMessages } from '@/server/live';
 import { isPathLive, hlsPlayUrl, rtmpPushUrl } from '@/server/mediamtx';
+import { q } from '@/server/db';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -21,13 +22,20 @@ export const GET = withApi(async (req: NextRequest, ctx: any) => {
   const vc = room.status === 'live' ? await countViewers(room.id) : 0;
   const messages = await listMessages(room.id);
   const owner = await findUserById(room.owner_id).catch(() => null);
+  // 当前登录用户是否预约了该直播(用于详情页"预约/取消预约"按钮状态)
+  const reminded = !!user && !!(await q<{ c: number }>(
+    `SELECT 1 AS c FROM live_reminders WHERE room_id=? AND user_id=? LIMIT 1`,
+    [id, user.id]
+  )).length;
+  const reminderCount = Number((await q<{ c: number }>(`SELECT COUNT(*) AS c FROM live_reminders WHERE room_id=?`, [id]))[0]?.c || 0);
 
-  return ok(publicRoomView(room, canSeeStream, {
+  const view = publicRoomView(room, canSeeStream, {
     hlsUrl: hlsPlayUrl(room.stream_key),
     rtmpUrl: rtmpPushUrl(room.stream_key),
     viewerCount: vc,
     messages,
     live,
     owner: owner ? { id: owner.id, displayName: owner.display_name, avatarColor: owner.avatar_color } : undefined,
-  }));
+  });
+  return ok({ ...view, reminded, reminderCount });
 });

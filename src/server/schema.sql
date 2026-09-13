@@ -630,6 +630,18 @@ CREATE TABLE IF NOT EXISTS live_viewers (
   CONSTRAINT fk_lv_room FOREIGN KEY (room_id) REFERENCES live_rooms (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 直播预约:用户预约开播提醒(开播时向预约者发站内/外部通知)
+CREATE TABLE IF NOT EXISTS live_reminders (
+  id          CHAR(36)     NOT NULL PRIMARY KEY,
+  room_id     CHAR(36)     NOT NULL,
+  user_id     CHAR(36)     NOT NULL,
+  created_at  DATETIME     NOT NULL,
+  UNIQUE KEY uk_lrem_room_user (room_id, user_id),
+  KEY idx_lrem_user (user_id),
+  CONSTRAINT fk_lrem_room FOREIGN KEY (room_id) REFERENCES live_rooms (id) ON DELETE CASCADE,
+  CONSTRAINT fk_lrem_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 /* ============================================================
    捐赠专区 V1.16 —— 自愿捐赠,用于维持平台平稳运行

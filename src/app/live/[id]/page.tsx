@@ -28,6 +28,8 @@ interface LiveRoom {
   cancelled?: boolean;
   cancelReason?: string | null;
   expired?: boolean;
+  reminderCount?: number;
+  reminded?: boolean;
 }
 
 export default function LiveWatchPage({ params }: { params: { id: string } }) {
@@ -82,6 +84,26 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
   const canManage = !!user && (user.role === 'admin' || isOwner);
   const canSeeGuide = canManage || (!!user && user.role === 'moderator');
   const canWatchLive = canManage || (!!user && user.role === 'moderator');
+
+  // 直播预约开播提醒:本地状态 + 与接口返回的 reminded 同步
+  const [reminded, setReminded] = useState(false);
+  const [reminding, setReminding] = useState(false);
+  useEffect(() => {
+    if (room) setReminded(!!room.reminded);
+  }, [room?.id, room?.reminded]); // eslint-disable-line
+
+  async function toggleRemind() {
+    if (!user || !room || reminding) return;
+    setReminding(true);
+    try {
+      const r = await apiPost<{ reminded: boolean; reminderCount: number }>(`/live/${room.id}/remind`, {});
+      setReminded(r.reminded);
+      notice.success(r.reminded ? '已预约，开播时会提醒你' : '已取消预约');
+      reload();
+    } finally {
+      setReminding(false);
+    }
+  }
 
   // 开播拦截原因(审核/取消/过期)
   const startBlock = room
@@ -391,6 +413,21 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                 className="w-9 h-9 rounded-full flex items-center justify-center text-ink-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
               />
             </div>
+            {/* 直播预约开播提醒:仅预告态、且非主播本人时可见 */}
+            {!isOwner && user && room.status === 'created' && !room.cancelled && !room.expired && (
+              <button
+                onClick={toggleRemind}
+                disabled={reminding}
+                className={`mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                  reminded ? 'bg-primary-50 border-primary-300 text-primary-700' : 'bg-white border-ink-200 text-ink-700 hover:border-primary-400 hover:text-primary-600'
+                }`}
+              >
+                {reminded ? '✓ 已预约' : '🔔 预约开播提醒'}
+                {typeof room.reminderCount === 'number' && room.reminderCount > 0 ? (
+                  <span className="text-xs opacity-70">· {room.reminderCount} 人已约</span>
+                ) : null}
+              </button>
+            )}
           </div>
 
           {/* 状态横幅:取消/过期/审核中/驳回 */}

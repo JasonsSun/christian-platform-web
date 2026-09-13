@@ -49,6 +49,7 @@ function iconFor(type: string): string {
     case 'prayer_amen': return '🙏';
     case 'live_approved': return '📺';
     case 'live_rejected': return '🚫';
+    case 'live_reminder': return '📺';
     case 'live_pending': return '⏳';
     case 'song_approved': return '🎶';
     case 'song_rejected': return '🚫';

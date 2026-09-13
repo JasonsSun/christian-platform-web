@@ -14,16 +14,15 @@ export default function LiveListPage() {
   const { user } = useAuth();
   const isStaff = user?.role === 'admin' || user?.role === 'moderator';
   const notice = useNotice();
-  const [tab, setTab] = useState<'live' | 'all' | 'recordings'>('live');
+  const [tab, setTab] = useState<'live' | 'all' | 'recordings' | 'reminded'>('live');
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const [scheduledAt, setScheduledAt] = useState('');
   const [recordEnabled, setRecordEnabled] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [reviewVideoId, setReviewVideoId] = useState<string | null>(null);
-  const { data, loading, error, reload } = useApi<{ rooms: LiveRoom[] }>(
-    `/live${tab === 'live' ? '?status=live' : ''}`, [tab]
-  );
+  const livePath = tab === 'reminded' ? '/live?remindedBy=1' : tab === 'live' ? '/live?status=live' : '/live';
+  const { data, loading, error, reload } = useApi<{ rooms: LiveRoom[] }>(livePath, [tab]);
   const { data: recData, loading: recLoading } = useApi<{ items: any[] }>(
     tab === 'recordings' ? '/live/recordings' : null, [tab]
   );
@@ -201,10 +200,13 @@ export default function LiveListPage() {
         </div>
       )}
 
-      <div className="flex gap-2 mt-5">
+      <div className="flex gap-2 mt-5 flex-wrap">
         <button className={`px-3 py-1.5 rounded-full text-sm ${tab === 'live' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('live')}>正在直播</button>
         <button className={`px-3 py-1.5 rounded-full text-sm ${tab === 'all' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('all')}>全部预告</button>
         <button className={`px-3 py-1.5 rounded-full text-sm ${tab === 'recordings' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('recordings')}>直播回放</button>
+        {user && (
+          <button className={`px-3 py-1.5 rounded-full text-sm ${tab === 'reminded' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('reminded')}>我的预约</button>
+        )}
       </div>
 
       {loading ? <Loading /> : null}
@@ -275,6 +277,9 @@ export default function LiveListPage() {
                   ) : null}
                   {isOwner && r.reviewStatus === 'rejected' && !r.cancelled ? (
                     <p className="text-xs text-rose-600 mt-1">✕ 审核未通过{r.reviewNote ? `:${r.reviewNote}` : ''}</p>
+                  ) : null}
+                  {typeof r.reminderCount === 'number' && r.reminderCount > 0 ? (
+                    <p className="text-xs text-primary-600 mt-1">🔔 {r.reminderCount} 人已预约</p>
                   ) : null}
                 </div>
               </Link>
