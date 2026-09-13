@@ -13,6 +13,7 @@ import ShareModal from '@/components/ShareModal';
 const navLinks = [
   { href: '/', key: 'nav.home' },
   { href: '/bible', key: 'nav.bible' },
+  { href: '/plans', key: 'nav.plans' },
   { href: '/songs', key: 'nav.songs' },
   { href: '/media', key: 'nav.media' },
   { href: '/live', key: 'nav.live' },

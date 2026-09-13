@@ -2,6 +2,7 @@ const zh = {
   nav: {
     home: '首页',
     bible: '圣经',
+    plans: '读经计划',
     songs: '诗歌',
     media: '媒体',
     live: '直播',

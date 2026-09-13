@@ -751,3 +751,15 @@ CREATE TABLE IF NOT EXISTS wechat_bind_tokens (
   KEY idx_wbt_user (user_id, status),
   CONSTRAINT fk_wbt_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 读经计划打卡: 计划内容为内置静态配置(src/lib/readingPlans.ts), 此表只记用户每天的完成情况
+CREATE TABLE IF NOT EXISTS reading_plan_progress (
+  id         CHAR(36)    NOT NULL PRIMARY KEY,
+  user_id    CHAR(36)    NOT NULL,
+  plan_id    VARCHAR(64) NOT NULL,
+  day        INT         NOT NULL,
+  done_at    DATETIME    NOT NULL,
+  UNIQUE KEY uk_rpp_user_plan_day (user_id, plan_id, day),
+  KEY idx_rpp_user_plan (user_id, plan_id),
+  CONSTRAINT fk_rpp_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

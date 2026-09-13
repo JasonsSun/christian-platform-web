@@ -4,6 +4,7 @@ const en: Dict = {
   nav: {
     home: 'Home',
     bible: 'Bible',
+    plans: 'Reading Plans',
     songs: 'Hymns',
     media: 'Media',
     live: 'Live',
