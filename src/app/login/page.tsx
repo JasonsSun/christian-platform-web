@@ -11,7 +11,9 @@ function LoginInner() {
   const params = useSearchParams();
   const modeParam = params.get('mode');
   const nextPath = safeNext(params.get('next'));
-  const initialMode = modeParam === 'register' ? 'register' : 'login';
+  // 带邀请码进来时直接落到注册页，减少一步跳转流失
+  const inviteCode = (params.get('invite') || '').trim().toUpperCase();
+  const initialMode = modeParam === 'register' || inviteCode ? 'register' : 'login';
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const router = useRouter();
   const { login, register, user } = useAuth();
@@ -85,6 +87,7 @@ function LoginInner() {
           displayName: displayName.trim(),
           captchaId,
           captchaCode: captchaCode.trim(),
+          inviteCode: inviteCode || undefined,
         });
       }
       router.push(nextPath);
@@ -127,6 +130,12 @@ function LoginInner() {
           </div>
 
           <form onSubmit={submit} className="space-y-4">
+            {inviteCode && mode === 'register' && (
+              <div className="rounded-xl bg-primary-50 border border-primary-100 px-4 py-3 text-sm text-primary-800">
+                你正通过好友邀请注册（邀请码 <b className="font-mono">{inviteCode}</b>），注册后你和对方都会获得成长奖励。
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-ink-700 mb-1.5">{mode === 'register' ? '用户名' : '账号'}</label>
               <input className="input-styled" placeholder={mode === 'register' ? '登录用的用户名' : '用户名 / 邮箱'} value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />

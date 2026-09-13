@@ -8,6 +8,7 @@ import { NoticeProvider } from '@/lib/notice'
 import { I18nProvider } from '@/lib/i18n/I18nProvider'
 import { ThemeProvider, themeNoFlashScript } from '@/lib/theme'
 import SWRegister from '@/components/SWRegister'
+import NetworkBanner from '@/components/NetworkBanner'
 import { cookies } from 'next/headers'
 import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale } from '@/lib/i18n/config'
 import ActivityTracker from '@/components/ActivityTracker'
@@ -71,6 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <AuthProvider>
               <PlayerProvider>
                 <NoticeProvider>
+                  <NetworkBanner />
                   <Guards />
                   <ActivityTracker />
                   <Navbar />

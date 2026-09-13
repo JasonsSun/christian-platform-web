@@ -13,6 +13,7 @@ import { timeAgo, formatDateTime } from '@/lib/format';
 import type { Author, Comment, ContentItem, ListResult } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
 import RichText from '@/components/RichText';
+import ArticleReader from '@/components/ArticleReader';
 
 function Avatar({ user, size = 36 }: { user: Author; size?: number }) {
   return (
@@ -306,6 +307,10 @@ export default function ContentDetailPage() {
                 </Link>
                 )}
               </div>
+
+            <div className="flex flex-wrap items-center gap-2 mb-5">
+              <ArticleReader title={data.title} body={data.body || ''} />
+            </div>
 
             <div className="divider-gradient mb-5" />
 

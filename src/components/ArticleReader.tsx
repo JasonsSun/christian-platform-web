@@ -1,0 +1,100 @@
+'use client';
+
+import { useMemo } from 'react';
+import { useSpeech, type SpeechItem } from '@/lib/useSpeech';
+
+/**
+ * 文章朗读（内容与经文共用同一套朗读引擎）。
+ * 按段落切分逐段朗读，服务端 TTS / 浏览器直连兜底逻辑与读经页一致。
+ */
+export default function ArticleReader({ title, body }: { title: string; body: string }) {
+  const items = useMemo<SpeechItem[]>(() => {
+    const paras = (body || '')
+      .split(/\n{1,}/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    const list = paras.length ? paras : [body || ''];
+    // 每段上限 400 字，避免超长段落被引擎静默掐断
+    const out: SpeechItem[] = [];
+    list.forEach((p, i) => {
+      if (p.length <= 400) {
+        out.push({ key: i + 1, text: p });
+        return;
+      }
+      let n = 0;
+      for (let s = 0; s < p.length; s += 400) {
+        out.push({ key: (i + 1) * 1000 + n, text: p.slice(s, s + 400) });
+        n += 1;
+      }
+    });
+    return out;
+  }, [body]);
+
+  const speech = useSpeech(items, { lang: 'zh-CN', announceKey: false, leadText: title || null });
+
+  if (!items.length || !items[0].text) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          if (speech.state === 'playing') speech.pause();
+          else if (speech.state === 'paused') speech.resume();
+          else speech.start();
+        }}
+        disabled={speech.ttsLoading}
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+          speech.state !== 'idle'
+            ? 'bg-primary-600 text-white border border-primary-600'
+            : 'bg-ink-50 text-ink-600 border border-ink-200 hover:border-primary-300 hover:text-primary-600'
+        } ${speech.ttsLoading ? 'opacity-60 cursor-wait' : ''}`}
+        title={speech.state === 'idle' ? '朗读本文' : '停止/继续'}
+      >
+        {speech.ttsLoading ? (
+          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3a9 9 0 109 9" /></svg>
+        ) : speech.state === 'playing' ? (
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
+        ) : (
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z" /></svg>
+        )}
+        {speech.ttsLoading ? '合成中…' : speech.state === 'playing' ? '暂停朗读' : speech.state === 'paused' ? '继续朗读' : '朗读本文'}
+      </button>
+
+      {speech.state !== 'idle' && (
+        <button
+          type="button"
+          onClick={speech.stop}
+          className="px-3 py-2 rounded-xl text-xs text-ink-500 border border-ink-200 hover:border-rose-200 hover:text-rose-500"
+        >
+          停止
+        </button>
+      )}
+
+      {speech.ttsMode === 'browser' && !speech.ttsLoading && (
+        <button
+          type="button"
+          onClick={() => speech.useServerVoice()}
+          className="px-3 py-2 rounded-xl text-xs text-ink-500 border border-ink-200 hover:border-primary-300 hover:text-primary-600"
+          title="本机缺少中文语音时浏览器朗读会完全无声，点此改用服务器合成"
+        >
+          🔊 没声音？用服务器语音
+        </button>
+      )}
+
+      {speech.clientReady && (
+        <button
+          type="button"
+          onClick={speech.clientPlay}
+          className="px-3 py-2 rounded-xl bg-primary-600 text-white text-xs font-medium hover:bg-primary-700"
+        >
+          ▶ 点此播放
+        </button>
+      )}
+
+      {speech.ttsError && !speech.clientReady && (
+        <span className="text-xs text-rose-500">⚠ 语音合成暂不可用，请稍后重试</span>
+      )}
+    </div>
+  );
+}

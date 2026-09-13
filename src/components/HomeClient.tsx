@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { countdown, timeAgo } from '@/lib/format';
 import { usePlayer, formatTime } from '@/lib/player';
 import ShareButton from '@/components/ShareButton';
+import OnboardingCard from '@/components/OnboardingCard';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import type { ActivityItem, ContentItem, GroupItem, MediaItem, PrayerItem, SongItem } from '@/lib/types';
 
@@ -207,6 +208,9 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#f6f7fb] to-transparent" />
       </section>
+
+      {/* 新手引导（仅登录且未完成时展示） */}
+      <OnboardingCard />
 
       {/* 统计 */}
       <section className="relative py-10 md:py-14 -mt-6">

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useApi, useAction } from '@/lib/useApi';
-import { api, apiPost, qs } from '@/lib/api';
+import { api, apiPost, apiDelete, qs } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useSpeech, type SpeechItem } from '@/lib/useSpeech';
 import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
@@ -134,6 +134,23 @@ export default function ReadChapter() {
   );
   const bookmarkAction = useAction();
   const readAction = useAction();
+
+  // 自动记录读经进度。
+  // 之前必须手动点「标记已读」才写库,用户点进经文却看不到任何记录 —— 属于功能缺陷。
+  // 现在:章节内容加载完成即静默写一次(后端按「同日同章」去重),失败静默忽略。
+  // 未登录时退化为写入 localStorage,保证"继续阅读"也可用。
+  const autoMarkedRef = useRef<string>('');
+  useEffect(() => {
+    if (!data?.hasContent) return;
+    const key = `${version}:${book}:${chapter}`;
+    if (autoMarkedRef.current === key) return;
+    autoMarkedRef.current = key;
+    try {
+      localStorage.setItem('bible:last', JSON.stringify({ version, bookId: book, chapter }));
+    } catch { /* ignore */ }
+    if (!user) return;
+    apiPost<{ ok: boolean }>('/bible/history', { version, bookId: book, chapter }).catch(() => {});
+  }, [data?.hasContent, version, book, chapter, user]);
 
   // 语音朗读：逐节朗读，读到哪节就高亮哪节（朗读文本剔除括号注释）
   const speechItems = useMemo<SpeechItem[]>(
@@ -529,6 +546,11 @@ export default function ReadChapter() {
       return;
     }
     const note = noteDraft; // 允许清空笔记(后端 upsert 不再删除收藏)
+    // 清空后保存 = 用户想删掉这条笔记,直接整条删除(而不是留下一个空标签)
+    if (!note.trim() && bmList?.items.find((b) => b.verse === verse)?.note) {
+      await deleteVerseNote(verse);
+      return;
+    }
     const res = await bookmarkAction.run(() =>
       apiPost<ToggleBookmarkResp>('/bible/bookmarks', { version, bookId: book, chapter, verse, note })
     );
@@ -539,6 +561,28 @@ export default function ReadChapter() {
       setNoteDraft('');
       showToast('笔记已保存');
     }
+  };
+
+  /** 删除某节的笔记/书签(整条记录删除,而不是只把文字清空) */
+  const deleteVerseNote = async (verse: number) => {
+    if (!user) { showToast('请先登录'); return; }
+    const row = bmList?.items.find((b) => b.verse === verse);
+    try {
+      if (row?.id) {
+        await apiDelete<{ deleted: boolean }>(`/bible/bookmarks?id=${encodeURIComponent(row.id)}`);
+      } else {
+        await apiDelete<{ deleted: boolean }>(
+          `/bible/bookmarks${qs({ version, book, chapter, verse })}`
+        );
+      }
+    } catch {
+      showToast('删除失败，请重试');
+      return;
+    }
+    setNoteEditing(null);
+    setNoteDraft('');
+    await reloadBm();
+    showToast('已删除笔记');
   };
 
   const markRead = async () => {
@@ -799,6 +843,17 @@ export default function ReadChapter() {
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-600 text-white text-xs font-medium hover:bg-primary-700 transition-colors"
                 >
                   ▶ 点此播放（用你的网络直接合成）
+                </button>
+              )}
+              {/* 浏览器有语音但听不到 / 发音很差 → 一键改用服务器合成语音 */}
+              {speech.ttsMode === 'browser' && !speech.ttsLoading && (
+                <button
+                  type="button"
+                  onClick={() => speech.useServerVoice(startVerse ?? undefined)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
+                  title="本机缺少中文语音时浏览器朗读会完全无声，点此改用服务器合成"
+                >
+                  🔊 没声音？用服务器语音
                 </button>
               )}
               {speech.ttsError && !speech.clientReady && (
@@ -1075,6 +1130,27 @@ export default function ReadChapter() {
                       </svg>
                     </button>
                   </p>
+                  {/* 已保存的笔记:直接显示出来(此前只写不显示,用户以为没保存/删不掉) */}
+                  {noteEditing !== v.verse && (() => {
+                    const savedNote = bmList?.items.find((b) => b.verse === v.verse)?.note || '';
+                    if (!savedNote) return null;
+                    return (
+                      <div className="mt-1.5 ml-10 mr-4 flex items-start gap-2" onClick={(e) => e.stopPropagation()}>
+                        <span className="flex-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 whitespace-pre-wrap break-words">
+                          📝 {savedNote}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => deleteVerseNote(v.verse)}
+                          disabled={bookmarkAction.pending}
+                          title="删除这条笔记"
+                          className="flex-shrink-0 text-[11px] px-2 py-1.5 rounded-lg border border-ink-200 text-ink-400 hover:text-rose-500 hover:border-rose-200 transition-colors"
+                        >
+                          删除
+                        </button>
+                      </div>
+                    );
+                  })()}
                   {noteEditing === v.verse && (
                     <div className="mt-2 ml-10 mr-4" onClick={(e) => e.stopPropagation()}>
                       <textarea
@@ -1098,6 +1174,15 @@ export default function ReadChapter() {
                         >
                           取消
                         </button>
+                        {bmList?.items.find((b) => b.verse === v.verse)?.note && (
+                          <button
+                            onClick={() => deleteVerseNote(v.verse)}
+                            disabled={bookmarkAction.pending}
+                            className="btn-ghost text-xs py-1.5 px-3 text-rose-500 hover:bg-rose-50"
+                          >
+                            删除笔记
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

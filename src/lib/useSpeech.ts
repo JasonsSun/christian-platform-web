@@ -63,6 +63,22 @@ const TTS_FETCH_TIMEOUT_MS = 45000;
 /** 浏览器直连兜底的分段字数:URL 会把中文 3 倍编码,取小值避免超长 URL */
 const CLIENT_SEG_CHARS = 200;
 
+/**
+ * 这些错误码说明「这台设备的语音引擎根本发不出声」,
+ * 必须切到服务端合成;interrupted/canceled 是我们主动取消,属正常流程。
+ */
+const FATAL_TTS_ERRORS = new Set([
+  'synthesis-failed',
+  'synthesis-unavailable',
+  'language-unavailable',
+  'voice-unavailable',
+  'audio-busy',
+  'audio-hardware',
+]);
+function isFatalTtsError(code?: string) {
+  return !!code && FATAL_TTS_ERRORS.has(code);
+}
+
 export function useSpeech(items: SpeechItem[], options: SpeechOptions | string = {}) {
   const opts: SpeechOptions = typeof options === 'string' ? { lang: options } : options;
   const lang = opts.lang || 'zh-CN';
@@ -92,7 +108,13 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   const [ttsProvider, setTtsProvider] = useState<string | null>(null);
   // 浏览器直连兜底:已就绪但自动播放被拦,等用户点一下
   const [clientReady, setClientReady] = useState(false);
-  const ttsMode: 'browser' | 'server' = supported ? 'browser' : 'server';
+  // 浏览器原生 TTS 被证明发不出声(系统无中文语音 / 引擎静默失败)时置 true,后续一律走服务端合成
+  const [browserBroken, setBrowserBroken] = useState(false);
+  // 用户手动强制使用服务端语音(浏览器有声音但发音差 / 缺中文语音时用)
+  const [forceServer, setForceServer] = useState(false);
+  const [voiceName, setVoiceName] = useState<string | null>(null);
+  const ttsMode: 'browser' | 'server' =
+    supported && !browserBroken && !forceServer ? 'browser' : 'server';
 
   const itemsRef = useRef<SpeechItem[]>(items);
   const rateRef = useRef(rate);
@@ -212,12 +234,97 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     estRef.current = null;
   }, [stopRaf]);
 
+  /**
+   * 显式挑选中文语音。
+   * 关键:很多机器(精简版 Windows / 部分安卓 WebView)根本没装中文语音,
+   * 此时 speak() 不报错、不触发 onerror,就是**完全没声音**。
+   * 所以这里把"能否找到中文语音"作为浏览器引擎可用性的判据返回。
+   */
   const pickVoice = useCallback((u: SpeechSynthesisUtterance) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    const voices = window.speechSynthesis.getVoices();
-    const zh = voices.find((v) => (v.lang || '').toLowerCase().startsWith('zh'));
-    if (zh) u.voice = zh;
+    if (typeof window === 'undefined' || !window.speechSynthesis) return false;
+    let voices: SpeechSynthesisVoice[] = [];
+    try { voices = window.speechSynthesis.getVoices() || []; } catch { voices = []; }
+    if (!voices.length) return false; // 语音表还没加载完,不算"无中文语音"
+    const zh =
+      voices.find((v) => /^zh(-|_)?/i.test(v.lang || '')) ||
+      voices.find((v) => /^cmn|^yue/i.test(v.lang || '')) ||
+      voices.find((v) => /chinese|中文|普通话/i.test(v.name || ''));
+    if (zh) {
+      u.voice = zh;
+      setVoiceName(zh.name || zh.lang);
+      return true;
+    }
+    return false;
   }, []);
+
+  // 语音表是异步加载的(Chrome 首次为空),这里等它就绪再判断
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+    const load = () => {
+      try {
+        const vs = window.speechSynthesis.getVoices() || [];
+        if (vs.length) {
+          const zh = vs.find((v) => /^zh(-|_)?/i.test(v.lang || ''));
+          setVoiceName(zh ? zh.name || zh.lang : null);
+          // 一个中文语音都没有 → 直接判定浏览器引擎不可用,避免"点了没声音"
+          if (!zh) setBrowserBroken(true);
+        }
+      } catch { /* ignore */ }
+    };
+    load();
+    try { window.speechSynthesis.addEventListener('voiceschanged', load); } catch { /* ignore */ }
+    const t = setTimeout(load, 1500);
+    return () => {
+      clearTimeout(t);
+      try { window.speechSynthesis.removeEventListener('voiceschanged', load); } catch { /* ignore */ }
+    };
+  }, []);
+
+  // 浏览器引擎静默失败 → 由 speakRange 调用服务端兜底(用 ref 打破定义顺序依赖)
+  const serverStartRef = useRef<(fromKey?: number) => void>(() => {});
+  /** 标记浏览器 TTS 不可用并交给服务端合成;page 可调用它做「没声音?」手动切换 */
+  const useServerVoice = useCallback((fromKey?: number) => {
+    setBrowserBroken(true);
+    setForceServer(true);
+    try { window.speechSynthesis?.cancel(); } catch { /* ignore */ }
+    stopTick();
+    stoppedRef.current = false;
+    setTimeout(() => serverStartRef.current?.(fromKey), 30);
+  }, [stopTick]);
+
+  /**
+   * 「静默失败」看门狗:浏览器 TTS 在缺少中文语音时会**既不发声也不报错**,
+   * 用户点了朗读却毫无反应。这里在 speak 之后起一个定时器,若超时仍没有任何
+   * 引擎事件(onstart/onend/onerror),判定该引擎不可用,自动切到服务端合成。
+   */
+  const watchdogRef = useRef<any>(0);
+  const clearWatchdog = useCallback(() => {
+    if (watchdogRef.current) {
+      clearTimeout(watchdogRef.current);
+      watchdogRef.current = 0;
+    }
+  }, []);
+  const armWatchdog = useCallback(
+    (gen: number, fromKey?: number, ms = 3000) => {
+      clearWatchdog();
+      watchdogRef.current = setTimeout(() => {
+        watchdogRef.current = 0;
+        if (stoppedRef.current || genRef.current !== gen) return;
+        try { window.speechSynthesis?.cancel(); } catch { /* ignore */ }
+        setBrowserBroken(true);
+        stopTick();
+        stoppedRef.current = false;
+        setState('idle');
+        setSpeakingKey(null);
+        speakCharRef.current = null;
+        serverStartRef.current?.(fromKey);
+      }, ms);
+    },
+    [clearWatchdog, stopTick]
+  );
+
+  // 卸载 / 停用时清掉看门狗,避免它把已放弃的朗读又拉起来
+  useEffect(() => () => clearWatchdog(), [clearWatchdog]);
 
   // 将 fromIndex 起的各节拼成一个 utterance 朗读。
   // withLead=true 且配置了 leadText 时,先单独播报标题,再读正文。
@@ -235,27 +342,46 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       const alive = () => !stoppedRef.current && genRef.current === gen;
       posRef.current = fromIndex;
 
+      // 浏览器引擎彻底发不出声(无中文语音 / 引擎静默失败)→ 交服务端合成,保证"点了一定有声音"
+      const bailToServer = (fromKey?: number) => {
+        clearWatchdog();
+        try { window.speechSynthesis?.cancel(); } catch { /* ignore */ }
+        setBrowserBroken(true);
+        stoppedRef.current = false;
+        stopTick();
+        setState('idle');
+        setSpeakingKey(null);
+        speakCharRef.current = null;
+        serverStartRef.current?.(fromKey);
+      };
+
       // ---- 标题播报(「约翰福音 第 3 章」) ----
       const lead = withLead ? (leadTextRef.current || '').trim() : '';
       if (lead) {
         setState('playing');
-        speakingKeyRef.current = list[fromIndex].key;
-        setSpeakingKey(list[fromIndex].key);
+        const key0 = list[fromIndex].key;
+        speakingKeyRef.current = key0;
+        setSpeakingKey(key0);
         speakCharRef.current = null;
         const lu = new SpeechSynthesisUtterance(lead);
         lu.lang = lang;
         lu.rate = rateRef.current;
         lu.volume = 1;
         pickVoice(lu);
+        lu.onstart = () => clearWatchdog();
         lu.onend = () => {
+          clearWatchdog();
           if (!alive()) return;
           setTimeout(() => { if (alive()) speakRangeRef.current?.(fromIndex, false); }, 60);
         };
-        lu.onerror = () => {
+        lu.onerror = (e: any) => {
+          clearWatchdog();
           if (!alive()) return;
+          if (isFatalTtsError(e?.error)) { bailToServer(key0); return; }
           setTimeout(() => { if (alive()) speakRangeRef.current?.(fromIndex, false); }, 60);
         };
         window.speechSynthesis.speak(lu);
+        armWatchdog(gen, key0);
         return;
       }
 
@@ -308,6 +434,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       const ws = rateRef.current === 1;
       speakCharRef.current = ws ? spans[0].start : null;
 
+      u.onstart = () => clearWatchdog();
       u.onboundary = (e: SpeechSynthesisEvent) => {
         // 倍速下不做逐字同步,交给时间估算推进节级高亮
         if (!ws) return;
@@ -323,6 +450,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         }
       };
       u.onend = () => {
+        clearWatchdog();
         stopTick();
         if (!alive()) return;
         // 本批读完 → 自动接下一批(分批是为了避免超长 utterance 被浏览器静默掐断)
@@ -338,32 +466,25 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         // 自然读完(未停止、未被换章打断)→ 通知页面,用于「读完自动下一章」
         if (alive()) onEndRef.current?.();
       };
-      u.onerror = () => {
+      u.onerror = (e: any) => {
+        clearWatchdog();
         stopTick();
         if (!alive()) return;
+        // 语音缺失 / 引擎不可用 → 服务端兜底;被 cancel/中断属正常流程,不降级
+        if (isFatalTtsError(e?.error)) { bailToServer(spans[0].key); return; }
         speakCharRef.current = null;
         speakingKeyRef.current = null;
         setState('idle');
         setSpeakingKey(null);
       };
 
-      // 静默预热引擎:Chromium 首次/冷启动时会在首句开头裁掉几个字。
-      // 先播放一个 volume=0、rate=10 的空 utterance 触发引擎完整初始化,后续真正的朗读就不会被吞首字。
-      // 该预热完全无声,且处于用户点击的交互链内(有激活),浏览器不会拒绝。
-      const warm = new SpeechSynthesisUtterance('');
-      warm.volume = 0;
-      warm.rate = 10;
-      warm.lang = lang;
-      window.speechSynthesis.speak(warm);
       setState('playing');
-      // 预热后稍等再 speak 整段,确保引擎已就绪;随后启动时间估算兜底
-      setTimeout(() => {
-        if (!alive()) return;
-        window.speechSynthesis.speak(u);
-        startTick({ t0, perChar, baseChar, spans, total: totalChars, wordSync: ws });
-      }, 120);
+      window.speechSynthesis.speak(u);
+      startTick({ t0, perChar, baseChar, spans, total: totalChars, wordSync: ws });
+      // 3 秒内引擎既没 onstart 也没 onend/onerror → 判定静默失败(点了完全没声音),走服务端
+      armWatchdog(gen, spans[0].key);
     },
-    [lang, supported, startTick, stopTick, stopRaf, syncSpeakingKey, pickVoice]
+    [lang, supported, startTick, stopTick, stopRaf, syncSpeakingKey, pickVoice, armWatchdog, clearWatchdog]
   );
 
   // 分批链式朗读时,下一批要从 onend 回调里再次调用 speakRange
@@ -611,6 +732,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     }
   }, [buildText, syncSpeakingKey, serverStopInner, clientStart]);
 
+  // 浏览器引擎静默失败时由 speakRange 调用(用 ref 打破定义顺序依赖)
+  useEffect(() => {
+    serverStartRef.current = (fromKey?: number) => { void serverStart(fromKey); };
+  }, [serverStart]);
+
   const serverPause = useCallback(() => {
     audioRef.current?.pause();
     setState('paused');
@@ -641,33 +767,38 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   /** 从头开始(或停止后从指定节重新开始) */
   const start = useCallback(
     (fromKey?: number) => {
-      if (!supported) { serverStart(fromKey); return; }
+      if (ttsMode === 'server') { void serverStart(fromKey); return; }
       if (!itemsRef.current.length) return;
       stoppedRef.current = false;
       genRef.current += 1;
       speakingKeyRef.current = null;
       stopRaf();
-      window.speechSynthesis.cancel();
       let i = 0;
       if (fromKey != null) {
         const found = itemsRef.current.findIndex((it) => it.key === fromKey);
         if (found >= 0) i = found;
       }
-      speakRange(i, true);
+      // Chrome 的已知缺陷:speak() 紧跟在 cancel() 之后会把这次朗读一起吞掉(无声)。
+      // 所以 cancel 后先 resume 复位引擎,再延后一拍才 speak。
+      try {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.resume();
+      } catch { /* ignore */ }
+      setTimeout(() => { if (!stoppedRef.current) speakRange(i, true); }, 80);
     },
-    [speakRange, supported, stopRaf, serverStart]
+    [speakRange, ttsMode, stopRaf, serverStart]
   );
 
   const pause = useCallback(() => {
-    if (!supported) { serverPause(); return; }
+    if (ttsMode === 'server') { serverPause(); return; }
     stopRaf();
     pauseAtRef.current = performance.now();
     window.speechSynthesis.pause();
     setState('paused');
-  }, [supported, stopRaf, serverPause]);
+  }, [ttsMode, stopRaf, serverPause]);
 
   const resume = useCallback(() => {
-    if (!supported) { serverResume(); return; }
+    if (ttsMode === 'server') { serverResume(); return; }
     window.speechSynthesis.resume();
     setState('playing');
     // 补偿暂停时长,让时间估算继续准确(若该浏览器依赖估算兜底)
@@ -675,10 +806,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       estRef.current.t0 += performance.now() - pauseAtRef.current;
       rafRef.current = requestAnimationFrame(tick);
     }
-  }, [supported, tick, serverResume]);
+  }, [ttsMode, tick, serverResume]);
 
   const stop = useCallback(() => {
-    if (!supported) { serverStop(); return; }
+    if (ttsMode === 'server') { serverStop(); return; }
+    clearWatchdog();
     stopTick();
     stoppedRef.current = true;
     genRef.current += 1;
@@ -687,11 +819,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     window.speechSynthesis.cancel();
     setState('idle');
     setSpeakingKey(null);
-  }, [supported, stopTick, serverStop]);
+  }, [ttsMode, stopTick, serverStop, clearWatchdog]);
 
   const setRate = useCallback(
     (r: number) => {
-      if (!supported) { serverSetRate(r); return; }
+      if (ttsMode === 'server') { serverSetRate(r); return; }
       const v = Math.max(0.5, Math.min(2, r));
       setRateState(v);
       rateRef.current = v;
@@ -702,16 +834,17 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
           genRef.current += 1;
           window.speechSynthesis.cancel();
           stopTick();
-          setTimeout(() => speakRange(posRef.current), 60);
+          setTimeout(() => speakRange(posRef.current), 80);
         }
       }
     },
-    [speakRange, state, stopTick, serverSetRate]
+    [speakRange, state, stopTick, serverSetRate, ttsMode]
   );
 
   /** 切换章节 / 卸载时停止朗读 */
   useEffect(() => {
     return () => {
+      clearWatchdog();
       stopRaf();
       stopTick();
       stoppedRef.current = true;
@@ -723,10 +856,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       abortRef.current = null;
       if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
     };
-  }, [stopRaf, stopTick]);
+  }, [stopRaf, stopTick, clearWatchdog]);
 
   // 朗读内容变化(如换章)时自动停止
   useEffect(() => {
+    clearWatchdog();
     stoppedRef.current = true;
     genRef.current += 1;
     stopTick();
@@ -738,12 +872,18 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     setSpeakingKey(null);
     setClientReady(false);
     speakCharRef.current = null;
-  }, [items, stopTick]);
+  }, [items, stopTick, clearWatchdog]);
 
   return {
     supported,
-    /** 朗读引擎模式:browser=浏览器原生 TTS;server=后端合成音频(无 speechSynthesis 时) */
+    /** 朗读引擎模式:browser=浏览器原生 TTS;server=后端合成音频 */
     ttsMode,
+    /** 浏览器原生 TTS 被判定不可用(缺中文语音 / 引擎静默失败) */
+    browserBroken,
+    /** 当前选中的语音名(浏览器模式) */
+    voiceName,
+    /** 手动切换到服务端语音(「点了没声音」时用户可自行切换) */
+    useServerVoice,
     /** 服务端合成中(首屏等待) */
     ttsLoading,
     /** 服务端合成失败(如所有 TTS 源都不可达),前端据此提示 */

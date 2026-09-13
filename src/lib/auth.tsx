@@ -8,7 +8,7 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   login: (identifier: string, password: string, captcha?: { captchaId: string; captchaCode: string }) => Promise<User>;
-  register: (payload: { username: string; email: string; password: string; displayName?: string; captchaId?: string; captchaCode?: string }) => Promise<User>;
+  register: (payload: { username: string; email: string; password: string; displayName?: string; captchaId?: string; captchaCode?: string; inviteCode?: string }) => Promise<User>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
   setUser: (u: User | null) => void;
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (payload: { username: string; email: string; password: string; displayName?: string; captchaId?: string; captchaCode?: string }) => {
+    async (payload: { username: string; email: string; password: string; displayName?: string; captchaId?: string; captchaCode?: string; inviteCode?: string }) => {
       const data = await apiPost<{ user: User; accessToken: string; refreshToken: string }>('/auth/register', payload);
       tokenStore.set(data.accessToken);
       tokenStore.setRefresh(data.refreshToken);

@@ -400,6 +400,111 @@ function DeleteAccountModal({ onClose, onDone }: { onClose: () => void; onDone: 
   );
 }
 
+/** 每日签到：连续天数 + 本月日历 + 等级进度 */
+function CheckinCard() {
+  const { data, loading, reload } = useApi<any>('/me/growth', []);
+  const { run, pending } = useAction();
+  const { success, error: toastError } = useNotice();
+
+  if (loading) return <div className="glass rounded-2xl p-5 shadow-soft text-sm text-ink-400">加载签到状态…</div>;
+  if (!data) return null;
+
+  const c = data.checkin || {};
+  const month = String(c.month || '').split('-');
+  const daysInMonth = month.length === 2 ? new Date(Number(month[0]), Number(month[1]), 0).getDate() : 30;
+  const grid = Array.from({ length: daysInMonth }, (_, i) => {
+    const d = `${c.month}-${String(i + 1).padStart(2, '0')}`;
+    return { d, on: (c.monthDays || []).includes(d) };
+  });
+
+  async function checkin() {
+    const r = await run(() => apiPost<any>('/me/checkin'));
+    if (!r) { toastError('签到失败，请稍后再试'); return; }
+    success(r.message || '签到成功');
+    if (r.bonus) setTimeout(() => success(r.bonus), 600);
+    reload();
+  }
+
+  return (
+    <div className="glass rounded-2xl p-5 shadow-soft">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h3 className="font-display text-lg font-bold text-ink-900">每日签到</h3>
+          <p className="text-xs text-ink-500 mt-0.5">
+            连续 <b className="text-primary-600">{c.streak ?? 0}</b> 天 · 累计 {c.totalDays ?? 0} 天 · 最长 {c.longestStreak ?? 0} 天
+          </p>
+        </div>
+        <button onClick={checkin} disabled={pending || c.checked} className="btn-primary disabled:opacity-60">
+          {c.checked ? '今日已签到 ✓' : pending ? '签到中…' : '立即签到'}
+        </button>
+      </div>
+
+      <div className="mt-4 grid grid-cols-7 sm:grid-cols-10 gap-1.5">
+        {grid.map((g) => (
+          <div
+            key={g.d}
+            title={g.d}
+            className={`h-7 rounded-md text-[11px] flex items-center justify-center border ${
+              g.on ? 'bg-primary-600 text-white border-primary-600' : 'bg-white/70 text-ink-400 border-ink-100'
+            }`}
+          >
+            {g.d.slice(-2)}
+          </div>
+        ))}
+      </div>
+
+      {!!(data.tips || []).length && (
+        <ul className="mt-4 text-xs text-ink-500 space-y-1 list-disc pl-5">
+          {(data.tips || []).slice(0, 3).map((t: string) => <li key={t}>{t}</li>)}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** 邀请好友：邀请码 + 链接 + 成果 */
+function InviteCard() {
+  const { data } = useApi<any>('/me/invite', []);
+  const { success, error: toastError } = useNotice();
+
+  if (!data) return null;
+
+  async function copy(text: string) {
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+      else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      success('已复制邀请链接');
+    } catch {
+      toastError('复制失败，请手动选择链接复制');
+    }
+  }
+
+  return (
+    <div className="glass rounded-2xl p-5 shadow-soft">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h3 className="font-display text-lg font-bold text-ink-900">邀请好友</h3>
+          <p className="text-xs text-ink-500 mt-0.5">
+            已邀请 <b className="text-primary-600">{data.invitedCount ?? 0}</b> 人 · 好友注册后双方各得成长奖励
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="px-3 py-1.5 rounded-lg bg-ink-100 font-mono text-sm tracking-widest text-ink-800">{data.code}</span>
+          <button onClick={() => copy(data.url)} className="btn-primary">复制邀请链接</button>
+        </div>
+      </div>
+      <p className="mt-3 text-xs text-ink-400 break-all">{data.url}</p>
+    </div>
+  );
+}
+
 function MyGrowth() {
   const { data, loading, reload } = useApi<any>('/me/quota?refresh=1', []);
   const { run, pending } = useAction();
@@ -437,6 +542,8 @@ function MyGrowth() {
 
   return (
     <div className="space-y-5">
+      <CheckinCard />
+      <InviteCard />
       <QuotaCard data={data} />
 
       <div className="glass rounded-2xl p-5 shadow-soft">

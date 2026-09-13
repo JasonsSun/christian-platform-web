@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
-import { qs } from '@/lib/api';
+import { qs, apiDelete } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { timeAgo, formatDate } from '@/lib/format';
 import type { BibleMeta, BibleBook } from '@/lib/types';
@@ -42,7 +42,23 @@ export default function BibleHome() {
 
   const { data: plan, loading: planLoading, error: planError } = useApi<PlanResp>(planPath, [loggedIn]);
   const { data: history, loading: hLoading, error: hError } = useApi<HistoryResp>(historyPath, [loggedIn]);
-  const { data: bm, loading: bmLoading, error: bmError } = useApi<BookmarkResp>(bmPath, [loggedIn]);
+  const { data: bm, loading: bmLoading, error: bmError, reload: reloadBm } =
+    useApi<BookmarkResp>(bmPath, [loggedIn]);
+
+  // 删除书签/笔记(此前只能收藏/取消,笔记标签删不掉)
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const deleteBookmark = async (id: string) => {
+    if (deletingId) return;
+    setDeletingId(id);
+    try {
+      await apiDelete<{ deleted: boolean }>(`/bible/bookmarks?id=${encodeURIComponent(id)}`);
+      await reloadBm();
+    } catch {
+      /* 失败保持原状,不打断浏览 */
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const versions = data?.versions ?? [];
   const activeVersion = version || versions[0]?.id || '';
@@ -299,22 +315,39 @@ export default function BibleHome() {
             ) : bm && bm.items.length > 0 ? (
               <div className="space-y-2">
                 {bm.items.slice(0, 6).map((it) => (
-                  <Link
+                  <div
                     key={it.id}
-                    href={`/bible/${it.version}/${it.bookId}/${it.chapter}`}
-                    className="block bg-white/70 hover:bg-white rounded-xl px-3 py-2 border border-ink-100 hover:border-primary-200 transition-all"
+                    className="flex items-center gap-2 bg-white/70 hover:bg-white rounded-xl px-3 py-2 border border-ink-100 hover:border-primary-200 transition-all"
                   >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium text-ink-800 truncate">
-                        {it.bookName} 第 {it.chapter} 章
-                        {it.verse > 0 && <span className="text-primary-600">:{it.verse}</span>}
-                      </span>
-                      <span className="text-[11px] text-ink-400 flex-shrink-0">
-                        {it.verse > 0 ? '节' : '全章'}
-                      </span>
-                    </div>
-                    {it.note && <p className="text-xs text-ink-500 mt-0.5 truncate">{it.note}</p>}
-                  </Link>
+                    <Link
+                      href={`/bible/${it.version}/${it.bookId}/${it.chapter}`}
+                      className="flex-1 min-w-0"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-ink-800 truncate">
+                          {it.bookName} 第 {it.chapter} 章
+                          {it.verse > 0 && <span className="text-primary-600">:{it.verse}</span>}
+                        </span>
+                        <span className="text-[11px] text-ink-400 flex-shrink-0">
+                          {it.verse > 0 ? '节' : '全章'}
+                        </span>
+                      </div>
+                      {it.note && <p className="text-xs text-ink-500 mt-0.5 truncate">{it.note}</p>}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => deleteBookmark(it.id)}
+                      disabled={deletingId === it.id}
+                      title="删除这条书签/笔记"
+                      className="flex-shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg text-ink-300 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                    >
+                      {deletingId === it.id ? (
+                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3a9 9 0 109 9" /></svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                      )}
+                    </button>
+                  </div>
                 ))}
               </div>
             ) : (

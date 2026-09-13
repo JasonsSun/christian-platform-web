@@ -32,6 +32,34 @@ export const GET = withApi(async (req: NextRequest) => {
   });
 });
 
+/**
+ * DELETE /api/v1/bible/bookmarks
+ * 删除书签/笔记。两种定位方式(二选一):
+ *   ?id=<书签ID>
+ *   ?version=cuv&book=john&chapter=3&verse=5   (verse 省略视为 0 整章)
+ * 此前只能「收藏/取消收藏」或「把笔记文本清空」,用户无法真正删掉一条笔记标签。
+ */
+export const DELETE = withApi(async (req: NextRequest) => {
+  const user = (await requireUser(req)) as UserRow;
+  const sp = new URL(req.url).searchParams;
+  const id = sp.get('id');
+  let affected = 0;
+  if (id) {
+    const r = await exec(`DELETE FROM bible_bookmarks WHERE id=? AND user_id=?`, [id, user.id]);
+    affected = (r as any).affectedRows ?? 0;
+  } else {
+    const bookId = sp.get('book');
+    const chapter = sp.get('chapter');
+    if (!bookId || !chapter) throw badRequest('缺少书签定位参数');
+    const r = await exec(
+      `DELETE FROM bible_bookmarks WHERE user_id=? AND version=? AND book_id=? AND chapter=? AND verse=?`,
+      [user.id, sp.get('version') || 'cuv', bookId, Number(chapter), Number(sp.get('verse') || 0)]
+    );
+    affected = (r as any).affectedRows ?? 0;
+  }
+  return ok({ deleted: affected > 0 });
+});
+
 /** POST /api/v1/bible/bookmarks  body:{version?,bookId,chapter,verse?,note?}  -> 切换书签 */
 export const POST = withApi(async (req: NextRequest) => {
   const user = (await requireUser(req)) as UserRow;

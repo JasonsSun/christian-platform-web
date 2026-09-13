@@ -763,3 +763,35 @@ CREATE TABLE IF NOT EXISTS reading_plan_progress (
   KEY idx_rpp_user_plan (user_id, plan_id),
   CONSTRAINT fk_rpp_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 每日签到(站点级, 与线下活动的 activity_checkins 区分): 连续天数驱动留存
+CREATE TABLE IF NOT EXISTS user_daily_checkins (
+  user_id    CHAR(36)  NOT NULL,
+  day        DATE      NOT NULL,
+  streak     INT       NOT NULL DEFAULT 1,     -- 签到当天算出的连续天数(冗余,便于展示历史)
+  created_at DATETIME  NOT NULL,
+  PRIMARY KEY (user_id, day),
+  KEY idx_udc_day (day),
+  CONSTRAINT fk_udc_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 邀请关系: 一个被邀请人只能归属一个邀请人(防刷)
+CREATE TABLE IF NOT EXISTS user_invites (
+  inviter_id  CHAR(36)    NOT NULL,
+  invitee_id  CHAR(36)    NOT NULL,
+  created_at  DATETIME    NOT NULL,
+  rewarded    TINYINT(1)  NOT NULL DEFAULT 0,  -- 双方成长奖励是否已发放
+  PRIMARY KEY (invitee_id),
+  KEY idx_ui_inviter (inviter_id),
+  CONSTRAINT fk_ui_inviter FOREIGN KEY (inviter_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_ui_invitee FOREIGN KEY (invitee_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 新用户引导: 记录清单完成进度, 服务端持久化(换设备/清缓存不丢)
+CREATE TABLE IF NOT EXISTS user_onboarding (
+  user_id     CHAR(36)      NOT NULL PRIMARY KEY,
+  done        TEXT          NULL,               -- JSON 数组, 已完成步骤 key
+  dismissed   TINYINT(1)    NOT NULL DEFAULT 0, -- 用户手动关闭后不再展示
+  updated_at  DATETIME      NOT NULL,
+  CONSTRAINT fk_uo_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -14,7 +14,7 @@ export const POST = withApi(async (req: NextRequest) => {
 
   const body = await readJson<{
     username?: string; email?: string; password?: string; displayName?: string; city?: string; church?: string;
-    captchaId?: string; captchaCode?: string;
+    captchaId?: string; captchaCode?: string; inviteCode?: string;
   }>(req);
 
   // 验证码校验（一次性）
@@ -51,6 +51,21 @@ export const POST = withApi(async (req: NextRequest) => {
   resetAttempts(ip); // 成功则重置失败计数
   const session = await createSession(id, req);
   await audit(id, 'USER_REGISTER', 'user', id, `注册账号 ${username}`, clientIp(req));
+
+  // 邀请关系：软失败，绝不因为邀请码有问题影响注册成功
+  let invitedBy: string | null = null;
+  try {
+    const { redeemInvite } = await import('@/server/growth');
+    const r = await redeemInvite(body.inviteCode, id);
+    if (r.ok && r.inviterId) {
+      invitedBy = r.inviterId;
+      await audit(id, 'USER_INVITED', 'user', id, `由 ${invitedBy} 邀请注册`, clientIp(req));
+      await notify(invitedBy, 'invite_joined', '你的好友已加入', `${displayName} 通过你的邀请链接加入了社区，成长奖励已到账。`, `/users/${id}`);
+    }
+  } catch {
+    /* 忽略：邀请只是加成 */
+  }
+
   await notify(id, 'welcome', '欢迎加入圣约社区', `${displayName}，欢迎你！去完善资料、读经、加入团契吧。`, '/me');
 
   return ok(
