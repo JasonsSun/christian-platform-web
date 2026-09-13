@@ -1,3 +1,6 @@
+/** ISR: 页面 HTML 缓存 300s,弱网下避免每次实时渲染 */
+export const revalidate = 300;
+
 import type { Metadata } from 'next';
 import { one } from '@/server/db';
 import { ogCardMetadata } from '@/lib/og';

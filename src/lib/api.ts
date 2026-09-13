@@ -77,12 +77,81 @@ async function refreshOnce(): Promise<boolean> {
   return false;
 }
 
-export async function api<T = any>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
+/**
+ * GET 短期内存缓存 + 并发去重。
+ * 弱网/跨境环境下每个请求都是 1~10s 的开销,页面来回切换、组件重复挂载
+ * 会打出大量相同请求;这里让同 URL 的 GET 在 TTL 内直接复用,并合并并发请求。
+ * 写操作与手动 reload 走 noCache,不会读到脏数据。
+ */
+const GET_CACHE_TTL_MS = 20_000;
+const GET_CACHE_TTL_AUTH_MS = 8_000;
+const GET_CACHE_MAX = 300;
+
+type CacheEntry = { at: number; ttl: number; data: any };
+const getCache = new Map<string, CacheEntry>();
+const inflight = new Map<string, Promise<any>>();
+
+/** 主动失效:mutation 成功后调用,prefix 为空则清空全部 */
+export function clearApiCache(prefix = '') {
+  if (!prefix) {
+    getCache.clear();
+    return;
+  }
+  Array.from(getCache.keys()).forEach((k) => {
+    if (k.startsWith(prefix)) getCache.delete(k);
+  });
+}
+
+export type ApiOpts = { retry?: boolean; noCache?: boolean };
+
+export async function api<T = any>(
+  path: string,
+  init: RequestInit = {},
+  opts: boolean | ApiOpts = true,
+): Promise<T> {
+  const { retry = true, noCache = false } = typeof opts === 'boolean' ? { retry: opts } : opts;
   const headers = new Headers(init.headers);
   if (!headers.has('Content-Type') && init.body) headers.set('Content-Type', 'application/json');
   const token = tokenStore.get();
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
+  const isGet = !init.method || init.method.toUpperCase() === 'GET';
+  const cacheable = isGet && !noCache && !init.signal && typeof window !== 'undefined';
+  const cacheKey = `${token ? 'a' : 'p'}:${path}`;
+
+  if (cacheable) {
+    const hit = getCache.get(cacheKey);
+    if (hit && Date.now() - hit.at < hit.ttl) return hit.data as T;
+    const pending = inflight.get(cacheKey);
+    if (pending) return (await pending) as T;
+  }
+
+  const run = (): Promise<T> => request<T>(path, init, headers, token, retry);
+  if (cacheable) {
+    const p = run()
+      .then((data) => {
+        if (getCache.size >= GET_CACHE_MAX) getCache.clear();
+        getCache.set(cacheKey, {
+          at: Date.now(),
+          ttl: token ? GET_CACHE_TTL_AUTH_MS : GET_CACHE_TTL_MS,
+          data,
+        });
+        return data;
+      })
+      .finally(() => inflight.delete(cacheKey));
+    inflight.set(cacheKey, p);
+    return p;
+  }
+  return run();
+}
+
+async function request<T = any>(
+  path: string,
+  init: RequestInit,
+  headers: Headers,
+  token: string | null,
+  retry: boolean,
+): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
   try {
@@ -95,7 +164,7 @@ export async function api<T = any>(path: string, init: RequestInit = {}, retry =
 
     if (res.status === 401 && retry && token) {
       const okRefresh = await refreshOnce();
-      if (okRefresh) return api<T>(path, init, false);
+      if (okRefresh) return api<T>(path, init, { retry: false, noCache: true });
       tokenStore.clear();
     }
 

@@ -13,17 +13,20 @@ export function useApi<T = any>(path: string | null, deps: any[] = [], initial: 
   const [loading, setLoading] = useState(!!path && initial == null);
   const [error, setError] = useState<string | null>(null);
   const skipNext = useRef(initial != null);
+  const firstRun = useRef(true);
 
   const reload = useCallback(async () => {
     if (!path) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await api<T>(path);
+      // 首次挂载允许复用内存缓存(页面来回切换时秒开),之后一律走真实请求拿最新数据
+      const res = await api<T>(path, {}, { noCache: !firstRun.current });
       setData(res);
     } catch (e: any) {
       setError(e?.message || '加载失败');
     } finally {
+      firstRun.current = false;
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
