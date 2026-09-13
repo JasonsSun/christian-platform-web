@@ -3,11 +3,11 @@
  *  - 壳缓存(SHELL)：首屏路由预缓存，弱网/离线可秒开
  *  - 读经 API(/api/v1/bible/*)：stale-while-revalidate，读过一次的章节离线也能读
  *  - 静态资源(_next/static、图片/字体/音视频)：cache-first
- *  - 页面导航：network-first，失败回退缓存
+ *  - 页面导航：stale-while-revalidate（先用缓存秒开，后台更新）——弱网下不再白屏
  *
  * 注意：改动本文件后必须提升 CACHE 版本号，activate 时会清理旧缓存。
  */
-const CACHE = 'covenant-shell-v2';
+const CACHE = 'covenant-shell-v3';
 const SHELL = [
   '/',
   '/bible',
@@ -63,12 +63,25 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(cacheFirst(req));
     return;
   }
-  // 页面导航：网络优先，回退缓存
+  // 页面导航：缓存优先 + 后台更新（跨境/弱网下首屏立刻可见）
   if (req.mode === 'navigate') {
-    event.respondWith(networkFirst(req));
+    event.respondWith(navigateHandler(req));
     return;
   }
 });
+
+/** 导航请求：有缓存就先返回(秒开)，同时后台刷新；没缓存才等网络，网络失败回退首页缓存 */
+async function navigateHandler(req) {
+  const cached = await caches.match(req);
+  const network = fetch(req)
+    .then(async (res) => {
+      if (res && res.ok) (await caches.open(CACHE)).put(req, res.clone());
+      return res;
+    })
+    .catch(() => null);
+  if (cached) return cached;
+  return (await network) || (await caches.match('/')) || Response.error();
+}
 
 async function cacheFirst(req) {
   const cached = await caches.match(req);
@@ -79,16 +92,6 @@ async function cacheFirst(req) {
     return res;
   } catch {
     return cached || Response.error();
-  }
-}
-
-async function networkFirst(req) {
-  try {
-    const res = await fetch(req);
-    if (res && res.ok) (await caches.open(CACHE)).put(req, res.clone());
-    return res;
-  } catch {
-    return (await caches.match(req)) || (await caches.match('/')) || Response.error();
   }
 }
 

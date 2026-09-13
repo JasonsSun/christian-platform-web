@@ -1,12 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
 
-export function useApi<T = any>(path: string | null, deps: any[] = []) {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(!!path);
+/**
+ * 带「服务端预取初始值」的数据请求。
+ * 传入 initial 时:首屏直接用它渲染(HTML 直出,无白屏),并跳过首次自动请求,
+ * 后续 deps 变化或手动 reload 才真正发请求,减少慢网络下的无效往返。
+ */
+export function useApi<T = any>(path: string | null, deps: any[] = [], initial: T | null = null) {
+  const [data, setData] = useState<T | null>(initial);
+  const [loading, setLoading] = useState(!!path && initial == null);
   const [error, setError] = useState<string | null>(null);
+  const skipNext = useRef(initial != null);
 
   const reload = useCallback(async () => {
     if (!path) return;
@@ -24,6 +30,10 @@ export function useApi<T = any>(path: string | null, deps: any[] = []) {
   }, [path, ...deps]);
 
   useEffect(() => {
+    if (skipNext.current) {
+      skipNext.current = false;
+      return;
+    }
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reload]);
