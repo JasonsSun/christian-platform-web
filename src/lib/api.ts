@@ -3,6 +3,16 @@ export const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '/api/v1';
 const ACCESS_KEY = 'platform_access_token';
 const REFRESH_KEY = 'platform_refresh_token';
 
+/**
+ * 请求超时。此前 fetch 没有任何超时：服务端一旦卡住（慢查询、上游挂起），
+ * 页面会永远停在 loading 且没有任何提示。这里统一兜住。
+ */
+const API_TIMEOUT_MS = 30_000;
+/** 上传/表单类请求放宽 */
+const FORM_TIMEOUT_MS = 120_000;
+/** 刷新令牌要快进快出 */
+const REFRESH_TIMEOUT_MS = 10_000;
+
 export const tokenStore = {
   get: () => (typeof window === 'undefined' ? null : localStorage.getItem(ACCESS_KEY)),
   set: (t: string) => typeof window !== 'undefined' && localStorage.setItem(ACCESS_KEY, t),
@@ -25,14 +35,32 @@ export class ApiError extends Error {
   }
 }
 
+/** 把 fetch 抛出的异常统一翻译成人话 */
+function toApiError(e: any): ApiError {
+  if (e instanceof ApiError) return e;
+  if (e?.name === 'AbortError' || e?.name === 'TimeoutError') {
+    return new ApiError(0, 'TIMEOUT', '请求超时，请检查网络后重试');
+  }
+  return new ApiError(0, 'NETWORK_ERROR', '网络异常，请检查网络后重试');
+}
+
+function friendlyMessage(status: number, fallback?: string): string {
+  if (fallback) return fallback;
+  if (status >= 500) return '服务暂时不可用，请稍后重试';
+  return '请求失败';
+}
+
 async function refreshOnce(): Promise<boolean> {
   const refresh = tokenStore.getRefresh();
   if (!refresh) return false;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REFRESH_TIMEOUT_MS);
   try {
     const r = await fetch(`${API_BASE}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken: refresh }),
+      signal: controller.signal,
     });
     if (!r.ok) return false;
     const data = await r.json();
@@ -42,7 +70,9 @@ async function refreshOnce(): Promise<boolean> {
       return true;
     }
   } catch {
-    /* ignore */
+    /* 刷新失败按未登录处理 */
+  } finally {
+    clearTimeout(timer);
   }
   return false;
 }
@@ -53,25 +83,38 @@ export async function api<T = any>(path: string, init: RequestInit = {}, retry =
   const token = tokenStore.get();
   if (token) headers.set('Authorization', `Bearer ${token}`);
 
-  const res = await fetch(`${API_BASE}${path}`, { ...init, headers });
-
-  if (res.status === 401 && retry && token) {
-    const okRefresh = await refreshOnce();
-    if (okRefresh) return api<T>(path, init, false);
-    tokenStore.clear();
-  }
-
-  const text = await res.text();
-  let data: any = null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
   try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = null;
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      headers,
+      // 调用方显式传了 signal 就尊重它，否则用超时控制
+      signal: init.signal ?? controller.signal,
+    });
+
+    if (res.status === 401 && retry && token) {
+      const okRefresh = await refreshOnce();
+      if (okRefresh) return api<T>(path, init, false);
+      tokenStore.clear();
+    }
+
+    const text = await res.text();
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    if (!res.ok) {
+      throw new ApiError(res.status, data?.code || `HTTP_${res.status}`, friendlyMessage(res.status, data?.message));
+    }
+    return data as T;
+  } catch (e: any) {
+    throw toApiError(e);
+  } finally {
+    clearTimeout(timer);
   }
-  if (!res.ok) {
-    throw new ApiError(res.status, data?.code || `HTTP_${res.status}`, data?.message || '请求失败');
-  }
-  return data as T;
 }
 
 export const apiGet = <T = any>(path: string) => api<T>(path);
@@ -87,14 +130,26 @@ export const apiForm = <T = any>(path: string, form: FormData) => {
   const headers = new Headers();
   const token = tokenStore.get();
   if (token) headers.set('Authorization', `Bearer ${token}`);
-  return fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: form })
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FORM_TIMEOUT_MS);
+  return fetch(`${API_BASE}${path}`, { method: 'POST', headers, body: form, signal: controller.signal })
     .then(async (res) => {
       const text = await res.text();
       let data: any = null;
-      try { data = text ? JSON.parse(text) : null; } catch { data = null; }
-      if (!res.ok) throw new ApiError(res.status, data?.code || `HTTP_${res.status}`, data?.message || '请求失败');
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = null;
+      }
+      if (!res.ok) {
+        throw new ApiError(res.status, data?.code || `HTTP_${res.status}`, friendlyMessage(res.status, data?.message));
+      }
       return data as T;
-    });
+    }, (e: any) => {
+      throw toApiError(e);
+    })
+    .finally(() => clearTimeout(timer));
 };
 
 export const qs = (params: Record<string, string | number | boolean | undefined | null>) => {
