@@ -43,6 +43,10 @@ services:
       JWT_SECRET: ${JWT_SECRET:-please-set-a-long-random-secret}
       PORT: "3000"
       # 直播：控制 API 走内网 mediamtx:9997；公网推流地址用域名
+      # 注意：域名一旦开启 Cloudflare 代理(橙云)，解析出来的是 CF 的 IP，
+      # 而 CF 只代理 HTTP(S) 端口，RTMP(8080) 与 WebRTC(8889) 会直接连不上。
+      # 因此推流必须用「灰云(DNS only)」子域，例如 rtmp.amen.dpdns.org，
+      # 指向同一个服务器 IP，然后在这里设置 MEDIAMTX_PUBLIC_HOST=rtmp.amen.dpdns.org。
       MEDIAMTX_API: http://mediamtx:9997
       MEDIAMTX_PUBLIC_HOST: ${MEDIAMTX_PUBLIC_HOST:-${DOMAIN:-localhost}}
       MEDIAMTX_HLS_VIA_PROXY: "true"

@@ -64,7 +64,21 @@ export function num(v: any, def: number): number {
   return Number.isFinite(n) ? n : def;
 }
 
+/**
+ * 客户端真实 IP。
+ * 接入 CDN（Cloudflare）后 REMOTE_ADDR 全是 CDN 节点,若不处理,
+ * IP 限流(注册/登录 5 次/10 分钟)会把所有访客当成同一个 IP 互相连坐。
+ * 两种取法:
+ *  1) nginx 用 real_ip 模块(set_real_ip_from CF 段 + real_ip_header CF-Connecting-IP)
+ *     把 X-Real-IP 改写成真实 IP —— 推荐,无需额外开关;
+ *  2) 直接信任 CDN 头,需显式开 TRUST_CDN_HEADER=1(默认关闭,
+ *     否则任何人都能伪造 CF-Connecting-IP 绕过限流)。
+ */
 export function clientIp(req: Request): string {
   const h = req.headers;
-  return (h.get('x-forwarded-for') || h.get('x-real-ip') || '127.0.0.1').split(',')[0].trim();
+  if (process.env.TRUST_CDN_HEADER === '1') {
+    const cdn = h.get('cf-connecting-ip') || h.get('true-client-ip');
+    if (cdn) return cdn.trim();
+  }
+  return (h.get('x-real-ip') || h.get('x-forwarded-for') || '127.0.0.1').split(',')[0].trim();
 }
