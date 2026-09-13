@@ -216,7 +216,7 @@ export default function ReadChapter() {
       url.searchParams.set('v', String(verse));
       window.history.replaceState({}, '', url.toString());
     } catch { /* ignore */ }
-    if (speech.supported) speech.start(verse);
+    speech.start(verse);
   };
 
   // 带 ?v=N 进入时定位到该节
@@ -330,7 +330,7 @@ export default function ReadChapter() {
   const autoReadDone = useRef<number | null>(null);
   useEffect(() => {
     if (searchParams.get('autoread') !== '1') return;
-    if (!data?.hasContent || !speech.supported) return;
+    if (!data?.hasContent) return;
     if (autoReadDone.current === chapter) return;
     autoReadDone.current = chapter;
     setAutoNextChapter(true);
@@ -389,7 +389,7 @@ export default function ReadChapter() {
         router.push(`/bible/${version}/${book}/${prev}`);
       } else if (e.key === 'ArrowRight' && next) {
         router.push(`/bible/${version}/${book}/${next}`);
-      } else if (e.key === ' ' && speech.supported) {
+      } else if (e.key === ' ') {
         e.preventDefault();
         if (speech.state === 'playing') speech.pause();
         else if (speech.state === 'paused') speech.resume();
@@ -736,7 +736,7 @@ export default function ReadChapter() {
               )}
               {speech.ttsError && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-500">
-                  ⚠ 语音合成暂不可用，请用 Chrome / Safari 打开
+                  ⚠ 语音合成暂不可用，请稍后重试（或改用 Chrome / Safari 打开）
                 </span>
               )}
 
