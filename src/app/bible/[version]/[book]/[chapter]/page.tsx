@@ -677,40 +677,46 @@ export default function ReadChapter() {
                 {chapterBookmarked ? '已收藏' : '收藏本章'}
               </button>
 
-              {/* 语音朗读 */}
-              {speech.supported ? (
-                <button
-                  onClick={() => {
-                    if (speech.state === 'playing') speech.pause();
-                    else if (speech.state === 'paused') speech.resume();
-                    else speech.start(startVerse ?? undefined);
-                  }}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
-                    speech.state !== 'idle'
-                      ? 'bg-primary-600 border-primary-600 text-white'
-                      : 'bg-white border-ink-200 text-ink-700 hover:border-primary-400 hover:text-primary-600'
-                  }`}
-                  title={startVerse ? `从第 ${startVerse} 节开始朗读` : '从头朗读本章'}
-                >
-                  {speech.state === 'playing' ? (
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
-                  ) : (
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z" /></svg>
-                  )}
-                  {speech.state === 'playing'
+              {/* 语音朗读(无 speechSynthesis 时自动走服务端 TTS,微信内也能听) */}
+              <button
+                onClick={() => {
+                  if (speech.state === 'playing') speech.pause();
+                  else if (speech.state === 'paused') speech.resume();
+                  else speech.start(startVerse ?? undefined);
+                }}
+                disabled={speech.ttsLoading}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                  speech.state !== 'idle'
+                    ? 'bg-primary-600 border-primary-600 text-white'
+                    : 'bg-white border-ink-200 text-ink-700 hover:border-primary-400 hover:text-primary-600'
+                } ${speech.ttsLoading ? 'opacity-60 cursor-wait' : ''}`}
+                title={startVerse ? `从第 ${startVerse} 节开始朗读` : '从头朗读本章'}
+              >
+                {speech.ttsLoading ? (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3a9 9 0 109 9" /></svg>
+                ) : speech.state === 'playing' ? (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z" /></svg>
+                )}
+                {speech.ttsLoading
+                  ? '合成中…'
+                  : speech.state === 'playing'
                     ? '暂停朗读'
                     : speech.state === 'paused'
                       ? '继续朗读'
                       : startVerse
                         ? `从第 ${startVerse} 节朗读`
                         : '朗读本章'}
-                </button>
-              ) : (
-                <span
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-ink-100 border border-ink-200 text-ink-400"
-                  title="当前浏览器未提供语音合成接口,建议用 Chrome 打开,或把本页添加到主屏幕后用"
-                >
-                  🔇 当前浏览器不支持语音朗读
+              </button>
+              {speech.ttsMode === 'server' && !speech.ttsError && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-400">
+                  🎧 服务端语音（微信内也能听）
+                </span>
+              )}
+              {speech.ttsError && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-500">
+                  ⚠ 语音合成暂不可用，请用 Chrome / Safari 打开
                 </span>
               )}
 
@@ -736,8 +742,7 @@ export default function ReadChapter() {
                 </label>
               )}
               {/* 朗读设置：是否播报章节 / 节号、语速、自动下一章 */}
-              {speech.supported ? (
-                <>
+              <>
                   <label
                     className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
                     title={`朗读前先播报「${data?.book.name ?? ''} 第 ${chapter} 章」`}
@@ -791,9 +796,9 @@ export default function ReadChapter() {
                     读完自动下一章
                   </label>
                 </>
-              ) : (
-                <span className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-400">
-                  语音朗读需在 Chrome 或 Safari 中打开本页
+              {speech.ttsMode === 'server' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-400">
+                  服务端语音：设置更改后重新朗读生效
                 </span>
               )}
               {speech.state !== 'idle' && (

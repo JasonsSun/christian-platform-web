@@ -69,6 +69,12 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   const supported =
     typeof window !== 'undefined' && typeof window.speechSynthesis !== 'undefined';
 
+  // 服务端 TTS 兜底:无 speechSynthesis 时(如安卓微信 WebView)改用后端合成的音频播放
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const [ttsError, setTtsError] = useState(false);
+  const ttsMode: 'browser' | 'server' = supported ? 'browser' : 'server';
+
   const itemsRef = useRef<SpeechItem[]>(items);
   const rateRef = useRef(rate);
   const stoppedRef = useRef(false);
@@ -345,10 +351,123 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   const speakRangeRef = useRef(speakRange);
   useEffect(() => { speakRangeRef.current = speakRange; }, [speakRange]);
 
+  // ---- 服务端 TTS 兜底(无 speechSynthesis 时使用) ----
+  // 拼出待合成文本,并返回每节在文本中的字符区间(用于播放进度高亮)
+  const buildText = useCallback((fromIndex: number) => {
+    const list = itemsRef.current;
+    const spans: { key: number; start: number; end: number }[] = [];
+    let buf = '';
+    const lead = (leadTextRef.current || '').trim();
+    if (lead) buf += lead + '。';
+    const start = Math.max(0, Math.min(fromIndex, list.length - 1));
+    for (let k = start; k < list.length; k++) {
+      const it = list[k];
+      if (buf && !buf.endsWith('。')) buf += '。';
+      let head = '';
+      if (announceKeyRef.current) head = formatKeyRef.current(it.key) + '，';
+      const text = (it.text || '').trim();
+      if (!Array.from(text).length) continue;
+      const s = Array.from(buf).length;
+      buf += head + text;
+      const e = Array.from(buf).length;
+      spans.push({ key: it.key, start: s, end: e });
+    }
+    return { text: buf, spans };
+  }, []);
+
+  const serverStopInner = useCallback(() => {
+    const a = audioRef.current;
+    if (a) { a.pause(); a.src = ''; }
+    audioRef.current = null;
+  }, []);
+
+  const serverStart = useCallback(async (fromKey?: number) => {
+    const list = itemsRef.current;
+    if (!list.length) return;
+    stoppedRef.current = false;
+    genRef.current += 1;
+    let i = 0;
+    if (fromKey != null) {
+      const f = list.findIndex((it) => it.key === fromKey);
+      if (f >= 0) i = f;
+    }
+    const { text, spans } = buildText(i);
+    setTtsError(false);
+    setTtsLoading(true);
+    setState('playing');
+    const gen = genRef.current;
+    try {
+      const res = await fetch('/api/v1/bible/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error('tts_failed');
+      const blob = await res.blob();
+      if (stoppedRef.current || genRef.current !== gen) return; // 已停止/换章
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.playbackRate = rateRef.current;
+      audioRef.current = audio;
+      audio.ontimeupdate = () => {
+        if (!audio.duration) return;
+        const raw = Math.floor((audio.currentTime / audio.duration) * text.length);
+        syncSpeakingKey(raw, spans);
+      };
+      audio.onerror = () => {
+        serverStopInner();
+        setState('idle');
+        setSpeakingKey(null);
+        speakCharRef.current = null;
+      };
+      audio.onended = () => {
+        serverStopInner();
+        if (!stoppedRef.current && genRef.current === gen) onEndRef.current?.();
+      };
+      await audio.play();
+      setState('playing');
+    } catch {
+      serverStopInner();
+      setState('idle');
+      setSpeakingKey(null);
+      speakCharRef.current = null;
+      setTtsError(true);
+    } finally {
+      setTtsLoading(false);
+    }
+  }, [buildText, syncSpeakingKey, serverStopInner]);
+
+  const serverPause = useCallback(() => {
+    audioRef.current?.pause();
+    setState('paused');
+  }, []);
+
+  const serverResume = useCallback(() => {
+    audioRef.current?.play();
+    setState('playing');
+  }, []);
+
+  const serverStop = useCallback(() => {
+    stoppedRef.current = true;
+    genRef.current += 1;
+    serverStopInner();
+    setState('idle');
+    setSpeakingKey(null);
+    speakCharRef.current = null;
+  }, [serverStopInner]);
+
+  const serverSetRate = useCallback((r: number) => {
+    const v = Math.max(0.5, Math.min(2, r));
+    setRateState(v);
+    rateRef.current = v;
+    if (audioRef.current) audioRef.current.playbackRate = v;
+  }, []);
+
   /** 从头开始(或停止后从指定节重新开始) */
   const start = useCallback(
     (fromKey?: number) => {
-      if (!supported || !itemsRef.current.length) return;
+      if (!supported) { serverStart(fromKey); return; }
+      if (!itemsRef.current.length) return;
       stoppedRef.current = false;
       genRef.current += 1;
       speakingKeyRef.current = null;
@@ -361,19 +480,19 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       }
       speakRange(i, true);
     },
-    [speakRange, supported, stopRaf]
+    [speakRange, supported, stopRaf, serverStart]
   );
 
   const pause = useCallback(() => {
-    if (!supported) return;
+    if (!supported) { serverPause(); return; }
     stopRaf();
     pauseAtRef.current = performance.now();
     window.speechSynthesis.pause();
     setState('paused');
-  }, [supported, stopRaf]);
+  }, [supported, stopRaf, serverPause]);
 
   const resume = useCallback(() => {
-    if (!supported) return;
+    if (!supported) { serverResume(); return; }
     window.speechSynthesis.resume();
     setState('playing');
     // 补偿暂停时长,让时间估算继续准确(若该浏览器依赖估算兜底)
@@ -381,10 +500,10 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       estRef.current.t0 += performance.now() - pauseAtRef.current;
       rafRef.current = requestAnimationFrame(tick);
     }
-  }, [supported, tick]);
+  }, [supported, tick, serverResume]);
 
   const stop = useCallback(() => {
-    if (!supported) return;
+    if (!supported) { serverStop(); return; }
     stopTick();
     stoppedRef.current = true;
     genRef.current += 1;
@@ -393,10 +512,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     window.speechSynthesis.cancel();
     setState('idle');
     setSpeakingKey(null);
-  }, [supported, stopTick]);
+  }, [supported, stopTick, serverStop]);
 
   const setRate = useCallback(
     (r: number) => {
+      if (!supported) { serverSetRate(r); return; }
       const v = Math.max(0.5, Math.min(2, r));
       setRateState(v);
       rateRef.current = v;
@@ -411,7 +531,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         }
       }
     },
-    [speakRange, state, stopTick]
+    [speakRange, state, stopTick, serverSetRate]
   );
 
   /** 切换章节 / 卸载时停止朗读 */
@@ -424,6 +544,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
     };
   }, [stopRaf, stopTick]);
 
@@ -441,10 +562,16 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
 
   return {
     supported,
+    /** 朗读引擎模式:browser=浏览器原生 TTS;server=后端合成音频(无 speechSynthesis 时) */
+    ttsMode,
+    /** 服务端合成中(首屏等待) */
+    ttsLoading,
+    /** 服务端合成失败(如微软 TTS 不可达),前端据此提示「请用 Chrome 打开」 */
+    ttsError,
     state,
     speakingKey,
     rate,
-    /** 是否启用逐字高亮(仅 1.0x) */
+    /** 是否启用逐字高亮(仅 1.0x 的浏览器模式) */
     wordSync,
     start,
     pause,
