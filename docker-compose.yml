@@ -48,7 +48,12 @@ services:
       # 因此推流必须用「灰云(DNS only)」子域，例如 rtmp.amen.dpdns.org，
       # 指向同一个服务器 IP，然后在这里设置 MEDIAMTX_PUBLIC_HOST=rtmp.amen.dpdns.org。
       MEDIAMTX_API: http://mediamtx:9997
+      # 推流主机：必须「灰云(DNS only)」，RTMP 是裸 TCP、CF 只代理 HTTP(S)，橙云会连不上。
       MEDIAMTX_PUBLIC_HOST: ${MEDIAMTX_PUBLIC_HOST:-${DOMAIN:-localhost}}
+      # 播放主机：观众走 HTTPS 443 的 /hls/，由 nginx 反代，可以放心用橙云主域。
+      # 推流域名与播放域名不同时必须显式设它，否则播放地址会落到灰云域名上
+      # （自签/证书不匹配 → 观众黑屏）。默认跟随 DOMAIN。
+      MEDIAMTX_HLS_HOST: ${MEDIAMTX_HLS_HOST:-${DOMAIN:-localhost}}
       MEDIAMTX_HLS_VIA_PROXY: "true"
       # RTMP 推流端口，需与 deploy/mediamtx.yml 的 rtmpAddress、上方 mediamtx 端口映射一致
       MEDIAMTX_RTMP_PORT: "8080"

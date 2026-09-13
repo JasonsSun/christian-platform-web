@@ -317,7 +317,11 @@ apt install -y speedtest-cli && speedtest-cli --simple
 - **整条填**：把"完整地址"整条粘进 URL 栏，密钥留空（Moblin、部分手机 App 推荐）
 
 > ⚠️ **端口是 8080 不是 1935**。且 RTMP/SRT 是裸 TCP/UDP，**不能被 Cloudflare 代理** ——
-> 直播域名必须灰云（或直接用 VPS 公网 IP 当服务器地址），否则推流软件永远连不上。
+> 推流用的主机名必须灰云（或直接用 VPS 公网 IP 当服务器地址），否则推流软件永远连不上。
+>
+> 注意只影响**推流**这一项：网页、API、以及观众看的 `/hls/...` 都走 HTTPS 443，可以照常开橙云加速。
+> 拆分配法见 `deploy/cloudflare-cdn.md` 第〇节：
+> `MEDIAMTX_PUBLIC_HOST=push.<域>`（灰云）+ `MEDIAMTX_HLS_HOST=<主域>`（橙云）。
 
 ### 9.1 统一编码参数（所有软件照抄）
 
