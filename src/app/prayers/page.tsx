@@ -92,13 +92,13 @@ export default function PrayersPage() {
   }, [user, router]);
 
   /**
-   * 能否删除这条代祷：作者本人，或管理员 / 审核员。
-   * 管理员与审核员可删任何一条，用于及时清理违规违法内容。
+   * 能否删除这条代祷：作者本人，或管理员。
+   * 仅管理员可删任何一条（清理违规违法内容）；审核员只有审核权限，不赋予删除权。
    */
   const canDelete = useCallback(
     (p: PrayerItem) => {
       if (!user) return false;
-      return p.user.id === user.id || user.role === 'admin' || user.role === 'moderator';
+      return p.user.id === user.id || user.role === 'admin';
     },
     [user]
   );

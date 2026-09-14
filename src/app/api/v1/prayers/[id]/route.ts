@@ -9,9 +9,10 @@ export const dynamic = 'force-dynamic';
 /**
  * 删除一条代祷。
  *
- * 权限：作者本人，或管理员 / 审核员。
- * 管理员与审核员可删除任何代祷——用于及时清除违规违法内容（含涉政、涉黄、
- * 广告、骚扰等），是平台内容治理的必要手段。
+ * 权限：作者本人，或管理员。
+ * 仅管理员可删除他人代祷——用于及时清除违规违法内容（含涉政、涉黄、
+ * 广告、骚扰等），是平台内容治理的必要手段。审核员（moderator）只有审核权限，
+ * 不赋予任何删除权，故不可删他人代祷。
  *
  * 删除为硬删除。关联的「阿们」记录在事务内显式清理，不依赖外键级联是否已迁移到位。
  */
@@ -25,8 +26,8 @@ export const DELETE = withApi(async (req: NextRequest, ctx: { params: { id: stri
   );
   if (!row) throw new HttpError(404, 'NOT_FOUND', '该代祷不存在或已被删除');
 
-  const isStaff = viewer.role === 'admin' || viewer.role === 'moderator';
-  if (row.user_id !== viewer.id && !isStaff) {
+  const isAdmin = viewer.role === 'admin';
+  if (row.user_id !== viewer.id && !isAdmin) {
     throw new HttpError(403, 'FORBIDDEN', '只能删除自己发布的代祷');
   }
 
@@ -35,8 +36,8 @@ export const DELETE = withApi(async (req: NextRequest, ctx: { params: { id: stri
     await c.query(`DELETE FROM prayers WHERE id = ?`, [id]);
   });
 
-  // 管理侧删除记审计，便于追溯与申诉；作者自删不记
-  if (row.user_id !== viewer.id) {
+  // 管理侧删他人代祷记审计，便于追溯与申诉；作者自删（含管理员删自己）不记
+  if (isAdmin && row.user_id !== viewer.id) {
     const excerpt = String(row.body || '').slice(0, 60);
     await audit(
       viewer.id,

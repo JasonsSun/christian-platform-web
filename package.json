@@ -14,6 +14,7 @@
     "test:e2e:admin-song": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-admin-song-edit.mjs",
     "test:e2e:notifications": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-admin-notifications.mjs",
     "test:e2e:prayer-delete": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-prayer-delete.mjs",
+    "test:e2e:moderator": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-moderator-permissions.mjs",
     "migrate:prayer-amens-fk": "node bin/migrate-prayer-amens-fk.mjs",
     "test:e2e:governance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-governance.mjs"
   },

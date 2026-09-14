@@ -16,7 +16,7 @@ export const runtime = 'nodejs';
  * 只允许改元数据:既不改音频文件本身,也不下载外部音频到本站。
  */
 export const PATCH = withApi(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const admin = await requireRole(req, ['admin', 'moderator']);
+  const admin = await requireRole(req, ['admin']);
   const id = params.id;
 
   const song = await one<any>(

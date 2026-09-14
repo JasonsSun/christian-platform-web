@@ -90,7 +90,7 @@ export const GET = withApi(async (req: NextRequest) => {
 
 /** 批量/单个重算画像 */
 export const POST = withApi(async (req: NextRequest) => {
-  const staff = (await requireRole(req, ['admin', 'moderator'])) as UserRow;
+  const staff = (await requireRole(req, ['admin'])) as UserRow;
   const body = await req.json().catch(() => ({}));
   const userId = String(body.userId || '');
   const all = body.all === true;

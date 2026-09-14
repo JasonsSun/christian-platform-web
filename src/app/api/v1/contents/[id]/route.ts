@@ -64,8 +64,8 @@ export const PATCH = withApi(async (req: NextRequest, ctx: Ctx) => {
   const row = await one<any>(`SELECT * FROM contents WHERE id = ?`, [id]);
   if (!row) throw notFound('内容不存在');
   const isOwner = row.author_id === viewer.id;
-  const isStaff = viewer.role === 'admin' || viewer.role === 'moderator';
-  if (!isOwner && !isStaff) throw forbidden('只能修改自己的内容');
+  const isAdmin = viewer.role === 'admin';
+  if (!isOwner && !isAdmin) throw forbidden('只能修改自己的内容');
 
   const body = await readJson<{ title?: string; body?: string; contentType?: string; tags?: string[]; cover?: string }>(req);
   const fields: string[] = [];
@@ -88,8 +88,8 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
   const id = ctx.params.id;
   const row = await one<any>(`SELECT * FROM contents WHERE id = ?`, [id]);
   if (!row) throw notFound('内容不存在');
-  const isStaff = viewer.role === 'admin' || viewer.role === 'moderator';
-  if (row.author_id !== viewer.id && !isStaff) throw forbidden('只能删除自己的内容');
+  const isAdmin = viewer.role === 'admin';
+  if (row.author_id !== viewer.id && !isAdmin) throw forbidden('只能删除自己的内容');
 
   await exec(`DELETE FROM contents WHERE id = ?`, [id]);
   await audit(viewer.id, 'CONTENT_DELETE', 'content', id, `删除《${row.title}》`, '');

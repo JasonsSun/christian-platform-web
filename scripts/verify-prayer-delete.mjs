@@ -122,12 +122,19 @@ const [[audSelf]] = await conn.query(
 check('管理员删自己的代祷成功 (200)', rSelf.status === 200, `status=${rSelf.status}`);
 check('作者自删不写入审计日志', !audSelf, JSON.stringify(audSelf || {}));
 
-// 4. moderator 删别人的 → 200
+// 4. moderator 删别人的 → 403（审核员只有审核权限，无删除权，仅管理员可删他人代祷）
 if (T_MOD) {
-  const p4 = await makePrayer(admin.id, 'E2E 测试：审核员删除违规代祷内容');
+  const p4 = await makePrayer(member.id, 'E2E 测试：审核员试图删除他人代祷');
   const r4 = await api('DELETE', `/prayers/${p4}`, T_MOD);
   const [[chk4]] = await conn.query(`SELECT id FROM prayers WHERE id=?`, [p4]);
-  check('审核员可删任意一条代祷 (200)', r4.status === 200 && !chk4, `status=${r4.status}`);
+  check('审核员删他人代祷被拒 (403) 且记录仍在', r4.status === 403 && !!chk4, `status=${r4.status} left=${!!chk4}`);
+  // 审核员删自己的 → 200（自身权限保留）
+  const p4s = await makePrayer(mod.id, 'E2E 测试：审核员删除自己发布的代祷');
+  const r4s = await api('DELETE', `/prayers/${p4s}`, T_MOD);
+  const [[chk4s]] = await conn.query(`SELECT id FROM prayers WHERE id=?`, [p4s]);
+  check('审核员可删自己的代祷 (200)', r4s.status === 200 && !chk4s, `status=${r4s.status}`);
+  // 该审核员误删他人的条目改由管理员清理
+  check('被审核员误挡的条目仍可由管理员删除', (await api('DELETE', `/prayers/${p4}`, T_ADMIN)).status === 200, '');
 } else {
   console.log('  - 无 moderator 账号，跳过审核员用例');
 }
@@ -263,8 +270,13 @@ check('每行都有「移除」按钮', removeBtns > 0, `按钮数=${removeBtns}
 check('初始无弹框', (await evaluate(DIALOGS)) === 0);
 await shot('F:/sjjob/_shots/admin-prayers.png');
 
-// 点移除 → 应跳到 /confirm（本站禁止弹框）
-const clicked = await realClick(`[...document.querySelectorAll('button')].find(b => b.textContent.trim() === '移除')`);
+// 点移除 → 应跳到 /confirm（本站禁止弹框）。定位到目标代祷所在行，避免误删列表最新在前的其它测试数据
+const clicked = await realClick(`(() => {
+  const rows = [...document.querySelectorAll('tr')];
+  const target = rows.find((r) => r.textContent.includes('E2E 页面测试'));
+  if (!target) return null;
+  return [...target.querySelectorAll('button')].find((b) => b.textContent.trim() === '移除') || null;
+})()`);
 await sleep(1500);
 const url1 = await evaluate(`location.pathname`);
 check('点「移除」跳转到确认页 /confirm（非弹框）', clicked === true && String(url1).startsWith('/confirm'), `clicked=${clicked} url=${url1}`);

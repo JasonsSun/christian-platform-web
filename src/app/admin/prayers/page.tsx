@@ -45,6 +45,7 @@ export default function AdminPrayersPage() {
   const [page, setPage] = useState(1);
 
   const isStaff = !!user && (user.role === 'admin' || user.role === 'moderator');
+  const isAdmin = !!user && user.role === 'admin';
 
   const { data, loading, error, reload, setData } = useApi<Resp>(
     isStaff ? `/admin/prayers${qs({ q, scope, page, pageSize: PAGE_SIZE })}` : null,
@@ -190,12 +191,14 @@ export default function AdminPrayersPage() {
                       </td>
                       <td className="px-4 py-3 text-ink-500 whitespace-nowrap">{timeAgo(p.createdAt)}</td>
                       <td className="px-4 py-3 text-right">
-                        <button
-                          onClick={() => remove(p)}
-                          className="text-xs py-1 px-3 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 whitespace-nowrap"
-                        >
-                          移除
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => remove(p)}
+                            className="text-xs py-1 px-3 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 whitespace-nowrap"
+                          >
+                            移除
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

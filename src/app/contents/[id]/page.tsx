@@ -104,7 +104,7 @@ export default function ContentDetailPage() {
     (c: Comment) => {
       if (!user) return false;
       if (c.user.id === user.id) return true;
-      if (user.role === 'admin' || user.role === 'moderator') return true;
+      if (user.role === 'admin') return true;
       return !!data && data.author?.id === user.id;
     },
     [user, data]
@@ -138,9 +138,9 @@ export default function ContentDetailPage() {
     [data, user, confirmNav, notice]
   );
 
-  /** 能否管理(删除)这条内容：作者本人 / 管理员·审核员 */
+  /** 能否管理(删除)这条内容：作者本人 / 管理员（审核员只有审核权限，无删除权） */
   const canManage = useCallback(
-    () => !!data && !!user && (data.author?.id === user.id || user.role === 'admin' || user.role === 'moderator'),
+    () => !!data && !!user && (data.author?.id === user.id || user.role === 'admin'),
     [data, user]
   );
 

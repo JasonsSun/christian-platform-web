@@ -39,7 +39,7 @@ export async function runConfirmAction(
       return { ok: true, message: '评论已删除' };
 
     // ---------- 代祷墙 ----------
-    // 作者本人可删自己的；管理员 / 审核员可删任何一条（清理违规违法内容）
+    // 作者本人可删自己的；仅管理员可删任何一条（清理违规违法内容）。审核员无删除权。
     case 'prayer.delete':
       await apiDelete(`/prayers/${s(params, 'prayerId')}`);
       return { ok: true, message: isAdminScope(params) ? '该代祷已被移除' : '代祷已删除' };

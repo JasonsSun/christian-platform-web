@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 
 /** 重新执行媒体处理流水线(探测时长 / 转码 / 抽取封面) */
 export const POST = withApi(async (req: NextRequest, ctx: { params: { id: string } }) => {
-  await requireRole(req, ['admin', 'moderator']);
+  await requireRole(req, ['admin']);
   const m = await one<any>(`SELECT id, storage_key, kind, extension FROM media_files WHERE id = ?`, [ctx.params.id]);
   if (!m) throw notFound('文件不存在');
 

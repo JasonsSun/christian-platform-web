@@ -10,7 +10,8 @@ type Ctx = { params: { id: string; commentId: string } };
 
 /**
  * 删除评论
- * 允许的三类人：评论作者本人 / 该内容作者 / 审核员·管理员
+ * 允许的人：评论作者本人 / 该内容作者 / 管理员。
+ * 审核员（moderator）只有审核权限，不赋予删除权。
  */
 export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
   const viewer = await requireUser(req);
@@ -25,10 +26,10 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
   );
   if (!row) throw notFound('评论不存在或已被删除');
 
-  const isStaff = viewer.role === 'admin' || viewer.role === 'moderator';
+  const isAdmin = viewer.role === 'admin';
   const isCommentAuthor = row.user_id === viewer.id;
   const isContentAuthor = row.author_id === viewer.id;
-  if (!isCommentAuthor && !isContentAuthor && !isStaff) {
+  if (!isCommentAuthor && !isContentAuthor && !isAdmin) {
     throw forbidden('只能删除自己的评论');
   }
 
