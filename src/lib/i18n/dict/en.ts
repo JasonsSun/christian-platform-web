@@ -64,7 +64,7 @@ const en: Dict = {
     copyright: '© 2024 Shengyue Community. All rights reserved. Glory to God.',
   },
   home: {
-    heroBadge: 'Full-stack ready · Real MySQL data',
+    heroBadge: 'Emmanuel · Hallelujah · Amen · The Lord is with you · Grace to you · Maranatha',
     heroTitle1: 'Meet',
     heroTitle2: 'Jesus',
     heroTitle3: 'Build Your Fellowship',

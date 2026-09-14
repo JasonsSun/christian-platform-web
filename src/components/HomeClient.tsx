@@ -119,9 +119,14 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-20">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <div className="text-white animate-slide-up text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 backdrop-blur-md border border-white/20 mb-6">
-                <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse" />
-                <span className="text-sm font-medium">{t('home.heroBadge')}</span>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 backdrop-blur-md border border-white/20 mb-6 max-w-full">
+                <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse shrink-0" />
+                <div className="relative overflow-hidden marquee-mask w-48 sm:w-60">
+                  <div className="marquee-track text-sm font-medium">
+                    <span className="mr-8">{t('home.heroBadge')} ·&nbsp;</span>
+                    <span className="mr-8">{t('home.heroBadge')} ·&nbsp;</span>
+                  </div>
+                </div>
               </div>
 
               <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4 md:mb-6">

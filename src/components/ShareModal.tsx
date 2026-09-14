@@ -213,6 +213,18 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
   const [cardFailed, setCardFailed] = useState(false);
   // 上一张卡片的 objectURL,换新图/卸载时要释放,否则大图会一直占内存
   const prevCardRef = useRef<CardImage | null>(null);
+  // 顶部分段选择:选哪个功能才展示对应的内容,避免一次性全部竖排拉长页面
+  const tabs = card
+    ? [
+        { key: 'card', label: '卡片图' },
+        { key: 'qr', label: '二维码' },
+        { key: 'link', label: '链接' },
+      ]
+    : [
+        { key: 'qr', label: '二维码' },
+        { key: 'link', label: '链接' },
+      ];
+  const [activeTab, setActiveTab] = useState<string>(card ? 'card' : 'qr');
 
   const shareTitle = title || '圣约社区 - 基督教内容传播与社交社区';
   const shareText = text || '推荐给你一个基督徒的灵修与团契社区：读经、圣诗、见证、活动、直播，欢迎来一起建造。';
@@ -342,12 +354,30 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
           <span className="text-lg" aria-hidden="true">📤</span>
           <h2 className="font-display text-lg font-bold text-ink-900">推荐给朋友</h2>
         </div>
-        <p className="text-sm text-ink-500 mb-5">保存卡片图或扫码，把圣约社区分享给主内肢体</p>
+        <p className="text-sm text-ink-500 mb-4">选择一种方式，把圣约社区分享给主内肢体</p>
 
-        {/* 分享卡片图（仅传入 card 时显示） */}
-        {card && (
-          <div className="mb-5">
-            <div className="rounded-2xl overflow-hidden border border-ink-100 bg-ink-900/5 flex items-center justify-center min-h-[160px]">
+        {/* 分段选择器：选哪个功能才展示对应内容 */}
+        <div className="flex p-1 bg-ink-100/70 rounded-2xl mb-4">
+          {tabs.map((tb) => (
+            <button
+              key={tb.key}
+              type="button"
+              onClick={() => setActiveTab(tb.key)}
+              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
+                activeTab === tb.key
+                  ? 'bg-white text-primary-700 shadow-sm'
+                  : 'text-ink-500 hover:text-ink-700'
+              }`}
+            >
+              {tb.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 卡片图：预览 + 保存 */}
+        {activeTab === 'card' && (
+          <div>
+            <div className="rounded-2xl overflow-hidden border border-ink-100 bg-ink-900/5 flex items-center justify-center min-h-[200px]">
               {cardImg ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -358,8 +388,8 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
                   onError={() => setCardFailed(true)}
                 />
               ) : (
-                <div className="text-ink-400 text-sm py-10">
-                  {cardBusy ? '卡片生成中…' : cardFailed ? '卡片生成失败，可改用下方二维码分享' : '暂无卡片'}
+                <div className="text-ink-400 text-sm py-12 px-4 text-center">
+                  {cardBusy ? '卡片生成中…' : cardFailed ? '卡片生成失败，可改用「二维码」或「链接」分享' : '暂无卡片'}
                 </div>
               )}
             </div>
@@ -382,41 +412,47 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
         )}
 
         {/* 二维码 */}
-        <div className="flex flex-col items-center mb-5">
-          <div className="bg-white rounded-2xl p-3 shadow-soft border border-ink-100">
-            {qr ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={qr} alt="分享二维码" className="w-40 h-40" width={160} height={160} decoding="async" />
-            ) : (
-              <div className="w-40 h-40 flex items-center justify-center text-ink-300 text-sm">生成中…</div>
-            )}
+        {activeTab === 'qr' && (
+          <div className="flex flex-col items-center">
+            <div className="bg-white rounded-2xl p-3 shadow-soft border border-ink-100">
+              {qr ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={qr} alt="分享二维码" className="w-44 h-44" width={176} height={176} decoding="async" />
+              ) : (
+                <div className="w-44 h-44 flex items-center justify-center text-ink-300 text-sm">生成中…</div>
+              )}
+            </div>
+            <p className="text-xs text-ink-400 mt-3 break-all text-center max-w-[16rem]">{shareUrl}</p>
+            <p className="text-xs text-ink-400 mt-1 text-center">微信内可长按二维码识别，或截图分享到朋友圈</p>
           </div>
-          <p className="text-xs text-ink-400 mt-2 break-all text-center max-w-[16rem]">{shareUrl}</p>
-        </div>
+        )}
 
-        {/* 操作按钮 */}
-        <div className="space-y-2">
-          <button
-            type="button"
-            onClick={copy}
-            className="w-full btn-primary flex items-center justify-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            {copied ? '已复制 ✓' : '复制链接'}
-          </button>
-          <button
-            type="button"
-            onClick={nativeShare}
-            className="w-full py-2.5 rounded-xl border border-ink-200 bg-white/70 text-ink-700 font-medium text-sm hover:bg-ink-50 transition-colors flex items-center justify-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            系统分享
-          </button>
-        </div>
+        {/* 链接：复制 / 系统分享 */}
+        {activeTab === 'link' && (
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={copy}
+              className="w-full btn-primary flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              {copied ? '已复制 ✓' : '复制链接'}
+            </button>
+            <button
+              type="button"
+              onClick={nativeShare}
+              className="w-full py-2.5 rounded-xl border border-ink-200 bg-white/70 text-ink-700 font-medium text-sm hover:bg-ink-50 transition-colors flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              系统分享
+            </button>
+            <p className="text-xs text-ink-400 mt-2 text-center break-all">{shareUrl}</p>
+          </div>
+        )}
       </div>
     </div>
     </Portal>

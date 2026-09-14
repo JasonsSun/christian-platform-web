@@ -61,7 +61,7 @@ const zh = {
     copyright: '© 2024 圣约社区平台. All rights reserved. 愿荣耀归给上帝.',
   },
   home: {
-    heroBadge: '全栈已打通 · 真实 MySQL 数据',
+    heroBadge: '以马内利 · 哈利路亚 · 阿们 · 主恩同在 · 愿主赐福 · 主必再来',
     heroTitle1: '遇见',
     heroTitle2: '耶稣',
     heroTitle3: '建立你的团契',
