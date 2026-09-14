@@ -290,9 +290,6 @@ export default function AdminNotificationsPage() {
                       <span className="flex items-center gap-1.5 text-ink-600">
                         <span aria-hidden>{NOTIF_TYPE_ICON[t.type] || '🔔'}</span>
                         {notifTypeLabel(t.type)}
-                        {!NOTIF_TYPE_ICON[t.type] && (
-                          <span className="font-mono text-xs text-ink-400">（{t.type}）</span>
-                        )}
                       </span>
                       <span className="text-ink-900 font-medium">{t.c}<span className="text-ink-400 text-xs"> · 未读{t.unread}</span></span>
                     </li>

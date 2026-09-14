@@ -33,7 +33,8 @@ process.on('uncaughtException', (err) => {
 
 const dev = process.env.NODE_ENV !== 'production';
 const port = parseInt(process.env.PORT || '3000', 10);
-const app = next({ dev });
+// 与 next.config.js 的 distDir 保持一致:验证时可用独立产物目录,避免与并行构建互相清空
+const app = next({ dev, dir: process.cwd(), conf: { distDir: process.env.NEXT_DIST_DIR || '.next' } });
 const handle = app.getRequestHandler();
 const upgradeHandler = app.getUpgradeHandler();
 

@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // 允许用 NEXT_DIST_DIR 覆盖构建产物目录。
+  // 用途:本机常有多条工作线并行构建,共用一个 .next 会互相清空导致构建中断;
+  // 验证时用独立目录即可互不干扰。线上不设该变量,行为与原来完全一致(.next)。
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   reactStrictMode: true,
   // 生产环境不产出浏览器端 source map，避免源码被直接查看
   productionBrowserSourceMaps: false,

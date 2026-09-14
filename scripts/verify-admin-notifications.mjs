@@ -193,10 +193,31 @@ await sleep(4500);
 
 // 1) 中文显示
 const body = String(await evaluate(BODY) || '');
-const enLeaks = types.filter((t) => new RegExp(`(^|\\s)${t}(\\s|$)`).test(body));
-check('按类型分布：所有英文 code 均已显示为中文', enLeaks.length === 0, `仍裸露: ${enLeaks.join(', ')}`);
-check('按类型分布：给出中文样例（如「媒体待审核」）', body.includes('媒体待审核') || body.includes('新评论'), '未见中文类型名');
-check('最近通知表头含「类型」列', body.includes('类型'), '');
+// 「按类型分布」区块是第 1 个统计卡片；模板编码列本来就该是英文，不能全页扫描
+const typeBlock = String(await evaluate(`
+  (() => {
+    const box = [...document.querySelectorAll('div.glass')].find(d => d.innerText.trim().startsWith('按类型分布'));
+    if (!box) return '';
+    return [...box.querySelectorAll('li')].map(li => li.innerText.replace(/\\s+/g, ' ').trim()).join(' || ');
+  })()
+`) || '');
+const recentBlock = String(await evaluate(`
+  (() => {
+    const box = [...document.querySelectorAll('div.glass')].find(d => d.innerText.includes('最近通知') && d.querySelector('table'));
+    if (!box) return '';
+    return [...box.querySelectorAll('tbody tr')].map(tr => tr.innerText.replace(/\\s+/g, ' ').trim()).join(' || ');
+  })()
+`) || '');
+
+const enLeaks = typeBlock.match(/\b[a-z][a-z0-9]*_[a-z0-9_]+\b/g) || [];
+check('按类型分布：无任何英文 code 裸露（含未收录类型的中文兜底）', enLeaks.length === 0,
+  `裸露: ${[...new Set(enLeaks)].join(', ')} 区块=${typeBlock.slice(0, 240)}`);
+check('按类型分布：中文名与「· 未读N」计数同现', /未读\d+/.test(typeBlock), typeBlock.slice(0, 120));
+check('最近通知「类型」列也是中文（表头含类型）', body.includes('类型'), '');
+// 最近通知行的类型列：取第 2 列，必须命中中文词典
+const recentTypes = recentBlock.split(' || ').map((r) => r.split(' ')[1] || '').filter(Boolean);
+const recentEn = recentTypes.filter((v) => /^[a-z_]{4,}$/.test(v));
+check('最近通知的类型列无英文 code 裸露', recentEn.length === 0, `英文列: ${recentEn.join(', ')}`);
 
 // 2) 新增模板（界面操作）
 check('存在「+ 新增模板」按钮', !!(await evaluate(`!!${BTN('+ 新增模板')}`)));

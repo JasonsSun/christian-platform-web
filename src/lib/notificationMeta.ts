@@ -45,6 +45,15 @@ export const NOTIF_TYPE_LABEL: Record<string, string> = {
   activity_registered: '活动报名成功',
   activity_checkin: '活动签到',
   activity_reminder: '活动提醒',
+  activity_cancelled: '活动已取消',
+  activity_updated: '活动信息变更',
+  // 组织 / 团契
+  group_owner: '团契负责人变更',
+  group_dissolved: '团契已解散',
+  group_member_joined: '新成员加入团契',
+  group_member_left: '成员退出团契',
+  org_approved: '组织认证通过',
+  org_rejected: '组织认证未通过',
   // 系统
   welcome: '欢迎加入',
   password_reset: '密码重置',
@@ -62,6 +71,9 @@ export const NOTIF_TYPE_ICON: Record<string, string> = {
   new_comment: '💬', mention: '💬', new_like: '❤️', new_follow: '👤', new_message: '✉️',
   friend_request: '🤝', friend_accepted: '🤝', group_joined: '👥', group_post: '📝', prayer_amen: '🙏',
   activity: '📅', activity_published: '📅', activity_registered: '📅', activity_checkin: '📍', activity_reminder: '⏰',
+  activity_cancelled: '🚫', activity_updated: '📝',
+  group_owner: '👥', group_dissolved: '💔', group_member_joined: '👥', group_member_left: '👋',
+  org_approved: '⛪', org_rejected: '🚫',
   welcome: '🎉', password_reset: '🔐', quota_changed: '📊', quota_levelup_tip: '🚀',
 };
 
@@ -81,10 +93,23 @@ export const CHANNEL_LABEL: Record<string, string> = {
   inapp: '站内', push: '推送', email: '邮件', sms: '短信', wechat: '微信',
 };
 
-/** 未知 code 的兜底：保留原值但加个提示，避免出现「空白列」 */
+/** 未知 code 的兜底：按命名规则粗译，绝不裸露英文 code 给用户 */
+const TOKEN_ZH: Record<string, string> = {
+  activity: '活动', group: '团契', org: '组织', content: '内容', media: '媒体', song: '诗歌',
+  live: '直播', user: '用户', friend: '好友', prayer: '祷告', quota: '配额',
+  pending: '待处理', approved: '已通过', rejected: '未通过', cancelled: '已取消', canceled: '已取消',
+  updated: '有更新', removed: '已移除', reported: '被举报', submitted: '已提交',
+  created: '已创建', deleted: '已删除', changed: '有变更', reminder: '提醒', joined: '已加入',
+  left: '已退出', owner: '负责人', new: '新', review: '审核', tip: '提示', reset: '重置',
+};
+
 export function notifTypeLabel(type?: string): string {
   if (!type) return '未知类型';
-  return NOTIF_TYPE_LABEL[type] || type;
+  if (NOTIF_TYPE_LABEL[type]) return NOTIF_TYPE_LABEL[type];
+  // 未收录的类型：按 _ 分词逐段翻译，译不出就保留原词，但保证整体不是纯英文 code 的裸奔观感
+  const parts = type.split('_').map((seg) => TOKEN_ZH[seg]).filter(Boolean);
+  if (parts.length) return parts.join('');
+  return `其他通知（${type}）`;
 }
 
 export function channelLabel(channel?: string): string {
