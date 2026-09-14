@@ -49,3 +49,9 @@ _chromeprof*/
 _shots/
 _shots-*/
 *.corrupt-*/
+_chromeprof*/
+_shots/
+_shots-*/
+*.corrupt-*/
+.scanbuild/
+/_aud3/

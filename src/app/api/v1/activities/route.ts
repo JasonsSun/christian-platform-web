@@ -78,8 +78,18 @@ export const POST = withApi(async (req: NextRequest) => {
      ts(startAt), body.endAt ? ts(new Date(body.endAt)) : ts(new Date(startAt.getTime() + 7200000)),
      Math.max(1, Number(body.capacity || 50)), body.cover || '📅', ts()]
   );
+
+  // 创建人默认就是第一参与人，无需自己报名。
+  // 用 INSERT ... ON DUPLICATE KEY 兜底 uk_reg(activity_id, user_id) 唯一键，避免重复插入报错。
+  await exec(
+    `INSERT INTO activity_registrations (id, activity_id, user_id, status, created_at)
+     VALUES (?,?,?,'confirmed',?)
+     ON DUPLICATE KEY UPDATE status='confirmed'`,
+    [newId('reg'), id, user.id, ts()]
+  );
+
   await audit(user.id, 'ACTIVITY_CREATE', 'activity', id, `创建活动《${title}》`, clientIp(req));
 
   const row = await one<any>(`${BASE(user.id)} WHERE a.id = ?`, [user.id, id]);
-  return ok(mapActivity({ ...row, registered: false }), 201);
+  return ok(mapActivity({ ...row, registered: true }), 201);
 });

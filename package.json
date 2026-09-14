@@ -7,6 +7,7 @@
     "start": "node server.js --prod",
     "test": "node scripts/test-safety.mjs",
     "test:plan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-plan-checkin.mjs",
+    "test:group": "node scripts/test-group-owner-exit.mjs",
     "test:e2e:plan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-plan-checkin.mjs",
     "test:e2e:readdot": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-readdot-ui.mjs",
     "test:e2e:dot": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-dot-position.mjs",
