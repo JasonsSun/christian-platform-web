@@ -56,7 +56,26 @@ function ReviewCard({
         </button>
       ) : null}
 
-      {rejecting ? (
+      {task.status !== 'pending' ? (
+        // 已审核完成的任务不再展示「通过/驳回」，避免误操作（后端也会返回 409）
+        <div className="mt-4 text-sm">
+          {task.status === 'approved' ? (
+            <span className="inline-flex items-center gap-1.5 text-emerald-600 font-medium">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              已通过并发布，审核已完成
+            </span>
+          ) : (
+            <span className="inline-flex items-start gap-1.5 text-rose-600 font-medium break-words">
+              <svg className="w-4 h-4 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              <span>已驳回{task.reason ? `：${task.reason}` : ''}，审核已完成</span>
+            </span>
+          )}
+        </div>
+      ) : rejecting ? (
         <div className="mt-3">
           <textarea
             className="input-styled w-full"
