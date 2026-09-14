@@ -197,7 +197,8 @@ export default function ReadChapter() {
 
   // 蓝点驻留检测：经文进入「阅读带」(上下各留 12% 盲区) 并停留 READ_DWELL_MS → 该节已读
   useEffect(() => {
-    if (!data?.hasContent || typeof IntersectionObserver === 'undefined') return;
+    // 蓝点只服务已登录用户（用于校验真实读经、累加读经记录）；未登录不启动
+    if (!user || !data?.hasContent || typeof IntersectionObserver === 'undefined') return;
     const obs = new IntersectionObserver(
       (entries) => {
         for (const en of entries) {
@@ -226,7 +227,7 @@ export default function ReadChapter() {
     );
     document.querySelectorAll<HTMLElement>('[data-verse]').forEach((n) => obs.observe(n));
     return () => obs.disconnect();
-  }, [data?.hasContent, data?.verses, version, book, chapter]);
+  }, [user, data?.hasContent, data?.verses, version, book, chapter]);
 
   // 卸载时清理计时器
   useEffect(() => () => {
@@ -1171,7 +1172,7 @@ export default function ReadChapter() {
                       if (typeof window !== 'undefined' && (window.getSelection()?.toString() || '').trim()) return;
                       selectVerse(v.verse);
                     }}
-                    className={`read-verse mb-5 group relative pl-10 pr-12 py-2 rounded-xl transition-all duration-200 scroll-mt-24 cursor-pointer ${
+                    className={`read-verse mb-5 group relative pl-12 pr-12 py-2 rounded-xl transition-all duration-200 scroll-mt-24 cursor-pointer ${
                       speaking
                         ? speech.wordSync
                           ? 'bg-amber-50/80 border-l-2 border-amber-400 shadow-sm'
@@ -1181,11 +1182,20 @@ export default function ReadChapter() {
                           : 'hover:bg-ink-50/50'
                     }`}
                   >
+                    {/* 真实读经蓝点（仅登录用户）：本节进入视野并驻留数秒后淡出 = 已读 */}
+                    {user && (
+                      <span
+                        className={`read-dot !absolute !left-0 !ml-0 top-[18px] ${readVerses.has(v.verse) ? 'is-read' : ''}`}
+                        aria-hidden
+                        title={readVerses.has(v.verse) ? '本节已读' : '阅读本节数秒即自动标记已读'}
+                      />
+                    )}
+
                     {/* 节号：点击点亮本节（不朗读） */}
                     <button
                       onClick={(e) => { e.stopPropagation(); selectVerse(v.verse); }}
                       title="点击点亮本节（不朗读）"
-                      className={`absolute left-0 top-2 w-7 h-7 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
+                      className={`absolute left-4 top-2 w-7 h-7 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
                         speaking
                           ? 'bg-amber-500 text-white scale-110 shadow-md'
                           : targeted
@@ -1239,12 +1249,7 @@ export default function ReadChapter() {
                       })}
                     </span>
 
-                    {/* 真实读经蓝点：本节进入视野并驻留数秒后淡出 = 已读 */}
-                    <span
-                      className={`read-dot ${readVerses.has(v.verse) ? 'is-read' : ''}`}
-                      aria-hidden
-                      title={readVerses.has(v.verse) ? '本节已读' : '阅读本节数秒即自动标记已读'}
-                    />
+                    {/* 蓝点已移到本节开头（节号左侧），见上方 */}
 
                     {/* 对照译本：仅在开启对照且该节有译文时显示（英文自动用衬线体） */}
                     {cmpVersion && cmpVerses[v.verse] && (

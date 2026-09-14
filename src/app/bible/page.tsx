@@ -367,7 +367,7 @@ export default function BibleHome() {
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-50/80 border border-primary-100 text-xs text-primary-600">
             <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary-500 mr-1" aria-hidden />
-            每节蓝点驻留几秒即淡出=已读，全部淡出即读完本章
+            登录后：每节开头蓝点驻留几秒即淡出=已读，全部淡出即读完本章
           </span>
         </div>
 

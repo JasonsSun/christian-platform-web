@@ -20,7 +20,7 @@ export type OgCardInput = {
 export function ogCardMetadata({ title, description, kind, meta, path }: OgCardInput): Metadata {
   const qs = new URLSearchParams();
   qs.set('t', title.slice(0, 60));
-  if (description) qs.set('s', description.slice(0, 110));
+  if (description) qs.set('s', description.slice(0, 90));
   if (kind) qs.set('k', kind);
   if (meta) qs.set('m', meta.slice(0, 44));
 

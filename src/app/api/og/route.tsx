@@ -52,6 +52,32 @@ function staticCover(): Buffer | null {
   return coverCache;
 }
 
+/** 基督教主题插图（随机/稳定二选一，见 pickIllust），与卡片蓝金底色同色系 */
+const ILLUSTS = ['dove.jpg', 'angel.jpg', 'shepherd.jpg'];
+const illustCache: Record<string, Buffer | null> = {};
+
+function loadIllust(name: string): Buffer | null {
+  if (illustCache[name] !== undefined) return illustCache[name];
+  try {
+    illustCache[name] = fs.readFileSync(path.join(process.cwd(), 'public', 'og-illust', name));
+  } catch (e: any) {
+    console.warn('[og] illustration unavailable:', name, e?.message || e);
+    illustCache[name] = null;
+  }
+  return illustCache[name];
+}
+
+/**
+ * 按内容挑插图：用 title|kind|meta 做稳定散列。
+ * 同一篇文章永远拿同一张图（否则每次请求都变，缓存失效、分享预览闪动），
+ * 不同内容则分散到不同插图。想指定某张可传 ?i=0|1|2。
+ */
+function pickIllust(seed: string): string {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+  return ILLUSTS[Math.abs(h) % ILLUSTS.length];
+}
+
 /** 统一的降级出口：优先回静态封面字节；实在读不到才重定向 */
 function fallbackToCover(req: NextRequest): NextResponse {
   const cover = staticCover();
@@ -105,9 +131,18 @@ export async function GET(req: NextRequest) {
 
   const sp = req.nextUrl.searchParams;
   const title = clean(sp.get('t'), 60) || '圣约社区';
-  const sub = clean(sp.get('s'), 110);
+  const sub = clean(sp.get('s'), 90);
   const kind = clean(sp.get('k'), 8);
   const meta = clean(sp.get('m'), 44);
+
+  // 插图：?i=0|1|2 指定；否则按内容稳定散列随机挑一张
+  const picked = sp.get('i') !== null
+    ? ILLUSTS[Math.abs(Number(sp.get('i')) || 0) % ILLUSTS.length]
+    : pickIllust(`${title}|${kind}|${meta}`);
+  const illustBuf = loadIllust(picked);
+  const illustUri = illustBuf && illustBuf.length > 200
+    ? `data:image/jpeg;base64,${illustBuf.toString('base64')}`
+    : null;
 
   try {
     const img = new ImageResponse(
@@ -186,36 +221,63 @@ export async function GET(req: NextRequest) {
             ) : null}
           </div>
 
-          {/* 主体 */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              flex: 1,
-              justifyContent: 'center',
-              paddingRight: 40,
-            }}
-          >
+          {/* 主体：左文字 + 右插图 */}
+          <div style={{ display: 'flex', flex: 1, alignItems: 'center' }}>
             <div
               style={{
-                fontSize: titleSize(title.length),
-                fontWeight: 700,
-                lineHeight: 1.34,
-                letterSpacing: '0.5px',
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                justifyContent: 'center',
+                paddingRight: 40,
               }}
             >
-              {title}
-            </div>
-            {sub ? (
               <div
                 style={{
-                  marginTop: 26,
-                  fontSize: 28,
-                  lineHeight: 1.6,
-                  color: 'rgba(255, 255, 255, 0.82)',
+                  fontSize: titleSize(title.length),
+                  fontWeight: 700,
+                  lineHeight: 1.34,
+                  letterSpacing: '0.5px',
                 }}
               >
-                {sub}
+                {title}
+              </div>
+              {sub ? (
+                <div
+                  style={{
+                    marginTop: 26,
+                    fontSize: 25,
+                    lineHeight: 1.55,
+                    color: 'rgba(255, 255, 255, 0.82)',
+                  }}
+                >
+                  {sub}
+                </div>
+              ) : null}
+            </div>
+
+            {illustUri ? (
+              <div
+                style={{
+                  display: 'flex',
+                  width: 330,
+                  height: 330,
+                  borderRadius: 34,
+                  overflow: 'hidden',
+                  flexShrink: 0,
+                  borderWidth: 2,
+                  borderStyle: 'solid',
+                  borderColor: 'rgba(251, 191, 36, 0.42)',
+                  boxShadow: '0 26px 64px rgba(0, 0, 0, 0.38)',
+                }}
+              >
+                {/* 插图：深蓝底 + 金色线条，与卡片同色系 */}
+                <img
+                  src={illustUri}
+                  width={330}
+                  height={330}
+                  style={{ width: 330, height: 330, objectFit: 'cover', borderRadius: 34 }}
+                />
               </div>
             ) : null}
           </div>
