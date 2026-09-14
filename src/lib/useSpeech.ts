@@ -877,7 +877,15 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
           genRef.current += 1;
           window.speechSynthesis.cancel();
           stopTick();
-          setTimeout(() => speakRange(posRef.current), 80);
+          stoppedRef.current = false;
+          // 从「当前正在读的节」而非批起点重启,避免改语速后回退重读前几节
+          const curKey = speakingKeyRef.current;
+          let fromIdx = posRef.current;
+          if (curKey != null) {
+            const i = itemsRef.current.findIndex((it) => it.key === curKey);
+            if (i >= 0) fromIdx = i;
+          }
+          setTimeout(() => speakRange(fromIdx), 80);
         }
       }
     },
@@ -895,11 +903,9 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
-      abortRef.current?.abort();
-      abortRef.current = null;
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ''; }
+      serverStopInner();
     };
-  }, [stopRaf, stopTick, clearWatchdog]);
+  }, [stopRaf, stopTick, clearWatchdog, serverStopInner]);
 
   // 朗读内容变化(如换章)时自动停止
   useEffect(() => {
@@ -908,14 +914,14 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     genRef.current += 1;
     stopTick();
     if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
-    abortRef.current?.abort();
-    abortRef.current = null;
+    // 停掉正在播放的音频(换章时服务器语音不会因 items 变化自动停,否则旧章音频成孤儿持续响)
+    serverStopInner();
     speakingKeyRef.current = null;
     setState('idle');
     setSpeakingKey(null);
     setClientReady(false);
     speakCharRef.current = null;
-  }, [items, stopTick, clearWatchdog]);
+  }, [items, stopTick, clearWatchdog, serverStopInner]);
 
   return {
     supported,
