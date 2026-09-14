@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Portal from '@/components/Portal';
 
 /** 生成分享卡片图所需数据（经文/诗歌/金句） */
 export type ShareCard = {
@@ -308,6 +309,7 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
   };
 
   return (
+    <Portal>
     <div
       data-guard="share-modal"
       className="fixed inset-0 z-[70] flex items-center justify-center p-4"
@@ -417,5 +419,6 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
         </div>
       </div>
     </div>
+    </Portal>
   );
 }

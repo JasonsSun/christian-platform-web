@@ -7,6 +7,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
+import Portal from '@/components/Portal';
 import { formatDate } from '@/lib/format';
 import {
   AdminLayout,
@@ -246,7 +247,8 @@ export default function AdminUsersPage() {
 
       {/* 重置密码结果弹层 */}
       {resetPwdFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }}>
+        <Portal>
+        <div data-guard="reset-pwd-modal" role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }}>
           <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6">
             <h3 className="font-display text-xl font-bold text-ink-900 mb-1">重置密码</h3>
             {resetPwdResult ? (
@@ -267,6 +269,7 @@ export default function AdminUsersPage() {
             )}
           </div>
         </div>
+        </Portal>
       )}
     </AdminLayout>
   );

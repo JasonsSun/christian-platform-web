@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { fetchBibleBooks, fetchBibleChapter } from '@/lib/bible-api';
 import { BOOKS, VERSIONS, bookById } from '@/server/bible';
+import Portal from '@/components/Portal';
 
 interface BibleReaderProps {
   version: string;
@@ -811,6 +812,7 @@ function MobileBookSheet({
   const groups = testament === 'old' ? bibleData.books.old : bibleData.books.new;
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 md:hidden" data-guard="bible-drawer">
       {/* 遮罩 */}
       <div
@@ -971,6 +973,7 @@ function MobileBookSheet({
         </div>
       </div>
     </div>
+    </Portal>
   );
 }
 

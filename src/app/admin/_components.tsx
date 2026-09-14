@@ -105,6 +105,7 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string }[] }[] 
   { group: '运营', items: [
     { href: '/admin/donations', label: '捐赠管理' },
     { href: '/admin/expenses', label: '支出公示' },
+    { href: '/admin/feedback', label: '平台建议' },
   ] },
   { group: '系统', items: [
     { href: '/admin/notifications', label: '通知中心' },

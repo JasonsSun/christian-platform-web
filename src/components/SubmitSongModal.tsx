@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { apiForm } from '@/lib/api';
+import Portal from '@/components/Portal';
 
 /**
  * 投稿赞美诗歌弹窗：可只填歌词、可附带音频文件、也可只给一个"这首在哪儿能听到
@@ -72,7 +73,14 @@ export default function SubmitSongModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <Portal>
+    <div
+      data-guard="submit-song-modal"
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-6 pb-4 border-b border-ink-100 flex items-center justify-between">
           <h3 className="font-display text-xl font-bold text-ink-900">投稿赞美诗歌</h3>
@@ -187,5 +195,6 @@ export default function SubmitSongModal({
         </form>
       </div>
     </div>
+    </Portal>
   );
 }

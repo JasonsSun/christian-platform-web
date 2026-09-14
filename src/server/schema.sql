@@ -795,3 +795,24 @@ CREATE TABLE IF NOT EXISTS user_onboarding (
   updated_at  DATETIME      NOT NULL,
   CONSTRAINT fk_uo_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =============================================================
+--  平台建议 / 需求反馈: 用户提交, 仅管理员可见（用于了解使用者需求）
+-- =============================================================
+
+CREATE TABLE IF NOT EXISTS platform_feedback (
+  id          CHAR(36)      NOT NULL PRIMARY KEY,
+  user_id     CHAR(36)      NULL,                       -- 匿名提交时为 NULL
+  category    VARCHAR(30)   NOT NULL DEFAULT 'idea',    -- idea | bug | content | ux | other
+  content     VARCHAR(1000) NOT NULL,
+  contact     VARCHAR(120)  NOT NULL DEFAULT '',        -- 选填, 便于回访
+  page_url    VARCHAR(255)  NOT NULL DEFAULT '',        -- 提交时所在页面, 便于复现问题
+  status      VARCHAR(20)   NOT NULL DEFAULT 'new',     -- new | processing | done | rejected
+  admin_reply VARCHAR(1000) NOT NULL DEFAULT '',
+  handled_by  CHAR(36)      NULL,
+  handled_at  DATETIME      NULL,
+  created_at  DATETIME      NOT NULL,
+  KEY idx_pf_status (status),
+  KEY idx_pf_user (user_id),
+  KEY idx_pf_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

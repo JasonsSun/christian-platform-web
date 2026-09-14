@@ -200,6 +200,7 @@ export default function Navbar() {
                           </span>
                         )}
                       </Link>
+                      <Link href="/feedback" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">💡 给平台提建议</Link>
                       {isStaff && <Link href="/admin/reviews" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">审核队列</Link>}
                       <div className="divider-gradient my-1" />
                       <button
@@ -283,6 +284,7 @@ export default function Navbar() {
                 <Link href="/me" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">{t('nav.profile')}</Link>
                 <Link href="/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">{t('nav.notifications')}</Link>
                 <Link href="/settings/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">提醒设置</Link>
+                <Link href="/feedback" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">💡 给平台提建议</Link>
                 <Link href="/friends?tab=requests" className="flex items-center justify-between px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">
                   <span>好友申请</span>
                   {!!frReq?.total && (

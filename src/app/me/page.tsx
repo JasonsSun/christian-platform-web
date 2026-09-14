@@ -7,6 +7,7 @@ import { apiGet, apiPatch, apiPost, apiDelete, apiForm, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useConfirmNav } from '@/lib/confirm';
+import Portal from '@/components/Portal';
 import { useNotice } from '@/lib/notice';
 import { formatDate, formatSize, MEDIA_REVIEW_LABEL } from '@/lib/format';
 import QuotaCard, { type QuotaData } from '@/components/QuotaCard';
@@ -359,7 +360,8 @@ function PasswordModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }} onClick={onClose}>
+    <Portal>
+    <div data-guard="pwd-modal" role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }} onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="font-display text-xl font-bold text-ink-900 mb-1">修改密码</h3>
         <p className="text-sm text-ink-500 mb-5">修改成功后需重新登录，其他设备将全部退出</p>
@@ -384,6 +386,7 @@ function PasswordModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
         </form>
       </div>
     </div>
+    </Portal>
   );
 }
 
@@ -407,7 +410,8 @@ function DeleteAccountModal({ onClose, onDone }: { onClose: () => void; onDone: 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.55)' }} onClick={onClose}>
+    <Portal>
+    <div data-guard="delete-account-modal" role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.55)' }} onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="font-display text-xl font-bold text-rose-700 mb-1">注销账号</h3>
         <p className="text-sm text-ink-500 mb-4">此操作不可恢复，请谨慎操作</p>
@@ -440,6 +444,7 @@ function DeleteAccountModal({ onClose, onDone }: { onClose: () => void; onDone: 
         </form>
       </div>
     </div>
+    </Portal>
   );
 }
 

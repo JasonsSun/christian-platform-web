@@ -14,6 +14,7 @@ import type { Author, Comment, ContentItem, ListResult } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
 import RichText from '@/components/RichText';
 import ArticleReader from '@/components/ArticleReader';
+import ReportModal from '@/components/ReportModal';
 
 function Avatar({ user, size = 36 }: { user: Author; size?: number }) {
   return (
@@ -44,35 +45,12 @@ export default function ContentDetailPage() {
 
   const likeAction = useAction();
   const commentAction = useAction();
-  const reportAction = useAction();
   const confirmNav = useConfirmNav();
   const [commentBody, setCommentBody] = useState('');
   const [showReport, setShowReport] = useState(false);
-  const [reportReason, setReportReason] = useState('spam');
-  const [reportDetail, setReportDetail] = useState('');
   const [reportMsg, setReportMsg] = useState('');
   const [fav, setFav] = useState(false);
   const favAction = useAction();
-
-  const handleReport = useCallback(async () => {
-    if (!user) {
-      notice.info('请先登录后再举报');
-      goLogin();
-      return;
-    }
-    if (!reportReason) return;
-    const res = await reportAction.run(() =>
-      apiPost<{ ok: boolean }>(`/contents/${id}/report`, {
-        reason: reportReason,
-        detail: reportDetail.trim() || undefined,
-      })
-    );
-    if (res) {
-      setReportMsg('举报已提交');
-      setShowReport(false);
-      setReportDetail('');
-    }
-  }, [user, reportReason, reportDetail, reportAction, id, goLogin, notice]);
 
   const handleLike = useCallback(async () => {
     if (!data) return;
@@ -226,61 +204,19 @@ export default function ContentDetailPage() {
               </span>
             ) : (
               <button
-                onClick={() => setShowReport((v) => !v)}
+                onClick={() => setShowReport(true)}
                 className="text-white/80 hover:text-white text-sm underline-offset-2 hover:underline"
               >
                 举报
               </button>
             )}
-            {showReport && !reportMsg && (
-              <div className="absolute right-0 mt-2 w-64 sm:w-72 glass rounded-2xl p-4 shadow-card z-20 text-ink-800">
-                {!user ? (
-                  <div className="text-sm text-ink-600">
-                    请先
-                    <button onClick={() => router.push('/login')} className="text-primary-600 font-medium mx-1">登录</button>
-                    后举报
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-ink-500 mb-1">举报原因</label>
-                      <select
-                        value={reportReason}
-                        onChange={(e) => setReportReason(e.target.value)}
-                        className="input-styled"
-                      >
-                        <option value="spam">垃圾广告</option>
-                        <option value="harmful">有害信息</option>
-                        <option value="heresy">异端偏差</option>
-                        <option value="copyright">侵权</option>
-                        <option value="offensive">冒犯性内容</option>
-                        <option value="other">其他</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-ink-500 mb-1">补充说明（选填）</label>
-                      <textarea
-                        value={reportDetail}
-                        onChange={(e) => setReportDetail(e.target.value)}
-                        className="input-styled min-h-[64px]"
-                        placeholder="请描述具体问题…"
-                      />
-                    </div>
-                    {reportAction.error && <p className="text-xs text-rose-500">{reportAction.error}</p>}
-                    <div className="flex gap-2">
-                      <button onClick={() => setShowReport(false)} className="btn-secondary flex-1 text-sm py-2">取消</button>
-                      <button
-                        onClick={handleReport}
-                        disabled={reportAction.pending}
-                        className="btn-primary flex-1 text-sm py-2 disabled:opacity-70"
-                      >
-                        {reportAction.pending ? '提交中…' : '提交'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* 举报浮层：经 Portal 渲染到 body，不再受 hero 的 overflow-hidden 裁剪 */}
+            <ReportModal
+              open={showReport && !reportMsg}
+              onClose={() => setShowReport(false)}
+              contentId={id}
+              onSubmitted={() => setReportMsg('举报已提交')}
+            />
           </div>
           <div className="mt-4 flex items-center gap-3">
             {data.cover && <span className="text-4xl">{data.cover}</span>}
