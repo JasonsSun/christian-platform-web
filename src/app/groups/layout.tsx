@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
+import ModuleClosed from '@/components/ModuleClosed';
+import { isModuleEnabled } from '@/server/modules';
 
-/**
- * groups 下的页面以公开内容为主,启用 ISR:HTML 结果缓存 60s。
- * 弱网/跨境访问时不必每次实时渲染;页面本身是客户端组件,
- * SSR 输出的是骨架,缓存不会串用户数据。
- */
+/** groups 归属于「groups」模块：后台开关关闭时不渲染内容，改为模块已暂停的占位页。 */
 export const revalidate = 60;
 
-export default function Layout({ children }: { children: ReactNode }) {
+export default async function Layout({ children }: { children: ReactNode }) {
+  const open = await isModuleEnabled('groups');
+  if (!open) return <ModuleClosed label={'团契小组'} />;
   return <>{children}</>;
 }

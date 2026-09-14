@@ -17,6 +17,7 @@
     "test:e2e:moderator": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-moderator-permissions.mjs",
     "test:e2e:module-moderator": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-module-moderators.mjs",
     "test:e2e:settings": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-settings.mjs",
+    "test:e2e:module-switch": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-module-switch.mjs",
     "migrate:prayer-amens-fk": "node bin/migrate-prayer-amens-fk.mjs",
     "migrate:moderation-scopes": "node bin/migrate-moderation-scopes.mjs",
     "migrate:settings-seed": "node bin/migrate-settings-seed.mjs",

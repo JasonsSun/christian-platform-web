@@ -11,6 +11,7 @@ import { NotificationProvider } from '@/lib/notifyStream'
 import SWRegister from '@/components/SWRegister'
 import NetworkBanner from '@/components/NetworkBanner'
 import SiteNoticeBar from '@/components/SiteNoticeBar'
+import { disabledModules } from '@/server/modules'
 import { cookies } from 'next/headers'
 import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale } from '@/lib/i18n/config'
 import ActivityTracker from '@/components/ActivityTracker'
@@ -58,10 +59,12 @@ export const viewport = {
   themeColor: '#1e2664',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = cookies();
   const cookieLocale = cookieStore.get(LOCALE_COOKIE)?.value;
   const initialLocale = isLocale(cookieLocale) ? cookieLocale : DEFAULT_LOCALE;
+  // 已下线的模块：传给导航用于隐藏入口（读失败时当作全部开放，不误伤）
+  const offModules = await disabledModules().catch(() => [] as string[]);
   return (
     <html lang={initialLocale === 'zh' ? 'zh-CN' : initialLocale}>
       {/* 不再预连接 Google Fonts：境内不可达，预连接反而产生无谓的挂起请求 */}
@@ -79,10 +82,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <SiteNoticeBar />
                   <Guards />
                   <ActivityTracker />
-                  <Navbar />
+                  <Navbar disabledModules={offModules} />
                   <main className="pt-16 md:pt-20 pb-20 md:pb-0">{children}</main>
                   <Footer />
-                  <MobileNav />
+                  <MobileNav disabledModules={offModules} />
                 </NoticeProvider>
               </PlayerProvider>
             </NotificationProvider>

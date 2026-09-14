@@ -10,6 +10,8 @@ import { useNotifications } from '@/lib/notifyStream';
 import { useTheme } from '@/lib/theme';
 import LocaleSwitcher from '@/components/LocaleSwitcher';
 import ShareModal from '@/components/ShareModal';
+import { moduleOfPath } from '@/lib/siteModules';
+import { useDisabledModules } from '@/lib/useSiteModules';
 
 const navLinks = [
   { href: '/', key: 'nav.home' },
@@ -25,7 +27,9 @@ const navLinks = [
   { href: '/donate', key: 'nav.donate' },
 ];
 
-export default function Navbar() {
+export default function Navbar({ disabledModules = [] }: { disabledModules?: string[] }) {
+  // 服务端快照 + 水合后校正的首页 ISR 旧壳
+  const offModules = useDisabledModules(disabledModules);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -60,6 +64,13 @@ export default function Navbar() {
   }, []);
 
   const isStaff = user?.role === 'admin' || user?.role === 'moderator';
+
+  /** 该 href 所属模块是否已下线（不属于任何模块的路径恒为可见） */
+  const moduleOff = (href: string) => {
+    const m = moduleOfPath(href);
+    return !!m && offModules.includes(m);
+  };
+  const links = navLinks.filter((l) => !moduleOff(l.href));
 
   const themeIcon = theme === 'dark' ? (
     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>
@@ -100,7 +111,7 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => {
+            {links.map((link) => {
               const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
               return (
                 <Link
@@ -190,8 +201,8 @@ export default function Navbar() {
                   {menuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-card border border-ink-100 py-2 overflow-hidden">
                       <Link href="/me" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">{t('nav.profile')}</Link>
-                      <Link href="/community/create" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">发布内容</Link>
-                      <Link href="/messages" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">我的消息</Link>
+                      {!moduleOff('/community/create') && <Link href="/community/create" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">发布内容</Link>}
+                      {!moduleOff('/messages') && <Link href="/messages" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">我的消息</Link>}
                       <Link href="/friends?tab=requests" className="flex items-center justify-between px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">
                         <span>好友申请</span>
                         {!!frReq?.total && (
@@ -253,7 +264,7 @@ export default function Navbar() {
 
         <div className={`md:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[80vh] overflow-y-auto pb-4' : 'max-h-0'}`}>
           <div className="glass rounded-2xl p-4 space-y-2 shadow-card">
-            {navLinks.map((link) => {
+            {links.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link key={link.href} href={link.href} className={`block px-4 py-3 rounded-xl font-medium transition-all ${

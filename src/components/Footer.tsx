@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import { useModuleFilter } from '@/lib/useSiteModules';
 
 export default function Footer() {
   const { t } = useI18n();
+  // 已下线模块的入口不展示
+  const { isOff } = useModuleFilter();
   return (
     <footer className="relative bg-gradient-to-br from-ink-950 via-ink-900 to-primary-950 text-white overflow-hidden">
       {/* 装饰背景 */}
@@ -54,7 +57,7 @@ export default function Footer() {
                 { key: 'footer.features.activities', href: '/activities' },
                 { key: 'footer.features.community', href: '/community' },
                 { key: 'footer.features.donate', href: '/donate' },
-              ].map((item) => (
+              ].filter((item) => !isOff(item.href)).map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}
@@ -89,7 +92,7 @@ export default function Footer() {
                 { tkey: 'footer.communityList.prayer', href: '/community' },
                 { tkey: 'footer.communityList.notify', href: '/notifications' },
                 { tkey: 'footer.communityList.message', href: '/messages' },
-              ].map((item) => (
+              ].filter((item) => !isOff(item.href)).map((item) => (
                 <li key={item.tkey}>
                   <Link
                     href={item.href}

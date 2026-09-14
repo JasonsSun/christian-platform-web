@@ -11,6 +11,7 @@ import ShareButton from '@/components/ShareButton';
 import OnboardingCard from '@/components/OnboardingCard';
 import HomeCheckinCard from '@/components/HomeCheckinCard';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import { useModuleFilter } from '@/lib/useSiteModules';
 import type { ActivityItem, ContentItem, GroupItem, MediaItem, PrayerItem, SongItem } from '@/lib/types';
 
 type HomeData = {
@@ -64,6 +65,8 @@ export type HomeClientProps = {
 };
 
 export default function HomeClient({ initialHome = null, initialMedia = null }: HomeClientProps) {
+  // 已下线模块的入口（快捷宫格与底部入口）不展示
+  const { isOff } = useModuleFilter();
   const { user } = useAuth();
   const { t } = useI18n();
   const router = useRouter();
@@ -154,7 +157,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
               </div>
 
               <div className="mt-8 flex flex-wrap gap-4 pt-6 border-t border-white/10 justify-center lg:justify-start">
-                {[['nav.bible', '/bible'], ['nav.plans', '/plans'], ['nav.songs', '/songs'], ['nav.activities', '/activities'], ['nav.groups', '/groups']].map(([labelKey, href]) => (
+                {[['nav.bible', '/bible'], ['nav.plans', '/plans'], ['nav.songs', '/songs'], ['nav.activities', '/activities'], ['nav.groups', '/groups']].filter(([, href]) => !isOff(href as string)).map(([labelKey, href]) => (
                   <Link key={href} href={href} className="text-white/70 hover:text-white transition-colors font-medium text-sm md:text-base">
                     {t(labelKey)}
                   </Link>
@@ -511,7 +514,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
             <p className="text-ink-500">{t('home.featuresSub')}</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((f) => (
+            {features.filter((f) => !isOff(f.href)).map((f) => (
               <Link key={f.href} href={f.href} className="group bg-white rounded-3xl p-7 shadow-soft card-hover">
                 <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${f.gradient} text-white flex items-center justify-center mb-5 shadow-lg transition-transform duration-500 group-hover:scale-110`}>
                   <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">

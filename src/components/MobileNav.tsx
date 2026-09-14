@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { moduleOfPath } from '@/lib/siteModules';
+import { useDisabledModules } from '@/lib/useSiteModules';
 
 const items = [
   {
@@ -66,13 +68,19 @@ function matchPath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + '/');
 }
 
-export default function MobileNav() {
+export default function MobileNav({ disabledModules = [] }: { disabledModules?: string[] }) {
   const pathname = usePathname() || '/';
+  const offModules = useDisabledModules(disabledModules);
+  // 已下线模块的入口直接不显示
+  const shown = items.filter((i) => {
+    const m = moduleOfPath(i.href);
+    return !m || !offModules.includes(m);
+  });
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-ink-200/60 shadow-[0_-4px_30px_-8px_rgba(30,38,100,0.1)] pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around h-16">
-        {items.map((item) => {
+        {shown.map((item) => {
           const isActive = matchPath(pathname, item.href);
           return (
             <Link

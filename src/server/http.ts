@@ -52,6 +52,11 @@ export function withApi<T extends any[]>(fn: (...args: T) => Promise<Response>) 
       const first: any = args[0];
       const method = typeof first?.method === 'string' ? first.method.toUpperCase() : '';
       if (WRITE_METHODS.has(method)) await assertWritable(first);
+      // 模块开关：命中已下线模块的接口一律 403（管理员/该模块审核员豁免）
+      if (typeof first?.url === 'string') {
+        const { assertModuleOpen } = await import('./modules');
+        await assertModuleOpen(first);
+      }
       return await fn(...args);
     } catch (e: any) {
       if (e instanceof HttpError) return fail(e.status, e.code, e.message);

@@ -59,6 +59,20 @@ const SEED = [
   ['search.min_keyword', '2', '最小搜索关键词长度', 'search'],
   ['search.page_size', '20', '搜索结果每页条数', 'search'],
   ['search.fulltext', 'false', '启用全文检索（关闭时走 LIKE 匹配）', 'search'],
+
+  // —— 模块开关 ——（true=开放；关闭后导航隐藏、页面显示「已暂停服务」、接口 403）
+  ['module.bible', 'true', '模块开关：圣经阅读', 'module'],
+  ['module.plans', 'true', '模块开关：读经计划', 'module'],
+  ['module.songs', 'true', '模块开关：赞美诗歌', 'module'],
+  ['module.media', 'true', '模块开关：媒体中心（含上传）', 'module'],
+  ['module.live', 'true', '模块开关：直播', 'module'],
+  ['module.prayers', 'true', '模块开关：代祷墙', 'module'],
+  ['module.activities', 'true', '模块开关：活动', 'module'],
+  ['module.groups', 'true', '模块开关：团契小组', 'module'],
+  ['module.community', 'true', '模块开关：社区内容（文章/见证/关注流）', 'module'],
+  ['module.messages', 'true', '模块开关：私信', 'module'],
+  ['module.nearby', 'true', '模块开关：附近的人', 'module'],
+  ['module.donate', 'true', '模块开关：捐赠与支出', 'module'],
 ];
 
 const mysqlUrl = pathToFileURL(path.resolve('node_modules/mysql2/promise.js')).href;

@@ -1,5 +1,6 @@
 import { ok, withApi } from '@/server/http';
 import { getBool, getSetting } from '@/server/settings';
+import { disabledModules } from '@/server/modules';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,5 +21,6 @@ export const GET = withApi(async () => {
     siteNotice,
     maintenance: mode,
     maintenanceNotice: mode ? modeNotice : '',
+    disabledModules: await disabledModules(),
   });
 });

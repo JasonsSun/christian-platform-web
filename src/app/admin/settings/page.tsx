@@ -11,6 +11,10 @@ interface SettingItem {
 
 const GROUP_LABEL: Record<string, string> = {
   general: '基础设置', upload: '上传设置', notify: '通知设置', search: '搜索设置',
+  module: '模块开关',
+};
+const GROUP_HINT: Record<string, string> = {
+  module: '关闭后：导航隐藏入口、页面显示「已暂停服务」、接口返回 403。数据全部保留，重新打开即恢复；管理员与对应模块审核员仍可正常处理历史数据。',
 };
 
 export default function AdminSettingsPage() {
@@ -62,6 +66,7 @@ export default function AdminSettingsPage() {
                 <span className="font-medium text-ink-900">{GROUP_LABEL[g] || g}</span>
                 <Badge tone="primary">{items.filter((i) => i.group === g).length} 项</Badge>
               </div>
+              {GROUP_HINT[g] ? <p className="mb-3 text-xs text-ink-500 leading-relaxed">{GROUP_HINT[g]}</p> : null}
               <div className="space-y-3">
                 {items.filter((i) => i.group === g).map((it) => {
                   const isBool = it.value === 'true' || it.value === 'false';
