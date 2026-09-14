@@ -74,6 +74,11 @@ export async function runConfirmAction(
       await apiDelete(`/admin/organizations?id=${encodeURIComponent(s(params, 'orgId'))}`);
       return { ok: true, message: '组织已删除' };
 
+    // 取消活动：仅创建人与管理员可执行；会通知全部参与人，无需他们同意
+    case 'admin.activity.cancel':
+      await apiPatch('/admin/activities', { activityId: s(params, 'activityId'), status: 'cancelled' });
+      return { ok: true, message: '活动已取消，已通知全部参与人' };
+
     case 'admin.media.reject':
       await apiPost(`/admin/media/${s(params, 'mediaId')}/review`, { action: 'reject', reason: value || '' });
       return { ok: true, message: '已驳回' };

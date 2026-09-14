@@ -72,6 +72,8 @@ export interface ActivityItem {
   waitlistCount: number;
   registered: boolean;
   myStatus: string | null;
+  /** published(已发布) | offline(已下架) | cancelled(已取消) */
+  status?: string;
   organizer: Author;
 }
 

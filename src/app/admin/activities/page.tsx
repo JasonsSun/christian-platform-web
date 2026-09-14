@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { apiPatch } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
+import { useNotice } from '@/lib/notice';
+import { useConfirmNav } from '@/lib/confirm';
 import {
   AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox,
 } from '../_components';
@@ -21,6 +23,8 @@ const STATUS_MAP: Record<string, { tone: 'green' | 'gold' | 'red' | 'gray'; labe
 };
 
 export default function AdminActivitiesPage() {
+  const notice = useNotice();
+  const confirmNav = useConfirmNav();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -44,6 +48,24 @@ export default function AdminActivitiesPage() {
     }
   }
 
+  /** 管理员强制取消活动：单方决定，系统会通知全部参与人 */
+  function cancelActivity(a: AdminActivity) {
+    confirmNav({
+      title: `取消活动「${a.title}」`,
+      desc: `将把活动标记为「已取消」，并立即通知全部 ${a.confirmed + a.waitlist} 名参与人（含候补）。\n取消无需参与人同意，且不可撤销，但之后可以改回上线。`,
+      danger: true,
+      confirmText: '确认取消活动',
+      back: '/admin/activities',
+      action: 'admin.activity.cancel',
+      params: { activityId: a.id },
+      onConfirm: async () => {
+        await apiPatch('/admin/activities', { activityId: a.id, status: 'cancelled' });
+        notice.success('活动已取消，参与人已收到通知');
+        reload();
+      },
+    });
+  }
+
   const items = data?.items || [];
   const totalReg = items.reduce((a, b) => a + b.confirmed, 0);
   const totalCheckin = items.reduce((a, b) => a + b.checkins, 0);
@@ -51,7 +73,9 @@ export default function AdminActivitiesPage() {
   return (
     <AdminLayout>
       <SectionTitle>活动管理</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">审核、上下架活动，查看报名与签到情况</p>
+      <p className="-mt-3 mb-5 text-sm text-ink-500">
+        审核、上下架活动，查看报名与签到情况。取消活动会通知全部参与人（创建人本人也可自行取消）。
+      </p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard title="活动总数" value={data?.total ?? '—'} />
@@ -123,23 +147,42 @@ export default function AdminActivitiesPage() {
                   <td className="px-4 py-3 text-center">
                     <Badge tone={STATUS_MAP[a.status]?.tone || 'gray'}>{STATUS_MAP[a.status]?.label || a.status}</Badge>
                   </td>
-                  <td className="px-4 py-3 text-right">
-                    {a.status === 'published' ? (
-                      <button
-                        disabled={busy === a.id}
-                        onClick={() => changeStatus(a.id, 'offline')}
-                        className="text-rose-600 hover:underline disabled:opacity-50"
-                      >
-                        下架
-                      </button>
-                    ) : (
+                  <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                    {a.status === 'cancelled' ? (
                       <button
                         disabled={busy === a.id}
                         onClick={() => changeStatus(a.id, 'published')}
                         className="text-emerald-600 hover:underline disabled:opacity-50"
                       >
-                        上线
+                        恢复上线
                       </button>
+                    ) : (
+                      <>
+                        {a.status === 'published' ? (
+                          <button
+                            disabled={busy === a.id}
+                            onClick={() => changeStatus(a.id, 'offline')}
+                            className="text-gold-700 hover:underline disabled:opacity-50"
+                          >
+                            下架
+                          </button>
+                        ) : (
+                          <button
+                            disabled={busy === a.id}
+                            onClick={() => changeStatus(a.id, 'published')}
+                            className="text-emerald-600 hover:underline disabled:opacity-50"
+                          >
+                            上线
+                          </button>
+                        )}
+                        <button
+                          disabled={busy === a.id}
+                          onClick={() => cancelActivity(a)}
+                          className="text-rose-700 font-medium hover:underline disabled:opacity-50"
+                        >
+                          取消活动
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>

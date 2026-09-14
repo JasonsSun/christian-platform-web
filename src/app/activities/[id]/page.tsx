@@ -6,9 +6,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { apiDelete, apiPost } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { useNotice } from '@/lib/notice';
 import { formatDateTime, countdown } from '@/lib/format';
 import type { ActivityItem } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
+import Portal from '@/components/Portal';
 
 interface Participant {
   id: string;
@@ -38,10 +40,13 @@ export default function ActivityDetailPage() {
   const id = params.id;
   const router = useRouter();
   const { user } = useAuth();
+  const notice = useNotice();
 
   const { data, loading, error, reload } = useApi<Detail>(`/activities/${id}`, [id]);
   const { run, pending, error: actionError } = useAction();
   const [busy, setBusy] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   async function handleRegister() {
     if (!user) { router.push('/login'); return; }
@@ -67,6 +72,28 @@ export default function ActivityDetailPage() {
 
   const [checkinMsg, setCheckinMsg] = useState('');
   const [checkinError, setCheckinError] = useState('');
+
+  /**
+   * 取消活动（创建人 / 管理员）。
+   * 取消不需要参与人同意，但后端会给全部参与人发通知。
+   */
+  async function handleCancelActivity() {
+    setBusy(true);
+    const res = await run(async () =>
+      apiPost<{ notified: number; alreadyCancelled: boolean }>(`/activities/${id}/cancel`, {
+        reason: cancelReason.trim(),
+      })
+    );
+    setBusy(false);
+    if (res) {
+      setCancelOpen(false);
+      setCancelReason('');
+      notice.success(
+        res.alreadyCancelled ? '该活动此前已被取消' : `活动已取消${res.notified ? `，已通知 ${res.notified} 位参与人` : ''}`
+      );
+      await reload();
+    }
+  }
 
   async function handleCheckin() {
     if (!user) {
@@ -96,7 +123,6 @@ export default function ActivityDetailPage() {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
@@ -109,6 +135,8 @@ export default function ActivityDetailPage() {
   if (!data) return null;
 
   const a = data;
+  const isCancelled = a.status === 'cancelled';
+  const canCancelActivity = !!user && (a.organizer.id === user.id || user.role === 'admin') && !isCancelled;
   const percent = a.capacity > 0 ? Math.min(100, Math.round((a.confirmedCount / a.capacity) * 100)) : 0;
   const ended = a.endAt ? new Date(a.endAt).getTime() < Date.now() : new Date(a.startAt).getTime() < Date.now();
   const confirmed = a.participants.filter((p) => p.status === 'confirmed');
@@ -116,6 +144,17 @@ export default function ActivityDetailPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {isCancelled && (
+        <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 flex items-start gap-3">
+          <span className="text-xl leading-none">🚫</span>
+          <div>
+            <p className="font-semibold text-rose-700 text-sm">此活动已取消</p>
+            <p className="text-xs text-rose-600/90 mt-1">
+              活动组织者或平台管理员已取消该活动，参与人已收到通知，无需前往。
+            </p>
+          </div>
+        </div>
+      )}
       {/* 封面 */}
       <div className="relative h-56 sm:h-72 rounded-3xl overflow-hidden bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center">
         {a.cover && !a.cover.startsWith('http') && a.cover.length <= 4 && (
@@ -235,8 +274,15 @@ export default function ActivityDetailPage() {
 
             {actionError && <p className="text-sm text-rose-600">{actionError}</p>}
 
-            {!user ? (
+            {isCancelled ? (
+              <button disabled className="btn-secondary w-full opacity-60 cursor-not-allowed">活动已取消</button>
+            ) : !user ? (
               <button onClick={() => router.push('/login')} className="btn-primary w-full">登录后报名</button>
+            ) : a.registered && a.organizer.id === user.id ? (
+              <div className="rounded-xl bg-primary-50 border border-primary-100 px-4 py-3 text-center">
+                <p className="text-sm font-semibold text-primary-700">你是本活动创建人</p>
+                <p className="text-xs text-primary-600/80 mt-1">已自动加入参与者，无需报名</p>
+              </div>
             ) : a.registered ? (
               <button onClick={handleCancel} disabled={busy || pending} className="btn-secondary w-full disabled:opacity-70">
                 {busy ? '处理中…' : '取消报名'}
@@ -251,6 +297,17 @@ export default function ActivityDetailPage() {
 
             {a.registered && a.myStatus === 'waitlist' && (
               <p className="text-xs text-gold-600 text-center">名额已满，您当前在候补名单中，有人取消将自动转正。</p>
+            )}
+
+            {/* 取消活动：仅创建人与管理员可见 */}
+            {canCancelActivity && (
+              <button
+                onClick={() => setCancelOpen(true)}
+                disabled={busy || pending}
+                className="w-full py-2.5 rounded-xl border border-rose-200 text-rose-600 text-sm font-semibold hover:bg-rose-50 transition disabled:opacity-50"
+              >
+                取消活动
+              </button>
             )}
 
             {/* 签到 */}
@@ -280,6 +337,59 @@ export default function ActivityDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* 取消活动：二次确认，无需参与人同意，但会通知全部参与人 */}
+      {cancelOpen && (
+        <Portal>
+          <div
+            data-guard="activity-cancel-modal"
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(17,24,39,0.45)' }}
+            onClick={() => !busy && setCancelOpen(false)}
+          >
+            <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+              <h3 className="font-display text-xl font-bold text-ink-900 mb-1">取消活动</h3>
+              <p className="text-sm text-ink-500 mb-3">
+                确定要取消「{a.title}」吗？取消后活动将标记为已取消，
+                <span className="text-rose-700 font-semibold">
+                  系统会立即通知全部 {confirmed.length + waitlist.length} 位参与人
+                </span>
+                ，无需他们同意。
+              </p>
+              <label className="block text-xs text-ink-500 mb-1.5">取消原因（选填，会一并发给参与人）</label>
+              <textarea
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                rows={3}
+                maxLength={120}
+                placeholder="如：场地临时变更，改期另行通知"
+                className="input-styled w-full resize-none mb-4"
+              />
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => setCancelOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition"
+                >
+                  再想想
+                </button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={handleCancelActivity}
+                  className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition disabled:opacity-50"
+                >
+                  {busy ? '处理中…' : '确认取消活动'}
+                </button>
+              </div>
+              {actionError ? <p className="text-rose-600 text-xs mt-2 text-center">{actionError}</p> : null}
+            </div>
+          </div>
+        </Portal>
+      )}
     </div>
   );
 }

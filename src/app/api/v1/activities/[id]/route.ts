@@ -1,8 +1,10 @@
 import { NextRequest } from 'next/server';
-import { one, q } from '@/server/db';
-import { ok, withApi, notFound } from '@/server/http';
-import { currentUser, UserRow } from '@/server/auth';
+import { exec, one, q } from '@/server/db';
+import { ok, withApi, notFound, HttpError, readJson, clientIp } from '@/server/http';
+import { currentUser, requireUser, UserRow } from '@/server/auth';
 import { mapActivity } from '@/server/mappers';
+import { audit } from '@/server/services';
+import { assertCanCancelActivity, cancelActivity } from '@/server/activities';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,4 +53,45 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
       joinedAt: p.joined_at,
     })),
   });
+});
+
+/**
+ * 取消活动（创建人或管理员）。
+ * 取消是单方决定，不需要参与人同意；但必须给所有参与人发通知。
+ * 同时支持 POST 到 /activities/[id]/cancel（见该路由）。
+ */
+export const PATCH = withApi(async (req: NextRequest, ctx: Ctx) => {
+  const user = await requireUser(req);
+  const id = ctx.params.id;
+  const body = await readJson<{ status?: string; reason?: string }>(req).catch(
+    () => ({ status: '', reason: '' }) as { status?: string; reason?: string },
+  );
+
+  if (body.status !== 'cancelled') {
+    throw new HttpError(422, 'VALIDATION_FAILED', '仅支持将活动状态改为 cancelled（取消活动）');
+  }
+
+  const act = await one<any>(`SELECT id, title, status, organizer_id FROM activities WHERE id = ?`, [id]);
+  if (!act) throw notFound('活动不存在');
+  assertCanCancelActivity(act, user);
+
+  const res = await cancelActivity(id, { actorId: user.id, reason: body.reason });
+  if (!res.alreadyCancelled) {
+    await audit(user.id, 'ACTIVITY_CANCEL_BY_ORGANIZER', 'activity', id,
+      `取消活动《${res.title}》，通知 ${res.notified} 名参与人`, clientIp(req));
+  }
+  return ok({ id, status: 'cancelled', notified: res.notified, alreadyCancelled: res.alreadyCancelled });
+});
+
+/** 删除活动（仅创建人或管理员）。报名/签到由外键级联清除。 */
+export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
+  const user = await requireUser(req);
+  const id = ctx.params.id;
+  const act = await one<any>(`SELECT id, title, organizer_id FROM activities WHERE id = ?`, [id]);
+  if (!act) throw notFound('活动不存在');
+  assertCanCancelActivity(act, user);
+
+  await exec(`DELETE FROM activities WHERE id = ?`, [id]);
+  await audit(user.id, 'ACTIVITY_DELETE', 'activity', id, `删除活动《${act.title}》`, clientIp(req));
+  return ok({ id, deleted: true });
 });

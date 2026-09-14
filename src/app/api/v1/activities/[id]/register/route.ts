@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { newId, one, ts, tx } from '@/server/db';
 import { ok, withApi, notFound, conflict } from '@/server/http';
 import { requireUser } from '@/server/auth';
-import { dispatchOutbox, emit, audit } from '@/server/services';
+import { dispatchOutbox, emit, audit, notify } from '@/server/services';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,10 +18,12 @@ export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
 
   const result = await tx(async (conn) => {
     const [actRows] = await conn.query<any[]>(
-      `SELECT id, title, capacity, start_at FROM activities WHERE id = ? FOR UPDATE`, [activityId]
+      `SELECT id, title, capacity, start_at, status FROM activities WHERE id = ? FOR UPDATE`, [activityId]
     );
     const act = actRows[0];
     if (!act) throw notFound('活动不存在');
+    if (act.status === 'cancelled') throw conflict('该活动已取消，无法报名');
+    if (act.status === 'offline') throw conflict('该活动已下架，暂不接受报名');
 
     const [existRows] = await conn.query<any[]>(
       `SELECT id, status FROM activity_registrations WHERE activity_id = ? AND user_id = ?`, [activityId, user.id]
@@ -71,7 +73,7 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
   const user = await requireUser(req);
   const activityId = ctx.params.id;
 
-  await tx(async (conn) => {
+  const promoted = await tx(async (conn) => {
     const [rows] = await conn.query<any[]>(
       `SELECT id, status FROM activity_registrations WHERE activity_id = ? AND user_id = ? FOR UPDATE`,
       [activityId, user.id]
@@ -83,15 +85,29 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
     // 释放名额后,将最早的候补转为正式
     if (reg.status === 'confirmed') {
       const [wait] = await conn.query<any[]>(
-        `SELECT id FROM activity_registrations WHERE activity_id = ? AND status = 'waitlist' ORDER BY created_at ASC LIMIT 1 FOR UPDATE`,
+        `SELECT id, user_id FROM activity_registrations WHERE activity_id = ? AND status = 'waitlist' ORDER BY created_at ASC LIMIT 1 FOR UPDATE`,
         [activityId]
       );
       if (wait[0]) {
         await conn.query(`UPDATE activity_registrations SET status = 'confirmed' WHERE id = ?`, [wait[0].id]);
+        return { userId: wait[0].user_id as string, title: '' };
       }
     }
+    return null;
   });
 
+  // 候补转正后要告知本人,否则他不知道自己已经排上了
+  if (promoted) {
+    const act = await one<any>(`SELECT title FROM activities WHERE id = ?`, [activityId]);
+    await notify(
+      promoted.userId,
+      'activity_promoted',
+      '🎉 候补已转正',
+      `「${act?.title || '活动'}」有参与者取消报名，你已从候补转为正式参与，请按时参加。`,
+      `/activities/${activityId}`,
+    );
+  }
+
   await audit(user.id, 'ACTIVITY_CANCEL', 'activity', activityId, '取消报名', '');
-  return ok({ cancelled: true });
+  return ok({ cancelled: true, promoted: !!promoted });
 });
