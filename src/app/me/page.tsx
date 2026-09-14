@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { apiGet, apiPatch, apiPost, apiDelete, qs } from '@/lib/api';
+import { apiGet, apiPatch, apiPost, apiDelete, apiForm, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { useConfirmNav } from '@/lib/confirm';
 import { useNotice } from '@/lib/notice';
 import { formatDate, formatSize, MEDIA_REVIEW_LABEL } from '@/lib/format';
 import QuotaCard, { type QuotaData } from '@/components/QuotaCard';
@@ -13,7 +14,11 @@ import type { ContentItem, ActivityItem, GroupItem, SongItem, MediaItem } from '
 
 const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南京'];
 
-function Avatar({ name, color, size = 80 }: { name: string; color: string; size?: number }) {
+function Avatar({ name, color, size = 80, avatarUrl }: { name: string; color: string; size?: number; avatarUrl?: string }) {
+  if (avatarUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={avatarUrl} alt={name} className="rounded-full object-cover flex-shrink-0" style={{ width: size, height: size }} />;
+  }
   return (
     <div
       className="rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
@@ -25,18 +30,21 @@ function Avatar({ name, color, size = 80 }: { name: string; color: string; size?
 }
 
 export default function MePage() {
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading, logout, setUser } = useAuth();
+  const notice = useNotice();
   const router = useRouter();
 
-  const [tab, setTab] = useState<'contents' | 'activities' | 'groups' | 'drafts' | 'favorites' | 'uploads' | 'growth' | 'bible' | 'contentFavs' | 'blocks'>('contents');
+  const [tab, setTab] = useState<'contents' | 'activities' | 'groups' | 'drafts' | 'favorites' | 'uploads' | 'growth' | 'bible' | 'contentFavs' | 'blocks' | 'favcenter'>('contents');
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ displayName: '', bio: '', city: '', church: '' });
   const [showPwdModal, setShowPwdModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get('tab');
-    const valid = ['contents', 'drafts', 'favorites', 'activities', 'groups', 'uploads', 'growth', 'bible', 'contentFavs', 'blocks'];
+    const valid = ['contents', 'drafts', 'favorites', 'activities', 'groups', 'uploads', 'growth', 'bible', 'contentFavs', 'blocks', 'favcenter'];
     if (t && valid.includes(t)) setTab(t as any);
   }, []);
 
@@ -44,6 +52,26 @@ export default function MePage() {
     if (!user) return;
     setForm({ displayName: user.displayName || '', bio: user.bio || '', city: user.city || '', church: user.church || '' });
     setEditing(true);
+  }
+
+  async function uploadAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append('file', f);
+      const r = await apiForm<{ avatarUrl: string; user: any }>('/me/avatar', form);
+      if (r) {
+        setUser(r.user);
+        notice.success('头像已更新');
+      }
+    } catch (err: any) {
+      notice.error(err?.message || '上传失败，请重试');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
   }
 
   if (authLoading) {
@@ -66,7 +94,17 @@ export default function MePage() {
       {/* 资料卡 */}
       <div className="glass rounded-3xl p-6 sm:p-8 shadow-card">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
-          <Avatar name={user.displayName} color={user.avatarColor} size={88} />
+          <div className="relative group">
+            <Avatar name={user.displayName} color={user.avatarColor} size={88} avatarUrl={user.avatarUrl} />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              className="absolute inset-0 rounded-full bg-black/45 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              {uploading ? '上传中…' : '更换头像'}
+            </button>
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={uploadAvatar} />
+          </div>
           <div className="flex-1 text-center sm:text-left">
             {!editing ? (
               <>
@@ -79,6 +117,9 @@ export default function MePage() {
                 {user.bio && <p className="text-ink-600 mt-3 whitespace-pre-wrap">{user.bio}</p>}
                 <div className="flex gap-3 mt-4 justify-center sm:justify-start">
                   <button onClick={startEdit} className="btn-secondary">编辑资料</button>
+                  <button onClick={() => fileRef.current?.click()} disabled={uploading} className="btn-secondary">
+                    {uploading ? '上传中…' : '更换头像'}
+                  </button>
                 </div>
               </>
             ) : (
@@ -164,6 +205,7 @@ export default function MePage() {
             { key: 'groups', label: '我的团契' },
             { key: 'favorites', label: '收藏诗歌' },
             { key: 'contentFavs', label: '收藏内容' },
+            { key: 'favcenter', label: '收藏中心' },
             { key: 'blocks', label: '黑名单' },
             { key: 'bible', label: '读经历史' },
             { key: 'drafts', label: '草稿' },
@@ -189,6 +231,7 @@ export default function MePage() {
         {tab === 'drafts' && <MyDrafts />}
         {tab === 'favorites' && <MyFavorites />}
         {tab === 'contentFavs' && <MyContentFavorites />}
+        {tab === 'favcenter' && <MyFavCenter />}
         {tab === 'blocks' && <MyBlocks />}
         {tab === 'bible' && <MyBibleHistory />}
         {tab === 'uploads' && <MyUploads />}
@@ -589,26 +632,53 @@ function MyGrowth() {
 }
 
 function MyContents() {
+  const confirmNav = useConfirmNav();
+  const notice = useNotice();
   const { data, loading, error, reload } = useApi<{ items: ContentItem[] }>(`/contents${qs({ status: 'mine', pageSize: 30 })}`, []);
   const items = data?.items || [];
   if (loading) return <SkeletonGrid />;
   if (error) return <ErrorBlock msg={error} onRetry={reload} />;
   if (items.length === 0) return <EmptyBlock text="还没有发布内容" action={{ label: '去发布', href: '/community/create' }} />;
+
+  async function remove(c: ContentItem) {
+    confirmNav({
+      title: '删除内容',
+      desc: `确定删除《${c.title}》吗？删除后不可恢复。`,
+      confirmText: '删除',
+      cancelText: '取消',
+      danger: true,
+      back: '/me?tab=contents',
+      action: 'content.delete',
+      params: { id: c.id },
+      onConfirm: async () => {
+        await apiDelete(`/contents/${c.id}`);
+        notice.success('内容已删除');
+        reload();
+      },
+    });
+  }
+
   return (
     <div className="grid sm:grid-cols-2 gap-4">
       {items.map((c) => (
-        <Link key={c.id} href={`/contents/${c.id}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">{c.cover?.startsWith('http') ? '📄' : c.cover || '📄'}</span>
-            <h3 className="font-semibold text-ink-900 truncate">{c.title}</h3>
+        <div key={c.id} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover flex flex-col">
+          <Link href={`/contents/${c.id}`} className="block flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-2xl">{c.cover?.startsWith('http') ? '📄' : c.cover || '📄'}</span>
+              <h3 className="font-semibold text-ink-900 truncate">{c.title}</h3>
+            </div>
+            <p className="text-sm text-ink-500 line-clamp-2">{c.excerpt || c.body}</p>
+            <div className="flex gap-3 mt-3 text-xs text-ink-400">
+              <span>❤️ {c.likeCount}</span>
+              <span>💬 {c.commentCount}</span>
+              <span>{c.status === 'published' ? '已发布' : c.status === 'pending_review' ? '审核中' : c.status}</span>
+            </div>
+          </Link>
+          <div className="flex items-center justify-end gap-3 mt-3 pt-3 border-t border-ink-100">
+            <Link href={`/community/create?edit=${c.id}`} className="text-sm text-ink-500 hover:text-primary-600">编辑</Link>
+            <button onClick={() => remove(c)} className="text-sm text-rose-500 hover:text-rose-600 hover:underline">删除</button>
           </div>
-          <p className="text-sm text-ink-500 line-clamp-2">{c.excerpt || c.body}</p>
-          <div className="flex gap-3 mt-3 text-xs text-ink-400">
-            <span>❤️ {c.likeCount}</span>
-            <span>💬 {c.commentCount}</span>
-            <span>{c.status === 'published' ? '已发布' : c.status === 'pending_review' ? '审核中' : c.status}</span>
-          </div>
-        </Link>
+        </div>
       ))}
     </div>
   );
@@ -670,6 +740,7 @@ function MyDrafts() {
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const { run, error: submitError } = useAction();
   const notice = useNotice();
+  const confirmNav = useConfirmNav();
 
   const submit = useCallback(
     async (c: ContentItem) => {
@@ -687,6 +758,25 @@ function MyDrafts() {
   if (loading) return <SkeletonGrid />;
   if (error) return <ErrorBlock msg={error} onRetry={reload} />;
   if (items.length === 0) return <EmptyBlock text="还没有草稿" action={{ label: '去创作', href: '/community/create' }} />;
+
+  async function remove(c: ContentItem) {
+    confirmNav({
+      title: '删除草稿',
+      desc: `确定删除草稿《${c.title || '未命名草稿'}》吗？删除后不可恢复。`,
+      confirmText: '删除',
+      cancelText: '取消',
+      danger: true,
+      back: '/me?tab=drafts',
+      action: 'content.delete',
+      params: { id: c.id },
+      onConfirm: async () => {
+        await apiDelete(`/contents/${c.id}`);
+        notice.success('草稿已删除');
+        reload();
+      },
+    });
+  }
+
   return (
     <div className="grid sm:grid-cols-2 gap-4">
       {items.map((c) => (
@@ -697,6 +787,12 @@ function MyDrafts() {
           </div>
           <p className="text-sm text-ink-500 line-clamp-2">{c.excerpt || c.body || '（暂无内容）'}</p>
           <div className="flex items-center justify-end gap-2 mt-3">
+            <button
+              onClick={() => remove(c)}
+              className="text-sm text-rose-500 hover:text-rose-600 hover:underline"
+            >
+              删除
+            </button>
             <Link href={`/contents/${c.id}`} className="btn-secondary text-sm py-1.5 px-3">继续编辑</Link>
             <button
               onClick={() => submit(c)}
@@ -765,6 +861,109 @@ function MyContentFavorites() {
           </div>
         </Link>
       ))}
+    </div>
+  );
+}
+
+function FavSection({
+  title,
+  icon,
+  count,
+  empty,
+  emptyHref,
+  emptyLabel,
+  children,
+}: {
+  title: string;
+  icon: string;
+  count: number;
+  empty: string;
+  emptyHref: string;
+  emptyLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-xl">{icon}</span>
+        <h3 className="font-display text-lg font-bold text-ink-900">{title}</h3>
+        <span className="text-xs text-ink-400">({count})</span>
+      </div>
+      {count === 0 ? (
+        <div className="text-center py-10 bg-white rounded-2xl border border-ink-100">
+          <p className="text-ink-500 mb-3">{empty}</p>
+          <Link href={emptyHref} className="btn-primary">{emptyLabel}</Link>
+        </div>
+      ) : (
+        children
+      )}
+    </section>
+  );
+}
+
+/** 统一收藏中心：聚合「收藏内容 + 收藏诗歌 + 读经书签」 */
+function MyFavCenter() {
+  const { data: cf } = useApi<{ items: ContentItem[] }>(`/me/favorites`, []);
+  const { data: sf } = useApi<{ items: SongItem[] }>(`/songs/favorites`, []);
+  const { data: bm } = useApi<{
+    items: { id: string; version: string; bookId: string; bookName: string; chapter: number; verse: number; note: string }[];
+  }>(`/bible/bookmarks`, []);
+
+  const contents = cf?.items || [];
+  const songs = sf?.items || [];
+  const bookmarks = bm?.items || [];
+
+  return (
+    <div className="space-y-8">
+      <FavSection title="收藏的内容" icon="📚" count={contents.length} empty="还没有收藏任何内容" emptyHref="/community" emptyLabel="去发现内容">
+        <div className="grid sm:grid-cols-2 gap-4">
+          {contents.map((c) => (
+            <Link key={c.id} href={`/contents/${c.id}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-2xl">{c.cover?.startsWith('http') ? '📄' : c.cover || '📄'}</span>
+                <h3 className="font-semibold text-ink-900 truncate">{c.title}</h3>
+              </div>
+              <p className="text-sm text-ink-500 line-clamp-2">{c.excerpt || c.body}</p>
+            </Link>
+          ))}
+        </div>
+      </FavSection>
+
+      <FavSection title="收藏的诗歌" icon="🎵" count={songs.length} empty="还没有收藏任何诗歌" emptyHref="/songs" emptyLabel="去发现诗歌">
+        <div className="grid sm:grid-cols-2 gap-4">
+          {songs.map((s) => (
+            <Link key={s.id} href={`/songs/${s.id}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold-500 to-gold-400 flex items-center justify-center text-xl flex-shrink-0">🎵</div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-ink-900 truncate">{s.title}</h3>
+                  <p className="text-xs text-ink-500 mt-0.5">{s.author || '佚名'} · {s.category || '诗歌'}</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </FavSection>
+
+      <FavSection title="读经书签" icon="🔖" count={bookmarks.length} empty="还没有读经书签" emptyHref="/bible" emptyLabel="去读经">
+        <div className="grid sm:grid-cols-2 gap-4">
+          {bookmarks.map((b) => (
+            <Link key={b.id} href={`/bible/${b.version}/${b.bookId}/${b.chapter}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600 font-semibold flex-shrink-0">
+                  {b.bookName.slice(0, 1)}
+                </div>
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-ink-900 truncate">
+                    {b.bookName} 第 {b.chapter} 章{b.verse ? `:${b.verse}` : '（整章）'}
+                  </h3>
+                  {b.note && <p className="text-xs text-ink-500 mt-0.5 truncate">{b.note}</p>}
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </FavSection>
     </div>
   );
 }

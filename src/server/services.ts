@@ -1,5 +1,6 @@
 import { exec, q, newId, ts } from './db';
 import { fanout, runNotifyJobs } from './notify';
+import { notifyPublish } from './notifyBus';
 
 /* ---------------- 通知 ---------------- */
 /**
@@ -14,6 +15,12 @@ export async function notify(userId: string, type: string, title: string, body: 
     [newId('ntf'), userId, type, title, body, link, ts()]
   );
   await fanout(userId, type, title, body, link);
+  // 实时推送(SSE):仅推给该用户的在线连接,无连接则静默跳过(通知已落库)
+  try {
+    notifyPublish(userId, { type, title, body, link, createdAt: new Date().toISOString() });
+  } catch {
+    /* SSE 总线异常不影响主流程 */
+  }
 }
 
 export async function notifyRole(roles: string[], type: string, title: string, body: string, link = '') {

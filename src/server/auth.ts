@@ -17,6 +17,7 @@ export type UserRow = {
   role: 'member' | 'moderator' | 'admin';
   status: string;
   avatar_color: string;
+  avatar_url: string;
   bio: string;
   city: string;
   region: string;
@@ -169,6 +170,7 @@ export function publicUser(u: UserRow) {
     role: u.role,
     status: u.status,
     avatarColor: u.avatar_color,
+    avatarUrl: u.avatar_url || '',
     bio: u.bio,
     city: u.city,
     region: u.region,

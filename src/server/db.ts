@@ -481,6 +481,8 @@ async function ensureColumns(pool: Pool): Promise<void> {
     // 手机号(短信通道)
     ['users', 'phone', 'VARCHAR(32) NOT NULL DEFAULT \'\''],
     ['users', 'phone_verified', 'TINYINT(1) NOT NULL DEFAULT 0'],
+    // 头像图片地址(为空则用 avatar_color 生成的字母头像)
+    ['users', 'avatar_url', 'VARCHAR(512) NOT NULL DEFAULT \'\''],
   ];
   for (const [table, col, ddl] of needed) {
     try {

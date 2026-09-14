@@ -160,6 +160,31 @@ export default function ContentDetailPage() {
     [data, user, confirmNav, notice]
   );
 
+  /** 能否管理(删除)这条内容：作者本人 / 管理员·审核员 */
+  const canManage = useCallback(
+    () => !!data && !!user && (data.author?.id === user.id || user.role === 'admin' || user.role === 'moderator'),
+    [data, user]
+  );
+
+  const askDeleteContent = useCallback(() => {
+    if (!data) return;
+    confirmNav({
+      title: '删除内容',
+      desc: `确定删除《${data.title}》吗？删除后不可恢复。`,
+      confirmText: '删除',
+      cancelText: '取消',
+      danger: true,
+      back: '/community',
+      action: 'content.delete',
+      params: { id: data.id },
+      onConfirm: async () => {
+        await apiDelete<{ id: string; deleted: boolean }>(`/contents/${data.id}`);
+        notice.success('内容已删除');
+        router.push('/community');
+      },
+    });
+  }, [data, confirmNav, notice, router]);
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-ink-400">加载中…</div>;
   }
@@ -297,15 +322,26 @@ export default function ContentDetailPage() {
                   {fav ? '已收藏' : '收藏'}
                 </button>
                 <span className="text-sm text-ink-400">{data.viewCount} 浏览</span>
-                {user && data.author?.id === user.id && (
-                  <Link
-                    href={`/community/create?edit=${data.id}`}
-                    className="ml-auto flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-ink-50 text-ink-600 border border-ink-200 hover:border-primary-300"
-                  >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
-                  编辑
-                </Link>
-                )}
+                <div className="ml-auto flex items-center gap-2">
+                  {user && data.author?.id === user.id && (
+                    <Link
+                      href={`/community/create?edit=${data.id}`}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-ink-50 text-ink-600 border border-ink-200 hover:border-primary-300"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                    编辑
+                    </Link>
+                  )}
+                  {canManage() && (
+                    <button
+                      onClick={askDeleteContent}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    删除
+                    </button>
+                  )}
+                </div>
               </div>
 
             <div className="flex flex-wrap items-center gap-2 mb-5">

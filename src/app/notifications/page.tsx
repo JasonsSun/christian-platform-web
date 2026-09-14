@@ -88,12 +88,16 @@ export default function NotificationsPage() {
 
   async function markAll() {
     const res = await run(() => apiPost<{ ok: boolean }>('/notifications/read', {}));
-    if (res) reload();
+    if (res) {
+      reload();
+      window.dispatchEvent(new Event('notif:read'));
+    }
   }
 
   async function markOne(id: string) {
     await apiPost('/notifications/read', { ids: [id] });
     reload();
+    window.dispatchEvent(new Event('notif:read'));
   }
 
   if (!user) {

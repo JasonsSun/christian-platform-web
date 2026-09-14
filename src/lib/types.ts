@@ -8,6 +8,8 @@ export interface User {
   role: Role;
   status: string;
   avatarColor: string;
+  /** 头像图片地址;为空时使用 avatarColor 生成的字母头像 */
+  avatarUrl?: string;
   bio?: string;
   city?: string;
   church?: string;
