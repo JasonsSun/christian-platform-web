@@ -34,6 +34,16 @@ export default function AdminUsersPage() {
   const notice = useNotice();
   const confirmNav = useConfirmNav();
 
+  /**
+   * 重置密码 / 删除用户相关状态。
+   * 必须和上面的 hooks 同级、且放在任何条件 return 之前 ——
+   * 否则「未登录/无权限」的早返回会让本轮 hook 数量变少，
+   * 权限解析完成后又变多，触发 React #310（Rendered more hooks than during the previous render）。
+   */
+  const [resetPwdFor, setResetPwdFor] = useState<AdminUser | null>(null);
+  const [resetPwdResult, setResetPwdResult] = useState('');
+  const resetAction = useAction();
+
   if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
   if (user === null)
     return (
@@ -91,11 +101,7 @@ export default function AdminUsersPage() {
     });
   }
 
-  // 重置密码：生成随机密码，弹层展示一次供管理员线下转达
-  const [resetPwdFor, setResetPwdFor] = useState<AdminUser | null>(null);
-  const [resetPwdResult, setResetPwdResult] = useState('');
-  const resetAction = useAction();
-
+  // 重置密码：生成随机密码，弹层展示一次供管理员线下转达（状态声明已上提到 hooks 区）
   async function resetPassword(u: AdminUser) {
     setResetPwdFor(u);
     setResetPwdResult('');
@@ -166,9 +172,9 @@ export default function AdminUsersPage() {
         <>
           <div className="glass rounded-2xl overflow-hidden shadow-soft">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[1120px] text-sm">
                 <thead className="bg-ink-50 text-ink-500">
-                  <tr>
+                  <tr className="whitespace-nowrap">
                     <th className="text-left px-4 py-3 font-medium">用户名</th>
                     <th className="text-left px-4 py-3 font-medium">邮箱</th>
                     <th className="text-left px-4 py-3 font-medium">昵称</th>
