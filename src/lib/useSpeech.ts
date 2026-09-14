@@ -533,8 +533,18 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     abortRef.current?.abort();
     abortRef.current = null;
     const a = audioRef.current;
-    if (a) { a.pause(); a.src = ''; }
-    audioRef.current = null;
+    if (a) {
+      // 先摘掉回调再停:设 src='' 在部分浏览器会触发 error 事件,
+      // 若仍带着 onerror 会把"新一段"误判为失败(看到 idle/报错)。
+      try {
+        a.onended = null;
+        a.onerror = null;
+        a.ontimeupdate = null;
+        a.pause();
+        a.src = '';
+      } catch { /* ignore */ }
+      audioRef.current = null;
+    }
   }, []);
 
   // ---- 浏览器直连兜底 ----
@@ -572,6 +582,8 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       stoppedRef.current = false;
       genRef.current += 1;
       const gen = genRef.current;
+      // 先停掉上一段正在播放的兜底音频,避免多段同时响(串音)
+      serverStopInner();
 
       setTtsError(false);
       setTtsLoading(true);
@@ -650,7 +662,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       };
       step();
     },
-    [buildText, syncSpeakingKey]
+    [buildText, syncSpeakingKey, serverStopInner]
   );
 
   /** 用户点击「点此播放」:播放已就绪但被自动播放策略拦下的兜底音频 */
@@ -702,8 +714,8 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     setState('playing');
     const gen = genRef.current;
 
-    // 取消上一个仍在飞行中的请求,并为本次请求装上硬超时
-    abortRef.current?.abort();
+    // 先停掉上一段正在播放/合成中的音频,避免切节或点别的节时多段同时响(串音)
+    serverStopInner();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     const timer = setTimeout(() => {
