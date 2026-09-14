@@ -45,3 +45,7 @@ Thumbs.db
 
 # 无头浏览器用户数据目录（手机端审计用，体积大）
 .chrome-test/
+_chromeprof*/
+_shots/
+_shots-*/
+*.corrupt-*/
