@@ -73,6 +73,7 @@ services:
       # NODE_ENV 由 server.js --prod 设置，无需在此覆盖
     volumes:
       - ./data/recordings:/recordings   # 与 mediamtx 共享录像目录
+      - ./data/uploads:/app/public/uploads   # 用户头像等静态上传,重建容器不丢
     expose:
       - "3000"             # 只给 nginx 用，不映射到宿主机
 
