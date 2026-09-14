@@ -278,7 +278,8 @@ export default function ActivityDetailPage() {
               <button disabled className="btn-secondary w-full opacity-60 cursor-not-allowed">活动已取消</button>
             ) : !user ? (
               <button onClick={() => router.push('/login')} className="btn-primary w-full">登录后报名</button>
-            ) : a.registered && a.organizer.id === user.id ? (
+            ) : a.organizer.id === user.id ? (
+              // 创建人默认就是第一参与人，无需报名；创建后即自动写入报名记录
               <div className="rounded-xl bg-primary-50 border border-primary-100 px-4 py-3 text-center">
                 <p className="text-sm font-semibold text-primary-700">你是本活动创建人</p>
                 <p className="text-xs text-primary-600/80 mt-1">已自动加入参与者，无需报名</p>

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { exec, one, ts } from '@/server/db';
+import { exec, one, q, ts } from '@/server/db';
 import { ok, withApi, notFound, conflict, HttpError, readJson } from '@/server/http';
 import { requireUser } from '@/server/auth';
 import { audit, dispatchOutbox, emit, notify } from '@/server/services';
@@ -65,15 +65,25 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
       throw new HttpError(409, 'NO_SUCCESSOR', '团契中只有你一人，没有可移交的对象，请选择解散团契');
     }
 
+    // 解散前先取出成员名单，用于事后通知（删除后级联清除就查不到了）
+    const membersToNotify = mode === 'dissolve'
+      ? (await q<any>(`SELECT user_id FROM group_members WHERE group_id = ?`, [groupId]))
+          .map((m) => m.user_id as string)
+          .filter((uid) => uid !== user.id)
+      : [];
+
     const res = await exitGroupAsOwner(groupId, user.id, mode);
 
     if (res.action === 'dissolved') {
+      for (const uid of membersToNotify) {
+        await notify(uid, 'group_dissolved', '团契已解散',
+          `你所在的团契「${own.name}」已被团长解散。`, '/groups');
+      }
       await emit('group.dissolved', { groupId, actorId: user.id, actorName: user.display_name });
       await dispatchOutbox();
       await audit(user.id, 'GROUP_DISSOLVE', 'group', groupId, `团长退出，团契《${own.name}》已解散`, '');
       return ok({ joined: false, memberCount: 0, dissolved: true, transferred: false, newOwnerId: null });
     }
-
     // 移交成功：清掉自己的成员行
     await exec(`DELETE FROM group_members WHERE group_id = ? AND user_id = ?`, [groupId, user.id]);
     await notify(

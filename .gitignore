@@ -57,3 +57,4 @@ _shots-*/
 *.corrupt-*/
 .scanbuild/
 /_aud3/
+.next-verify/
