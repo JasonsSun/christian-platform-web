@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { useApi } from '@/lib/useApi';
 import { apiPatch } from '@/lib/api';
 import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
@@ -19,10 +19,24 @@ const AUDIO_TYPE_LABEL: Record<string, string> = {
   none: '无音频',
 };
 
+type AudioType = 'vocal' | 'instrumental' | 'none';
+type EditMode = 'type' | 'listen';
+
+/** 内联编辑态：不再用 window.prompt（全站无弹框守卫已把 prompt 置为恒返回 null） */
+interface Editor {
+  id: string;
+  mode: EditMode;
+  audioType: AudioType;
+  credit: string;
+  listenUrl: string;
+  listenSource: string;
+}
+
 export default function AdminSongsPage() {
   const [q, setQ] = useState('');
   const [busyId, setBusyId] = useState('');
   const [tip, setTip] = useState('');
+  const [editor, setEditor] = useState<Editor | null>(null);
   const { data, loading, error, reload } = useApi<{
     items: AdminSong[]; total: number;
     byCategory: { category: string; c: number }[];
@@ -33,61 +47,71 @@ export default function AdminSongsPage() {
   const totalFav = items.reduce((a, b) => a + b.favoriteCount, 0);
   const vocalCount = (data?.byAudioType || []).find((t) => t.audioType === 'vocal')?.c ?? 0;
 
-  /** 人工试听后更正音频类型：把伴奏改标人声，或纠正标错的记录 */
-  async function changeType(song: AdminSong, next: 'vocal' | 'instrumental' | 'none') {
-    if (next === song.audioType) return;
+  /** 打开「音频类型」内联编辑器（人工试听后更正：伴奏↔人声↔无音频） */
+  function openTypeEditor(song: AdminSong, next: AudioType) {
+    setTip('');
     if (next === 'vocal' && !song.hasAudio) {
       setTip(`「${song.title}」没有音频文件，不能标为人声`);
       return;
     }
-    let credit = song.audioCredit;
-    if (next !== 'none' && !credit) {
-      const input = window.prompt('标记为有音频需要填写演唱者与授权说明，例如：演唱：光盐诗班 / 已获教会授权', '');
-      if (input === null) return;
-      if (!input.trim()) { setTip('未填写授权说明，已取消'); return; }
-      credit = input.trim();
-    }
-    setBusyId(song.id);
-    setTip('');
-    try {
-      await apiPatch(`/admin/songs/${song.id}`, { audioType: next, audioCredit: credit });
-      setTip(`「${song.title}」已改标为${AUDIO_TYPE_LABEL[next]}`);
-      reload();
-    } catch (e: any) {
-      setTip(e?.message || '更新失败');
-    } finally {
-      setBusyId('');
-    }
+    setEditor({
+      id: song.id,
+      mode: 'type',
+      audioType: next,
+      credit: song.audioCredit || '',
+      listenUrl: song.listenUrl || '',
+      listenSource: song.listenSource || '',
+    });
   }
 
   /**
-   * 登记/修改这首歌的外部人声试听入口。
-   * 平台不搬运版权音频,只存链接;留空则清除,前台自动降级为按歌名搜索。
+   * 打开「人声版外链」内联编辑器。
+   * 平台不搬运版权音频,只存链接;链接留空保存＝清除,前台自动降级为按歌名搜索。
    */
-  async function editListen(song: AdminSong) {
-    const url = window.prompt(
-      `登记「${song.title}」的人声试听链接（http(s) 开头，留空则清除）\n请先确认那个页面确实是真人演唱版：`,
-      song.listenUrl || ''
-    );
-    if (url === null) return;
-    const trimmed = url.trim();
-    if (trimmed && !/^https?:\/\//i.test(trimmed)) {
-      setTip('链接必须以 http(s) 开头');
-      return;
-    }
-    let source = song.listenSource || '';
-    if (trimmed) {
-      const input = window.prompt('来源名（会显示在按钮上，如 B站 / 网易云 / 教会授权）', source || 'B站');
-      if (input === null) return;
-      source = input.trim() || '外部平台';
+  function openListenEditor(song: AdminSong) {
+    setTip('');
+    setEditor({
+      id: song.id,
+      mode: 'listen',
+      audioType: song.audioType,
+      credit: song.audioCredit || '',
+      listenUrl: song.listenUrl || '',
+      listenSource: song.listenSource || '',
+    });
+  }
+
+  /** 保存内联编辑器内容并刷新列表 */
+  async function saveEditor(song: AdminSong) {
+    if (!editor) return;
+    const patch: Record<string, unknown> = {};
+    if (editor.mode === 'type') {
+      if (editor.audioType !== 'none' && !editor.credit.trim() && !song.audioCredit) {
+        setTip('标记有音频时必须填写演唱者与授权说明');
+        return;
+      }
+      patch.audioType = editor.audioType;
+      patch.audioCredit = editor.credit.trim();
     } else {
-      source = '';
+      const url = editor.listenUrl.trim();
+      if (url && !/^https?:\/\//i.test(url)) {
+        setTip('链接必须以 http(s) 开头');
+        return;
+      }
+      patch.listenUrl = url;
+      patch.listenSource = url ? editor.listenSource.trim() || '外部平台' : '';
     }
     setBusyId(song.id);
     setTip('');
     try {
-      await apiPatch(`/admin/songs/${song.id}`, { listenUrl: trimmed, listenSource: source });
-      setTip(trimmed ? `「${song.title}」已登记 ${source} 试听链接` : `「${song.title}」的外部链接已清除`);
+      await apiPatch(`/admin/songs/${song.id}`, patch);
+      setTip(
+        editor.mode === 'type'
+          ? `「${song.title}」已改标为${AUDIO_TYPE_LABEL[editor.audioType]}`
+          : patch.listenUrl
+            ? `「${song.title}」已登记 ${patch.listenSource} 试听链接`
+            : `「${song.title}」的外部链接已清除`
+      );
+      setEditor(null);
       reload();
     } catch (e: any) {
       setTip(e?.message || '更新失败');
@@ -153,7 +177,8 @@ export default function AdminSongsPage() {
             </thead>
             <tbody>
               {items.map((s) => (
-                <tr key={s.id} className="border-t border-ink-100 hover:bg-primary-50/40">
+                <Fragment key={s.id}>
+                <tr className="border-t border-ink-100 hover:bg-primary-50/40">
                   <td className="px-4 py-3">
                     <div className="font-medium text-ink-900">{s.title}</div>
                     <div className="text-xs text-ink-400">{s.author || '佚名'}{s.tags ? ` · ${s.tags}` : ''}</div>
@@ -165,7 +190,7 @@ export default function AdminSongsPage() {
                       <select
                         value={s.audioType}
                         disabled={busyId === s.id}
-                        onChange={(e) => changeType(s, e.target.value as any)}
+                        onChange={(e) => openTypeEditor(s, e.target.value as AudioType)}
                         title={s.audioCredit || AUDIO_TYPE_LABEL[s.audioType]}
                         className={`text-xs rounded-full px-2 py-1 border cursor-pointer disabled:opacity-50 ${
                           s.audioType === 'vocal'
@@ -198,7 +223,7 @@ export default function AdminSongsPage() {
                         </a>
                         <button
                           type="button"
-                          onClick={() => editListen(s)}
+                          onClick={() => openListenEditor(s)}
                           disabled={busyId === s.id}
                           className="text-[10px] text-ink-400 hover:text-primary-600 disabled:opacity-50"
                         >
@@ -208,7 +233,7 @@ export default function AdminSongsPage() {
                     ) : (
                       <button
                         type="button"
-                        onClick={() => editListen(s)}
+                        onClick={() => openListenEditor(s)}
                         disabled={busyId === s.id}
                         className="text-[11px] px-2 py-0.5 rounded-full bg-ink-100 text-ink-500 border border-ink-200 hover:bg-ink-50 disabled:opacity-50"
                       >
@@ -219,6 +244,79 @@ export default function AdminSongsPage() {
                   <td className="px-4 py-3 text-center font-medium text-ink-900">{s.playCount}</td>
                   <td className="px-4 py-3 text-center text-ink-700">{s.favoriteCount}</td>
                 </tr>
+                {editor?.id === s.id && (
+                  <tr className="border-t border-primary-100 bg-primary-50/70">
+                    <td colSpan={7} className="px-4 py-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        {editor.mode === 'type' ? (
+                          <>
+                            <span className="text-xs text-ink-500">音频类型</span>
+                            <select
+                              value={editor.audioType}
+                              disabled={busyId === s.id}
+                              onChange={(e) => setEditor({ ...editor, audioType: e.target.value as AudioType })}
+                              className="text-xs rounded-full px-2 py-1 border border-ink-200 bg-white cursor-pointer disabled:opacity-50"
+                            >
+                              <option value="vocal">人声</option>
+                              <option value="instrumental">伴奏</option>
+                              <option value="none">无音频</option>
+                            </select>
+                            {editor.audioType !== 'none' && (
+                              <>
+                                <span className="text-xs text-ink-500 ml-2">演唱者与授权说明</span>
+                                <input
+                                  className="input-styled text-xs py-1 flex-1 min-w-[240px]"
+                                  placeholder="演唱：光盐诗班 / 已获教会授权"
+                                  value={editor.credit}
+                                  onChange={(e) => setEditor({ ...editor, credit: e.target.value })}
+                                />
+                              </>
+                            )}
+                            {editor.audioType === 'vocal' && !s.hasAudio && (
+                              <span className="text-xs text-rose-600">该诗没有音频文件，无法标为人声</span>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs text-ink-500">人声试听链接</span>
+                            <input
+                              className="input-styled text-xs py-1 flex-1 min-w-[260px]"
+                              placeholder="https://…（留空并保存＝清除）"
+                              value={editor.listenUrl}
+                              onChange={(e) => setEditor({ ...editor, listenUrl: e.target.value })}
+                            />
+                            <span className="text-xs text-ink-500 ml-2">来源名</span>
+                            <input
+                              className="input-styled text-xs py-1 w-[150px]"
+                              placeholder="B站 / 网易云"
+                              value={editor.listenSource}
+                              onChange={(e) => setEditor({ ...editor, listenSource: e.target.value })}
+                            />
+                          </>
+                        )}
+                        <div className="flex items-center gap-2 ml-auto">
+                          <button
+                            type="button"
+                            onClick={() => saveEditor(s)}
+                            disabled={busyId === s.id || (editor.mode === 'type' && editor.audioType === 'vocal' && !s.hasAudio)}
+                            className="text-xs px-3 py-1 rounded-full bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
+                          >
+                            {busyId === s.id ? '保存中…' : '保存'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditor(null)}
+                            disabled={busyId === s.id}
+                            className="text-xs px-3 py-1 rounded-full bg-white text-ink-600 border border-ink-200 hover:bg-ink-50 disabled:opacity-50"
+                          >
+                            取消
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>
