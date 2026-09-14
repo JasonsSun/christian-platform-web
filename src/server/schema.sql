@@ -181,7 +181,9 @@ CREATE TABLE IF NOT EXISTS prayer_amens (
   prayer_id  CHAR(36) NOT NULL,
   user_id    CHAR(36) NOT NULL,
   created_at DATETIME NOT NULL,
-  PRIMARY KEY (prayer_id, user_id)
+  PRIMARY KEY (prayer_id, user_id),
+  CONSTRAINT fk_amens_prayer  FOREIGN KEY (prayer_id) REFERENCES prayers (id) ON DELETE CASCADE,
+  CONSTRAINT fk_amens_user    FOREIGN KEY (user_id)   REFERENCES users (id)   ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS follows (

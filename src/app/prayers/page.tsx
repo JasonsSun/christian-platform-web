@@ -2,9 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
-import { apiPost, qs } from '@/lib/api';
+import { apiDelete, apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { useConfirmNav } from '@/lib/confirm';
+import { useNotice } from '@/lib/notice';
 import { timeAgo } from '@/lib/format';
 import type { Author, PrayerItem, ListResult } from '@/lib/types';
 
@@ -36,6 +38,8 @@ function Avatar({ user, size = 40 }: { user: Author; size?: number }) {
 export default function PrayersPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const confirmNav = useConfirmNav();
+  const notice = useNotice();
   const [tab, setTab] = useState('all');
   const [page, setPage] = useState(1);
   const [body, setBody] = useState('');
@@ -86,6 +90,51 @@ export default function PrayersPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router]);
+
+  /**
+   * 能否删除这条代祷：作者本人，或管理员 / 审核员。
+   * 管理员与审核员可删任何一条，用于及时清理违规违法内容。
+   */
+  const canDelete = useCallback(
+    (p: PrayerItem) => {
+      if (!user) return false;
+      return p.user.id === user.id || user.role === 'admin' || user.role === 'moderator';
+    },
+    [user]
+  );
+
+  /**
+   * 删除代祷：本站禁止弹框，走「跳转式确认页 /confirm」，
+   * 确认后执行删除并回跳本页（本页重新挂载会自动刷新列表）。
+   */
+  const removePrayer = useCallback(
+    (p: PrayerItem) => {
+      const mine = p.user.id === user?.id;
+      confirmNav({
+        title: mine ? '删除代祷' : '移除违规代祷',
+        desc: mine
+          ? '确定删除这条代祷吗？删除后不可恢复。'
+          : `确定移除「${p.user.displayName}」的这条代祷吗？该操作会记入审计日志，删除后不可恢复。`,
+        confirmText: mine ? '删除' : '移除',
+        danger: true,
+        action: 'prayer.delete',
+        params: { prayerId: p.id, byStaff: !mine },
+        onConfirm: async () => {
+          const res = await apiDelete<{ ok: boolean }>(`/prayers/${p.id}`);
+          if (res?.ok) {
+            setData((prev) =>
+              prev
+                ? { ...prev, items: prev.items.filter((x) => x.id !== p.id), total: Math.max(0, prev.total - 1) }
+                : prev
+            );
+            notice.success(mine ? '代祷已删除' : '该代祷已被移除');
+          }
+        },
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user, confirmNav, notice]
+  );
 
   return (
     <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -170,28 +219,57 @@ export default function PrayersPage() {
                 <p className="text-ink-700 text-sm mt-1.5 leading-relaxed whitespace-pre-wrap">
                   {p.body}
                 </p>
-                <button
-                  onClick={() => toggleAmen(p)}
-                  disabled={amenAction.pending}
-                  className={`mt-3 flex items-center gap-1.5 text-sm transition-colors disabled:opacity-60 ${
-                    p.amened ? 'text-gold-600' : 'text-ink-500 hover:text-gold-600'
-                  }`}
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill={p.amened ? 'currentColor' : 'none'}
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    onClick={() => toggleAmen(p)}
+                    disabled={amenAction.pending}
+                    className={`flex items-center gap-1.5 text-sm transition-colors disabled:opacity-60 ${
+                      p.amened ? 'text-gold-600' : 'text-ink-500 hover:text-gold-600'
+                    }`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 21C12 21 4 14.5 4 9a4 4 0 018-1 4 4 0 018 1c0 5.5-8 12-8 12z"
-                    />
-                  </svg>
-                  阿们 ({p.amenCount})
-                </button>
+                    <svg
+                      className="w-4 h-4"
+                      fill={p.amened ? 'currentColor' : 'none'}
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 21C12 21 4 14.5 4 9a4 4 0 018-1 4 4 0 018 1c0 5.5-8 12-8 12z"
+                      />
+                    </svg>
+                    阿们 ({p.amenCount})
+                  </button>
+
+                  {/* 作者可删自己的；管理员/审核员可删任何一条（清理违规违法内容） */}
+                  {canDelete(p) && (
+                    <button
+                      onClick={() => removePrayer(p)}
+                      title={
+                        p.user.id === user?.id
+                          ? '删除这条代祷'
+                          : '管理员/审核员：移除违规代祷'
+                      }
+                      className={`ml-auto flex items-center gap-1 text-xs transition-colors ${
+                        p.user.id === user?.id
+                          ? 'text-ink-400 hover:text-rose-600'
+                          : 'text-rose-500 hover:text-rose-700 font-medium'
+                      }`}
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                      {p.user.id === user?.id ? '删除' : '移除'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </article>

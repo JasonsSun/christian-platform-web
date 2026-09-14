@@ -20,6 +20,7 @@ export type ConfirmActionResult = { ok: boolean; message?: string };
 
 type Params = Record<string, unknown>;
 const s = (p: Params, k: string): string => String(p[k] ?? '');
+const isAdminScope = (p: Params): boolean => p.byStaff === true || p.byStaff === 'true';
 
 export async function runConfirmAction(
   name: string,
@@ -36,6 +37,12 @@ export async function runConfirmAction(
     case 'comment.delete':
       await apiDelete(`/contents/${s(params, 'contentId')}/comments/${s(params, 'commentId')}`);
       return { ok: true, message: '评论已删除' };
+
+    // ---------- 代祷墙 ----------
+    // 作者本人可删自己的；管理员 / 审核员可删任何一条（清理违规违法内容）
+    case 'prayer.delete':
+      await apiDelete(`/prayers/${s(params, 'prayerId')}`);
+      return { ok: true, message: isAdminScope(params) ? '该代祷已被移除' : '代祷已删除' };
 
     // ---------- 直播 ----------
     case 'live.end':

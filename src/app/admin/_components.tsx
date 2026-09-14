@@ -94,6 +94,7 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string; adminOn
   { group: '内容', items: [
     { href: '/admin/reviews', label: '内容审核' },
     { href: '/admin/reports', label: '举报处理' },
+    { href: '/admin/prayers', label: '代祷墙管理' },
     { href: '/admin/bible', label: '圣经管理' },
     { href: '/admin/songs', label: '赞美诗管理' },
     { href: '/admin/media', label: '媒体中心' },
