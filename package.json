@@ -12,6 +12,7 @@
     "test:e2e:readdot": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-readdot-ui.mjs",
     "test:e2e:dot": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-dot-position.mjs",
     "test:e2e:admin-song": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-admin-song-edit.mjs",
+    "test:e2e:notifications": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-admin-notifications.mjs",
     "test:e2e:governance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-governance.mjs"
   },
   "dependencies": {
