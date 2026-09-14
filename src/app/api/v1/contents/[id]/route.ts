@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { exec, one, q } from '@/server/db';
 import { ok, withApi, HttpError, notFound, forbidden, readJson } from '@/server/http';
 import { currentUser, requireUser, UserRow } from '@/server/auth';
+import { isModuleModerator } from '@/server/moderation';
 import { mapContent } from '@/server/mappers';
 import { audit } from '@/server/services';
 
@@ -65,7 +66,9 @@ export const PATCH = withApi(async (req: NextRequest, ctx: Ctx) => {
   if (!row) throw notFound('内容不存在');
   const isOwner = row.author_id === viewer.id;
   const isAdmin = viewer.role === 'admin';
-  if (!isOwner && !isAdmin) throw forbidden('只能修改自己的内容');
+  // 「文章」模块审核员可代管他人内容（管理员仍保留全模块权限）
+  const byModule = !isOwner && (await isModuleModerator(viewer, 'contents'));
+  if (!isOwner && !isAdmin && !byModule) throw forbidden('只能修改自己的内容');
 
   const body = await readJson<{ title?: string; body?: string; contentType?: string; tags?: string[]; cover?: string }>(req);
   const fields: string[] = [];
@@ -88,10 +91,20 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
   const id = ctx.params.id;
   const row = await one<any>(`SELECT * FROM contents WHERE id = ?`, [id]);
   if (!row) throw notFound('内容不存在');
+  const isOwner = row.author_id === viewer.id;
   const isAdmin = viewer.role === 'admin';
-  if (row.author_id !== viewer.id && !isAdmin) throw forbidden('只能删除自己的内容');
+  // 「文章」模块审核员可下架他人违规内容（管理员仍保留全模块权限）
+  const byModule = !isOwner && (await isModuleModerator(viewer, 'contents'));
+  if (!isOwner && !isAdmin && !byModule) throw forbidden('只能删除自己的内容');
 
   await exec(`DELETE FROM contents WHERE id = ?`, [id]);
-  await audit(viewer.id, 'CONTENT_DELETE', 'content', id, `删除《${row.title}》`, '');
+  await audit(
+    viewer.id,
+    'CONTENT_DELETE',
+    'content',
+    id,
+    `删除《${row.title}》${!isOwner ? (isAdmin ? '（管理员）' : '（文章审核员）') : ''}`,
+    ''
+  );
   return ok({ id, deleted: true });
 });

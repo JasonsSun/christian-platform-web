@@ -1,3 +1,5 @@
+import type { ModuleKey } from './moderationModules';
+
 export type Role = 'member' | 'moderator' | 'admin';
 
 export interface User {
@@ -8,6 +10,14 @@ export interface User {
   role: Role;
   status: string;
   avatarColor: string;
+  /**
+   * 该用户可治理的模块范围。
+   * - admin: 全部模块
+   * - moderator: moderator_scopes 里登记的模块(可多模块)
+   * - member: 空数组
+   * 前端后台菜单按此过滤;变更由 /auth/me 实时下发,无需重新登录。
+   */
+  moderatorScopes?: ModuleKey[];
   /** 头像图片地址;为空时使用 avatarColor 生成的字母头像 */
   avatarUrl?: string;
   bio?: string;

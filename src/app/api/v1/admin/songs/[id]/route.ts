@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { one, exec } from '@/server/db';
 import { ok, withApi, HttpError, clientIp } from '@/server/http';
-import { requireRole } from '@/server/auth';
+import { requireModeratorModule } from '@/server/moderation';
 import { audit } from '@/server/services';
 import { AUDIO_TYPES, normalizeAudioType } from '@/server/mappers';
 
@@ -16,7 +16,7 @@ export const runtime = 'nodejs';
  * 只允许改元数据:既不改音频文件本身,也不下载外部音频到本站。
  */
 export const PATCH = withApi(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const admin = await requireRole(req, ['admin']);
+  const admin = await requireModeratorModule(req, 'songs');
   const id = params.id;
 
   const song = await one<any>(

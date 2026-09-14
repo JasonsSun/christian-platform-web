@@ -3,6 +3,7 @@ import { exec, one } from '@/server/db';
 import { ok, withApi, badRequest, notFound } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
 import { audit, notify } from '@/server/services';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ type Ctx = { params: { id: string } };
 
 /** POST /api/v1/admin/reports/{id}/action  body:{action:'dismiss'|'uphold', reason?} */
 export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
-  const user = (await requireRole(req, ['moderator', 'admin'])) as UserRow;
+  const user = (await requireModeratorModule(req, 'reports')) as UserRow;
   const reportId = ctx.params.id;
   const report = await one<any>(`SELECT * FROM reports WHERE id = ?`, [reportId]);
   if (!report) throw notFound('举报不存在');

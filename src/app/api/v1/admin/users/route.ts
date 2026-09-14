@@ -9,7 +9,8 @@ import crypto from 'node:crypto';
 export const dynamic = 'force-dynamic';
 
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['admin', 'moderator']);
+  // 用户管理属于系统治理权：封禁/删除用户仅管理员，审核员不参与
+  await requireRole(req, ['admin']);
   const sp = new URL(req.url).searchParams;
   const keyword = (sp.get('q') || '').trim();
   const role = sp.get('role') || '';

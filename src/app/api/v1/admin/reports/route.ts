@@ -2,12 +2,13 @@ import { NextRequest } from 'next/server';
 import { q } from '@/server/db';
 import { ok, withApi } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
 /** GET /api/v1/admin/reports?status=open|dismissed|upheld|all */
 export const GET = withApi(async (req: NextRequest) => {
-  const user = (await requireRole(req, ['moderator', 'admin'])) as UserRow;
+  const user = (await requireModeratorModule(req, 'reports')) as UserRow;
   const sp = new URL(req.url).searchParams;
   const status = sp.get('status') || 'open';
   const where = status === 'all' ? '' : `WHERE r.status = '${status}'`;

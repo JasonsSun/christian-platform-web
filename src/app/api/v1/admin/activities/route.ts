@@ -4,12 +4,13 @@ import { ok, withApi, num, readJson, HttpError, notFound, clientIp } from '@/ser
 import { requireRole, UserRow } from '@/server/auth';
 import { audit, notify } from '@/server/services';
 import { cancelActivity } from '@/server/activities';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
 /** 活动管理:列表(含报名/签到统计) */
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['admin', 'moderator']);
+  await requireModeratorModule(req, 'activities');
   const sp = new URL(req.url).searchParams;
   const keyword = (sp.get('q') || '').trim();
   const status = sp.get('status') || '';
@@ -53,7 +54,7 @@ export const GET = withApi(async (req: NextRequest) => {
  * 取消活动时，除通知创建人外，**必须通知全部参与人**（创建人 + 管理员均可取消）。
  */
 export const PATCH = withApi(async (req: NextRequest) => {
-  const admin = (await requireRole(req, ['admin'])) as UserRow;
+  const admin = (await requireModeratorModule(req, 'activities')) as UserRow;
   const body = await readJson<{ activityId?: string; status?: string; reason?: string }>(req);
   if (!body.activityId) throw new HttpError(400, 'BAD_REQUEST', '缺少 activityId');
   if (!body.status || !['published', 'offline', 'cancelled'].includes(body.status)) {

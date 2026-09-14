@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server';
 import { q } from '@/server/db';
 import { ok, withApi, num } from '@/server/http';
-import { requireRole } from '@/server/auth';
+import { requireModeratorModule } from '@/server/moderation';
 import { mapReviewTask } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['moderator', 'admin']);
+  await requireModeratorModule(req, 'contents');
   const sp = new URL(req.url).searchParams;
   const status = sp.get('status') || 'pending';
   const page = num(sp.get('page'), 1);

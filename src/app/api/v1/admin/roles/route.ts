@@ -1,15 +1,32 @@
 import { NextRequest } from 'next/server';
 import { q } from '@/server/db';
-import { ok, withApi } from '@/server/http';
-import { requireRole } from '@/server/auth';
+import { ok, withApi, HttpError, readJson, clientIp } from '@/server/http';
+import { requireRole, UserRow } from '@/server/auth';
+import { audit, notify } from '@/server/services';
+import { setModeratorScopes, listStaffWithScopes } from '@/server/moderation';
+import { MODULE_META, MODULE_ORDER, isModuleKey } from '@/lib/moderationModules';
 
 export const dynamic = 'force-dynamic';
 
-/** 权限中心:角色定义 + 权限矩阵(静态声明式) + 各角色人数 */
+/**
+ * 权限中心（仅管理员可见可改）。
+ *
+ * 权限等级：管理员(admin) > 模块审核员(moderator + scope) > 普通成员(member)
+ * - 管理员：全部模块 + 系统治理（用户封禁/团契处置/财务/系统设置/权限分配）
+ * - 审核员：能力严格等于分配给他的模块，一人可兼任多模块；未分配的模块无任何权限
+ */
 const ROLES = [
   { key: 'member', label: '普通成员', desc: '浏览、发布内容、参与活动与团契' },
-  { key: 'moderator', label: '审核员', desc: '内容/举报/组织/媒体审核与只读后台；不含任何删除、封禁与系统治理权限' },
-  { key: 'admin', label: '管理员', desc: '全部权限：审核 + 删除（内容/用户/组织/团契）+ 用户角色与系统治理' },
+  {
+    key: 'moderator',
+    label: '模块审核员',
+    desc: '按分配的模块治理：审核 + 删除本模块违规内容；一人可兼任多模块，未分配的模块无任何权限',
+  },
+  {
+    key: 'admin',
+    label: '管理员',
+    desc: '全部模块审核 + 系统治理：用户封禁、团契解散/移交、财务、系统设置、权限分配',
+  },
 ];
 
 const PERMISSIONS = [
@@ -22,9 +39,12 @@ const PERMISSIONS = [
 
 const MATRIX: Record<string, string[]> = {
   member: ['content.read', 'content.create', 'activity.read', 'activity.create', 'org.read', 'org.apply', 'user.read'],
+  // 审核员的内容治理权按模块范围生效：只有被分配的模块才能 moderate / delete
   moderator: [
-    'content.read', 'content.create', 'content.moderate', 'activity.read', 'activity.manage',
-    'org.read', 'org.review', 'user.read', 'audit.read',
+    'content.read', 'content.create', 'content.moderate', 'content.delete',
+    'activity.read', 'activity.manage',
+    'org.read', 'org.review',
+    'user.read', 'audit.read',
   ],
   admin: [
     'content.read', 'content.create', 'content.moderate', 'content.delete',
@@ -36,13 +56,58 @@ const MATRIX: Record<string, string[]> = {
 };
 
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['admin', 'moderator']);
+  await requireRole(req, ['admin']);
   const counts = await q<any>(`SELECT role, COUNT(*) AS c FROM users GROUP BY role`);
   const map: Record<string, number> = {};
   counts.forEach((c) => { map[c.role] = Number(c.c); });
+  const staff = await listStaffWithScopes();
   return ok({
     roles: ROLES.map((r) => ({ ...r, count: map[r.key] || 0, permissions: MATRIX[r.key] || [] })),
     groups: PERMISSIONS,
     matrix: MATRIX,
+    modules: MODULE_ORDER.map((k) => MODULE_META[k]),
+    staff,
   });
+});
+
+/**
+ * 分配 / 撤销某人的模块审核范围（仅管理员）。
+ * body:{ userId, modules: ModuleKey[] }
+ * - 传空数组 = 撤销审核员身份（role 回落 member）
+ * - 分配首个模块时 role 自动 member -> moderator
+ */
+export const PATCH = withApi(async (req: NextRequest) => {
+  const admin = (await requireRole(req, ['admin'])) as UserRow;
+  const b = await readJson<{ userId?: string; modules?: string[] }>(req);
+  const userId = (b.userId || '').trim();
+  if (!userId) throw new HttpError(400, 'BAD_REQUEST', '缺少 userId');
+  const modules = Array.isArray(b.modules) ? b.modules : [];
+  const bad = modules.filter((m) => !isModuleKey(m));
+  if (bad.length) throw new HttpError(422, 'VALIDATION_FAILED', `未知模块：${bad.join(', ')}`);
+
+  const res = await setModeratorScopes(admin.id, userId, modules);
+  const names = res.scopes.map((k) => MODULE_META[k].label).join('、') || '（无）';
+  await audit(
+    admin.id,
+    'MODERATOR_SCOPE_CHANGE',
+    'user',
+    userId,
+    `模块范围调整为：${names}（角色：${res.role}）`,
+    clientIp(req)
+  );
+  try {
+    await notify(
+      userId,
+      'role_changed',
+      '你的审核范围已更新',
+      res.scopes.length
+        ? `你现在负责：${names}。后台菜单已同步调整。`
+        : '你已不再担任任何模块的审核员。',
+      '/admin'
+    );
+  } catch {
+    /* 通知失败不影响范围变更 */
+  }
+
+  return ok({ ...res, staff: await listStaffWithScopes() });
 });

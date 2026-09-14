@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { one, exec } from '@/server/db';
 import { ok, withApi, HttpError } from '@/server/http';
-import { requireRole } from '@/server/auth';
+import { requireModeratorModule } from '@/server/moderation';
 import { audit, notify } from '@/server/services';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export const runtime = 'nodejs';
 
 /** 管理员审核用户投稿的诗歌：通过(published) / 拒绝(rejected) */
 export const POST = withApi(async (req: NextRequest, { params }: { params: { id: string } }) => {
-  const admin = await requireRole(req, ['admin', 'moderator']);
+  const admin = await requireModeratorModule(req, 'songs');
   const id = params.id;
 
   const body = await req.json().catch(() => ({}));

@@ -122,19 +122,45 @@ const [[audSelf]] = await conn.query(
 check('管理员删自己的代祷成功 (200)', rSelf.status === 200, `status=${rSelf.status}`);
 check('作者自删不写入审计日志', !audSelf, JSON.stringify(audSelf || {}));
 
-// 4. moderator 删别人的 → 403（审核员只有审核权限，无删除权，仅管理员可删他人代祷）
+// 4. 模块审核员：删除权已按模块下放——被分配「代祷」模块的可删他人代祷，
+//    未分配任何模块的审核员仍然处处 403（能力来自 moderator_scopes）。
 if (T_MOD) {
-  const p4 = await makePrayer(member.id, 'E2E 测试：审核员试图删除他人代祷');
-  const r4 = await api('DELETE', `/prayers/${p4}`, T_MOD);
+  // 确保该审核员确实被分配了代祷模块（幂等，兼容未跑迁移的环境）
+  await conn.query(
+    `INSERT IGNORE INTO moderator_scopes (user_id, module, assigned_by, assigned_at) VALUES (?,'prayers',NULL,NOW())`,
+    [mod.id]
+  );
+
+  // 4a. 代祷模块审核员删他人 → 200
+  const p4b = await makePrayer(member.id, 'E2E 测试：代祷模块审核员删除他人代祷');
+  const r4b = await api('DELETE', `/prayers/${p4b}`, T_MOD);
+  check('代祷模块审核员可删他人代祷 (200)', r4b.status === 200, `status=${r4b.status}`);
+
+  // 4b. 零模块审核员删他人 → 403 且记录仍在
+  const nsId = 'usr_e2e_' + Math.random().toString(36).slice(2, 10);
+  const nsName = 'e2e_noscope_' + Math.random().toString(36).slice(2, 10);
+  await conn.query(
+    `INSERT INTO users (id, username, email, password_hash, display_name, role, status,
+                        avatar_color, bio, city, region, church, created_at)
+     VALUES (?,?,?,?,?,'moderator','active','#4f6df5','','','CN','',NOW())`,
+    [nsId, nsName, `${nsName}@e2e.local`, 'x', nsName]
+  );
+  const T_NOMOD = tokenFor({ id: nsId, role: 'moderator' });
+  const p4 = await makePrayer(member.id, 'E2E 测试：无模块审核员试图删除他人代祷');
+  const r4 = await api('DELETE', `/prayers/${p4}`, T_NOMOD);
   const [[chk4]] = await conn.query(`SELECT id FROM prayers WHERE id=?`, [p4]);
-  check('审核员删他人代祷被拒 (403) 且记录仍在', r4.status === 403 && !!chk4, `status=${r4.status} left=${!!chk4}`);
-  // 审核员删自己的 → 200（自身权限保留）
+  check('未分配模块的审核员删他人代祷被拒 (403) 且记录仍在', r4.status === 403 && !!chk4, `status=${r4.status} left=${!!chk4}`);
+
+  // 4c. 审核员删自己的 → 200（自身权限保留）
   const p4s = await makePrayer(mod.id, 'E2E 测试：审核员删除自己发布的代祷');
   const r4s = await api('DELETE', `/prayers/${p4s}`, T_MOD);
   const [[chk4s]] = await conn.query(`SELECT id FROM prayers WHERE id=?`, [p4s]);
   check('审核员可删自己的代祷 (200)', r4s.status === 200 && !chk4s, `status=${r4s.status}`);
-  // 该审核员误删他人的条目改由管理员清理
-  check('被审核员误挡的条目仍可由管理员删除', (await api('DELETE', `/prayers/${p4}`, T_ADMIN)).status === 200, '');
+
+  // 4d. 被零模块审核员挡下的条目仍可由管理员清理
+  check('被拒条目仍可由管理员删除', (await api('DELETE', `/prayers/${p4}`, T_ADMIN)).status === 200, '');
+
+  await conn.query(`DELETE FROM users WHERE id = ?`, [nsId]);
 } else {
   console.log('  - 无 moderator 账号，跳过审核员用例');
 }

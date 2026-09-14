@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { exec, one, q } from '@/server/db';
 import { ok, withApi, HttpError } from '@/server/http';
 import { publicUser, requireUser, userStats, UserRow } from '@/server/auth';
+import { userModuleScopes } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,8 +11,11 @@ export const GET = withApi(async (req: NextRequest) => {
   const stats = await userStats(user.id);
   const unread = await one<any>(`SELECT COUNT(*) c FROM notifications WHERE user_id=? AND \`read\`=0`, [user.id]);
   const groups = await q<any>(`SELECT COUNT(*) c FROM group_members WHERE user_id=?`, [user.id]);
+  // 模块范围随身份一起下发:后台菜单按它过滤,管理员改完范围后用户刷新即可生效
+  const scopes = await userModuleScopes(user);
   return ok({
     ...publicUser(user),
+    moderatorScopes: scopes,
     stats: { ...stats, groups: Number(groups[0]?.c || 0), unread: Number(unread?.c || 0) },
   });
 });

@@ -81,47 +81,61 @@ export interface AuditLog {
 
 /* ----------------------------- 侧边导航 ----------------------------- */
 
+import type { ModuleKey } from '@/lib/moderationModules';
+import { StaffBadges } from '@/components/ModeratorBadge';
+
 /**
- * 侧边导航。
- * adminOnly = true 的条目标记「仅平台管理员」，
- * 审核员登录后不展示（避免点进去只有一行「无权限」）。
- * 审核员职责：内容/举报/组织/媒体等**审核**类页面；删除、系统治理类归管理员。
+ * 侧边导航（按模块范围过滤）。
+ *
+ * 每个条目声明它属于哪个治理模块：
+ *  - module     : 该模块的审核员可见（管理员全部可见）
+ *  - adminOnly  : 系统治理权，仅管理员（用户封禁/团契处置/财务/设置/权限分配）
+ *  - 两者都不填 : 全体管理成员可见（仪表盘、管理消息）
+ *
+ * 于是「每个审核员看到的后台菜单不一样」是数据驱动的：
+ * 管理员分配/撤销模块后，该审核员刷新即可看到菜单变化。
  */
-const NAV_GROUPS: { group: string; items: { href: string; label: string; adminOnly?: boolean }[] }[] = [
+const NAV_GROUPS: {
+  group: string;
+  items: { href: string; label: string; adminOnly?: boolean; module?: ModuleKey }[];
+}[] = [
   { group: '概览', items: [
     { href: '/admin', label: '仪表盘' },
   ] },
+  { group: '协作', items: [
+    { href: '/admin/messages', label: '管理消息' },
+  ] },
   { group: '内容', items: [
-    { href: '/admin/reviews', label: '内容审核' },
-    { href: '/admin/reports', label: '举报处理' },
-    { href: '/admin/prayers', label: '代祷墙管理' },
-    { href: '/admin/bible', label: '圣经管理' },
-    { href: '/admin/songs', label: '赞美诗管理' },
-    { href: '/admin/media', label: '媒体中心' },
-    { href: '/admin/live', label: '直播管理' },
+    { href: '/admin/reviews', label: '内容审核', module: 'contents' },
+    { href: '/admin/reports', label: '举报处理', module: 'reports' },
+    { href: '/admin/prayers', label: '代祷墙管理', module: 'prayers' },
+    { href: '/admin/bible', label: '圣经管理', adminOnly: true },
+    { href: '/admin/songs', label: '赞美诗管理', module: 'songs' },
+    { href: '/admin/media', label: '媒体中心', module: 'media' },
+    { href: '/admin/live', label: '直播管理', module: 'live' },
   ] },
   { group: '社交', items: [
-    { href: '/admin/users', label: '用户管理' },
-    { href: '/admin/quotas', label: '成长与配额' },
-    { href: '/admin/groups', label: '群组管理' },
-    { href: '/admin/organizations', label: '组织管理' },
+    { href: '/admin/users', label: '用户管理', adminOnly: true },
+    { href: '/admin/quotas', label: '成长与配额', adminOnly: true },
+    { href: '/admin/groups', label: '群组管理', module: 'groups' },
+    { href: '/admin/organizations', label: '组织管理', module: 'organizations' },
   ] },
   { group: '活动', items: [
-    { href: '/admin/activities', label: '活动管理' },
-    { href: '/admin/checkins', label: '签到报表' },
+    { href: '/admin/activities', label: '活动管理', module: 'activities' },
+    { href: '/admin/checkins', label: '签到报表', module: 'activities' },
   ] },
   { group: '运营', items: [
     { href: '/admin/donations', label: '捐赠管理', adminOnly: true },
     { href: '/admin/expenses', label: '支出公示', adminOnly: true },
-    { href: '/admin/feedback', label: '平台建议' },
+    { href: '/admin/feedback', label: '平台建议', module: 'feedback' },
   ] },
   { group: '系统', items: [
-    { href: '/admin/notifications', label: '通知中心' },
-    { href: '/admin/events', label: '事件中心' },
-    { href: '/admin/roles', label: '权限中心' },
-    { href: '/admin/audit', label: '审计日志' },
-    { href: '/admin/system', label: '系统诊断' },
-    { href: '/admin/settings', label: '系统设置' },
+    { href: '/admin/notifications', label: '通知中心', adminOnly: true },
+    { href: '/admin/events', label: '事件中心', adminOnly: true },
+    { href: '/admin/roles', label: '权限中心', adminOnly: true },
+    { href: '/admin/audit', label: '审计日志', adminOnly: true },
+    { href: '/admin/system', label: '系统诊断', adminOnly: true },
+    { href: '/admin/settings', label: '系统设置', adminOnly: true },
   ] },
 ];
 
@@ -129,9 +143,17 @@ export function AdminNav() {
   const pathname = usePathname();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
+  const scopes = user?.moderatorScopes || [];
+
+  const canSee = (it: { adminOnly?: boolean; module?: ModuleKey }) => {
+    if (it.adminOnly) return isAdmin;
+    if (!it.module) return true;
+    return isAdmin || scopes.includes(it.module);
+  };
+
   const groups = NAV_GROUPS.map((g) => ({
     ...g,
-    items: g.items.filter((it) => isAdmin || !it.adminOnly),
+    items: g.items.filter(canSee),
   })).filter((g) => g.items.length > 0);
 
   return (
@@ -139,10 +161,19 @@ export function AdminNav() {
       <div className="glass rounded-2xl p-4 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
         <div className="font-display text-lg font-bold text-ink-900 mb-4 px-2">管理后台</div>
         {user ? (
-          <div className="px-2 mb-3 text-[11px] text-ink-400">
-            当前身份：<span className={isAdmin ? 'text-gold-700 font-medium' : 'text-primary-700 font-medium'}>
-              {isAdmin ? '管理员（全部权限）' : user.role === 'moderator' ? '审核员（仅审核）' : '普通成员'}
-            </span>
+          <div className="px-2 mb-3 space-y-1.5">
+            <div className="text-[11px] text-ink-400">
+              当前身份：
+              <span className={isAdmin ? 'text-gold-700 font-medium' : 'text-primary-700 font-medium'}>
+                {isAdmin ? '管理员（全模块 + 系统治理）' : user.role === 'moderator' ? '模块审核员' : '普通成员'}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              <StaffBadges role={user.role} scopes={scopes} compact />
+            </div>
+            {!isAdmin && user.role === 'moderator' && scopes.length === 0 ? (
+              <div className="text-[11px] text-amber-600">尚未分配任何模块，请联系管理员</div>
+            ) : null}
           </div>
         ) : null}
         <nav className="flex flex-col gap-4">

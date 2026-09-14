@@ -11,6 +11,7 @@ import { timeAgo } from '@/lib/format';
 import type { Author, ContentItem, PrayerItem, GroupItem, ListResult } from '@/lib/types';
 import { ContentCardSkeleton, Skeleton } from '@/components/Skeleton';
 import RichText from '@/components/RichText';
+import GovernanceTeam from '@/components/GovernanceTeam';
 
 function Avatar({ user, size = 36 }: { user: Author; size?: number }) {
   return (
@@ -444,6 +445,11 @@ export default function CommunityPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* 平台治理团队公示：每个模块由谁负责，公开透明 */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-14">
+        <GovernanceTeam />
       </section>
     </div>
   );

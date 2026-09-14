@@ -3,12 +3,13 @@ import { exec, one, q } from '@/server/db';
 import { ok, withApi, num, readJson, HttpError, notFound, clientIp } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
 import { audit, notify } from '@/server/services';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
 /** 组织管理:列表(含成员数) */
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['admin', 'moderator']);
+  await requireModeratorModule(req, 'organizations');
   const sp = new URL(req.url).searchParams;
   const keyword = (sp.get('q') || '').trim();
   const status = sp.get('status') || '';
@@ -47,7 +48,7 @@ export const GET = withApi(async (req: NextRequest) => {
 
 /** 组织管理:审核通过 / 驳回（审核员与管理员均可执行审核动作） */
 export const PATCH = withApi(async (req: NextRequest) => {
-  const staff = (await requireRole(req, ['admin', 'moderator'])) as UserRow;
+  const staff = (await requireModeratorModule(req, 'organizations')) as UserRow;
   const body = await readJson<{ orgId?: string; status?: string }>(req);
   if (!body.orgId) throw new HttpError(400, 'BAD_REQUEST', '缺少 orgId');
   if (!body.status || !['approved', 'rejected', 'pending'].includes(body.status)) {

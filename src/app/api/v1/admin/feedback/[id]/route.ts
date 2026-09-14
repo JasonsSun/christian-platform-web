@@ -3,6 +3,7 @@ import { exec, one, ts } from '@/server/db';
 import { notFound, ok, readJson, withApi } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
 import { audit, notify } from '@/server/services';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +13,7 @@ const STATUSES = ['new', 'processing', 'done', 'rejected'];
 
 /** PATCH /api/v1/admin/feedback/{id}  body:{status?, adminReply?} */
 export const PATCH = withApi(async (req: NextRequest, ctx: Ctx) => {
-  const user = (await requireRole(req, ['moderator', 'admin'])) as UserRow;
+  const user = (await requireModeratorModule(req, 'feedback')) as UserRow;
   const id = ctx.params.id;
 
   const row = await one<any>(

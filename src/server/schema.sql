@@ -829,3 +829,37 @@ CREATE TABLE IF NOT EXISTS platform_feedback (
   KEY idx_pf_user (user_id),
   KEY idx_pf_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =============================================================
+--  模块审核员体系 V1.18 —— 分模块治理 + 管理层专属私信
+--  ------------------------------------------------------------
+--  权限等级:管理员(admin) > 模块审核员(moderator + scope) > 普通成员(member)
+--   - admin     : 全部模块 + 系统治理权(用户封禁/团契解散移交/财务/系统设置/权限分配)
+--   - moderator : 能力严格等于本表登记的模块,一人可兼任多个模块
+--   - 联动规则  : 分配首个模块时 member->moderator;撤销最后一个模块时 moderator->member
+--   - staff_messages 是**管理层专属**私信通道,与普通用户私信(messages)完全隔离,
+--     普通成员既没有入口,接口层也一律 403。
+-- =============================================================
+
+CREATE TABLE IF NOT EXISTS moderator_scopes (
+  user_id     CHAR(36)    NOT NULL,
+  module      VARCHAR(32) NOT NULL,   -- prayers|contents|comments|songs|media|live|activities|organizations|groups|reports|feedback
+  assigned_by CHAR(36)    NULL,
+  assigned_at DATETIME    NOT NULL,
+  PRIMARY KEY (user_id, module),
+  KEY idx_ms_module (module),
+  CONSTRAINT fk_ms_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS staff_messages (
+  id         CHAR(36)      NOT NULL PRIMARY KEY,
+  from_id    CHAR(36)      NOT NULL,
+  to_id      CHAR(36)      NOT NULL,
+  body       VARCHAR(2000) NOT NULL,
+  `read`     TINYINT(1)    NOT NULL DEFAULT 0,
+  created_at DATETIME      NOT NULL,
+  KEY idx_sm_pair (from_id, to_id),
+  KEY idx_sm_created (created_at),
+  CONSTRAINT fk_sm_from FOREIGN KEY (from_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_sm_to   FOREIGN KEY (to_id)   REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

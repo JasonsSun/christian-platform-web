@@ -1,20 +1,17 @@
 import { NextRequest } from 'next/server';
 import { ok, withApi, notFound, HttpError, readJson, clientIp } from '@/server/http';
-import { requireUser } from '@/server/auth';
 import { getRoom, reviewRoom, publicRoomView } from '@/server/live';
 import { hlsPlayUrl, rtmpPushUrl } from '@/server/mediamtx';
 import { audit, notify } from '@/server/services';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-/** 审核直播间(通过/驳回):仅 admin/moderator;仅「待审且未取消、未起播」的房间可审 */
+/** 审核直播间(通过/驳回):「直播」模块审核员或管理员;仅「待审且未取消、未起播」的房间可审 */
 export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const id = ctx.params.id as string;
-  const user = await requireUser(req);
-  if (user.role !== 'admin' && user.role !== 'moderator') {
-    throw new HttpError(403, 'FORBIDDEN', '只有管理员或审核员可以审核直播间');
-  }
+  const user = await requireModeratorModule(req, 'live');
   const room = await getRoom(id);
   if (!room) throw notFound('直播间不存在');
   if (room.status !== 'created') throw new HttpError(409, 'CONFLICT', '该直播间已起播或结束,无法再审核');

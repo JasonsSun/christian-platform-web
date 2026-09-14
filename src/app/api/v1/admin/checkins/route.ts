@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { q, one } from '@/server/db';
 import { ok, withApi, notFound } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
  * GET /api/v1/admin/checkins?activityId=xxx —— 单个活动签到名单明细
  */
 export const GET = withApi(async (req: NextRequest) => {
-  const user = (await requireRole(req, ['moderator', 'admin'])) as UserRow;
+  const user = (await requireModeratorModule(req, 'activities')) as UserRow;
   const sp = new URL(req.url).searchParams;
   const activityId = sp.get('activityId');
 

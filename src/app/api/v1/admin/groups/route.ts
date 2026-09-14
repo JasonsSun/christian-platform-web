@@ -1,13 +1,13 @@
 import { NextRequest } from 'next/server';
 import { one, q } from '@/server/db';
 import { ok, withApi, num } from '@/server/http';
-import { requireRole } from '@/server/auth';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
 /** 群组管理:列表(含成员/帖子统计) */
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['admin', 'moderator']);
+  await requireModeratorModule(req, 'groups');
   const sp = new URL(req.url).searchParams;
   const keyword = (sp.get('q') || '').trim();
   const page = num(sp.get('page'), 1);

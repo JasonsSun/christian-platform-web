@@ -1,14 +1,14 @@
 import { NextRequest } from 'next/server';
 import { one, q } from '@/server/db';
 import { ok, withApi, num } from '@/server/http';
-import { requireRole } from '@/server/auth';
+import { requireModeratorModule } from '@/server/moderation';
 import { normalizeAudioType } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
 /** 赞美诗管理:列表 + 分类统计 */
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['admin', 'moderator']);
+  await requireModeratorModule(req, 'songs');
   const sp = new URL(req.url).searchParams;
   const keyword = (sp.get('q') || '').trim();
   const tab = sp.get('tab') || 'all'; // all | pending

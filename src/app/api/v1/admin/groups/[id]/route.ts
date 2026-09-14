@@ -3,6 +3,7 @@ import { exec, one, q } from '@/server/db';
 import { ok, withApi, readJson, HttpError, notFound, clientIp } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
 import { audit, notify, emit, dispatchOutbox } from '@/server/services';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ type Ctx = { params: { id: string } };
 
 /** 后台·团契详情：基本信息 + 成员名单（管理端可查看任意团契的成员） */
 export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
-  await requireRole(req, ['admin', 'moderator']);
+  await requireModeratorModule(req, 'groups');
   const groupId = ctx.params.id;
 
   const group = await one<any>(

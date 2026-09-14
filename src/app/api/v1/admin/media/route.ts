@@ -3,12 +3,13 @@ import { exec, one, q, ts } from '@/server/db';
 import { ok, withApi, num, readJson, HttpError, notFound, clientIp } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
 import { audit } from '@/server/services';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
 /** 媒体中心:文件列表 + 审核/处理统计 */
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['admin', 'moderator']);
+  await requireModeratorModule(req, 'media');
   const sp = new URL(req.url).searchParams;
   const keyword = (sp.get('q') || '').trim();
   const kind = sp.get('kind') || '';
@@ -68,7 +69,7 @@ export const GET = withApi(async (req: NextRequest) => {
 
 /** 媒体中心:软删除 / 恢复 */
 export const PATCH = withApi(async (req: NextRequest) => {
-  const admin = (await requireRole(req, ['admin'])) as UserRow;
+  const admin = (await requireModeratorModule(req, 'media')) as UserRow;
   const body = await readJson<{ mediaId?: string; action?: 'trash' | 'restore' }>(req);
   if (!body.mediaId) throw new HttpError(400, 'BAD_REQUEST', '缺少 mediaId');
   const m = await one<any>(`SELECT id, file_name, status FROM media_files WHERE id = ?`, [body.mediaId]);

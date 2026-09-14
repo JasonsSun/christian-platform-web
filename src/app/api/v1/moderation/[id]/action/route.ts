@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { exec, one, ts } from '@/server/db';
 import { ok, withApi, notFound, readJson, HttpError, clientIp } from '@/server/http';
-import { requireRole } from '@/server/auth';
+import { requireModeratorModule } from '@/server/moderation';
 import { audit, dispatchOutbox, emit } from '@/server/services';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ type Ctx = { params: { id: string } };
 
 /** id 为 review_task.id */
 export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
-  const reviewer = await requireRole(req, ['moderator', 'admin']);
+  const reviewer = await requireModeratorModule(req, 'contents');
   const body = await readJson<{ action?: string; reason?: string }>(req);
   const action = body.action;
   if (action !== 'approve' && action !== 'reject') {

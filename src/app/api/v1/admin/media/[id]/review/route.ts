@@ -4,12 +4,13 @@ import { ok, withApi, readJson, notFound, HttpError, clientIp } from '@/server/h
 import { requireRole, UserRow } from '@/server/auth';
 import { audit, notify } from '@/server/services';
 import { recomputeProfile, penalizeRejectedMedia, getQuota } from '@/server/quota';
+import { requireModeratorModule } from '@/server/moderation';
 
 export const dynamic = 'force-dynamic';
 
 /** 媒体审核:通过 / 驳回 */
 export const POST = withApi(async (req: NextRequest, ctx: { params: { id: string } }) => {
-  const staff = (await requireRole(req, ['admin', 'moderator'])) as UserRow;
+  const staff = (await requireModeratorModule(req, 'media')) as UserRow;
   const body = await readJson<{ action?: 'approve' | 'reject'; reason?: string }>(req);
   const action = body.action;
   if (action !== 'approve' && action !== 'reject') throw new HttpError(422, 'VALIDATION_FAILED', 'action 必须为 approve 或 reject');

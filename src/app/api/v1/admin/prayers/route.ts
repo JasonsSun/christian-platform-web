@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { q, one } from '@/server/db';
 import { ok, withApi, num } from '@/server/http';
-import { requireRole } from '@/server/auth';
+import { requireModeratorModule } from '@/server/moderation';
 import { mapPrayer } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
  * 便于主动巡查违规违法内容并逐条移除（DELETE /api/v1/prayers/[id]）。
  */
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['admin', 'moderator']);
+  await requireModeratorModule(req, 'prayers');
   const sp = new URL(req.url).searchParams;
   const kw = (sp.get('q') || '').trim();
   const scope = sp.get('scope') || 'all'; // all | answered | unanswered | long
