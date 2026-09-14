@@ -6,6 +6,7 @@ import { apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
+import { NOTIF_TYPE_ICON, categoryOfNotif } from '@/lib/notificationMeta';
 import type { NotificationItem } from '@/lib/types';
 
 type TabKey = 'all' | 'activity' | 'community' | 'system';
@@ -17,52 +18,7 @@ const TABS: { key: TabKey; label: string; icon: string }[] = [
   { key: 'system', label: '系统', icon: '⚙️' },
 ];
 
-function categoryOf(type: string): TabKey {
-  if (type.startsWith('activity_')) return 'activity';
-  if ([
-    'content_approved', 'content_rejected', 'content_removed', 'new_comment', 'new_like',
-    'new_follow', 'friend_request', 'group_joined', 'group_post', 'prayer_amen', 'new_message',
-  ].includes(type)) return 'community';
-  if ([
-    'live_approved', 'live_rejected', 'song_approved', 'song_rejected', 'song_submitted',
-    'song_pending', 'org_review', 'quota_changed', 'quota_levelup_tip', 'password_reset',
-    'live_pending',
-  ].includes(type)) return 'system';
-  return 'system';
-}
-
-function iconFor(type: string): string {
-  switch (type) {
-    case 'content_approved': return '✅';
-    case 'content_rejected': return '⚠️';
-    case 'content_removed': return '🗑️';
-    case 'new_comment': return '💬';
-    case 'mention': return '💬';
-    case 'new_like': return '❤️';
-    case 'activity_registered': return '📅';
-    case 'activity_checkin': return '📍';
-    case 'new_follow': return '👤';
-    case 'friend_request': return '🤝';
-    case 'group_joined': return '👥';
-    case 'group_post': return '📝';
-    case 'new_message': return '✉️';
-    case 'welcome': return '🎉';
-    case 'prayer_amen': return '🙏';
-    case 'live_approved': return '📺';
-    case 'live_rejected': return '🚫';
-    case 'live_reminder': return '📺';
-    case 'live_pending': return '⏳';
-    case 'song_approved': return '🎶';
-    case 'song_rejected': return '🚫';
-    case 'song_submitted': return '🎵';
-    case 'song_pending': return '🎵';
-    case 'org_review': return '⛪';
-    case 'quota_changed': return '📊';
-    case 'quota_levelup_tip': return '🚀';
-    case 'password_reset': return '🔐';
-    default: return '🔔';
-  }
-}
+const iconFor = (type: string): string => NOTIF_TYPE_ICON[type] || '🔔';
 
 export default function NotificationsPage() {
   const { user } = useAuth();
@@ -79,7 +35,7 @@ export default function NotificationsPage() {
   const filtered = useMemo(() => {
     return items.filter((n) => {
       if (onlyUnread && n.read) return false;
-      if (tab !== 'all' && categoryOf(n.type) !== tab) return false;
+      if (tab !== 'all' && categoryOfNotif(n.type) !== tab) return false;
       return true;
     });
   }, [items, tab, onlyUnread]);

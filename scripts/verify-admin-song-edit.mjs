@@ -87,7 +87,10 @@ const restore = async () => {
 fs.mkdirSync(UDD, { recursive: true });
 const chrome = spawn(CHROME, [
   '--headless=new', `--remote-debugging-port=${DPORT}`, `--user-data-dir=${UDD}`,
-  '--no-first-run', '--no-default-browser-check', '--disable-gpu', '--window-size=1440,1000', 'about:blank',
+  '--no-first-run', '--no-default-browser-check', '--disable-gpu',
+  // 沙箱/CI 环境若设了 HTTP(S)_PROXY，无头 Chrome 会走代理导致静态资源加载失败 → 整页无样式
+  '--no-proxy-server', '--proxy-bypass-list=*',
+  '--window-size=1440,1000', 'about:blank',
 ], { stdio: 'ignore' });
 
 class CDP {
