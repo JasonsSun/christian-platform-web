@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import type { ReviewTask } from '@/lib/types';
+import { useAuth } from '@/lib/auth';
 
 /* ----------------------------- 类型定义 ----------------------------- */
 
@@ -80,7 +81,13 @@ export interface AuditLog {
 
 /* ----------------------------- 侧边导航 ----------------------------- */
 
-const NAV_GROUPS: { group: string; items: { href: string; label: string }[] }[] = [
+/**
+ * 侧边导航。
+ * adminOnly = true 的条目标记「仅平台管理员」，
+ * 审核员登录后不展示（避免点进去只有一行「无权限」）。
+ * 审核员职责：内容/举报/组织/媒体等**审核**类页面；删除、系统治理类归管理员。
+ */
+const NAV_GROUPS: { group: string; items: { href: string; label: string; adminOnly?: boolean }[] }[] = [
   { group: '概览', items: [
     { href: '/admin', label: '仪表盘' },
   ] },
@@ -103,8 +110,8 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string }[] }[] 
     { href: '/admin/checkins', label: '签到报表' },
   ] },
   { group: '运营', items: [
-    { href: '/admin/donations', label: '捐赠管理' },
-    { href: '/admin/expenses', label: '支出公示' },
+    { href: '/admin/donations', label: '捐赠管理', adminOnly: true },
+    { href: '/admin/expenses', label: '支出公示', adminOnly: true },
     { href: '/admin/feedback', label: '平台建议' },
   ] },
   { group: '系统', items: [
@@ -119,12 +126,26 @@ const NAV_GROUPS: { group: string; items: { href: string; label: string }[] }[] 
 
 export function AdminNav() {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+  const groups = NAV_GROUPS.map((g) => ({
+    ...g,
+    items: g.items.filter((it) => isAdmin || !it.adminOnly),
+  })).filter((g) => g.items.length > 0);
+
   return (
     <aside className="w-52 flex-shrink-0">
       <div className="glass rounded-2xl p-4 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
         <div className="font-display text-lg font-bold text-ink-900 mb-4 px-2">管理后台</div>
+        {user ? (
+          <div className="px-2 mb-3 text-[11px] text-ink-400">
+            当前身份：<span className={isAdmin ? 'text-gold-700 font-medium' : 'text-primary-700 font-medium'}>
+              {isAdmin ? '管理员（全部权限）' : user.role === 'moderator' ? '审核员（仅审核）' : '普通成员'}
+            </span>
+          </div>
+        ) : null}
         <nav className="flex flex-col gap-4">
-          {NAV_GROUPS.map((g) => (
+          {groups.map((g) => (
             <div key={g.group}>
               <div className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wider text-ink-400">
                 {g.group}

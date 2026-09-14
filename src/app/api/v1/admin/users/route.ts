@@ -3,6 +3,7 @@ import { exec, one, q } from '@/server/db';
 import { ok, withApi, num, readJson, HttpError, notFound, clientIp } from '@/server/http';
 import { requireRole, UserRow, hashPassword } from '@/server/auth';
 import { audit, notify } from '@/server/services';
+import { reassignAllOwnedGroups } from '@/server/groups';
 import crypto from 'node:crypto';
 
 export const dynamic = 'force-dynamic';
@@ -77,4 +78,41 @@ export const PATCH = withApi(async (req: NextRequest) => {
   }
 
   return ok({ id: userId, updated: true });
+});
+
+/**
+ * 删除用户（仅管理员；审核员无此权限）。
+ * 高风险不可逆操作，前端须经 /confirm 二次确认。
+ *
+ * 级联说明：users 被删除后，其会话/内容/评论/报名/好友/消息/通知等由外键
+ * ON DELETE CASCADE 一并清除（捐赠记录、直播聊天记录为 SET NULL 保留）。
+ * 但其**拥有的团契**不能跟着消失 —— 删除前先逐个移交（最早入群者接任）
+ * 或解散（仅他一人），避免几十人的团契被牵连删除。
+ */
+export const DELETE = withApi(async (req: NextRequest) => {
+  const admin = (await requireRole(req, ['admin'])) as UserRow;
+  const body = await readJson<{ userId?: string }>(req);
+  const userId = body.userId || '';
+  if (!userId) throw new HttpError(400, 'BAD_REQUEST', '缺少 userId');
+  if (userId === admin.id) throw new HttpError(400, 'BAD_REQUEST', '不能删除自己的账号');
+
+  const target = await one<any>(`SELECT id, username, display_name, role FROM users WHERE id = ?`, [userId]);
+  if (!target) throw notFound('用户不存在');
+
+  // 不能删掉最后一名管理员，否则后台将无人可管
+  if (target.role === 'admin') {
+    const left = await one<any>(`SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND id <> ?`, [userId]);
+    if (!Number(left?.c || 0)) throw new HttpError(409, 'CONFLICT', '至少需要保留一名管理员');
+  }
+
+  // 先处理 TA 拥有的团契，避免外键级联把整个团契删掉
+  const groupResults = await reassignAllOwnedGroups(userId);
+  const transferred = groupResults.filter((r) => r.action === 'transferred').length;
+  const dissolved = groupResults.filter((r) => r.action === 'dissolved').length;
+
+  await exec(`DELETE FROM users WHERE id = ?`, [userId]);
+  await audit(admin.id, 'USER_DELETE', 'user', userId,
+    `删除用户 ${target.username}（团契移交 ${transferred}、解散 ${dissolved}）`, clientIp(req));
+
+  return ok({ id: userId, deleted: true, groupsTransferred: transferred, groupsDissolved: dissolved });
 });

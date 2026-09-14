@@ -45,9 +45,9 @@ export const GET = withApi(async (req: NextRequest) => {
   });
 });
 
-/** 组织管理:审核通过 / 驳回 */
+/** 组织管理:审核通过 / 驳回（审核员与管理员均可执行审核动作） */
 export const PATCH = withApi(async (req: NextRequest) => {
-  const admin = (await requireRole(req, ['admin'])) as UserRow;
+  const staff = (await requireRole(req, ['admin', 'moderator'])) as UserRow;
   const body = await readJson<{ orgId?: string; status?: string }>(req);
   if (!body.orgId) throw new HttpError(400, 'BAD_REQUEST', '缺少 orgId');
   if (!body.status || !['approved', 'rejected', 'pending'].includes(body.status)) {
@@ -56,10 +56,37 @@ export const PATCH = withApi(async (req: NextRequest) => {
   const org = await one<any>(`SELECT id, name, owner_id FROM organizations WHERE id = ?`, [body.orgId]);
   if (!org) throw notFound('组织不存在');
   await exec(`UPDATE organizations SET status = ? WHERE id = ?`, [body.status, body.orgId]);
-  await audit(admin.id, 'ORG_STATUS_CHANGE', 'organization', body.orgId, `${org.name} -> ${body.status}`, clientIp(req));
+  await audit(staff.id, 'ORG_STATUS_CHANGE', 'organization', body.orgId, `${org.name} -> ${body.status}`, clientIp(req));
   if (org.owner_id) {
     await notify(org.owner_id, 'org_review', '组织审核结果',
       `「${org.name}」审核状态:${body.status}`, '/nearby');
   }
   return ok({ id: body.orgId, status: body.status, updated: true });
+});
+
+/**
+ * 删除组织（仅管理员；审核员只负责审核，不能删除）。
+ * 高风险不可逆操作，前端须经 /confirm 二次确认。
+ * 级联：organization_members 由外键级联清除。
+ */
+export const DELETE = withApi(async (req: NextRequest) => {
+  const admin = (await requireRole(req, ['admin'])) as UserRow;
+  const sp = new URL(req.url).searchParams;
+  let orgId = sp.get('id') || '';
+  if (!orgId) {
+    const body = await readJson<{ orgId?: string }>(req).catch(() => ({ orgId: '' }));
+    orgId = body.orgId || '';
+  }
+  if (!orgId) throw new HttpError(400, 'BAD_REQUEST', '缺少 id');
+
+  const org = await one<any>(`SELECT id, name, owner_id FROM organizations WHERE id = ?`, [orgId]);
+  if (!org) throw notFound('组织不存在');
+
+  await exec(`DELETE FROM organizations WHERE id = ?`, [orgId]);
+  await audit(admin.id, 'ORG_DELETE', 'organization', orgId, `删除组织「${org.name}」`, clientIp(req));
+  if (org.owner_id) {
+    await notify(org.owner_id, 'org_deleted', '组织已被删除',
+      `你创建的组织「${org.name}」已被平台管理员删除。`, '/nearby');
+  }
+  return ok({ id: orgId, deleted: true });
 });

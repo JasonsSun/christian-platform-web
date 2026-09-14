@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { apiGet, apiPatch, qs } from '@/lib/api';
+import { apiGet, apiPatch, apiDelete, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
@@ -106,6 +106,29 @@ export default function AdminUsersPage() {
   }
 
   const isSelf = (u: AdminUser) => u.id === user!.id;
+
+  // 删除用户：不可逆高风险操作 —— 走独立确认页，不使用 confirm 弹框
+  function deleteUser(u: AdminUser) {
+    if (u.id === user!.id) return;
+    confirmNav({
+      title: `删除用户「${u.displayName || u.username}」`,
+      desc:
+        '此操作不可恢复：该账号及其发布的全部内容、评论、好友关系、消息通知等都会被一并删除。\n' +
+        '其名下的团契不会被删除 —— 有其他成员时团长自动移交给最早入群者，仅剩自己时团契解散。\n' +
+        `该用户当前有 ${u.contentCount} 条内容。`,
+      danger: true,
+      confirmText: '确认删除',
+      cancelText: '取消',
+      back: '/admin/users',
+      action: 'admin.user.delete',
+      params: { userId: u.id },
+      onConfirm: async () => {
+        await apiDelete('/admin/users', { userId: u.id });
+        notice.success('用户已删除');
+        reload();
+      },
+    });
+  }
 
   return (
     <AdminLayout>
@@ -215,6 +238,16 @@ export default function AdminUsersPage() {
                             >
                               重置密码
                             </button>
+                            {canManage ? (
+                              <button
+                                className="text-xs px-2 py-1 rounded-lg bg-rose-50 text-rose-700 disabled:opacity-40"
+                                disabled={disabled}
+                                onClick={() => deleteUser(u)}
+                                title={self ? '不能删除自己' : '删除账号及其全部内容（不可恢复）'}
+                              >
+                                删除
+                              </button>
+                            ) : null}
                           </div>
                         </td>
                       </tr>

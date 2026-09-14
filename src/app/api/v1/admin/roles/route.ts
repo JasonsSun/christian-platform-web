@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic';
 /** 权限中心:角色定义 + 权限矩阵(静态声明式) + 各角色人数 */
 const ROLES = [
   { key: 'member', label: '普通成员', desc: '浏览、发布内容、参与活动与团契' },
-  { key: 'moderator', label: '审核员', desc: '内容审核、举报处理、只读后台' },
-  { key: 'admin', label: '管理员', desc: '全部权限:用户、角色、系统、组织治理' },
+  { key: 'moderator', label: '审核员', desc: '内容/举报/组织/媒体审核与只读后台；不含任何删除、封禁与系统治理权限' },
+  { key: 'admin', label: '管理员', desc: '全部权限：审核 + 删除（内容/用户/组织/团契）+ 用户角色与系统治理' },
 ];
 
 const PERMISSIONS = [

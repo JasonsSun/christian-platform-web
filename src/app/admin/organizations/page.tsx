@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { apiPatch } from '@/lib/api';
+import { apiPatch, apiDelete } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
+import { useAuth } from '@/lib/auth';
+import { useNotice } from '@/lib/notice';
+import { useConfirmNav } from '@/lib/confirm';
 import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
 
 interface AdminOrg {
@@ -18,6 +21,9 @@ const STATUS_MAP: Record<string, { tone: 'green' | 'gold' | 'red'; label: string
 };
 
 export default function AdminOrganizationsPage() {
+  const { user } = useAuth();
+  const notice = useNotice();
+  const confirmNav = useConfirmNav();
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -27,6 +33,10 @@ export default function AdminOrganizationsPage() {
     byStatus: { status: string; c: number }[];
     byType: { type: string; c: number }[];
   }>(`/admin/organizations?q=${encodeURIComponent(q)}&status=${status}`, [q, status]);
+
+  // 审核员：只能审核（通过/驳回）；删除组织仅管理员可操作
+  const canReview = !!user && (user.role === 'admin' || user.role === 'moderator');
+  const canDelete = user?.role === 'admin';
 
   async function review(id: string, next: 'approved' | 'rejected') {
     setBusy(id); setMsg('');
@@ -39,6 +49,23 @@ export default function AdminOrganizationsPage() {
     } finally {
       setBusy(null);
     }
+  }
+
+  function deleteOrg(o: AdminOrg) {
+    confirmNav({
+      title: `删除组织「${o.name}」`,
+      desc: `将删除该组织及其 ${o.memberCount} 名成员关系，不可恢复。\n创建者会收到通知。`,
+      danger: true,
+      confirmText: '确认删除',
+      back: '/admin/organizations',
+      action: 'admin.org.delete',
+      params: { orgId: o.id },
+      onConfirm: async () => {
+        await apiDelete(`/admin/organizations?id=${encodeURIComponent(o.id)}`);
+        notice.success('组织已删除');
+        reload();
+      },
+    });
   }
 
   const items = data?.items || [];
@@ -55,7 +82,7 @@ export default function AdminOrganizationsPage() {
         <StatCard title="已驳回" value={data?.byStatus?.find((s) => s.status === 'rejected')?.c ?? 0} />
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
         <input className="input-styled flex-1 min-w-[180px]" placeholder="搜索组织名称 / 城市" value={q} onChange={(e) => setQ(e.target.value)} />
         {['', 'pending', 'approved', 'rejected'].map((s) => (
           <button key={s || 'all'} onClick={() => setStatus(s)}
@@ -64,6 +91,12 @@ export default function AdminOrganizationsPage() {
           </button>
         ))}
       </div>
+
+      {!canDelete ? (
+        <p className="mb-4 text-xs text-amber-600">
+          当前为审核员视角：可通过 / 驳回组织审核；删除组织等破坏性操作仅平台管理员可执行。
+        </p>
+      ) : null}
 
       {msg ? <div className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
 
@@ -96,11 +129,14 @@ export default function AdminOrganizationsPage() {
                     <Badge tone={STATUS_MAP[o.status]?.tone || 'gray'}>{STATUS_MAP[o.status]?.label || o.status}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                    {o.status !== 'approved' ? (
+                    {canReview && o.status !== 'approved' ? (
                       <button disabled={busy === o.id} onClick={() => review(o.id, 'approved')} className="text-emerald-600 hover:underline disabled:opacity-50">通过</button>
                     ) : null}
-                    {o.status !== 'rejected' ? (
+                    {canReview && o.status !== 'rejected' ? (
                       <button disabled={busy === o.id} onClick={() => review(o.id, 'rejected')} className="text-rose-600 hover:underline disabled:opacity-50">驳回</button>
+                    ) : null}
+                    {canDelete ? (
+                      <button disabled={busy === o.id} onClick={() => deleteOrg(o)} className="text-rose-700 font-medium hover:underline disabled:opacity-50">删除</button>
                     ) : null}
                   </td>
                 </tr>

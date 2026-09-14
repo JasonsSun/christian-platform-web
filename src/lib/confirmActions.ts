@@ -47,6 +47,33 @@ export async function runConfirmAction(
       await apiPatch('/admin/users', { userId: s(params, 'userId'), status: 'suspended' });
       return { ok: true, message: '已封禁该用户' };
 
+    case 'admin.user.delete': {
+      const r = await apiDelete<{ groupsTransferred?: number; groupsDissolved?: number }>(
+        '/admin/users',
+        { userId: s(params, 'userId') },
+      );
+      const extra: string[] = [];
+      if (r?.groupsTransferred) extra.push(`已移交 ${r.groupsTransferred} 个团契`);
+      if (r?.groupsDissolved) extra.push(`已解散 ${r.groupsDissolved} 个空团契`);
+      return { ok: true, message: extra.length ? `用户已删除，${extra.join('、')}` : '用户已删除' };
+    }
+
+    case 'admin.group.dissolve':
+      await apiDelete(`/admin/groups/${s(params, 'groupId')}`);
+      return { ok: true, message: '团契已解散' };
+
+    case 'admin.group.removeMember':
+      await apiPatch(`/admin/groups/${s(params, 'groupId')}`, { action: 'removeMember', userId: s(params, 'userId') });
+      return { ok: true, message: '已将该成员移出团契' };
+
+    case 'admin.group.transferOwner':
+      await apiPatch(`/admin/groups/${s(params, 'groupId')}`, { action: 'transferOwner', userId: s(params, 'userId') });
+      return { ok: true, message: '团长已移交' };
+
+    case 'admin.org.delete':
+      await apiDelete(`/admin/organizations?id=${encodeURIComponent(s(params, 'orgId'))}`);
+      return { ok: true, message: '组织已删除' };
+
     case 'admin.media.reject':
       await apiPost(`/admin/media/${s(params, 'mediaId')}/review`, { action: 'reject', reason: value || '' });
       return { ok: true, message: '已驳回' };
