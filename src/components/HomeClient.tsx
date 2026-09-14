@@ -9,6 +9,7 @@ import { countdown, timeAgo } from '@/lib/format';
 import { usePlayer, formatTime } from '@/lib/player';
 import ShareButton from '@/components/ShareButton';
 import OnboardingCard from '@/components/OnboardingCard';
+import HomeCheckinCard from '@/components/HomeCheckinCard';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import type { ActivityItem, ContentItem, GroupItem, MediaItem, PrayerItem, SongItem } from '@/lib/types';
 
@@ -211,6 +212,9 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
 
       {/* 新手引导（仅登录且未完成时展示） */}
       <OnboardingCard />
+
+      {/* 首页每日签到（仅登录用户可见） */}
+      <HomeCheckinCard />
 
       {/* 统计 */}
       <section className="relative py-10 md:py-14 -mt-6">
