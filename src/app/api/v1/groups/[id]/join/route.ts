@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
 import { exec, one, ts } from '@/server/db';
-import { ok, withApi, notFound, conflict } from '@/server/http';
+import { ok, withApi, notFound, conflict, HttpError, readJson } from '@/server/http';
 import { requireUser } from '@/server/auth';
 import { audit, dispatchOutbox, emit, notify } from '@/server/services';
-import { reassignOrDissolveGroup } from '@/server/groups';
+import { earliestOtherMember, exitGroupAsOwner, OwnerExitMode } from '@/server/groups';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,9 +31,12 @@ export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
 /**
  * 退出团契。
  * - 普通成员：直接退出。
- * - 团长（owner）：按团契归属规则处理 —— 有其他成员则**自动移交给最早入群者**并退出；
- *   只剩自己一人则**解散整个团契**。想保留团契请改用 /groups/[id]/dissolve 显式解散，
- *   或用移交接口换团长后再退出。
+ * - 团长（owner）：**必须显式选择去向**（body.mode = 'transfer' | 'dissolve'）：
+ *     · transfer —— 移交给最早入群的成员（默认、推荐）；
+ *     · dissolve —— 解散整个团契（连带成员与动态，不可恢复）。
+ *   只有团长一人时，没有可移交对象 → 只允许 dissolve（前端会只给这一个选项并弹框确认）。
+ *
+ * 注意：团长不会因为「只剩自己一人」而被系统自动解散——他随时可以再拉人。
  */
 export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
   const user = await requireUser(req);
@@ -46,7 +49,23 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
   if (!own) throw notFound('你不在这个团契');
 
   if (own.role === 'owner') {
-    const res = await reassignOrDissolveGroup(groupId, user.id);
+    const body = await readJson<{ mode?: string }>(req).catch(() => ({ mode: '' }));
+    const successor = await earliestOtherMember(groupId, user.id);
+    const hasSuccessor = !!successor;
+
+    let mode = body.mode as OwnerExitMode | undefined;
+    if (!mode) {
+      // 未指定去向：有接任者默认移交（老前端兼容），否则只能解散
+      mode = hasSuccessor ? 'transfer' : 'dissolve';
+    }
+    if (mode !== 'transfer' && mode !== 'dissolve') {
+      throw new HttpError(422, 'VALIDATION_FAILED', 'mode 只能是 transfer 或 dissolve');
+    }
+    if (mode === 'transfer' && !hasSuccessor) {
+      throw new HttpError(409, 'NO_SUCCESSOR', '团契中只有你一人，没有可移交的对象，请选择解散团契');
+    }
+
+    const res = await exitGroupAsOwner(groupId, user.id, mode);
 
     if (res.action === 'dissolved') {
       await emit('group.dissolved', { groupId, actorId: user.id, actorName: user.display_name });
@@ -61,7 +80,7 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
       res.newOwnerId,
       'group_owner',
       '👑 你已成为团契团长',
-      `「${own.name}」原团长已退出，团长身份已自动移交给你，请继续带领这个团契。`,
+      `「${own.name}」原团长已退出，团长身份已移交给你，请继续带领这个团契。`,
       `/groups/${groupId}`,
     );
     await emit('group.owner_transferred', {

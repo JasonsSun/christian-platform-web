@@ -324,6 +324,9 @@ export async function seedIfEmpty(pool: Pool) {
   // users 非空的老库在下面会早退,但 expenses 为空时仍需补演示支出,保证公示页有内容
   await seedExpensesIfEmpty(pool);
 
+  // ---------- 组织/机构(同样独立判断,保证组织管理页有可审核的数据) ----------
+  await seedOrganizationsIfEmpty(pool);
+
   const [[row]] = await pool.query<any[]>('SELECT COUNT(*) AS c FROM users');
   if (Number(row.c) > 0) return;
 
@@ -579,6 +582,52 @@ async function seedExpensesIfEmpty(pool: Pool) {
        VALUES (?,?,?,?,?,?,?,?,?)`,
       [newId('exp'), category, title, note, Math.round(yuan * 100), months[mOffset] || months[0],
        'published', adminId ?? null, ago(mOffset * 30)]
+    );
+  }
+}
+
+/**
+ * 组织/机构演示数据。
+ *
+ * 组织的来源有两条路径：
+ *   1) 前台「注册机构」申请 → 初始 pending，等审核员通过/驳回；
+ *   2) 平台运营在后台录入（本 seed 就是这条路径的模拟）。
+ * 因此这里独立判断 organizations 是否为空，老库升级也能补灌演示组织，
+ * 不会因为 users 非空而整段跳过。
+ */
+async function seedOrganizationsIfEmpty(pool: Pool) {
+  const [[cnt]] = await pool.query<any[]>('SELECT COUNT(*) AS c FROM organizations');
+  if (Number(cnt.c) > 0) return;
+
+  // 取库里已存在的若干用户当 owner（查不到就留空，不影响审核演示）
+  const pick = async (role: string): Promise<string | null> => {
+    const [[u]] = await pool.query<any[]>(
+      `SELECT id FROM users WHERE role = ? ORDER BY created_at ASC LIMIT 1`, [role],
+    );
+    return u?.id ?? null;
+  };
+
+  const day = 86400000;
+  const ago = (d: number) => ts(new Date(Date.now() - d * day));
+
+  // [name, type, city, description, contact, status, ownerRole, aggDaysAgo]
+  const ORGS: [string, string, string, string, string, string, string, number][] = [
+    ['光盐城市教会',   'church',     '上海', '城市教会，主日两堂聚会，设有青年、关怀与诗班事工。', 'admin@example.com',    'approved', 'admin',     45],
+    ['恩典青年团契',   'fellowship', '深圳', '面向职场青年的查经与团契生活，每周五晚聚会。',       'grace@example.com',    'approved', 'moderator', 38],
+    ['晨光赞美事工',   'ministry',   '北京', '专注敬拜诗歌创作与诗班培训的跨教会事工。',           'dawn@example.com',     'pending',  'member',    20],
+    ['橄榄山关怀中心', 'charity',    '成都', '为困境家庭与长者提供探访、物资与心理关怀服务。',     'olive@example.com',    'pending',  'member',    12],
+    ['迦南乡村宣教站', 'ministry',   '昆明', '面向西南乡村的宣教与支教事工，长期招募志愿者。',     'canaan@example.com',   'rejected', 'member',    58],
+  ];
+
+  const roleOwners: Record<string, string | null> = {};
+  for (const r of ['admin', 'moderator', 'member']) roleOwners[r] = await pick(r);
+
+  for (const [name, type, city, description, contact, status, ownerRole, daysAgo] of ORGS) {
+    const ownerId = roleOwners[ownerRole];
+    await pool.query(
+      `INSERT INTO organizations (id, name, type, description, city, region, contact, owner_id, status, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [newId('org'), name, type, description, city, 'CN', contact, ownerId, status, ago(daysAgo)]
     );
   }
 }

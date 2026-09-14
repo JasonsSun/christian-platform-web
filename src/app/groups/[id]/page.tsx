@@ -90,29 +90,38 @@ export default function GroupDetailPage() {
     }
   }, [data, user, isOwner, joinAction, goLogin, notice, setData]);
 
-  /** 团长：把团长移交给最早入群的成员，然后自己退出 */
-  const transferAndLeave = useCallback(async () => {
-    if (!data) return;
-    const res = await exitAction.run(() =>
-      apiDelete<{ joined: boolean; memberCount: number; transferred: boolean; newOwnerId: string | null; dissolved: boolean }>(
-        `/groups/${data.id}/join`,
-      ),
-    );
-    if (res) {
-      setOwnerExitOpen(false);
-      if (res.dissolved) {
-        notice.success('团契已解散');
-        router.push('/groups');
-        return;
+  /** 团长：按选定去向退出（transfer = 移交最早入群者；dissolve = 退出并解散） */
+  const exitAsOwner = useCallback(
+    async (mode: 'transfer' | 'dissolve') => {
+      if (!data) return;
+      const res = await exitAction.run(() =>
+        apiDelete<{
+          joined: boolean;
+          memberCount: number;
+          transferred: boolean;
+          newOwnerId: string | null;
+          dissolved: boolean;
+        }>(`/groups/${data.id}/join`, { mode }),
+      );
+      if (res) {
+        setOwnerExitOpen(false);
+        if (res.dissolved) {
+          notice.success('团契已解散');
+          router.push('/groups');
+          return;
+        }
+        notice.success('已退出，团长身份已移交给最早入群的成员');
+        router.refresh();
+        setData((prev) => (prev ? { ...prev, joined: false, memberCount: res.memberCount } : prev));
       }
-      notice.success('已退出，团长身份已移交给最早入群的成员');
-      router.refresh();
-      setData((prev) => (prev ? { ...prev, joined: false, memberCount: res.memberCount } : prev));
-    }
-  }, [data, exitAction, notice, router, setData]);
+    },
+    [data, exitAction, notice, router, setData],
+  );
 
-  /** 团长：直接解散整个团契 */
-  const dissolveGroup = useCallback(async () => {
+  /** 团长独自一人时：唯一选项「退出并解散」，弹框二次确认 */
+  const soloExitOpen = ownerExitOpen && !!data && data.memberCount <= 1;
+
+  const confirmSoloDissolve = useCallback(async () => {
     if (!data) return;
     const res = await exitAction.run(() => apiPost(`/groups/${data.id}/dissolve`));
     if (res) {
@@ -295,48 +304,81 @@ export default function GroupDetailPage() {
             onClick={() => !exitAction.pending && setOwnerExitOpen(false)}
           >
             <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-              <h3 className="font-display text-xl font-bold text-ink-900 mb-1">退出团契</h3>
-              <p className="text-sm text-ink-500 mb-4">
-                你是「{data.name}」的团长。团长退出前需要先决定这个团契的归属：
-              </p>
-
-              <div className="space-y-3">
-                <button
-                  type="button"
-                  disabled={exitAction.pending || data.memberCount <= 1}
-                  onClick={transferAndLeave}
-                  className="w-full text-left rounded-xl border border-ink-200 hover:border-primary-400 hover:bg-primary-50/50 p-4 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <div className="font-semibold text-ink-900 text-sm">推荐：移交团长并退出</div>
-                  <div className="text-xs text-ink-500 mt-1">
-                    {data.memberCount > 1
-                      ? '团长身份自动移交给最早入群的成员，团契与历史动态完整保留。'
-                      : '团契目前只有你一人，无成员可移交。'}
+              {soloExitOpen ? (
+                <>
+                  <h3 className="font-display text-xl font-bold text-ink-900 mb-1">退出并解散团契</h3>
+                  <p className="text-sm text-ink-500 mb-4">
+                    「{data.name}」目前只有你一人。退出后
+                    <span className="text-rose-700 font-semibold">团契将会被解散</span>
+                    ，团契信息与动态一并删除，且不可恢复。
+                  </p>
+                  <p className="text-xs text-ink-400 mb-4 rounded-xl bg-ink-50 border border-ink-100 px-4 py-3">
+                    如果还想继续这个团契，可以留在这里等人加入，或先邀请成员后再退出。
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      disabled={exitAction.pending}
+                      onClick={() => setOwnerExitOpen(false)}
+                      className="flex-1 py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition"
+                    >
+                      取消
+                    </button>
+                    <button
+                      type="button"
+                      disabled={exitAction.pending}
+                      onClick={confirmSoloDissolve}
+                      className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition disabled:opacity-50"
+                    >
+                      {exitAction.pending ? '处理中…' : '退出并解散'}
+                    </button>
                   </div>
-                </button>
+                  {exitAction.error ? <p className="text-rose-600 text-xs mt-2 text-center">{exitAction.error}</p> : null}
+                </>
+              ) : (
+                <>
+                  <h3 className="font-display text-xl font-bold text-ink-900 mb-1">退出团契</h3>
+                  <p className="text-sm text-ink-500 mb-4">
+                    你是「{data.name}」的团长。团长退出前需要先决定这个团契的归属：
+                  </p>
 
-                <button
-                  type="button"
-                  disabled={exitAction.pending}
-                  onClick={dissolveGroup}
-                  className="w-full text-left rounded-xl border border-rose-200 hover:border-rose-400 hover:bg-rose-50 p-4 transition disabled:opacity-40"
-                >
-                  <div className="font-semibold text-rose-700 text-sm">解散整个团契</div>
-                  <div className="text-xs text-ink-500 mt-1">
-                    团契、{data.memberCount} 名成员关系与全部动态将被删除，不可恢复。
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      disabled={exitAction.pending}
+                      onClick={() => exitAsOwner('transfer')}
+                      className="w-full text-left rounded-xl border border-ink-200 hover:border-primary-400 hover:bg-primary-50/50 p-4 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <div className="font-semibold text-ink-900 text-sm">推荐：移交团长并退出</div>
+                      <div className="text-xs text-ink-500 mt-1">
+                        团长身份自动移交给最早入群的成员，团契与历史动态完整保留。
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={exitAction.pending}
+                      onClick={() => exitAsOwner('dissolve')}
+                      className="w-full text-left rounded-xl border border-rose-200 hover:border-rose-400 hover:bg-rose-50 p-4 transition disabled:opacity-40"
+                    >
+                      <div className="font-semibold text-rose-700 text-sm">解散整个团契</div>
+                      <div className="text-xs text-ink-500 mt-1">
+                        团契、{data.memberCount} 名成员关系与全部动态将被删除，不可恢复。
+                      </div>
+                    </button>
                   </div>
-                </button>
-              </div>
 
-              <button
-                type="button"
-                disabled={exitAction.pending}
-                onClick={() => setOwnerExitOpen(false)}
-                className="mt-4 w-full py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition"
-              >
-                {exitAction.pending ? '处理中…' : '取消'}
-              </button>
-              {exitAction.error ? <p className="text-rose-600 text-xs mt-2 text-center">{exitAction.error}</p> : null}
+                  <button
+                    type="button"
+                    disabled={exitAction.pending}
+                    onClick={() => setOwnerExitOpen(false)}
+                    className="mt-4 w-full py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition"
+                  >
+                    {exitAction.pending ? '处理中…' : '取消'}
+                  </button>
+                  {exitAction.error ? <p className="text-rose-600 text-xs mt-2 text-center">{exitAction.error}</p> : null}
+                </>
+              )}
             </div>
           </div>
         </Portal>

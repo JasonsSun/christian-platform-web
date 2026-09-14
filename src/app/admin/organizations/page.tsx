@@ -73,7 +73,29 @@ export default function AdminOrganizationsPage() {
   return (
     <AdminLayout>
       <SectionTitle>组织管理</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">教会 / 团契 / 事工 / 公益组织的审核与成员管理</p>
+      <p className="-mt-3 mb-4 text-sm text-ink-500">教会 / 团契 / 事工 / 公益组织的审核与成员管理</p>
+
+      {/* 组织是什么、从哪来 —— 管理台最容易看不懂的一块，直接讲清楚 */}
+      <div className="mb-6 rounded-2xl border border-ink-100 bg-ink-50/60 px-5 py-4 text-sm text-ink-600 space-y-2">
+        <p className="font-semibold text-ink-800">这些组织是怎么来的？</p>
+        <ul className="list-disc pl-5 space-y-1 text-ink-500">
+          <li>
+            <span className="text-ink-700">机构是独立于「团契」的实体档案</span>：团契面向用户自发结社（谁都能建团、拉人聊天），
+            而组织/机构面向正式登记的主体（教会、事工机构、公益团体），带联系人、城市与审核状态。
+          </li>
+          <li>
+            <span className="text-ink-700">产生方式</span>：由「注册机构」申请提交后落到本表，初始状态为
+            <span className="text-amber-600 font-medium"> 待审核</span>；也支持平台运营在后台代为录入。
+          </li>
+          <li>
+            <span className="text-ink-700">审核员</span>负责「通过 / 驳回」；<span className="text-ink-700">管理员</span>
+            额外拥有删除权。审核通过后组织才会出现在前台的机构/就近页面。
+          </li>
+          <li>
+            <span className="text-ink-400">注：组织成员（organization_members）与团契成员是两套独立关系，互不影响。</span>
+          </li>
+        </ul>
+      </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard title="组织总数" value={data?.total ?? '—'} />
