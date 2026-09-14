@@ -15,6 +15,23 @@ export interface Track {
   durationSec?: number;
 }
 
+/**
+ * 极短静音 WAV。iOS / 微信内置浏览器要求 <audio> 首次播放必须发生在用户手势的
+ * 同步调用栈内,否则 play() 被静默拒绝(Audio 播放点了没反应)。播放前先解锁一次。
+ */
+const SILENT_WAV =
+  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+let audioUnlocked = false;
+function unlockAudioOnce() {
+  if (audioUnlocked || typeof window === 'undefined') return;
+  audioUnlocked = true;
+  try {
+    const a = new Audio(SILENT_WAV);
+    const p = a.play();
+    if (p && typeof (p as Promise<void>).catch === 'function') (p as Promise<void>).catch(() => {});
+  } catch { /* ignore */ }
+}
+
 interface PlayerCtx {
   tracks: Track[];
   index: number;
@@ -242,6 +259,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const resume = resumableAt(t.id) ?? 0;
     pendingSeekRef.current = resume > 0 ? resume : null;
     setCurrentTime(resume > 0 ? resume : 0);
+    unlockAudioOnce();
     try {
       await el.play();
     } catch {
@@ -255,7 +273,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     tracksRef.current = list;
     const i = Math.max(0, Math.min(startIndex, list.length - 1));
     setIndex(i);
-    setTimeout(() => void playAt(i), 0);
+    // 必须在用户点击的同步栈内调用 play():放进 setTimeout 会让 iOS / 微信判定
+    // 为「非用户手势」而拒绝播放,表现为点了播放毫无反应。
+    void playAt(i);
   }, [playAt]);
 
   const playTrack = useCallback((t: Track) => {

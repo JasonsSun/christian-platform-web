@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /** 生成分享卡片图所需数据（经文/诗歌/金句） */
 export type ShareCard = {
@@ -67,8 +67,16 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 const SERIF = '"Songti SC","SimSun",serif';
 const SANS = '"PingFang SC","Microsoft YaHei",sans-serif';
 
-/** 生成一张 1080×1440 的分享卡片图（返回 PNG dataURL） */
-async function buildCardImage(card: ShareCard, qr?: string): Promise<string> {
+/**
+ * canvas 导出的结果。
+ * 注意：必须用 Blob + objectURL,不能直接用 toDataURL 的 dataURL——
+ * 1080×1440 的 PNG dataURL 有 2MB 以上,iOS / 微信内置浏览器会直接**不渲染**
+ * (表现为卡片区域一片空白),且 dataURL 过长时 <img> 根本不会触发 load。
+ */
+type CardImage = { url: string; ext: 'jpg' | 'png'; revoke: () => void };
+
+/** 生成一张 1080×1440 的分享卡片图（返回可显示/下载的 URL） */
+async function buildCardImage(card: ShareCard, qr?: string): Promise<CardImage> {
   const W = 1080;
   const H = 1440;
   const canvas = document.createElement('canvas');
@@ -177,7 +185,21 @@ async function buildCardImage(card: ShareCard, qr?: string): Promise<string> {
     }
   }
 
-  return canvas.toDataURL('image/png');
+  // 优先 Blob + objectURL：体积小、不受 dataURL 长度限制（iOS/微信能正常渲染）
+  const blob = await new Promise<Blob | null>((resolve) => {
+    try {
+      if (typeof canvas.toBlob !== 'function') return resolve(null);
+      canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.92);
+    } catch {
+      resolve(null);
+    }
+  });
+  if (blob && blob.size > 0) {
+    const url = URL.createObjectURL(blob);
+    return { url, ext: 'jpg', revoke: () => { try { URL.revokeObjectURL(url); } catch { /* ignore */ } } };
+  }
+  // 兜底：极老浏览器没有 toBlob → 用 JPEG dataURL（比 PNG 小一个数量级）
+  return { url: canvas.toDataURL('image/jpeg', 0.92), ext: 'jpg', revoke: () => {} };
 }
 
 export default function ShareModal({ open, onClose, url, title, text, card }: Props) {
@@ -185,8 +207,11 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
   const [shareUrl, setShareUrl] = useState('');
   const [qr, setQr] = useState('');
   const [copied, setCopied] = useState(false);
-  const [cardImg, setCardImg] = useState('');
+  const [cardImg, setCardImg] = useState<CardImage | null>(null);
   const [cardBusy, setCardBusy] = useState(false);
+  const [cardFailed, setCardFailed] = useState(false);
+  // 上一张卡片的 objectURL,换新图/卸载时要释放,否则大图会一直占内存
+  const prevCardRef = useRef<CardImage | null>(null);
 
   const shareTitle = title || '圣约社区 - 基督教内容传播与社交社区';
   const shareText = text || '推荐给你一个基督徒的灵修与团契社区：读经、圣诗、见证、活动、直播，欢迎来一起建造。';
@@ -214,16 +239,34 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
   }, [open, shareUrl]);
 
   // 生成分享卡片图（需等二维码就绪，把站点二维码嵌进卡片）
+  // 注意 card 是父组件内联对象，用 JSON 做依赖，避免每次父组件重渲染都重建图片
+  const cardKey = card ? `${card.eyebrow || ''}|${card.text}|${card.reference || ''}` : '';
   useEffect(() => {
-    if (!open || !card || !card.text) { setCardImg(''); return; }
+    if (!open || !card || !card.text) { setCardImg(null); return; }
     let alive = true;
     setCardBusy(true);
+    setCardFailed(false);
     buildCardImage(card, qr || undefined)
-      .then((img) => { if (alive) setCardImg(img); })
-      .catch(() => { if (alive) setCardImg(''); })
+      .then((img) => {
+        if (!alive) { img.revoke(); return; }
+        prevCardRef.current?.revoke();
+        prevCardRef.current = img;
+        setCardImg(img);
+      })
+      .catch(() => { if (alive) setCardFailed(true); })
       .finally(() => { if (alive) setCardBusy(false); });
     return () => { alive = false; };
-  }, [open, card, qr]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, cardKey, qr]);
+
+  // 关闭 / 卸载时释放上一张卡片的 objectURL
+  useEffect(() => {
+    if (open) return;
+    prevCardRef.current?.revoke();
+    prevCardRef.current = null;
+    setCardImg(null);
+  }, [open]);
+  useEffect(() => () => { prevCardRef.current?.revoke(); }, []);
 
   // 关闭时复位复制状态
   useEffect(() => {
@@ -257,8 +300,8 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
   const saveCard = () => {
     if (!cardImg) return;
     const a = document.createElement('a');
-    a.href = cardImg;
-    a.download = `圣约社区-${(card?.reference || '分享卡片').replace(/[\\/:*?"<>|]/g, '')}.png`;
+    a.href = cardImg.url;
+    a.download = `圣约社区-${(card?.reference || '分享卡片').replace(/[\\/:*?"<>|]/g, '')}.${cardImg.ext}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -302,12 +345,20 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
         {/* 分享卡片图（仅传入 card 时显示） */}
         {card && (
           <div className="mb-5">
-            <div className="rounded-2xl overflow-hidden border border-ink-100 bg-ink-50 flex items-center justify-center min-h-[160px]">
+            <div className="rounded-2xl overflow-hidden border border-ink-100 bg-ink-900/5 flex items-center justify-center min-h-[160px]">
               {cardImg ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img loading="lazy" src={cardImg} alt="分享卡片" className="w-full h-auto" />
+                <img
+                  src={cardImg.url}
+                  alt="分享卡片"
+                  className="w-full h-auto"
+                  decoding="async"
+                  onError={() => setCardFailed(true)}
+                />
               ) : (
-                <div className="text-ink-300 text-sm py-10">{cardBusy ? '卡片生成中…' : '暂无卡片'}</div>
+                <div className="text-ink-400 text-sm py-10">
+                  {cardBusy ? '卡片生成中…' : cardFailed ? '卡片生成失败，可改用下方二维码分享' : '暂无卡片'}
+                </div>
               )}
             </div>
             {cardImg && (
@@ -333,7 +384,7 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
           <div className="bg-white rounded-2xl p-3 shadow-soft border border-ink-100">
             {qr ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img loading="lazy" src={qr} alt="分享二维码" className="w-40 h-40" width={160} height={160} />
+              <img src={qr} alt="分享二维码" className="w-40 h-40" width={160} height={160} decoding="async" />
             ) : (
               <div className="w-40 h-40 flex items-center justify-center text-ink-300 text-sm">生成中…</div>
             )}
