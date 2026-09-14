@@ -23,13 +23,16 @@ export const GET = withApi(async (req: NextRequest) => {
      FROM bible_bookmarks WHERE ${where.join(' AND ')} ORDER BY created_at DESC`,
     args
   );
-  return ok({
+  const r = ok({
     items: rows.map((r) => ({
       id: r.id, version: r.version, bookId: r.book_id, chapter: r.chapter,
       verse: r.verse, note: r.note, createdAt: r.created_at,
       bookName: bookById(r.book_id)?.name || r.book_id,
     })),
   });
+  // 防止 CDN/浏览器缓存导致"删除后列表不刷新"需点两次
+  r.headers.set('Cache-Control', 'no-store');
+  return r;
 });
 
 /**

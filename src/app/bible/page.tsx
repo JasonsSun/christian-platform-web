@@ -42,7 +42,7 @@ export default function BibleHome() {
 
   const { data: plan, loading: planLoading, error: planError } = useApi<PlanResp>(planPath, [loggedIn]);
   const { data: history, loading: hLoading, error: hError } = useApi<HistoryResp>(historyPath, [loggedIn]);
-  const { data: bm, loading: bmLoading, error: bmError, reload: reloadBm } =
+  const { data: bm, loading: bmLoading, error: bmError, reload: reloadBm, setData: setBm } =
     useApi<BookmarkResp>(bmPath, [loggedIn]);
 
   // 删除书签/笔记(此前只能收藏/取消,笔记标签删不掉)
@@ -50,12 +50,15 @@ export default function BibleHome() {
   const deleteBookmark = async (id: string) => {
     if (deletingId) return;
     setDeletingId(id);
+    // 乐观移除: 立刻从列表消失, 不等跨境服务器往返(解决"要点两次"的观感 + 任何缓存陈旧)
+    if (setBm && bm?.items) setBm({ ...bm, items: bm.items.filter((x) => x.id !== id) });
     try {
       await apiDelete<{ deleted: boolean }>(`/bible/bookmarks?id=${encodeURIComponent(id)}`);
-      await reloadBm();
     } catch {
-      /* 失败保持原状,不打断浏览 */
+      /* 删除失败: 下面 finally 会 reload 重新拉取, 自动恢复该条 */
     } finally {
+      // 始终与服务器对账: 失败则恢复, 成功则保持已删
+      await reloadBm();
       setDeletingId(null);
     }
   };

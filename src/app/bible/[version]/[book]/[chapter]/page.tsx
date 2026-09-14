@@ -128,7 +128,7 @@ export default function ReadChapter() {
   }, [cmpVersion, version, book, chapter]);
 
   const bmPath = user ? `/bible/bookmarks${qs({ book, chapter })}` : null;
-  const { data: bmList, loading: bmLoading, error: bmError, reload: reloadBm } = useApi<BookmarkResp>(
+  const { data: bmList, loading: bmLoading, error: bmError, reload: reloadBm, setData: setBmList } = useApi<BookmarkResp>(
     bmPath,
     [user, book, chapter]
   );
@@ -567,6 +567,13 @@ export default function ReadChapter() {
   const deleteVerseNote = async (verse: number) => {
     if (!user) { showToast('请先登录'); return; }
     const row = bmList?.items.find((b) => b.verse === verse);
+    // 乐观移除: 立即从书签列表隐去,不等服务器
+    if (setBmList && bmList?.items) {
+      const next = bmList.items.filter((b) => b.id !== row?.id);
+      setBmList({ ...bmList, items: next });
+    }
+    setNoteEditing(null);
+    setNoteDraft('');
     try {
       if (row?.id) {
         await apiDelete<{ deleted: boolean }>(`/bible/bookmarks?id=${encodeURIComponent(row.id)}`);
@@ -577,10 +584,9 @@ export default function ReadChapter() {
       }
     } catch {
       showToast('删除失败，请重试');
+      await reloadBm(); // 失败则重新拉取恢复
       return;
     }
-    setNoteEditing(null);
-    setNoteDraft('');
     await reloadBm();
     showToast('已删除笔记');
   };
@@ -591,9 +597,16 @@ export default function ReadChapter() {
       return;
     }
     const res = await readAction.run(() =>
-      apiPost<{ ok: boolean }>('/bible/history', { version, bookId: book, chapter })
+      apiPost<{ ok: boolean; planCheckins?: number }>('/bible/history', {
+        version,
+        bookId: book,
+        chapter,
+        recordPlan: true,
+      })
     );
-    if (res?.ok) showToast('已记录读经');
+    if (res?.ok) {
+      showToast(res.planCheckins ? `已记录读经，并自动打卡 ${res.planCheckins} 天计划` : '已记录读经');
+    }
   };
 
   return (

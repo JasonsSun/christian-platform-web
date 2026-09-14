@@ -24,10 +24,15 @@ export const GET = withApi(async (req: NextRequest) => {
   });
 });
 
-/** POST /api/v1/bible/history  body:{version?,bookId,chapter}  -> 记录已读(同日同章不重复) */
+/** POST /api/v1/bible/history  body:{version?,bookId,chapter,recordPlan?}  -> 记录已读(同日同章不重复) */
 export const POST = withApi(async (req: NextRequest) => {
   const user = (await requireUser(req)) as UserRow;
-  const b = await (await import('@/server/http')).readJson<{ version?: string; bookId: string; chapter: number }>(req);
+  const b = await (await import('@/server/http')).readJson<{
+    version?: string;
+    bookId: string;
+    chapter: number;
+    recordPlan?: boolean;
+  }>(req);
   if (!b.bookId || !b.chapter) throw badRequest('缺少书卷或章节');
   const version = b.version || 'cuv';
   const date = new Date().toISOString().slice(0, 10);
@@ -36,5 +41,11 @@ export const POST = withApi(async (req: NextRequest) => {
      VALUES (?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE read_at = VALUES(read_at)`,
     [newId('rh'), user.id, version, b.bookId, b.chapter, date, ts()]
   );
-  return ok({ ok: true });
+  // 显式"已记录读经"且读的是计划分配的章节时,自动打卡对应计划天数
+  let planCheckins = 0;
+  if (b.recordPlan) {
+    const { autoCheckinOnRead } = await import('@/server/planProgress');
+    planCheckins = await autoCheckinOnRead(user.id, b.bookId, b.chapter);
+  }
+  return ok({ ok: true, planCheckins });
 });

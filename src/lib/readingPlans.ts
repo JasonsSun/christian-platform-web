@@ -20,6 +20,8 @@ export type ReadingPlan = {
   linkOf: (day: number) => string;
   /** 每日一句鼓励（可选，按天循环） */
   verseOf?: (day: number) => string;
+  /** 第 day 天覆盖的「书卷+章」列表(用于把"真实读经"反查回计划天数) */
+  chaptersOf?: (day: number) => { bookId: string; chapter: number }[];
 };
 
 export const READING_PLANS: ReadingPlan[] = [
@@ -36,6 +38,13 @@ export const READING_PLANS: ReadingPlan[] = [
       return `诗篇 ${from}${to > from ? `-${to}` : ''} 篇`;
     },
     linkOf: (d) => `/bible/cuv/psalms/${(d - 1) * 5 + 1}`,
+    chaptersOf: (d) => {
+      const from = (d - 1) * 5 + 1;
+      const to = Math.min(150, d * 5);
+      const out: { bookId: string; chapter: number }[] = [];
+      for (let c = from; c <= to; c++) out.push({ bookId: 'psalms', chapter: c });
+      return out;
+    },
   },
   {
     id: 'john-21',
@@ -46,6 +55,7 @@ export const READING_PLANS: ReadingPlan[] = [
     days: 21,
     readingOf: (d) => `约翰福音 第 ${d} 章`,
     linkOf: (d) => `/bible/cuv/john/${d}`,
+    chaptersOf: (d) => [{ bookId: 'john', chapter: d }],
   },
   {
     id: 'proverbs-31',
@@ -56,6 +66,7 @@ export const READING_PLANS: ReadingPlan[] = [
     days: 31,
     readingOf: (d) => `箴言 第 ${d} 章`,
     linkOf: (d) => `/bible/cuv/proverbs/${d}`,
+    chaptersOf: (d) => [{ bookId: 'proverbs', chapter: d }],
   },
   {
     id: 'psalm23-7',
@@ -66,11 +77,33 @@ export const READING_PLANS: ReadingPlan[] = [
     days: 7,
     readingOf: (d) => `诗篇 23 篇 · 第 ${d} 天默想`,
     linkOf: () => `/bible/cuv/psalms/23`,
+    chaptersOf: () => [{ bookId: 'psalms', chapter: 23 }],
   },
 ];
 
 export function getPlan(id: string): ReadingPlan | undefined {
   return READING_PLANS.find((p) => p.id === id);
+}
+
+/**
+ * 反查：某「书卷+章」属于哪些计划的第几天。
+ * 用于把"真实读经"映射到读经计划的打卡天数（读到分配章即自动打卡）。
+ */
+export function matchPlanDay(
+  bookId: string,
+  chapter: number
+): { planId: string; day: number }[] {
+  const out: { planId: string; day: number }[] = [];
+  for (const p of READING_PLANS) {
+    const fn = p.chaptersOf;
+    if (!fn) continue;
+    for (let d = 1; d <= p.days; d++) {
+      if (fn(d).some((c) => c.bookId === bookId && c.chapter === chapter)) {
+        out.push({ planId: p.id, day: d });
+      }
+    }
+  }
+  return out;
 }
 
 /** 已打卡天数 → 完成百分比（0-100） */
