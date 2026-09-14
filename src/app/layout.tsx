@@ -10,6 +10,7 @@ import { ThemeProvider, themeNoFlashScript } from '@/lib/theme'
 import { NotificationProvider } from '@/lib/notifyStream'
 import SWRegister from '@/components/SWRegister'
 import NetworkBanner from '@/components/NetworkBanner'
+import SiteNoticeBar from '@/components/SiteNoticeBar'
 import { cookies } from 'next/headers'
 import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale } from '@/lib/i18n/config'
 import ActivityTracker from '@/components/ActivityTracker'
@@ -75,6 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <PlayerProvider>
                 <NoticeProvider>
                   <NetworkBanner />
+                  <SiteNoticeBar />
                   <Guards />
                   <ActivityTracker />
                   <Navbar />

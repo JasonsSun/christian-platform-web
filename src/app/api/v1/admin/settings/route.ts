@@ -4,12 +4,13 @@ import { ok, withApi, readJson, HttpError, clientIp } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
 import { audit } from '@/server/services';
 import { ts } from '@/server/db';
+import { clearSettingsCache } from '@/server/settings';
 
 export const dynamic = 'force-dynamic';
 
-/** 系统设置:读取全部配置项 */
+/** 系统设置:读取全部配置项（仅管理员——属系统级治理，不下放模块审核员） */
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['admin', 'moderator']);
+  await requireRole(req, ['admin']);
   const rows = await q<any>(
     `SELECT key_name, value, label, group_name,
             DATE_FORMAT(updated_at,'%Y-%m-%dT%H:%i:%sZ') AS updated_at
@@ -35,6 +36,8 @@ export const PATCH = withApi(async (req: NextRequest) => {
       [String(it.value ?? ''), ts(), admin.id, it.key]
     );
   }
+  // 配置落库后立即失效进程内缓存，否则最长 30s 才生效
+  clearSettingsCache();
   await audit(admin.id, 'SETTINGS_UPDATE', 'settings', '', `更新 ${items.length} 项配置`, clientIp(req));
   return ok({ updated: items.length });
 });

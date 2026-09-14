@@ -21,10 +21,37 @@ export const forbidden = (m = '没有权限执行该操作') => fail(403, 'FORBI
 export const notFound = (m = '资源不存在') => fail(404, 'NOT_FOUND', m);
 export const conflict = (m = '资源冲突') => fail(409, 'CONFLICT', m);
 
+/** 会改变数据的请求方法（维护模式下需要拦截） */
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/**
+ * 维护模式守卫：拦截写操作，管理员豁免，GET 一律放行。
+ * 动态 import 避免 http.ts ↔ auth.ts 的顶层循环依赖；
+ * 配置读取失败（表不存在 / DB 不可用）时不阻断业务。
+ */
+async function assertWritable(req: any) {
+  let maintenance = false;
+  try {
+    const { getBool, getSetting } = await import('./settings');
+    maintenance = await getBool('maintenance_mode', false);
+    if (!maintenance) return;
+    const notice = await getSetting('maintenance_notice', '平台正在维护中，请稍后再试');
+    const { currentUser } = await import('./auth');
+    const u = await currentUser(req).catch(() => null);
+    if (u?.role === 'admin') return; // 管理员在维护期仍要能操作后台
+    throw new HttpError(503, 'MAINTENANCE', notice);
+  } catch (e) {
+    if (e instanceof HttpError) throw e;
+  }
+}
+
 /** 统一异常处理包装 */
 export function withApi<T extends any[]>(fn: (...args: T) => Promise<Response>) {
   return async (...args: T): Promise<Response> => {
     try {
+      const first: any = args[0];
+      const method = typeof first?.method === 'string' ? first.method.toUpperCase() : '';
+      if (WRITE_METHODS.has(method)) await assertWritable(first);
       return await fn(...args);
     } catch (e: any) {
       if (e instanceof HttpError) return fail(e.status, e.code, e.message);
