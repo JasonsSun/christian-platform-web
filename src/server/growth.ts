@@ -277,9 +277,18 @@ export interface OnboardingView {
 
 /** 步骤完成情况按真实数据判定，而不是只信本地缓存：换设备也不会错乱 */
 export async function onboardingView(userId: string): Promise<OnboardingView> {
+  // 报名表可能在升级前的老库中不存在 —— 运行时幂等建表后再查询
+  const { ensureEnrollmentTable } = await import('@/server/planProgress');
+  await ensureEnrollmentTable();
+
   const [u, plan, follow, content, row] = await Promise.all([
     one<{ bio: string; church: string; city: string }>(`SELECT bio, church, city FROM users WHERE id = ?`, [userId]),
-    one<{ c: number }>(`SELECT COUNT(*) AS c FROM reading_plan_progress WHERE user_id = ?`, [userId]),
+    // 「已选读经计划」= 显式报名 ∪ 已有进度（兼容升级前只有 progress 的用户）
+    one<{ c: number }>(
+      `SELECT (SELECT COUNT(*) FROM reading_plan_enrollment WHERE user_id = ?)
+            + (SELECT COUNT(*) FROM reading_plan_progress   WHERE user_id = ?) AS c`,
+      [userId, userId]
+    ),
     one<{ c: number }>(`SELECT COUNT(*) AS c FROM follows WHERE follower_id = ?`, [userId]),
     one<{ c: number }>(`SELECT COUNT(*) AS c FROM contents WHERE author_id = ?`, [userId]),
     one<{ done: string | null; dismissed: number }>(`SELECT done, dismissed FROM user_onboarding WHERE user_id = ?`, [userId]),

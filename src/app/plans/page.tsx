@@ -16,12 +16,15 @@ type PlanListItem = {
   days: number;
   doneDays: number;
   percent: number;
+  enrolled: boolean;
 };
 type PlanListResp = { signedIn: boolean; plans: PlanListItem[] };
 
 type PlanDay = { day: number; reading: string; link: string; done: boolean };
 type PlanDetailResp = {
   signedIn: boolean;
+  enrolled: boolean;
+  currentDay: number;
   plan: { id: string; title: string; subtitle: string; emoji: string; accent: string; days: number };
   doneDays: number;
   days: PlanDay[];
@@ -38,6 +41,16 @@ export default function PlansPage() {
     [activeId]
   );
   const checkin = useAction();
+  const enroll = useAction();
+
+  const enrollPlan = async (planId: string) => {
+    if (!user) { goLogin(); return; }
+    const res = await enroll.run(() => apiPost<{ ok: boolean; enrolled: boolean }>(`/plans/${planId}/enroll`));
+    if (res?.ok) {
+      reloadDetail();
+      reloadList();
+    }
+  };
 
   const toggleDay = async (day: number, done: boolean) => {
     if (!user) { goLogin(); return; }
@@ -102,7 +115,9 @@ export default function PlansPage() {
                     </div>
                     <div className="flex items-center justify-between text-xs text-ink-400">
                       <span>已读 {p.doneDays}/{p.days} 天</span>
-                      <span className="text-primary-600 font-medium">{p.percent}%</span>
+                      {p.enrolled
+                        ? <span className="text-emerald-600 font-medium">已加入 ✓</span>
+                        : <span className="text-primary-600 font-medium">{p.percent}%</span>}
                     </div>
                   </button>
                 ))}
@@ -136,6 +151,21 @@ export default function PlansPage() {
               <div className="h-2.5 rounded-full bg-ink-100 overflow-hidden">
                 <div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all" style={{ width: `${pct}%` }} />
               </div>
+              {user && !detail.enrolled && (
+                <div className="mt-3 flex items-center gap-2">
+                  <button
+                    onClick={() => enrollPlan(detail.plan.id)}
+                    disabled={enroll.pending}
+                    className="text-xs px-3 py-1.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-60"
+                  >
+                    {enroll.pending ? '加入中…' : '开始这个计划'}
+                  </button>
+                  <span className="text-xs text-ink-400">加入后，读完分配的章节会自动打卡</span>
+                </div>
+              )}
+              {user && detail.enrolled && (
+                <div className="mt-3 text-xs text-emerald-600">已加入 · 正在读第 {detail.currentDay} 天</div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -156,7 +186,7 @@ export default function PlansPage() {
                     <div className="text-xs text-ink-500 truncate">{d.reading}</div>
                   </div>
                   <Link
-                    href={d.link}
+                    href={`${d.link}?plan=${activeId}&day=${d.day}`}
                     className="text-xs px-3 py-1.5 rounded-lg bg-ink-50 text-ink-600 hover:bg-primary-50 hover:text-primary-700 border border-ink-200 transition-colors shrink-0"
                   >
                     去读经

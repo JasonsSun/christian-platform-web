@@ -11,6 +11,7 @@ import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
 import ReadingAngel from '@/components/ReadingAngel';
 import ShareModal from '@/components/ShareModal';
 import { useTheme } from '@/lib/theme';
+import { READING_PLANS } from '@/lib/readingPlans';
 
 /** 可供「对照阅读」的译本（与 @/server/bible 的 VERSIONS 保持一致） */
 const CMP_VERSIONS = [
@@ -135,22 +136,111 @@ export default function ReadChapter() {
   const bookmarkAction = useAction();
   const readAction = useAction();
 
-  // 自动记录读经进度。
-  // 之前必须手动点「标记已读」才写库,用户点进经文却看不到任何记录 —— 属于功能缺陷。
-  // 现在:章节内容加载完成即静默写一次(后端按「同日同章」去重),失败静默忽略。
-  // 未登录时退化为写入 localStorage,保证"继续阅读"也可用。
-  const autoMarkedRef = useRef<string>('');
+  // ---- 真实读经判定（蓝点）----
+  // 取代原先"章节一加载就静默写已读"的假记录：
+  // 每节末尾一个小蓝点，该节进入阅读带并驻留 READ_DWELL_MS 后淡出 = 已读；
+  // 本章所有蓝点都淡出，才视为读完本章并写库（同时触发读经计划的自动打卡）。
+  const READ_DWELL_MS = 3000;
+  const verseCount = data?.verses?.length ?? 0;
+  const [readVerses, setReadVerses] = useState<Set<number>>(new Set());
+  const readVersesRef = useRef<Set<number>>(new Set());
+  const verseCountRef = useRef(0);
+  verseCountRef.current = verseCount;
+  const dwellTimers = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+
+  // 「继续阅读」位置（未登录也可用）
   useEffect(() => {
     if (!data?.hasContent) return;
-    const key = `${version}:${book}:${chapter}`;
-    if (autoMarkedRef.current === key) return;
-    autoMarkedRef.current = key;
     try {
       localStorage.setItem('bible:last', JSON.stringify({ version, bookId: book, chapter }));
     } catch { /* ignore */ }
+  }, [data?.hasContent, version, book, chapter]);
+
+  // 读完本章：静默写库并触发读经计划自动打卡；同一章只记一次
+  const recordedRef = useRef<string>('');
+  const userRef = useRef(user);
+  userRef.current = user;
+  const recordChapterRead = () => {
+    if (!userRef.current) return;
+    const key = `${version}:${book}:${chapter}`;
+    if (recordedRef.current === key) return;
+    recordedRef.current = key;
+    apiPost<{
+      ok: boolean;
+      planCheckins?: number;
+      completedDays?: { planId: string; planTitle: string; day: number }[];
+    }>('/bible/history', { version, bookId: book, chapter, recordPlan: true })
+      .then((res) => {
+        if (!res?.ok) return;
+        const cd = res.completedDays || [];
+        setToast(
+          cd.length === 1
+            ? `读完本章 · 已完成《${cd[0].planTitle}》第 ${cd[0].day} 天 ✓`
+            : cd.length > 1
+              ? `读完本章 · 完成 ${cd.length} 个读经计划打卡 ✓`
+              : '读完本章 🎉'
+        );
+        setTimeout(() => setToast(null), 2600);
+      })
+      .catch(() => {});
+  };
+  const recordChapterReadRef = useRef(recordChapterRead);
+  recordChapterReadRef.current = recordChapterRead;
+
+  // 换章/换卷时清空蓝点与计时器
+  useEffect(() => {
+    for (const t of dwellTimers.current.values()) clearTimeout(t);
+    dwellTimers.current.clear();
+    readVersesRef.current = new Set();
+    setReadVerses(new Set());
+  }, [version, book, chapter]);
+
+  // 蓝点驻留检测：经文进入「阅读带」(上下各留 12% 盲区) 并停留 READ_DWELL_MS → 该节已读
+  useEffect(() => {
+    if (!data?.hasContent || typeof IntersectionObserver === 'undefined') return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const en of entries) {
+          const el = en.target as HTMLElement;
+          const n = Number(el.dataset.verse);
+          if (!n) continue;
+          if (en.isIntersecting) {
+            if (readVersesRef.current.has(n) || dwellTimers.current.has(n)) continue;
+            const t = setTimeout(() => {
+              dwellTimers.current.delete(n);
+              readVersesRef.current.add(n);
+              setReadVerses(new Set(readVersesRef.current));
+              // 全部蓝点淡出 → 本章读完
+              if (readVersesRef.current.size >= verseCountRef.current) {
+                recordChapterReadRef.current();
+              }
+            }, READ_DWELL_MS);
+            dwellTimers.current.set(n, t);
+          } else {
+            const t = dwellTimers.current.get(n);
+            if (t) { clearTimeout(t); dwellTimers.current.delete(n); }
+          }
+        }
+      },
+      { rootMargin: '-12% 0px -12% 0px', threshold: 0 }
+    );
+    document.querySelectorAll<HTMLElement>('[data-verse]').forEach((n) => obs.observe(n));
+    return () => obs.disconnect();
+  }, [data?.hasContent, data?.verses, version, book, chapter]);
+
+  // 卸载时清理计时器
+  useEffect(() => () => {
+    for (const t of dwellTimers.current.values()) clearTimeout(t);
+    dwellTimers.current.clear();
+  }, []);
+
+  // 「先读完本章、之后才登录」的补记：登录后若本章蓝点已全灭，补一次写库
+  useEffect(() => {
     if (!user) return;
-    apiPost<{ ok: boolean }>('/bible/history', { version, bookId: book, chapter }).catch(() => {});
-  }, [data?.hasContent, version, book, chapter, user]);
+    if (verseCount > 0 && readVersesRef.current.size >= verseCount) {
+      recordChapterReadRef.current();
+    }
+  }, [user, verseCount]);
 
   // 语音朗读：逐节朗读，读到哪节就高亮哪节（朗读文本剔除括号注释）
   const speechItems = useMemo<SpeechItem[]>(
@@ -266,8 +356,8 @@ export default function ReadChapter() {
     } catch { /* ignore */ }
   };
 
-  /** 点击某节经文：滚动定位 + 写入 URL + 从这一节开始朗读 */
-  const startFrom = (verse: number) => {
+  /** 点击某节经文：滚动定位 + 高亮选中（不朗读；朗读由「朗读本章」或小天使触发） */
+  const selectVerse = (verse: number) => {
     if (!verse || verse <= 0) return;
     setStartVerse(verse);
     const el = document.getElementById(`v${verse}`);
@@ -279,7 +369,35 @@ export default function ReadChapter() {
       url.searchParams.set('v', String(verse));
       window.history.replaceState({}, '', url.toString());
     } catch { /* ignore */ }
-    speech.start(verse);
+  };
+
+  /** 取当前屏幕视野中、离视口中线最近的一节（用于「从当前位置开始读」） */
+  const getCurrentVerseInView = (): number | null => {
+    const els = Array.from(document.querySelectorAll<HTMLElement>('[data-verse]'));
+    if (!els.length) return null;
+    const mid = window.innerHeight / 2;
+    let best: number | null = null;
+    let bestDist = Infinity;
+    for (const el of els) {
+      const r = el.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > window.innerHeight) continue;
+      const d = Math.abs((r.top + r.bottom) / 2 - mid);
+      if (d < bestDist) { bestDist = d; best = Number(el.dataset.verse) || null; }
+    }
+    return best;
+  };
+
+  /** 朗读起点：优先当前视野小节 → 用户选中节 → 本章第 1 节 */
+  const speechStartVerse = (): number | undefined =>
+    getCurrentVerseInView() ?? startVerse ?? undefined;
+
+  /** 小天使单击 = 朗读开关：正在读/合成中 → 停止；否则从当前视野小节开始读 */
+  const toggleAngelSpeech = () => {
+    if (speech.state === 'playing' || speech.state === 'paused' || speech.ttsLoading) {
+      speech.stop();
+      return;
+    }
+    speech.start(speechStartVerse());
   };
 
   // 带 ?v=N 进入时定位到该节
@@ -456,7 +574,7 @@ export default function ReadChapter() {
         e.preventDefault();
         if (speech.state === 'playing') speech.pause();
         else if (speech.state === 'paused') speech.resume();
-        else speech.start(startVerse ?? undefined);
+        else speech.start(speechStartVerse());
       }
     };
     window.addEventListener('keydown', onKey);
@@ -597,7 +715,7 @@ export default function ReadChapter() {
       return;
     }
     const res = await readAction.run(() =>
-      apiPost<{ ok: boolean; planCheckins?: number }>('/bible/history', {
+      apiPost<{ ok: boolean; planCheckins?: number; completedDays?: { planId: string; planTitle: string; day: number }[] }>('/bible/history', {
         version,
         bookId: book,
         chapter,
@@ -605,7 +723,14 @@ export default function ReadChapter() {
       })
     );
     if (res?.ok) {
-      showToast(res.planCheckins ? `已记录读经，并自动打卡 ${res.planCheckins} 天计划` : '已记录读经');
+      const cd = res.completedDays || [];
+      if (cd.length === 1) {
+        showToast(`已完成《${cd[0].planTitle}》第 ${cd[0].day} 天 ✓`);
+      } else if (cd.length > 1) {
+        showToast(`已完成 ${cd.length} 个读经计划打卡 ✓`);
+      } else {
+        showToast(res.planCheckins ? '已记录读经，并自动打卡计划' : '已记录读经');
+      }
     }
   };
 
@@ -741,7 +866,23 @@ export default function ReadChapter() {
           
           <h1 className="font-display text-3xl md:text-4xl font-bold text-ink-900 mb-2">{data?.book.name ?? book}</h1>
           <p className="text-ink-400 text-sm">第 {chapter} 章 · {data?.book.abbr || '创'} · {version === 'cuvs' ? '和合本' : 'KJV'}</p>
+
+          {/* 来自读经计划的「去读经」入口：提示正在读计划的第几天，读完会自动打卡 */}
+          {(() => {
+            const planParam = searchParams?.get('plan');
+            const dayParam = searchParams?.get('day');
+            if (!planParam || !dayParam) return null;
+            const p = READING_PLANS.find((x) => x.id === planParam);
+            if (!p) return null;
+            return (
+              <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
+                <span aria-hidden>📅</span>
+                你正在读《{p.title}》第 {dayParam} 天 · 读完本页自动打卡
+              </div>
+            );
+          })()}
           
+
           {/* 底部装饰 */}
           <div className="flex items-center justify-center gap-4 mt-4">
             <div className="h-px flex-1 bg-gradient-to-r from-amber-300/50 to-transparent"></div>
@@ -809,7 +950,7 @@ export default function ReadChapter() {
                 onClick={() => {
                   if (speech.state === 'playing') speech.pause();
                   else if (speech.state === 'paused') speech.resume();
-                  else speech.start(startVerse ?? undefined);
+                  else speech.start(speechStartVerse());
                 }}
                 disabled={speech.ttsLoading}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
@@ -817,7 +958,7 @@ export default function ReadChapter() {
                     ? 'bg-primary-600 border-primary-600 text-white'
                     : 'bg-white border-ink-200 text-ink-700 hover:border-primary-400 hover:text-primary-600'
                 } ${speech.ttsLoading ? 'opacity-60 cursor-wait' : ''}`}
-                title={startVerse ? `从第 ${startVerse} 节开始朗读` : '从头朗读本章'}
+                title="从当前阅读位置开始朗读本章"
               >
                 {speech.ttsLoading ? (
                   <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3a9 9 0 109 9" /></svg>
@@ -832,9 +973,7 @@ export default function ReadChapter() {
                     ? '暂停朗读'
                     : speech.state === 'paused'
                       ? '继续朗读'
-                      : startVerse
-                        ? `从第 ${startVerse} 节朗读`
-                        : '朗读本章'}
+                      : '朗读本章'}
               </button>
               {speech.ttsMode === 'server' && !speech.ttsError && !speech.ttsLoading && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-400">
@@ -862,7 +1001,7 @@ export default function ReadChapter() {
               {speech.ttsMode === 'browser' && !speech.ttsLoading && (
                 <button
                   type="button"
-                  onClick={() => speech.useServerVoice(startVerse ?? undefined)}
+                  onClick={() => speech.useServerVoice(speechStartVerse())}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
                   title="本机缺少中文语音时浏览器朗读会完全无声，点此改用服务器合成"
                 >
@@ -881,11 +1020,7 @@ export default function ReadChapter() {
                 </span>
               )}
 
-              {/* 轻提示：点击任意一节即可从那里开始朗读 */}
-              <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-50/80 border border-primary-100 text-xs text-primary-600">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                轻触任意一节，即从该节开始朗读
-              </span>
+              {/* 交互说明（点击只点亮 / 蓝点读经）已移至 /bible 主页，章节页不再重复 */}
 
               {/* 括号注释开关 */}
               {chapterHasNotes && (
@@ -998,7 +1133,7 @@ export default function ReadChapter() {
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
                   !user ? 'opacity-60 cursor-not-allowed bg-white border-ink-200 text-ink-700' : 'btn-primary'
                 }`}
-                title="标记为已读"
+                title="手动标记本章已读（滚动读完所有蓝点也会自动标记）"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -1030,10 +1165,11 @@ export default function ReadChapter() {
                   <p
                     key={v.verse}
                     id={`v${v.verse}`}
+                    data-verse={v.verse}
                     onClick={(e) => {
-                      // 用户正在拖选文字复制时不触发朗读
+                      // 拖选文字时不触发选中（避免打断复制）
                       if (typeof window !== 'undefined' && (window.getSelection()?.toString() || '').trim()) return;
-                      startFrom(v.verse);
+                      selectVerse(v.verse);
                     }}
                     className={`read-verse mb-5 group relative pl-10 pr-12 py-2 rounded-xl transition-all duration-200 scroll-mt-24 cursor-pointer ${
                       speaking
@@ -1045,10 +1181,10 @@ export default function ReadChapter() {
                           : 'hover:bg-ink-50/50'
                     }`}
                   >
-                    {/* 节号：点击从本节开始朗读 */}
+                    {/* 节号：点击点亮本节（不朗读） */}
                     <button
-                      onClick={(e) => { e.stopPropagation(); startFrom(v.verse); }}
-                      title="点击从本节开始朗读"
+                      onClick={(e) => { e.stopPropagation(); selectVerse(v.verse); }}
+                      title="点击点亮本节（不朗读）"
                       className={`absolute left-0 top-2 w-7 h-7 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
                         speaking
                           ? 'bg-amber-500 text-white scale-110 shadow-md'
@@ -1102,6 +1238,13 @@ export default function ReadChapter() {
                         );
                       })}
                     </span>
+
+                    {/* 真实读经蓝点：本节进入视野并驻留数秒后淡出 = 已读 */}
+                    <span
+                      className={`read-dot ${readVerses.has(v.verse) ? 'is-read' : ''}`}
+                      aria-hidden
+                      title={readVerses.has(v.verse) ? '本节已读' : '阅读本节数秒即自动标记已读'}
+                    />
 
                     {/* 对照译本：仅在开启对照且该节有译文时显示（英文自动用衬线体） */}
                     {cmpVersion && cmpVerses[v.verse] && (
@@ -1273,13 +1416,14 @@ export default function ReadChapter() {
         </div>
       </div>
 
-      {/* 读经小天使：可拖动；朗读时指字/指行，未朗读时趴着休息 */}
+      {/* 读经小天使：单击=朗读/停止；拖动换位置；朗读时指字/指行，未朗读时趴着休息 */}
       {data?.hasContent && (
         <ReadingAngel
           state={speech.state}
           speakingKey={speech.speakingKey}
           speakCharRef={speech.speakCharRef}
           wordSync={speech.wordSync}
+          onToggle={toggleAngelSpeech}
         />
       )}
 

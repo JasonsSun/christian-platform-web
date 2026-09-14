@@ -11,6 +11,8 @@ export interface ReadingAngelProps {
   speakCharRef?: React.MutableRefObject<number | null>;
   /** 是否逐字模式（语速 1.0x） */
   wordSync: boolean;
+  /** 单击小天使：朗读/停止 开关（拖动、双击手势不受影响） */
+  onToggle?: () => void;
 }
 
 type AngelMode = 'rest' | 'pointChar' | 'pointLine';
@@ -23,6 +25,7 @@ export default function ReadingAngel({
   speakingKey,
   speakCharRef,
   wordSync,
+  onToggle,
 }: ReadingAngelProps) {
   const [mounted, setMounted] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
@@ -154,7 +157,11 @@ export default function ReadingAngel({
       setFollow(false);
       try { localStorage.setItem('bible:angelPos', JSON.stringify(posRef.current)); } catch { /* ignore */ }
     } else {
-      const word = CHEER_WORDS[Math.floor(Math.random() * CHEER_WORDS.length)];
+      // 单击小天使 = 朗读开关：正在读 → 停；未读 → 从当前视野小节开始读
+      onToggle?.();
+      const word = state === 'playing' || state === 'paused'
+        ? '歇一歇～'
+        : CHEER_WORDS[Math.floor(Math.random() * CHEER_WORDS.length)];
       setBubble(word);
       setCheer(true);
       if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
@@ -191,7 +198,7 @@ export default function ReadingAngel({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
       onDoubleClick={onDoubleClick}
-      title={follow ? '拖动我可以换位置；双击回到跟随模式' : '已固定位置；双击恢复跟随朗读'}
+      title={follow ? '单击：开始/停止朗读；拖动换个位置；双击回到跟随模式' : '单击：开始/停止朗读；双击恢复跟随朗读'}
     >
       <div className={`inner ${cheer ? 'pop' : 'float'}`}>
         <svg viewBox="0 0 72 72" width={SIZE} height={SIZE}>

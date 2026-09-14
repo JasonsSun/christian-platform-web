@@ -43,9 +43,12 @@ export const POST = withApi(async (req: NextRequest) => {
   );
   // 显式"已记录读经"且读的是计划分配的章节时,自动打卡对应计划天数
   let planCheckins = 0;
+  const completedDays: { planId: string; planTitle: string; day: number }[] = [];
   if (b.recordPlan) {
     const { autoCheckinOnRead } = await import('@/server/planProgress');
-    planCheckins = await autoCheckinOnRead(user.id, b.bookId, b.chapter);
+    const completed = await autoCheckinOnRead(user.id, b.bookId, b.chapter);
+    planCheckins = completed.length;
+    completedDays.push(...completed);
   }
-  return ok({ ok: true, planCheckins });
+  return ok({ ok: true, planCheckins, completedDays });
 });

@@ -3,6 +3,7 @@ import { ok, withApi } from '@/server/http';
 import { currentUser } from '@/server/auth';
 import { q } from '@/server/db';
 import { READING_PLANS, planPercent } from '@/lib/readingPlans';
+import { enrolledPlanIds } from '@/server/planProgress';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -11,11 +12,13 @@ export const runtime = 'nodejs';
 export const GET = withApi(async (req: NextRequest) => {
   const user = await currentUser(req);
   let rows: { plan_id: string; done: number }[] = [];
+  let enrolled: Set<string> = new Set();
   if (user) {
     rows = await q<{ plan_id: string; done: number }>(
       `SELECT plan_id, COUNT(*) AS done FROM reading_plan_progress WHERE user_id=? GROUP BY plan_id`,
       [user.id]
     );
+    enrolled = new Set(await enrolledPlanIds(user.id));
   }
   const doneMap = new Map(rows.map((r) => [r.plan_id, Number(r.done)]));
   return ok({
@@ -31,6 +34,7 @@ export const GET = withApi(async (req: NextRequest) => {
         days: p.days,
         doneDays,
         percent: planPercent(doneDays, p.days),
+        enrolled: enrolled.has(p.id),
       };
     }),
   });

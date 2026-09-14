@@ -18,6 +18,12 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const day = Number(body.day);
   if (!day || day < 1 || day > plan.days) throw badRequest('无效的天数');
 
+  // 手动打卡前先确保已加入计划（未报名则自动报名，避免进度游离在计划之外）
+  const { enrollPlan, isEnrolled } = await import('@/server/planProgress');
+  if (!(await isEnrolled(user.id, id))) {
+    await enrollPlan(user.id, id);
+  }
+
   const existing = await one<{ id: string }>(
     `SELECT id FROM reading_plan_progress WHERE user_id=? AND plan_id=? AND day=?`,
     [user.id, id, day]

@@ -764,6 +764,17 @@ CREATE TABLE IF NOT EXISTS reading_plan_progress (
   CONSTRAINT fk_rpp_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 读经计划报名: 用户"加入"某计划后才参与真实读经的自动打卡(避免读任意章节被静默计入未选计划)。
+-- 已存在 reading_plan_progress 的也视为已加入(兼容升级前数据)。
+CREATE TABLE IF NOT EXISTS reading_plan_enrollment (
+  user_id     CHAR(36)    NOT NULL,
+  plan_id     VARCHAR(64) NOT NULL,
+  enrolled_at DATETIME    NOT NULL,
+  PRIMARY KEY (user_id, plan_id),
+  KEY idx_rpe_user (user_id),
+  CONSTRAINT fk_rpe_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- 每日签到(站点级, 与线下活动的 activity_checkins 区分): 连续天数驱动留存
 CREATE TABLE IF NOT EXISTS user_daily_checkins (
   user_id    CHAR(36)  NOT NULL,

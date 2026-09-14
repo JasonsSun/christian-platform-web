@@ -359,6 +359,18 @@ export default function BibleHome() {
           </div>
         </section>
 
+        {/* 阅读交互说明：全站只在此处说明一次，章节页不再重复 */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-50/80 border border-primary-100 text-xs text-primary-600">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            轻触经文只点亮该节（不出声）；点小天使或「朗读本章」才朗读
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-50/80 border border-primary-100 text-xs text-primary-600">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary-500 mr-1" aria-hidden />
+            每节蓝点驻留几秒即淡出=已读，全部淡出即读完本章
+          </span>
+        </div>
+
         {/* 译本切换 */}
         <div className="flex flex-wrap gap-2 mb-8">
           {versions.map((v) => {

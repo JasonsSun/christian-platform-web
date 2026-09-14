@@ -5,7 +5,10 @@
     "dev": "node server.js",
     "build": "next build",
     "start": "node server.js --prod",
-    "test": "node scripts/test-safety.mjs"
+    "test": "node scripts/test-safety.mjs",
+    "test:plan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-plan-checkin.mjs",
+    "test:e2e:plan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-plan-checkin.mjs",
+    "test:e2e:readdot": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-readdot-ui.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

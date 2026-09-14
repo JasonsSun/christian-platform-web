@@ -88,6 +88,9 @@ export function getPlan(id: string): ReadingPlan | undefined {
 /**
  * 反查：某「书卷+章」属于哪些计划的第几天。
  * 用于把"真实读经"映射到读经计划的打卡天数（读到分配章即自动打卡）。
+ *
+ * 注意：此函数对"同章多天"计划(如诗篇23篇默想7天,7天都是诗篇23章)会返回多天,
+ * 自动打卡逻辑需据此区分"单章日 / 多章日 / 同章多天",见 planProgress.ts 的 autoCheckinOnRead。
  */
 export function matchPlanDay(
   bookId: string,
@@ -104,6 +107,64 @@ export function matchPlanDay(
     }
   }
   return out;
+}
+
+/** 章节唯一键：用于"该天分配的章是否都已读"的集合判定 */
+export function chapterKeyOf(bookId: string, chapter: number): string {
+  return `${bookId}:${chapter}`;
+}
+
+/** 取某计划第 day 天分配的「书卷+章」列表（无 chaptersOf 时为空） */
+export function planDayChapters(plan: ReadingPlan, day: number): { bookId: string; chapter: number }[] {
+  return plan.chaptersOf ? plan.chaptersOf(day) : [];
+}
+
+/** 某计划第 day 天是否包含指定章节 */
+export function dayContainsChapter(plan: ReadingPlan, day: number, bookId: string, chapter: number): boolean {
+  return planDayChapters(plan, day).some((c) => c.bookId === bookId && c.chapter === chapter);
+}
+
+/** 该计划里命中指定章节的天列表（升序） */
+export function matchPlanDays(plan: ReadingPlan, bookId: string, chapter: number): number[] {
+  if (!plan.chaptersOf) return [];
+  const out: number[] = [];
+  for (let d = 1; d <= plan.days; d++) {
+    if (dayContainsChapter(plan, d, bookId, chapter)) out.push(d);
+  }
+  return out;
+}
+
+/**
+ * 纯判定：读完 (bookId,chapter) 后，该计划应打勾哪一天？返回 null 表示不打勾。
+ * - 命中 0 天：不属于该计划。
+ * - 命中 1 天：
+ *    - 该天只有 1 章 → 直接打勾这一天的章。
+ *    - 该天多章(如诗篇30天一天5篇) → 仅当"该天分配的所有章都已读"才打勾(参数 readKeys 提供已读章集合)。
+ * - 命中多天(同章多天计划,如诗篇23篇默想7天)：返回 null，由调用方按"当前未完成的下一天"推进
+ *   （因为无法从章节判断读到的是第几天，需结合已打卡天集合）。
+ *
+ * 该函数无 DB 依赖，便于单测（见 scripts/test-plan-checkin.ts）。
+ */
+export function decidePlanCheckin(
+  plan: ReadingPlan,
+  bookId: string,
+  chapter: number,
+  readKeys: Set<string>,
+  doneDays: Set<number>
+): number | null {
+  const hit = matchPlanDays(plan, bookId, chapter);
+  if (hit.length === 0) return null;
+  if (hit.length === 1) {
+    const day = hit[0];
+    const chs = planDayChapters(plan, day);
+    const allRead = chs.every((c) => readKeys.has(chapterKeyOf(c.bookId, c.chapter)));
+    return allRead ? day : null;
+  }
+  // 同章多天：推进到当前未完成的下一天(按天序取最小未完成)
+  for (const d of hit) {
+    if (!doneDays.has(d)) return d;
+  }
+  return null; // 全打勾了
 }
 
 /** 已打卡天数 → 完成百分比（0-100） */
