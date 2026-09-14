@@ -6,19 +6,20 @@ import { apiGet, qs } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
+import { auditActionLabel, entityTypeLabel } from '@/lib/labels';
 import { AdminLayout, Badge, Loading, Empty, ErrorBox, SectionTitle } from '../_components';
 import type { AuditLog } from '../_components';
 
-const ACTIONS = [
-  'LOGIN_SUCCESS',
-  'LOGIN_FAILURE',
-  'USER_REGISTER',
-  'CONTENT_CREATE',
-  'CONTENT_APPROVE',
-  'CONTENT_REJECT',
-  'ACTIVITY_REGISTER',
-  'USER_ROLE_CHANGE',
-  'USER_STATUS_CHANGE',
+const ACTIONS: { value: string; label: string }[] = [
+  { value: 'LOGIN_SUCCESS', label: '登录成功' },
+  { value: 'LOGIN_FAILURE', label: '登录失败' },
+  { value: 'USER_REGISTER', label: '注册账号' },
+  { value: 'CONTENT_CREATE', label: '创建内容' },
+  { value: 'CONTENT_APPROVE', label: '内容通过' },
+  { value: 'CONTENT_REJECT', label: '内容驳回' },
+  { value: 'ACTIVITY_REGISTER', label: '活动报名' },
+  { value: 'USER_ROLE_CHANGE', label: '变更用户角色' },
+  { value: 'USER_STATUS_CHANGE', label: '变更用户状态' },
 ];
 
 export default function AdminAuditPage() {
@@ -57,7 +58,7 @@ export default function AdminAuditPage() {
         <select className="input-styled w-56" value={action} onChange={(e) => onAction(e.target.value)}>
           <option value="">全部动作</option>
           {ACTIONS.map((a) => (
-            <option key={a} value={a}>{a}</option>
+            <option key={a.value} value={a.value}>{a.label}</option>
           ))}
         </select>
       </div>
@@ -92,8 +93,8 @@ export default function AdminAuditPage() {
                         {a.actor_name || '-'}
                         {a.actor_username ? <div className="text-xs text-ink-400">{a.actor_username}</div> : null}
                       </td>
-                      <td className="px-4 py-3"><Badge tone="blue">{a.action}</Badge></td>
-                      <td className="px-4 py-3 text-ink-600">{a.entity_type || '-'}</td>
+                      <td className="px-4 py-3"><Badge tone="blue">{auditActionLabel(a.action)}</Badge></td>
+                      <td className="px-4 py-3 text-ink-600">{entityTypeLabel(a.entity_type)}</td>
                       <td className="px-4 py-3 text-ink-600 font-mono text-xs">{a.entity_id || '-'}</td>
                       <td className="px-4 py-3 text-ink-600 max-w-xs break-words">{a.detail || '-'}</td>
                       <td className="px-4 py-3 text-ink-400 whitespace-nowrap">{a.ip || '-'}</td>

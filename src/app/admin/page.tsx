@@ -5,6 +5,7 @@ import { apiGet } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo, formatDateTime } from '@/lib/format';
+import { contentStatusLabel, auditActionLabel } from '@/lib/labels';
 import { AdminLayout, StatCard, StatusBadge, Loading, Empty, ErrorBox, SectionTitle, Badge } from './_components';
 import type { AdminStats } from './_components';
 
@@ -65,7 +66,10 @@ export default function AdminDashboard() {
             <div className="flex flex-col gap-3">
               {data.byStatus.map((s) => (
                 <div key={s.status} className="flex items-center gap-3">
-                  <div className="w-20 flex-shrink-0 text-sm text-ink-600">{s.status}</div>
+                  <div className="w-20 flex-shrink-0 flex items-center gap-1.5 text-sm text-ink-600">
+                    <span className={`w-2 h-2 rounded-full ${STATUS_COLORS[s.status] || 'bg-primary-500'}`} />
+                    {contentStatusLabel(s.status)}
+                  </div>
                   <div className="flex-1 h-3 rounded-full bg-ink-100 overflow-hidden">
                     <div
                       className={`h-full ${STATUS_COLORS[s.status] || 'bg-primary-500'}`}
@@ -112,7 +116,7 @@ export default function AdminDashboard() {
             <ul className="flex flex-col gap-2 max-h-96 overflow-auto">
               {data.recentAudit.map((a) => (
                 <li key={a.id} className="flex items-start gap-3 text-sm border-b border-ink-100 pb-2">
-                  <Badge tone="blue">{a.action}</Badge>
+                  <Badge tone="blue">{auditActionLabel(a.action)}</Badge>
                   <div className="flex-1 min-w-0">
                     <div className="text-ink-700 truncate">{a.detail || a.entity_type}</div>
                     <div className="text-xs text-ink-400">
