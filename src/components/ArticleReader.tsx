@@ -41,10 +41,18 @@ export default function ArticleReader({ title, body }: { title: string; body: st
 
   if (!items.length || !items[0].text) return null;
 
+  // 用户把指针/焦点移到按钮上（= 有朗读意图）时，提前把头两段送给服务端合成。
+  // 文章是动态内容、很少被重复访问，缓存命中率低，所以只在有意图时才预热，
+  // 避免每次打开文章都在后台打一堆 TTS 请求（机房 IP 会被风控）。
+  const warmUp = () => speech.warm(1, 2);
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
+        onPointerEnter={warmUp}
+        onFocus={warmUp}
+        onTouchStart={warmUp}
         onClick={() => {
           if (speech.state === 'playing') speech.pause();
           else if (speech.state === 'paused') speech.resume();

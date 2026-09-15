@@ -95,6 +95,8 @@ export function useHostedSpeech(
 
   return useMemo<SpeechApi>(() => {
     if (!ctx) return local;
-    return { ...ctx.speech, start };
+    // warm 必须用页面自己的 items:常驻实例的 items 只有 commit 之后才有值,
+    // 直接转发会让预热请求带空文本发出去(等于没预热)。
+    return { ...ctx.speech, start, warm: local.warm };
   }, [ctx, local, start]);
 }

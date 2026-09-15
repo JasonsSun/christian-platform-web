@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { synthesizeTts, diagnoseTts, warmupTts } from '@/server/tts';
+import { synthesizeTts, diagnoseTts, warmupTts, warmTexts } from '@/server/tts';
 
 // 服务端 TTS：把经文文本合成 mp3 返回，供不支持 Web Speech API 的浏览器（如安卓微信 WebView）播放。
 // 多源 + 硬超时（见 @/server/tts），避免历史问题：微软 Edge TTS 建连挂起导致前端永远「合成中」。
@@ -30,6 +30,19 @@ export async function POST(req: NextRequest) {
   }
 
   const text = typeof body?.text === 'string' ? body.text.trim() : '';
+
+  // 预热:客户端把「接下来要读的几节」的文本发来,后台合成并落缓存后立即返回。
+  // 正式朗读时同样的文本直接命中缓存,首声不用再等合成。
+  const warm = Array.isArray(body?.warm)
+    ? (body.warm as unknown[]).filter((t): t is string => typeof t === 'string' && !!t.trim())
+    : [];
+  if (warm.length) {
+    if (text) return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
+    warmupTts();
+    warmTexts(warm, typeof body?.voice === 'string' ? body.voice : undefined);
+    return NextResponse.json({ ok: true, warmed: Math.min(warm.length, 12) }, { status: 202 });
+  }
+
   if (!text) return NextResponse.json({ error: 'empty_text' }, { status: 400 });
   if (text.length > MAX_TEXT) return NextResponse.json({ error: 'text_too_long' }, { status: 413 });
 

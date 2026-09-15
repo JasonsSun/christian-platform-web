@@ -72,6 +72,21 @@ export interface TtsResult {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const md5 = (s: string) => createHash('md5').update(s).digest('hex');
 
+/** 限并发 map(保持结果顺序);用于把长文本的分段合成从串行改并行 */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let cursor = 0;
+  const workers = new Array(Math.max(1, Math.min(limit, items.length))).fill(0).map(async () => {
+    for (;;) {
+      const i = cursor++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i]);
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
 async function fetchWithTimeout(
   url: string,
   timeoutMs: number,
@@ -121,8 +136,8 @@ async function synthesizeEdge(text: string, voice: string, opts: EdgeOpts): Prom
 async function synthesizeEdgeLong(text: string, voice: string, opts: EdgeOpts): Promise<Buffer> {
   const segs = splitBySentence(text, EDGE_SEG_CHARS);
   if (segs.length <= 1) return synthesizeEdge(segs[0] || '', voice, opts);
-  const parts: Buffer[] = [];
-  for (const s of segs) parts.push(await synthesizeEdge(s, voice, opts));
+  // 分段并行:串行时总耗时 ≈ 段数 × 单段耗时,长文能慢到十几秒;文件各自独立临时文件,并发安全
+  const parts = await mapLimit(segs, 3, (s) => synthesizeEdge(s, voice, opts));
   return Buffer.concat(parts);
 }
 
@@ -304,4 +319,53 @@ export async function diagnoseTts(): Promise<Record<string, unknown>> {
       synthesizeBaidu(sample, { timeoutMs: envNum(process.env.TTS_DIAG_TIMEOUT_MS, 8000) })
     ),
   };
+}
+
+// ---------------------------------------------------------------- 预热
+
+/** 正在预热中的缓存键,避免同一段被重复合成 */
+const warming = new Set<string>();
+
+/**
+ * 后台预热:把「接下来要读的几节」提前合成并写入磁盘缓存。
+ *
+ * 首声延迟主要就来自「第一次点朗读时才开始合成」。客户端在章节页内容就绪后
+ * 会把前几节的文本发过来,这里悄悄合成好;等用户真点「朗读」时,那几节直接
+ * 命中缓存(几十毫秒),首声几乎即时。
+ *
+ * 串行执行并留出间隔:百度对机房 IP 有风控,并发几个很容易 503。
+ * 预热失败不影响任何功能——正式请求会再试一次。
+ */
+export function warmTexts(texts: string[], voice?: string): void {
+  const v = normalizeVoice(voice);
+  const uniq: string[] = [];
+  const seen = new Set<string>();
+  for (const raw of texts) {
+    const t = (raw || '').trim();
+    if (!t || t.length > 2000) continue;
+    const k = md5(`${v}|${t}`);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    uniq.push(t);
+    if (uniq.length >= 12) break;
+  }
+  if (!uniq.length) return;
+
+  void (async () => {
+    for (const t of uniq) {
+      const key = md5(`${v}|${t}`);
+      if (warming.has(key)) continue;
+      warming.add(key);
+      try {
+        await fs.mkdir(CACHE_DIR, { recursive: true });
+        if (await readCache(path.join(CACHE_DIR, `${key}.mp3`))) continue;
+        await synthesizeTts(t, { voice: v });
+      } catch {
+        /* 预热失败无所谓 */
+      } finally {
+        warming.delete(key);
+      }
+      await sleep(120);
+    }
+  })();
 }

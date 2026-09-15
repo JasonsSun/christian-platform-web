@@ -362,7 +362,12 @@ export default function ReadChapter() {
     } catch { /* ignore */ }
   };
 
-  /** 点击某节经文：滚动定位 + 高亮选中（不朗读；朗读由「朗读本章」或小天使触发） */
+  /**
+   * 点击某节经文：滚动定位 + 高亮选中。
+   * 若此刻**正在朗读**（含仍在合成），则立刻切到该节续读——先 stop 掐掉上一节，
+   * 再以该节为起点重新开读，避免上一节的音频还在响、与新一节叠成两个声音。
+   * 未在朗读时只做选中（不擅自出声），「朗读本章」/小天使会从选中节起读。
+   */
   const selectVerse = (verse: number) => {
     if (!verse || verse <= 0) return;
     setStartVerse(verse);
@@ -375,6 +380,10 @@ export default function ReadChapter() {
       url.searchParams.set('v', String(verse));
       window.history.replaceState({}, '', url.toString());
     } catch { /* ignore */ }
+    if (speech.state === 'playing' || speech.state === 'paused' || speech.ttsLoading) {
+      speech.stop();
+      speech.start(verse);
+    }
   };
 
   /** 取当前屏幕视野中、离视口中线最近的一节（用于「从当前位置开始读」） */
@@ -405,6 +414,19 @@ export default function ReadChapter() {
     }
     speech.start(speechStartVerse());
   };
+
+  // 本章内容就绪后，悄悄预热开头几节的语音：用户点「朗读」时这几节已是服务端缓存命中，
+  // 首声从「等一两秒合成」变成几十毫秒。仅服务端合成模式生效（见 useSpeech 的 warm）。
+  const warmedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!data?.hasContent) return;
+    const tag = `${version}/${book}/${chapter}`;
+    if (warmedRef.current === tag) return;
+    warmedRef.current = tag;
+    speech.warm(1, 3);
+    // speech 每次渲染都是新对象（常驻会话的 context value 每渲染都重建），用 tag 去重即可
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data?.hasContent, version, book, chapter]);
 
   // 带 ?v=N 进入时定位到该节
   useEffect(() => {
@@ -1196,10 +1218,10 @@ export default function ReadChapter() {
                       />
                     )}
 
-                    {/* 节号：点击点亮本节（不朗读） */}
+                    {/* 节号：点击点亮本节；正在朗读时从本节续读 */}
                     <button
                       onClick={(e) => { e.stopPropagation(); selectVerse(v.verse); }}
-                      title="点击点亮本节（不朗读）"
+                      title="点击点亮本节；正在朗读时从本节续读"
                       className={`absolute left-4 top-2 w-7 h-7 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
                         speaking
                           ? 'bg-amber-500 text-white scale-110 shadow-md'

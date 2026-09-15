@@ -71,8 +71,14 @@ export interface SpeechOptions {
  */
 const CHUNK_VERSES = 4;
 
-/** 服务端合成请求的硬超时(含 mid-tier 代理不返回的情况) */
-const TTS_FETCH_TIMEOUT_MS = 45000;
+/**
+ * 逐节合成时的单节请求超时。按节请求文本很短,正常 <1s;
+ * 给到 20s 既能容忍机房出境抖动,又不会让用户对着「合成中」干等太久。
+ */
+const TTS_CHUNK_TIMEOUT_MS = 20000;
+
+/** 边读边取:当前节播放时向后预取几节(多了浪费流量,少了会有段间空档) */
+const TTS_PREFETCH_AHEAD = 3;
 
 /** 浏览器直连兜底的分段字数:URL 会把中文 3 倍编码,取小值避免超长 URL */
 const CLIENT_SEG_CHARS = 200;
@@ -572,10 +578,67 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     return { text: buf, spans };
   }, []);
 
+  /**
+   * 逐节切分朗读文本(切分规则与 buildText 完全一致,保证字符区间/高亮对齐)。
+   *
+   * 服务端合成**按节请求**,而不是整章一次:
+   * - 一节通常几十到两百字,合成 <1s 就能出声;整章一次要等所有分段串行合成完,
+   *   实测首声要 7~8s(用户体感「慢」的根因);
+   * - 按节切分后「跳到某节」= 一次小请求,天然支持点哪节读哪节;
+   * - 顺便能精确预取下面几节,段间无空档。
+   */
+  const buildChunks = useCallback((fromIndex: number) => {
+    const list = itemsRef.current;
+    const chunks: { idx: number; key: number; text: string; start: number; end: number }[] = [];
+    // 结尾补句号,给合成引擎一个自然收束;高亮区间仍按纯文本算,不受影响
+    const stop = (s: string) => (/[。！？；：…」』）]$/.test(s) ? s : s + '。');
+    let buf = '';
+    let leadPrefix = '';
+    const lead = (leadTextRef.current || '').trim();
+    if (lead) {
+      buf += lead + '。';
+      leadPrefix = lead + '。';
+    }
+    const start = Math.max(0, Math.min(fromIndex, list.length - 1));
+    for (let k = start; k < list.length; k++) {
+      const it = list[k];
+      if (buf && !buf.endsWith('。')) buf += '。';
+      const head = announceKeyRef.current ? formatKeyRef.current(it.key) + '，' : '';
+      const text = (it.text || '').trim();
+      if (!Array.from(text).length) continue;
+      const s = Array.from(buf).length;
+      buf += head + text;
+      const e = Array.from(buf).length;
+      // 标题只在「从本章第 1 节开始读」时播报:中途点某节跳读再念一遍章节名会很吵
+      const withLead = chunks.length === 0 && k === 0 ? leadPrefix : '';
+      chunks.push({ idx: k, key: it.key, text: stop(withLead + head + text), start: s, end: e });
+    }
+    return chunks;
+  }, []);
+
+  /**
+   * 本轮「逐节播放」的会话:各节已取到的 blob URL + 在飞请求的中断句柄。
+   * 停止/跳节时必须整批中断并 revoke,否则旧请求还会继续占用连接(浪费流量、可能串音)。
+   */
+  const chunkSessionRef = useRef<{
+    urls: (string | null)[];
+    aborts: AbortController[];
+  } | null>(null);
+
+  const stopChunkSession = useCallback(() => {
+    const s = chunkSessionRef.current;
+    if (!s) return;
+    chunkSessionRef.current = null;
+    for (const c of s.aborts) { try { c.abort(); } catch { /* ignore */ } }
+    for (const u of s.urls) { if (u) { try { URL.revokeObjectURL(u); } catch { /* ignore */ } } }
+  }, []);
+
   const serverStopInner = useCallback(() => {
     // 中断仍在飞行中的合成请求(否则停止后连接还占着,浪费流量且可能串音)
     abortRef.current?.abort();
     abortRef.current = null;
+    // 逐节播放的整批请求 + blob URL 一并清掉
+    stopChunkSession();
     const a = audioRef.current;
     if (a) {
       // 先摘掉回调再停:设 src='' 在部分浏览器会触发 error 事件,
@@ -591,7 +654,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       audioRef.current = null;
       setMediaEl((cur) => (cur === a ? null : cur));
     }
-  }, []);
+  }, [stopChunkSession]);
 
   /**
    * 把朗读用的 <audio> 挂进 DOM(隐藏)。
@@ -772,93 +835,185 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     } catch { /* ignore */ }
   }, []);
 
+  /**
+   * 服务端合成播放:**逐节请求 + 边读边取**。
+   *
+   * 旧实现把「本节到本章末」的全文塞进一次请求,后端必须串行合成完所有分段才返回,
+   * 首声实测要 7~8s(这就是「合成太慢」的根因)。改成逐节后:
+   *  - 首声只等一节(通常 <1s);
+   *  - 播放同时向后预取 TTS_PREFETCH_AHEAD 节,段间不留空档;
+   *  - 复用同一个 <audio> 元素换 src,锁屏控件/息屏守卫的绑定不会因换元素而中断;
+   *  - 支持从任意节起播(点哪节读哪节),任何一节取不到就落到浏览器直连兜底。
+   */
   const serverStart = useCallback(async (fromKey?: number) => {
     const list = itemsRef.current;
     if (!list.length) return;
     unlockAudio(); // 必须在第一个 await 之前,处于用户点击的同步栈内
     stoppedRef.current = false;
     genRef.current += 1;
+    const gen = genRef.current;
     let i = 0;
     if (fromKey != null) {
       const f = list.findIndex((it) => it.key === fromKey);
       if (f >= 0) i = f;
     }
-    const { text, spans } = buildText(i);
+    const chunks = buildChunks(i);
+    if (!chunks.length) return;
+
     setTtsError(false);
     setClientReady(false);
     setTtsLoading(true);
     setState('playing');
-    const gen = genRef.current;
 
-    // 先停掉上一段正在播放/合成中的音频,避免切节或点别的节时多段同时响(串音)
+    // 先停掉上一段正在播放/合成中的音频(含在飞请求),避免跳节时两段声音叠在一起
     serverStopInner();
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-    const timer = setTimeout(() => {
-      try { ctrl.abort(); } catch { /* ignore */ }
-    }, TTS_FETCH_TIMEOUT_MS);
 
-    try {
-      const res = await fetch('/api/v1/bible/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-        signal: ctrl.signal,
-      });
-      if (!res.ok) throw new Error('tts_failed');
-      setTtsProvider(res.headers.get('x-tts-provider'));
-      const blob = await res.blob();
-      if (stoppedRef.current || genRef.current !== gen) return; // 已停止/换章
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audio.playbackRate = rateRef.current;
-      mountAudio(audio);
-      audioRef.current = audio;
-      setMediaEl(audio);
-      audio.ontimeupdate = () => {
-        if (!audio.duration) return;
-        const raw = Math.floor((audio.currentTime / audio.duration) * text.length);
-        syncSpeakingKey(raw, spans);
+    const session: { urls: (string | null)[]; aborts: AbortController[] } = {
+      urls: new Array<string | null>(chunks.length).fill(null),
+      aborts: [],
+    };
+    chunkSessionRef.current = session;
+
+    /** 取某一节的音频(已取到直接返回;同一节的并发请求去重) */
+    const inflight = new Map<number, Promise<string | null>>();
+    const fetchChunk = (k: number): Promise<string | null> => {
+      const ready = session.urls[k];
+      if (ready) return Promise.resolve(ready);
+      const running = inflight.get(k);
+      if (running) return running;
+      const ctrl = new AbortController();
+      session.aborts.push(ctrl);
+      const timer = setTimeout(() => { try { ctrl.abort(); } catch { /* ignore */ } }, TTS_CHUNK_TIMEOUT_MS);
+      const task = (async (): Promise<string | null> => {
+        try {
+          const res = await fetch('/api/v1/bible/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: chunks[k].text }),
+            signal: ctrl.signal,
+          });
+          if (!res.ok) throw new Error('tts_failed');
+          if (k === 0) setTtsProvider(res.headers.get('x-tts-provider'));
+          const blob = await res.blob();
+          if (stoppedRef.current || genRef.current !== gen || chunkSessionRef.current !== session) return null;
+          const url = URL.createObjectURL(blob);
+          session.urls[k] = url;
+          return url;
+        } catch {
+          return null;
+        } finally {
+          clearTimeout(timer);
+          inflight.delete(k);
+        }
+      })();
+      inflight.set(k, task);
+      return task;
+    };
+
+    /** 播放第 k 节,读完自动续下一节 */
+    const playAt = async (k: number) => {
+      if (stoppedRef.current || genRef.current !== gen) return;
+      // 先把后面的预取发出去,再去等当前节——请求并行,段间才不会有空档
+      for (let j = k + 1; j <= Math.min(k + TTS_PREFETCH_AHEAD, chunks.length - 1); j++) {
+        void fetchChunk(j);
+      }
+      const url = await fetchChunk(k);
+      if (stoppedRef.current || genRef.current !== gen || chunkSessionRef.current !== session) return;
+      if (!url) {
+        // 服务端不可用(机房 IP 被风控 / 出境被丢包) → 交给浏览器直连兜底
+        setTtsLoading(false);
+        setState('idle');
+        const from = chunks[k].idx;
+        setTimeout(() => {
+          if (!stoppedRef.current && genRef.current === gen) clientStart(from);
+        }, 0);
+        return;
+      }
+      const c = chunks[k];
+      // 复用同一个元素:换节只换 src,Media Session / 息屏守卫的绑定不中断
+      let audio = audioRef.current;
+      if (!audio) {
+        audio = new Audio();
+        mountAudio(audio);
+        audioRef.current = audio;
+        setMediaEl(audio);
+      }
+      const el = audio;
+      el.playbackRate = rateRef.current;
+      el.ontimeupdate = () => {
+        if (!el.duration) return;
+        const span = c.end - c.start;
+        syncSpeakingKey(c.start + Math.floor((el.currentTime / el.duration) * span), [
+          { key: c.key, start: c.start, end: c.end },
+        ]);
       };
-      audio.onerror = () => {
+      el.onerror = () => {
+        if (stoppedRef.current || genRef.current !== gen) return;
         serverStopInner();
         setState('idle');
         setSpeakingKey(null);
         speakCharRef.current = null;
       };
-      audio.onended = () => {
-        serverStopInner();
-        if (!stoppedRef.current && genRef.current === gen) {
-          // 整段读完:必须自己回到 idle,否则 UI 永远停在「暂停朗读」,
-          // 之后再点只会 pause/resume 一个已销毁的 <audio>(表现为点了没声音、也停不下来)。
+      el.onended = () => {
+        if (stoppedRef.current || genRef.current !== gen || chunkSessionRef.current !== session) return;
+        const next = k + 1;
+        if (next >= chunks.length) {
+          // 整章读完:必须自己回到 idle,否则 UI 永远停在「暂停朗读」,
+          // 之后再点只会 pause/resume 一个已结束的 <audio>(表现为点不动的死键)。
+          serverStopInner();
           setState('idle');
           setSpeakingKey(null);
           speakCharRef.current = null;
           onEndRef.current?.();
+          return;
         }
+        void playAt(next);
       };
-      await audio.play();
-      setState('playing');
-    } catch {
-      serverStopInner();
-      setState('idle');
-      setSpeakingKey(null);
-      speakCharRef.current = null;
-      // 用户主动停止 / 换章引发的中断不算故障,不弹错误提示
-      if (!stoppedRef.current && genRef.current === gen) {
-        // 服务端不可用(机房 IP 被风控 / 出境被丢包) → 交给浏览器直连兜底。
-        // 延后一拍,避免被下面 finally 的 setTtsLoading(false) 覆盖。
-        const idx = i;
+      el.src = url;
+      try {
+        await el.play();
+      } catch {
+        if (stoppedRef.current || genRef.current !== gen) return;
+        setTtsLoading(false);
+        setState('idle');
+        const from = c.idx;
         setTimeout(() => {
-          if (!stoppedRef.current && genRef.current === gen) clientStart(idx);
+          if (!stoppedRef.current && genRef.current === gen) clientStart(from);
         }, 0);
+        return;
       }
-    } finally {
-      clearTimeout(timer);
-      if (abortRef.current === ctrl) abortRef.current = null;
-      setTtsLoading(false);
+      if (stoppedRef.current || genRef.current !== gen) return;
+      setState('playing');
+      setTtsLoading(false); // 首声已出,「合成中…」到此为止
+    };
+
+    void playAt(0);
+  }, [buildChunks, syncSpeakingKey, serverStopInner, clientStart, unlockAudio, mountAudio]);
+
+  /**
+   * 预热接下来要读的几节(仅服务端合成模式有意义)。
+   *
+   * 与真正朗读时**逐字节相同**的文本发给服务端,后台合成并落磁盘缓存,
+   * 于是点「朗读」时那几节是缓存命中(几十毫秒),首声几乎即时。
+   * 章节页在内容就绪后调用一次。
+   */
+  const warm = useCallback((fromKey?: number, count = 3) => {
+    if (ttsMode !== 'server' || typeof window === 'undefined') return;
+    const list = itemsRef.current;
+    if (!list.length) return;
+    let i = 0;
+    if (fromKey != null) {
+      const f = list.findIndex((it) => it.key === fromKey);
+      if (f >= 0) i = f;
     }
-  }, [buildText, syncSpeakingKey, serverStopInner, clientStart, unlockAudio, mountAudio]);
+    const chunks = buildChunks(i).slice(0, Math.max(1, Math.min(count, 12)));
+    if (!chunks.length) return;
+    void fetch('/api/v1/bible/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ warm: chunks.map((c) => c.text) }),
+    }).catch(() => { /* 预热失败无所谓 */ });
+  }, [buildChunks, ttsMode]);
 
   // 浏览器引擎静默失败时由 speakRange 调用(用 ref 打破定义顺序依赖)
   useEffect(() => {
@@ -1118,6 +1273,8 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     /** 是否启用逐字高亮(仅 1.0x 的浏览器模式) */
     wordSync,
     start,
+    /** 预热接下来几节的语音(章节页在内容就绪后调用,把首声从数秒压到几十毫秒) */
+    warm,
     pause,
     resume,
     stop,
