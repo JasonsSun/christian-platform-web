@@ -32,6 +32,8 @@ export const PUT = withApi(async (req: NextRequest) => {
   if (p.digest && !['realtime', 'daily', 'off'].includes(p.digest)) throw badRequest('digest 只能是 realtime/daily/off');
   if (p.quietFrom && !/^\d{2}:\d{2}$/.test(p.quietFrom)) throw badRequest('quietFrom 格式应为 HH:mm');
   if (p.quietTo && !/^\d{2}:\d{2}$/.test(p.quietTo)) throw badRequest('quietTo 格式应为 HH:mm');
+  if (p.remindReadAt && !/^\d{2}:\d{2}$/.test(p.remindReadAt)) throw badRequest('remindReadAt 格式应为 HH:mm');
+  if (p.remindDevotionAt && !/^\d{2}:\d{2}$/.test(p.remindDevotionAt)) throw badRequest('remindDevotionAt 格式应为 HH:mm');
 
   const prefs = await savePrefs(user.id, {
     inapp: p.inapp === undefined ? undefined : bool(p.inapp),
@@ -42,6 +44,9 @@ export const PUT = withApi(async (req: NextRequest) => {
     quietFrom: p.quietFrom,
     quietTo: p.quietTo,
     digest: p.digest,
+    remindEnabled: p.remindEnabled === undefined ? undefined : bool(p.remindEnabled),
+    remindReadAt: p.remindReadAt,
+    remindDevotionAt: p.remindDevotionAt,
   });
   return ok({ prefs, inQuietHoursNow: inQuietHours(prefs) });
 });

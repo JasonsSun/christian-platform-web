@@ -1,4 +1,5 @@
 import { q, one, exec, newId, ts } from './db';
+import { ensureReminderColumns } from './reminderColumns';
 import { sendMail, smtpConfigured } from './channels/email';
 import { sendWechatTemplate, wechatConfigured } from './channels/wechat';
 
@@ -15,6 +16,10 @@ export type NotificationPrefs = {
   quietFrom: string; // HH:mm
   quietTo: string; // HH:mm
   digest: DigestMode;
+  /** 每日提醒总开关(读经 + 灵修)。关闭后不参与定时提醒扫描 */
+  remindEnabled: boolean;
+  remindReadAt: string; // 每日读经提醒时间 HH:mm
+  remindDevotionAt: string; // 每日灵修提醒时间 HH:mm
 };
 
 export const DEFAULT_PREFS: NotificationPrefs = {
@@ -26,14 +31,19 @@ export const DEFAULT_PREFS: NotificationPrefs = {
   quietFrom: '22:00',
   quietTo: '08:00',
   digest: 'realtime',
+  remindEnabled: false,
+  remindReadAt: '06:30',
+  remindDevotionAt: '21:30',
 };
 
 type PrefRow = {
   inapp: number; email: number; wechat: number; sms: number;
   quiet_enabled: number; quiet_from: string; quiet_to: string; digest: string;
+  remind_enabled?: number; remind_read_at?: string; remind_devotion_at?: string;
 };
 
 export async function getPrefs(userId: string): Promise<NotificationPrefs> {
+  await ensureReminderColumns();
   const row = await one<PrefRow>(`SELECT * FROM notification_prefs WHERE user_id=?`, [userId]);
   if (!row) return { ...DEFAULT_PREFS };
   return {
@@ -45,6 +55,10 @@ export async function getPrefs(userId: string): Promise<NotificationPrefs> {
     quietFrom: row.quiet_from || DEFAULT_PREFS.quietFrom,
     quietTo: row.quiet_to || DEFAULT_PREFS.quietTo,
     digest: (['realtime', 'daily', 'off'].includes(row.digest) ? row.digest : 'realtime') as DigestMode,
+    // 老库补齐列之前这三列不存在,走默认值
+    remindEnabled: !!row.remind_enabled,
+    remindReadAt: /^\d{2}:\d{2}$/.test(row.remind_read_at || '') ? row.remind_read_at! : DEFAULT_PREFS.remindReadAt,
+    remindDevotionAt: /^\d{2}:\d{2}$/.test(row.remind_devotion_at || '') ? row.remind_devotion_at! : DEFAULT_PREFS.remindDevotionAt,
   };
 }
 
@@ -59,18 +73,25 @@ export async function savePrefs(userId: string, patch: Partial<NotificationPrefs
     quietFrom: /^\d{2}:\d{2}$/.test(patch.quietFrom || '') ? patch.quietFrom! : cur.quietFrom,
     quietTo: /^\d{2}:\d{2}$/.test(patch.quietTo || '') ? patch.quietTo! : cur.quietTo,
     digest: patch.digest ?? cur.digest,
+    remindEnabled: patch.remindEnabled ?? cur.remindEnabled,
+    remindReadAt: /^\d{2}:\d{2}$/.test(patch.remindReadAt || '') ? patch.remindReadAt! : cur.remindReadAt,
+    remindDevotionAt: /^\d{2}:\d{2}$/.test(patch.remindDevotionAt || '') ? patch.remindDevotionAt! : cur.remindDevotionAt,
   };
   await exec(
     `INSERT INTO notification_prefs
-       (user_id, inapp, email, wechat, sms, quiet_enabled, quiet_from, quiet_to, digest, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?)
+       (user_id, inapp, email, wechat, sms, quiet_enabled, quiet_from, quiet_to, digest,
+        remind_enabled, remind_read_at, remind_devotion_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
      ON DUPLICATE KEY UPDATE
        inapp=VALUES(inapp), email=VALUES(email), wechat=VALUES(wechat), sms=VALUES(sms),
        quiet_enabled=VALUES(quiet_enabled), quiet_from=VALUES(quiet_from), quiet_to=VALUES(quiet_to),
-       digest=VALUES(digest), updated_at=VALUES(updated_at)`,
+       digest=VALUES(digest),
+       remind_enabled=VALUES(remind_enabled), remind_read_at=VALUES(remind_read_at),
+       remind_devotion_at=VALUES(remind_devotion_at), updated_at=VALUES(updated_at)`,
     [
       userId, next.inapp ? 1 : 0, next.email ? 1 : 0, next.wechat ? 1 : 0, next.sms ? 1 : 0,
-      next.quietEnabled ? 1 : 0, next.quietFrom, next.quietTo, next.digest, ts(),
+      next.quietEnabled ? 1 : 0, next.quietFrom, next.quietTo, next.digest,
+      next.remindEnabled ? 1 : 0, next.remindReadAt, next.remindDevotionAt, ts(),
     ]
   );
   return next;

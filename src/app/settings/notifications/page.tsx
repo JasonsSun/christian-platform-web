@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import DailyReminderSettings from '@/components/DailyReminderSettings';
 
 type Digest = 'realtime' | 'daily' | 'off';
 
@@ -17,6 +18,9 @@ type Prefs = {
   quietFrom: string;
   quietTo: string;
   digest: Digest;
+  remindEnabled: boolean;
+  remindReadAt: string;
+  remindDevotionAt: string;
 };
 
 type PrefsPayload = {
@@ -191,6 +195,9 @@ export default function NotificationSettingsPage() {
           );
         })}
       </section>
+
+      {/* 每日提醒 */}
+      <DailyReminderSettings prefs={prefs} onChange={save} />
 
       {/* 免打扰与频率 */}
       <section className="mt-6 bg-white rounded-2xl border border-ink-100 shadow-soft p-4">

@@ -716,6 +716,11 @@ CREATE TABLE IF NOT EXISTS notification_prefs (
   quiet_from         VARCHAR(5)   NOT NULL DEFAULT '22:00',
   quiet_to           VARCHAR(5)   NOT NULL DEFAULT '08:00',
   digest             VARCHAR(20)  NOT NULL DEFAULT 'realtime', -- realtime | daily | off
+  remind_enabled     TINYINT(1)   NOT NULL DEFAULT 0,   -- 每日灵修/读经提醒总开关
+  remind_read_at     VARCHAR(5)   NOT NULL DEFAULT '06:30',  -- 每日读经提醒时间 HH:mm
+  remind_devotion_at VARCHAR(5)   NOT NULL DEFAULT '21:30',  -- 每日灵修提醒时间 HH:mm
+  remind_read_done   DATE         NULL,                      -- 上次发出读经提醒的日期(幂等,一天只发一次)
+  remind_devotion_done DATE       NULL,                      -- 上次发出灵修提醒的日期
   updated_at         DATETIME     NOT NULL,
   CONSTRAINT fk_np_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -70,6 +70,45 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+/* ===== Web Push =====
+ * 每日提醒的服务端推送在这里落到系统通知上。
+ * 注意：Chrome/Edge 的推送要经 Google FCM 中转，国内网络常连不上而收不到，
+ * 所以它只是补充通道 —— 站内通知才是保底，两路由 reminders.ts 同时发送。
+ */
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {};
+  }
+  const title = data.title || '圣约社区';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || '',
+      tag: data.tag || 'covenant-reminder',
+      renotify: true,
+      data: { link: data.link || '/' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const link = (event.notification.data && event.notification.data.link) || '/';
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) {
+        if (new URL(c.url).origin === self.location.origin && 'focus' in c) {
+          if (c.url.endsWith(link) || new URL(c.url).pathname === link) return c.focus();
+          return c.focus().then(() => c.navigate(link));
+        }
+      }
+      return self.clients.openWindow(link);
+    })
+  );
+});
+
 /** 导航请求：有缓存就先返回(秒开)，同时后台刷新；没缓存才等网络，网络失败回退首页缓存 */
 async function navigateHandler(req) {
   const cached = await caches.match(req);

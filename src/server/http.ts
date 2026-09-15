@@ -30,10 +30,10 @@ const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
  * 配置读取失败（表不存在 / DB 不可用）时不阻断业务。
  */
 async function assertWritable(req: any) {
-  // 认证入口(登录/注册/刷新令牌等)在维护期也必须可用:否则所有人都登不进去,
-  // 管理员也进不了后台去关维护。放行认证路径,登录后才能在下面按 role 判定豁免。
+  // 认证入口(登录/注册/刷新令牌等)与内部定时任务在维护期都必须可用:前者否则所有人都登
+  // 不进去(连管理员也进不了后台关维护);后者是系统级作业,不该被面向用户的开关停掉。
   const rawUrl = typeof req?.url === 'string' ? req.url : '';
-  if (/\/api\/v1\/auth\//.test(rawUrl)) return;
+  if (/\/api\/v1\/(auth|cron)\//.test(rawUrl)) return;
   let maintenance = false;
   try {
     const { getBool, getSetting } = await import('./settings');

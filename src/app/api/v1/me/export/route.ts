@@ -13,7 +13,7 @@ export const GET = withApi(async (req: NextRequest) => {
   await ensureDevotionalsTable();
   const [
     contents, contentFavs, songFavs, prayers, regs, following, followers, notifications, comments,
-    bookmarks, devotionals, checkins,
+    bookmarks, devotionals, checkins, pushSubs,
   ] = await Promise.all([
     q<any>(`SELECT id, title, content_type, status, tags, created_at FROM contents WHERE author_id = ? ORDER BY created_at DESC`, [user.id]),
     q<any>(`SELECT content_id, created_at FROM content_favorites WHERE user_id = ? ORDER BY created_at DESC`, [user.id]),
@@ -30,6 +30,9 @@ export const GET = withApi(async (req: NextRequest) => {
     q<any>(`SELECT id, title, body, ref, mood, created_at, updated_at FROM devotionals WHERE user_id = ? ORDER BY created_at DESC`, [user.id]),
     // 读经打卡记录
     q<any>(`SELECT DATE_FORMAT(day, '%Y-%m-%d') AS day, streak, created_at FROM user_daily_checkins WHERE user_id = ? ORDER BY day DESC`, [user.id]),
+    // 浏览器推送订阅：表按需建(未配推送凭证时压根不存在)，查不到按空算，
+    // 不能让一张可选表把整个导出拖成 500
+    q<any>(`SELECT endpoint, user_agent, created_at FROM push_subscriptions WHERE user_id = ? ORDER BY created_at DESC`, [user.id]).catch(() => [] as any[]),
   ]);
 
   const payload = {
@@ -49,6 +52,7 @@ export const GET = withApi(async (req: NextRequest) => {
       bibleBookmarks: bookmarks.length,
       devotionals: devotionals.length,
       checkins: checkins.length,
+      pushSubscriptions: pushSubs.length,
     },
     contents,
     contentFavorites: contentFavs,
@@ -62,6 +66,7 @@ export const GET = withApi(async (req: NextRequest) => {
     bibleBookmarks: bookmarks,
     devotionals,
     checkins,
+    pushSubscriptions: pushSubs,
   };
 
   const res = NextResponse.json(payload);
