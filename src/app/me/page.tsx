@@ -11,6 +11,7 @@ import Portal from '@/components/Portal';
 import { useNotice } from '@/lib/notice';
 import { formatDate, formatSize, MEDIA_REVIEW_LABEL } from '@/lib/format';
 import QuotaCard, { type QuotaData } from '@/components/QuotaCard';
+import BackplaySettingCard from '@/components/BackplaySettingCard';
 import type { ContentItem, ActivityItem, GroupItem, SongItem, MediaItem } from '@/lib/types';
 
 const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南京'];
@@ -146,6 +147,9 @@ export default function MePage() {
 
       {/* 精简配额卡片 */}
       <QuotaCompact />
+
+      {/* 后台播放偏好 */}
+      <BackplaySettingCard />
 
       {/* 账户与数据 */}
       <div className="mt-6 flex flex-col items-center gap-3">

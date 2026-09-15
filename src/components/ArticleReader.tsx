@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useSpeech, type SpeechItem } from '@/lib/useSpeech';
+import { type SpeechItem } from '@/lib/useSpeech';
+import { useHostedSpeech } from '@/lib/speechHost';
 
 /**
  * 文章朗读（内容与经文共用同一套朗读引擎）。
@@ -30,7 +31,13 @@ export default function ArticleReader({ title, body }: { title: string; body: st
     return out;
   }, [body]);
 
-  const speech = useSpeech(items, { lang: 'zh-CN', announceKey: false, leadText: title || null });
+  const speech = useHostedSpeech(items, {
+    lang: 'zh-CN',
+    announceKey: false,
+    leadText: title || null,
+    mediaTitle: title || '文章朗读',
+    mediaSubtitle: '圣约社区 · 朗读',
+  });
 
   if (!items.length || !items[0].text) return null;
 

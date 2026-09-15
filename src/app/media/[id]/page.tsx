@@ -8,6 +8,7 @@ import { apiPost } from '@/lib/api';
 import { formatDate, formatSize } from '@/lib/format';
 import { usePlayer, formatTime, type Track } from '@/lib/player';
 import { getProgress, resumableAt, saveProgress, clearProgress, touchRecent } from '@/lib/watchHistory';
+import { useBackgroundPlay, useMediaBackplay } from '@/lib/backplay';
 import type { MediaDetail } from '@/lib/types';
 
 const KIND_ICON: Record<string, string> = { image: '🖼️', audio: '🎵', video: '🎬', score: '🎼', doc: '📄' };
@@ -19,6 +20,28 @@ export default function MediaDetailPage() {
   const player = usePlayer();
   const reported = useRef(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  // 后台播放:息屏后仍可由 Media Session 接管,锁屏画面带标题与控制按钮
+  const bg = useBackgroundPlay();
+  const detailRef = useRef<MediaDetail | null>(null);
+  useEffect(() => { detailRef.current = data ?? null; }, [data]);
+  useMediaBackplay({
+    getEl: () => videoRef.current,
+    meta: () => ({
+      title: detailRef.current?.title || '媒体播放',
+      artist: '圣约社区 · 媒体中心',
+      artwork: detailRef.current?.posterUrl ? [detailRef.current.posterUrl] : [],
+    }),
+    handlers: () => ({
+      play: () => { void videoRef.current?.play().catch(() => {}); },
+      pause: () => videoRef.current?.pause(),
+      seekBy: (d: number) => {
+        const v = videoRef.current;
+        if (v) v.currentTime = Math.max(0, Math.min(v.currentTime + d, v.duration || Infinity));
+      },
+    }),
+    enabled: bg.enabled,
+  });
 
   // 上次观看位置提示（视频）
   const [resumeSec, setResumeSec] = useState<number | null>(null);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useBackgroundPlay, useMediaBackplay } from '@/lib/backplay';
 
 interface Props {
   src: string | null;
@@ -36,6 +37,25 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
   const [volume, setVolume] = useState(1);
   const attemptRef = useRef(0);
 
+  // 后台播放:直播/视频在息屏后继续出声,锁屏画面显示同一份元信息
+  const bg = useBackgroundPlay();
+  const metaRef = useRef<{ src: string | null; poster?: string | null }>({ src, poster });
+  metaRef.current = { src, poster };
+  useMediaBackplay({
+    getEl: () => videoRef.current,
+    meta: () => ({
+      title: '正在直播',
+      artist: '圣约社区 · 直播',
+      album: '圣约社区',
+      artwork: metaRef.current.poster ? [metaRef.current.poster] : [],
+    }),
+    handlers: () => ({
+      play: () => { void videoRef.current?.play().catch(() => {}); },
+      pause: () => { if (!live) videoRef.current?.pause(); },
+    }),
+    enabled: bg.enabled,
+  });
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) {
@@ -66,6 +86,8 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
     // 造成「重复播放之前说过的话」。故检测到暂停立即恢复。
     const onPause = () => {
       if (!live || cancelled) return;
+      // 息屏/切后台导致的暂停不要抢着恢复:用户在「后台播放」里选了「息屏即停」就该停
+      if (typeof document !== 'undefined' && document.hidden) return;
       video.play().catch(() => {});
     };
 

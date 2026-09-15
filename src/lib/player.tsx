@@ -5,6 +5,10 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { saveProgress, clearProgress, resumableAt, touchRecent } from '@/lib/watchHistory';
+import { useBackgroundPlay, useMediaBackplay } from '@/lib/backplay';
+import { stopSpeechSessionIfAny } from '@/lib/speechSession';
+import SpeechMiniCard from '@/components/SpeechMiniCard';
+import BackplayToggle from '@/components/BackplayToggle';
 
 export interface Track {
   id: string;
@@ -51,6 +55,8 @@ interface PlayerCtx {
   next: () => void;
   prev: () => void;
   seek: (sec: number) => void;
+  /** 正在播放就暂停、没播放就不动(供朗读等模块抢占音频通道,不能用 toggle) */
+  pauseIfPlaying: () => void;
   setVolume: (v: number) => void;
   toggleMute: () => void;
   stop: () => void;
@@ -63,6 +69,11 @@ export function usePlayer(): PlayerCtx {
   const c = useContext(Ctx);
   if (!c) throw new Error('usePlayer 必须在 PlayerProvider 内使用');
   return c;
+}
+
+/** 拿不到上下文时返回 null(朗读等模块可能跑在没有播放器的子树里,不应直接崩) */
+export function useMaybePlayer(): PlayerCtx | null {
+  return useContext(Ctx);
 }
 
 export function formatTime(sec: number): string {
@@ -251,6 +262,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const el = audioRef.current;
     const t = tracksRef.current[i];
     if (!el || !t) return;
+    // 朗读与音乐互斥:开音乐前先让正在进行的朗读停下
+    stopSpeechSessionIfAny();
     if (el.src !== t.url) {
       el.src = t.url;
       el.load();
@@ -350,18 +363,65 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   const isCurrent = useCallback((id: string) => current?.id === id, [current]);
 
+  /** 正在播放就暂停,没有播放则不做任何事(不能自动播放) */
+  const pauseIfPlaying = useCallback(() => {
+    const el = audioRef.current;
+    if (el && !el.paused) el.pause();
+  }, []);
+
+  /* ---------------- 后台播放:锁屏控件 + 息屏守卫 ---------------- */
+
+  const bg = useBackgroundPlay();
+  const ctrlRef = useRef({ toggle, next, prev, stop, seek });
+  useEffect(() => {
+    ctrlRef.current = { toggle, next, prev, stop, seek };
+  }, [toggle, next, prev, stop, seek]);
+  const curRef = useRef<Track | null>(null);
+  useEffect(() => { curRef.current = current; }, [current]);
+  const multiRef = useRef(false);
+  useEffect(() => { multiRef.current = tracks.length > 1; }, [tracks.length]);
+
+  useMediaBackplay({
+    getEl: () => audioRef.current,
+    meta: () => ({
+      title: curRef.current?.title || '圣约社区',
+      artist: curRef.current?.artist || '圣约社区',
+      album: '圣约社区',
+      artwork: curRef.current?.poster ? [curRef.current.poster] : [],
+    }),
+    handlers: () => ({
+      play: () => {
+        const el = audioRef.current;
+        if (el?.paused) ctrlRef.current.toggle();
+      },
+      pause: () => {
+        const el = audioRef.current;
+        if (el && !el.paused) ctrlRef.current.toggle();
+      },
+      stop: () => ctrlRef.current.stop(),
+      prev: multiRef.current ? ctrlRef.current.prev : undefined,
+      next: multiRef.current ? ctrlRef.current.next : undefined,
+      seekBy: (d: number) => {
+        const el = audioRef.current;
+        if (el) ctrlRef.current.seek(el.currentTime + d);
+      },
+    }),
+    enabled: bg.enabled,
+  });
+
   const value = useMemo<PlayerCtx>(() => ({
     tracks, index, current, playing, currentTime, duration, volume, muted,
     mode, setMode, cycleMode,
-    playTracks, playTrack, toggle, next, prev, seek, setVolume, toggleMute, stop, isCurrent,
+    playTracks, playTrack, toggle, next, prev, seek, pauseIfPlaying, setVolume, toggleMute, stop, isCurrent,
   }), [tracks, index, current, playing, currentTime, duration, volume, muted,
       mode, setMode, cycleMode,
-      playTracks, playTrack, toggle, next, prev, seek, setVolume, toggleMute, stop, isCurrent]);
+      playTracks, playTrack, toggle, next, prev, seek, pauseIfPlaying, setVolume, toggleMute, stop, isCurrent]);
 
   return (
     <Ctx.Provider value={value}>
       {children}
       {ready ? <PlayerBar /> : null}
+      <SpeechMiniCard raised={!!current} />
     </Ctx.Provider>
   );
 }
@@ -546,6 +606,8 @@ function PlayerBar() {
 
         {/* 第二行:模式 + 音量 + 列表 + 关闭 */}
         <div className="flex items-center gap-1 px-3 pb-2.5">
+          <BackplayToggle />
+          <div className="w-px h-4 bg-ink-200 mx-1" />
           <button
             onClick={p.cycleMode}
             title={PLAY_MODE_META[p.mode].label}

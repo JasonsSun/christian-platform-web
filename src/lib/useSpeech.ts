@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { splitBySentence, baiduTtsUrl } from './ttsSplit';
+import { useBackgroundPlay, useMediaBackplay } from './backplay';
+import { setSpeechSession, getSpeechSession } from './speechSession';
+import { useMaybePlayer } from './player';
 
 export interface SpeechItem {
   /** 用于高亮定位的序号(如经节号) */
@@ -35,6 +38,17 @@ export interface SpeechOptions {
    * 时间估算可能落后于真实朗读,最后一节的 key 未必被记录到。
    */
   onEnd?: () => void;
+  /** 锁屏控件上显示的标题(如「约翰福音 第 3 章」);缺省时用站点名 */
+  mediaTitle?: string;
+  /** 锁屏控件上显示的副标题(如版本名);缺省留空 */
+  mediaSubtitle?: string;
+  /** 悬浮朗读卡上的「回到此处」链接 */
+  mediaHref?: string;
+  /**
+   * 静默模式:只作为 useHostedSpeech 的兜底实例存在(实际朗读由常驻会话接管),
+   * 不广播朗读会话、不在 items 变化时调用 speechSynthesis.cancel()(否则会误掐掉常驻朗读)。
+   */
+  silent?: boolean;
 }
 
 /**
@@ -79,11 +93,18 @@ function isFatalTtsError(code?: string) {
   return !!code && FATAL_TTS_ERRORS.has(code);
 }
 
+export type SpeechApi = ReturnType<typeof useSpeech>;
+
 export function useSpeech(items: SpeechItem[], options: SpeechOptions | string = {}) {
   const opts: SpeechOptions = typeof options === 'string' ? { lang: options } : options;
+  const silent = !!opts.silent;
   const lang = opts.lang || 'zh-CN';
   const fallbackFormatKey = useCallback((k: number) => `第 ${k} 节`, []);
   const formatKey = opts.formatKey || fallbackFormatKey;
+  // 后台播放偏好:开启时朗读强制走服务端合成音频(<audio>),息屏才能继续出声
+  const bg = useBackgroundPlay();
+  // 全局音乐播放器(可能不在 Provider 内,此时为 null);朗读与音乐互斥
+  const maybePlayer = useMaybePlayer();
 
   const [speakingKey, setSpeakingKey] = useState<number | null>(null);
   const [state, setState] = useState<SpeechState>('idle');
@@ -113,8 +134,14 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   // 用户手动强制使用服务端语音(浏览器有声音但发音差 / 缺中文语音时用)
   const [forceServer, setForceServer] = useState(false);
   const [voiceName, setVoiceName] = useState<string | null>(null);
+  // 当前用于朗读的音频元素(服务端合成 / 浏览器直连兜底都用它)。
+  // 挂到 Media Session 上后,息屏时锁屏画面就有标题与播放控件。
+  const [mediaEl, setMediaEl] = useState<HTMLAudioElement | null>(null);
+  const mediaElRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => { mediaElRef.current = mediaEl; }, [mediaEl]);
+
   const ttsMode: 'browser' | 'server' =
-    supported && !browserBroken && !forceServer ? 'browser' : 'server';
+    supported && !browserBroken && !forceServer && !bg.enabled ? 'browser' : 'server';
 
   const itemsRef = useRef<SpeechItem[]>(items);
   const rateRef = useRef(rate);
@@ -125,6 +152,9 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   const pauseAtRef = useRef(0);
   // 代次:每次 start/stop/变速 +1,异步回调据此丢弃过期事件,避免串音
   const genRef = useRef(0);
+  // 是否已从「服务端语音」回落到「本机语音」。服务端链路不可用时只能回落一次,
+  // 否则 服务端失败→浏览器→看门狗判定无声→又是服务端 会来回打转。
+  const fellBackRef = useRef(false);
 
   const leadTextRef = useRef<string | null>(opts.leadText ?? null);
   const announceKeyRef = useRef(!!opts.announceKey);
@@ -295,6 +325,20 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
 
   // 浏览器引擎静默失败 → 由 speakRange 调用服务端兜底(用 ref 打破定义顺序依赖)
   const serverStartRef = useRef<(fromKey?: number) => void>(() => {});
+  /**
+   * 交给服务端语音合成。已回落过一次到本机语音时直接判失败(见 fellBackRef),
+   * 避免浏览器↔服务端反复来回切换。
+   */
+  const bailToServerVoice = useCallback((fromKey?: number) => {
+    if (fellBackRef.current) {
+      setTtsError(true);
+      setState('idle');
+      setSpeakingKey(null);
+      return;
+    }
+    serverStartRef.current?.(fromKey);
+  }, []);
+
   /** 标记浏览器 TTS 不可用并交给服务端合成;page 可调用它做「没声音?」手动切换 */
   const useServerVoice = useCallback((fromKey?: number) => {
     setBrowserBroken(true);
@@ -330,10 +374,10 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         setState('idle');
         setSpeakingKey(null);
         speakCharRef.current = null;
-        serverStartRef.current?.(fromKey);
+        bailToServerVoice(fromKey);
       }, ms);
     },
-    [clearWatchdog, stopTick]
+    [clearWatchdog, stopTick, bailToServerVoice]
   );
 
   // 卸载 / 停用时清掉看门狗,避免它把已放弃的朗读又拉起来
@@ -365,7 +409,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         setState('idle');
         setSpeakingKey(null);
         speakCharRef.current = null;
-        serverStartRef.current?.(fromKey);
+        bailToServerVoice(fromKey);
       };
 
       // ---- 标题播报(「约翰福音 第 3 章」) ----
@@ -544,6 +588,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         a.src = '';
       } catch { /* ignore */ }
       audioRef.current = null;
+      setMediaEl((cur) => (cur === a ? null : cur));
     }
   }, []);
 
@@ -593,10 +638,24 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         setClientReady(false);
         pendingAudioRef.current = null;
         audioRef.current = null;
+        setMediaEl(null);
         setState('idle');
         setSpeakingKey(null);
         speakCharRef.current = null;
-        if (!stoppedRef.current && genRef.current === gen) setTtsError(true);
+        if (!stoppedRef.current && genRef.current === gen) {
+          // 在线合成整条链路都不通时,回落到本机语音朗读(最多一次,见 fellBackRef):
+          // 前台还能出声。此时出声的是 speechSynthesis,息屏后会被系统挂起。
+          const fb = speakRangeRef.current;
+          if (fb && !fellBackRef.current) {
+            fellBackRef.current = true;
+            setTtsError(false);
+            setTimeout(() => {
+              if (!stoppedRef.current && genRef.current === gen) fb(fromIndex, true);
+            }, 0);
+            return;
+          }
+          setTtsError(true);
+        }
       };
 
       const step = () => {
@@ -608,6 +667,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
           setClientReady(false);
           pendingAudioRef.current = null;
           audioRef.current = null;
+          setMediaEl(null);
           speakCharRef.current = null;
           speakingKeyRef.current = null;
           setState('idle');
@@ -620,6 +680,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         audio.preload = 'auto';
         audio.playbackRate = rateRef.current;
         audioRef.current = audio;
+        setMediaEl(audio);
         pendingAudioRef.current = null;
         audio.ontimeupdate = () => {
           if (!audio.duration) return;
@@ -737,6 +798,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       const audio = new Audio(url);
       audio.playbackRate = rateRef.current;
       audioRef.current = audio;
+      setMediaEl(audio);
       audio.ontimeupdate = () => {
         if (!audio.duration) return;
         const raw = Math.floor((audio.currentTime / audio.duration) * text.length);
@@ -909,6 +971,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
 
   // 朗读内容变化(如换章)时自动停止
   useEffect(() => {
+    if (silent) return; // 兜底实例不碰 speechSynthesis,避免误掐常驻朗读
     clearWatchdog();
     stoppedRef.current = true;
     genRef.current += 1;
@@ -921,7 +984,85 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     setSpeakingKey(null);
     setClientReady(false);
     speakCharRef.current = null;
-  }, [items, stopTick, clearWatchdog, serverStopInner]);
+  }, [items, stopTick, clearWatchdog, serverStopInner, silent]);
+
+  /* ---------------- 后台播放:锁屏控件 + 悬浮朗读卡 ---------------- */
+
+  // start/pause/... 每次重渲都是新引用;用 ref 取最新的,避免 Media Session 回调闭包过期
+  const ctrlRef = useRef({ start, pause, resume, stop });
+  useEffect(() => {
+    ctrlRef.current = { start, pause, resume, stop };
+  }, [start, pause, resume, stop]);
+
+  const metaTitleRef = useRef<string>('');
+  const metaSubRef = useRef<string>('');
+  const mediaHrefRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    metaTitleRef.current = opts.mediaTitle || leadTextRef.current || '经文朗读';
+    metaSubRef.current = opts.mediaSubtitle || '';
+    mediaHrefRef.current = opts.mediaHref;
+  }, [opts.mediaTitle, opts.mediaSubtitle, opts.mediaHref]);
+
+  useMediaBackplay({
+    getEl: () => mediaElRef.current,
+    meta: () => ({
+      title: metaTitleRef.current || '经文朗读',
+      artist: metaSubRef.current || '圣约社区 · 朗读',
+      album: '圣约社区',
+    }),
+    handlers: () => ({
+      play: () => ctrlRef.current.resume(),
+      pause: () => ctrlRef.current.pause(),
+      stop: () => ctrlRef.current.stop(),
+    }),
+    enabled: bg.enabled,
+  });
+
+  // 把朗读会话广播给全站悬浮卡:切到别的页面也能暂停/停止
+  const sessionIdRef = useRef<string>('');
+  useEffect(() => {
+    if (silent) return; // 兜底实例不广播,避免覆盖常驻会话
+    if (state === 'idle' && !ttsLoading) {
+      setSpeechSession(null);
+      return;
+    }
+    if (!sessionIdRef.current) {
+      sessionIdRef.current = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    }
+    const id = sessionIdRef.current;
+    setSpeechSession({
+      id,
+      title: metaTitleRef.current || '经文朗读',
+      subtitle: metaSubRef.current || undefined,
+      state: ttsLoading ? 'loading' : state === 'playing' ? 'playing' : 'paused',
+      // 只有走 <audio> 的朗读能在息屏后继续;speechSynthesis 会被系统挂起
+      backplayable: ttsMode === 'server' && !!mediaElRef.current,
+      toggle: () => {
+        const c = ctrlRef.current;
+        if (ttsLoading) return;
+        // idle 时(如息屏被系统中断)重新开始,而不是无反应
+        if (state === 'idle') c.start();
+        else if (state === 'playing') c.pause();
+        else c.resume();
+      },
+      stop: () => ctrlRef.current.stop(),
+      href: mediaHrefRef.current,
+    });
+    return () => {
+      if (getSpeechSession()?.id === id) setSpeechSession(null);
+    };
+  }, [state, ttsLoading, ttsMode, mediaEl, silent]);
+
+  // 停下时清掉会话标记,下次从头开始朗读会生成新 id
+  useEffect(() => {
+    if (state === 'idle' && !ttsLoading) sessionIdRef.current = '';
+  }, [state, ttsLoading]);
+
+  // 朗读与背景音乐互斥:开读前先让音乐安静(两者一起响没法听)
+  useEffect(() => {
+    if (state !== 'playing' || ttsLoading) return;
+    maybePlayer?.pauseIfPlaying?.();
+  }, [state, ttsLoading, maybePlayer]);
 
   return {
     supported,

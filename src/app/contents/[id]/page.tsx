@@ -14,6 +14,7 @@ import type { Author, Comment, ContentItem, ListResult } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
 import RichText from '@/components/RichText';
 import ArticleReader from '@/components/ArticleReader';
+import BackplayMedia from '@/components/BackplayMedia';
 import ReportModal from '@/components/ReportModal';
 
 function Avatar({ user, size = 36 }: { user: Author; size?: number }) {
@@ -296,11 +297,11 @@ export default function ContentDetailPage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img loading="lazy" decoding="async" src={m.url} alt={m.title} className="w-full max-h-[520px] object-contain bg-white" />
                     ) : m.kind === 'video' ? (
-                      <video src={m.url} controls className="w-full bg-black" />
+                      <BackplayMedia kind="video" src={m.url} title={m.title} className="w-full bg-black" />
                     ) : m.kind === 'audio' ? (
                       <div className="p-4">
                         <div className="text-sm text-ink-600 mb-2">🎵 {m.title}</div>
-                        <audio src={m.url} controls className="w-full" />
+                        <BackplayMedia kind="audio" src={m.url} title={m.title} className="w-full" />
                       </div>
                     ) : (
                       <a href={m.url} download={m.fileName} className="flex items-center gap-3 p-4 hover:bg-primary-50/50">

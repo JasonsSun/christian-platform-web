@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { useApi, useAction } from '@/lib/useApi';
 import { api, apiPost, apiDelete, qs } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useSpeech, type SpeechItem } from '@/lib/useSpeech';
+import { type SpeechItem } from '@/lib/useSpeech';
+import { useHostedSpeech } from '@/lib/speechHost';
 import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
 import ReadingAngel from '@/components/ReadingAngel';
 import ShareModal from '@/components/ShareModal';
@@ -323,10 +324,14 @@ export default function ReadChapter() {
   const nextChapterRef = useRef<number | null>(null);
 
   // 语音朗读：逐节朗读。播报文案随开关变化（换章时 leadText 自动变为新章节名）
-  const speech = useSpeech(speechItems, {
+  const speech = useHostedSpeech(speechItems, {
     lang: 'zh-CN',
     leadText: announceChapter && data ? `${data.book.name} 第 ${data.chapter} 章` : null,
     announceKey: announceVerse,
+    // 锁屏控件 / 悬浮朗读卡上显示的标题
+    mediaTitle: data ? `${data.book.name} 第 ${data.chapter} 章 · 朗读` : '经文朗读',
+    mediaSubtitle: data ? `${data.version || version} · 圣约社区` : undefined,
+    mediaHref: `/bible/${version}/${book}/${chapter}`,
     onEnd: () => {
       if (!autoNextRef.current) return;
       const n = nextChapterRef.current;

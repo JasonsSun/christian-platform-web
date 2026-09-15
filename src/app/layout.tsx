@@ -4,6 +4,7 @@ import MobileNav from '../components/MobileNav'
 import Footer from '../components/Footer'
 import { AuthProvider } from '@/lib/auth'
 import { PlayerProvider } from '@/lib/player'
+import { SpeechHostProvider } from '@/lib/speechHost'
 import { NoticeProvider } from '@/lib/notice'
 import { I18nProvider } from '@/lib/i18n/I18nProvider'
 import { ThemeProvider, themeNoFlashScript } from '@/lib/theme'
@@ -77,6 +78,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             <AuthProvider>
             <NotificationProvider>
               <PlayerProvider>
+                {/* 朗读会话常驻:换页时不卸载,这样朗读不会被页面跳转掐断 */}
+                <SpeechHostProvider>
                 <NoticeProvider>
                   <NetworkBanner />
                   <SiteNoticeBar />
@@ -87,6 +90,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <Footer />
                   <MobileNav disabledModules={offModules} />
                 </NoticeProvider>
+                </SpeechHostProvider>
               </PlayerProvider>
             </NotificationProvider>
           </AuthProvider>
