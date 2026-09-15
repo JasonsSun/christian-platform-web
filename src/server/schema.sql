@@ -669,10 +669,15 @@ CREATE TABLE IF NOT EXISTS donations (
   note         VARCHAR(255) NOT NULL DEFAULT '',         -- 管理员备注(如驳回原因)
   reviewed_by  CHAR(36)     NULL,
   reviewed_at  DATETIME     NULL,
+  payment_method  VARCHAR(20) NOT NULL DEFAULT 'offline', -- offline(线下转账人工确认) | wechat | alipay | stripe
+  out_trade_no    VARCHAR(64) NULL,                       -- 我方商户订单号(幂等键,唯一)
+  transaction_id  VARCHAR(64) NULL,                       -- 网关流水号(对账用)
+  paid_at         DATETIME   NULL,                        -- 支付网关确认到账时间(NULL=未线上支付)
   created_at   DATETIME     NOT NULL,
   KEY idx_donations_status (status),
   KEY idx_donations_created (created_at),
   KEY idx_donations_donor (donor_id),
+  UNIQUE KEY uk_donations_out_trade_no (out_trade_no),
   CONSTRAINT fk_donations_user FOREIGN KEY (donor_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
