@@ -155,6 +155,34 @@ export default function MePage() {
       {/* 读经打卡热力图 + 成就 */}
       <CheckinHeatmap />
 
+      {/* 信仰生活：灵修日记 / 读经笔记 */}
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Link
+          href="/devotions"
+          className="group flex items-center gap-3 rounded-2xl bg-white p-4 shadow-soft border border-ink-100 hover:border-primary-300 hover:shadow-card-hover transition-all"
+        >
+          <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 text-primary-700 flex items-center justify-center text-xl flex-shrink-0 group-hover:from-primary-500 group-hover:to-primary-700 group-hover:text-white transition-colors">
+            📖
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold text-ink-900 text-sm">灵修日记</span>
+            <span className="block text-xs text-ink-500 mt-0.5 truncate">默想、祷告与感恩，仅自己可见</span>
+          </span>
+        </Link>
+        <Link
+          href="/bible/notes"
+          className="group flex items-center gap-3 rounded-2xl bg-white p-4 shadow-soft border border-ink-100 hover:border-gold-300 hover:shadow-card-hover transition-all"
+        >
+          <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-100 to-gold-200 text-gold-700 flex items-center justify-center text-xl flex-shrink-0 group-hover:from-gold-400 group-hover:to-gold-600 group-hover:text-white transition-colors">
+            ✎
+          </span>
+          <span className="min-w-0">
+            <span className="block font-semibold text-ink-900 text-sm">读经笔记与高亮</span>
+            <span className="block text-xs text-ink-500 mt-0.5 truncate">回看经文亮光，可导出 Markdown</span>
+          </span>
+        </Link>
+      </div>
+
       {/* 账户与数据 */}
       <div className="mt-6 flex flex-col items-center gap-3">
         <div className="flex flex-wrap gap-3 justify-center">

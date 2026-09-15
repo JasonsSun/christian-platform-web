@@ -863,3 +863,18 @@ CREATE TABLE IF NOT EXISTS staff_messages (
   CONSTRAINT fk_sm_from FOREIGN KEY (from_id) REFERENCES users (id) ON DELETE CASCADE,
   CONSTRAINT fk_sm_to   FOREIGN KEY (to_id)   REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 灵修日记：个人与神独处时的默想记录，默认仅自己可见（区别于公开的 prayers 代祷墙）。
+-- 运行时会再由 ensureDevotionalsTable() 幂等补建一次，兼容升级前已存在的库。
+CREATE TABLE IF NOT EXISTS devotionals (
+  id         CHAR(36)      NOT NULL PRIMARY KEY,
+  user_id    CHAR(36)      NOT NULL,
+  title      VARCHAR(120)  NOT NULL DEFAULT '',
+  body       TEXT          NOT NULL,
+  ref        VARCHAR(120)  NOT NULL DEFAULT '',   -- 关联经文，如「诗篇 23:1-6」
+  mood       VARCHAR(16)   NOT NULL DEFAULT '',   -- 可选心情：感恩/认罪/祈求/赞美/安静/争战
+  created_at DATETIME      NOT NULL,
+  updated_at DATETIME      NOT NULL,
+  KEY idx_dev_user_created (user_id, created_at),
+  CONSTRAINT fk_dev_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

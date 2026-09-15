@@ -99,6 +99,12 @@ export async function runConfirmAction(
       await apiDelete(`/admin/expenses?id=${encodeURIComponent(s(params, 'id'))}`);
       return { ok: true, message: '已删除该支出记录' };
 
+    // ---------- 灵修日记 ----------
+    // 个人的默想记录，删掉即不可恢复，故走确认页而不是一键删除。
+    case 'devotional.delete':
+      await apiDelete(`/me/devotionals/${s(params, 'id')}`);
+      return { ok: true, message: '这篇灵修日记已删除' };
+
     default:
       return { ok: false, message: `不支持的操作：${name}` };
   }

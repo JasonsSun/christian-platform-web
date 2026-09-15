@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { q } from '@/server/db';
 import { withApi } from '@/server/http';
 import { requireUser, publicUser, UserRow } from '@/server/auth';
+import { ensureDevotionalsTable } from '@/server/devotionals';
 
 export const dynamic = 'force-dynamic';
 
 /** GET /api/v1/me/export -> 导出本人全部数据(GDPR 数据可携带性) */
 export const GET = withApi(async (req: NextRequest) => {
   const user = (await requireUser(req)) as UserRow;
+  // 灵修日记表是运行时幂等补建的，先确保存在，否则老库上导出会整体失败
+  await ensureDevotionalsTable();
   const [
     contents, contentFavs, songFavs, prayers, regs, following, followers, notifications, comments,
+    bookmarks, devotionals, checkins,
   ] = await Promise.all([
     q<any>(`SELECT id, title, content_type, status, tags, created_at FROM contents WHERE author_id = ? ORDER BY created_at DESC`, [user.id]),
     q<any>(`SELECT content_id, created_at FROM content_favorites WHERE user_id = ? ORDER BY created_at DESC`, [user.id]),
@@ -20,6 +24,12 @@ export const GET = withApi(async (req: NextRequest) => {
     q<any>(`SELECT follower_id, created_at FROM follows WHERE followee_id = ? ORDER BY created_at DESC`, [user.id]),
     q<any>(`SELECT id, type, title, body, link, \`read\`, created_at FROM notifications WHERE user_id = ? ORDER BY created_at DESC`, [user.id]),
     q<any>(`SELECT id, content_id, body, created_at FROM comments WHERE user_id = ? ORDER BY created_at DESC`, [user.id]),
+    // 读经高亮与笔记（自建的灵修数据，属于用户最在意的部分）
+    q<any>(`SELECT id, version, book_id, chapter, verse, note, created_at FROM bible_bookmarks WHERE user_id = ? ORDER BY created_at DESC`, [user.id]),
+    // 灵修日记
+    q<any>(`SELECT id, title, body, ref, mood, created_at, updated_at FROM devotionals WHERE user_id = ? ORDER BY created_at DESC`, [user.id]),
+    // 读经打卡记录
+    q<any>(`SELECT DATE_FORMAT(day, '%Y-%m-%d') AS day, streak, created_at FROM user_daily_checkins WHERE user_id = ? ORDER BY day DESC`, [user.id]),
   ]);
 
   const payload = {
@@ -36,6 +46,9 @@ export const GET = withApi(async (req: NextRequest) => {
       followers: followers.length,
       notifications: notifications.length,
       comments: comments.length,
+      bibleBookmarks: bookmarks.length,
+      devotionals: devotionals.length,
+      checkins: checkins.length,
     },
     contents,
     contentFavorites: contentFavs,
@@ -46,6 +59,9 @@ export const GET = withApi(async (req: NextRequest) => {
     followers,
     notifications,
     comments,
+    bibleBookmarks: bookmarks,
+    devotionals,
+    checkins,
   };
 
   const res = NextResponse.json(payload);
