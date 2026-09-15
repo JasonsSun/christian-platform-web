@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { qs, apiDelete } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useHostedSpeech } from '@/lib/speechHost';
 import { timeAgo, formatDate } from '@/lib/format';
 import type { BibleMeta, BibleBook } from '@/lib/types';
 
@@ -30,6 +31,76 @@ export default function BibleHome() {
   const { user } = useAuth();
   const { data, loading, error } = useApi<BibleMeta>('/bible');
   const { data: homeData } = useApi<{ verse: DailyVerse }>('/home');
+
+  // ===== 今日经文：朗读 / 打卡 / 分享图 =====
+  const todayVerse = homeData?.verse;
+  const todayItems = useMemo(
+    () => (todayVerse ? [{ text: todayVerse.text, key: todayVerse.verse }] : []),
+    [todayVerse?.text]
+  );
+  const todaySpeech = useHostedSpeech(todayItems, {
+    lang: 'zh-CN',
+    mediaTitle: '今日经文',
+    mediaHref: todayVerse ? `/bible/cuv/${todayVerse.bookId}/${todayVerse.chapter}` : undefined,
+  });
+  const [checkinMsg, setCheckinMsg] = useState<string | null>(null);
+  const checkInToday = async () => {
+    if (!loggedIn) {
+      setCheckinMsg('登录后可打卡');
+      setTimeout(() => setCheckinMsg(null), 2000);
+      return;
+    }
+    try {
+      const r = await fetch('/api/v1/me/checkin', { method: 'POST' });
+      const j = await r.json();
+      setCheckinMsg(j.message || (j.already ? '今天已经打卡了' : '打卡成功'));
+    } catch {
+      setCheckinMsg('打卡失败，请重试');
+    }
+    setTimeout(() => setCheckinMsg(null), 2500);
+  };
+  const shareVerseImage = () => {
+    if (!todayVerse) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1080;
+    canvas.height = 1080;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#fdf6ec';
+    ctx.fillRect(0, 0, 1080, 1080);
+    ctx.fillStyle = '#b45309';
+    ctx.font = 'bold 56px serif';
+    ctx.fillText(`${todayVerse.bookName} ${todayVerse.chapter}:${todayVerse.verse}`, 80, 150);
+    ctx.fillStyle = '#1f2937';
+    ctx.font = '46px serif';
+    let line = '';
+    let y = 280;
+    const flush = () => {
+      if (line) {
+        ctx.fillText('“' + line + '”', 80, y);
+        y += 84;
+        line = '';
+      }
+    };
+    for (const ch of todayVerse.text) {
+      if (ctx.measureText(line + ch).width > 900 && ch !== '，' && ch !== '。' && ch !== '；' && ch !== '：') {
+        flush();
+      }
+      line += ch;
+    }
+    flush();
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '32px sans-serif';
+    ctx.fillText('圣约社区 · amen.dpdns.org', 80, 1000);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `今日经文_${todayVerse.bookName}${todayVerse.chapter}_${todayVerse.verse}.png`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+  };
   const [version, setVersion] = useState('');
   const [input, setInput] = useState('');
   const [searchQ, setSearchQ] = useState('');
@@ -204,7 +275,28 @@ export default function BibleHome() {
                     >
                       —— {homeData.verse.bookName} {homeData.verse.chapter}:{homeData.verse.verse}
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-                    </Link>
+                      </Link>
+                    <div className="flex flex-wrap items-center gap-2 mt-3">
+                      <button
+                        onClick={() => (todaySpeech.state === 'playing' ? todaySpeech.stop() : todaySpeech.start())}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-medium hover:bg-white/25 transition-colors"
+                      >
+                        {todaySpeech.state === 'playing' ? '⏸ 停止' : '🔊 朗读'}
+                      </button>
+                      <button
+                        onClick={checkInToday}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-medium hover:bg-white/25 transition-colors"
+                      >
+                        ✅ 打卡
+                      </button>
+                      <button
+                        onClick={shareVerseImage}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-medium hover:bg-white/25 transition-colors"
+                      >
+                        🖼️ 分享图
+                      </button>
+                    </div>
+                    {checkinMsg && <p className="text-white/85 text-xs mt-2">{checkinMsg}</p>}
                   </>
                 ) : (
                   <p className="text-white/80">今日经文加载中…</p>
@@ -352,6 +444,17 @@ export default function BibleHome() {
                     </button>
                   </div>
                 ))}
+                {bm && bm.items.length > 6 && (
+                  <Link
+                    href="/bible/notes"
+                    className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-primary-700 hover:text-primary-800"
+                  >
+                    查看全部笔记与高亮
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    </svg>
+                  </Link>
+                )}
               </div>
             ) : (
               <p className="text-ink-500 text-sm">还没有书签</p>

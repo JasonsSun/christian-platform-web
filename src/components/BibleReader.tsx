@@ -6,6 +6,21 @@ import { useRouter } from 'next/navigation';
 import { fetchBibleBooks, fetchBibleChapter } from '@/lib/bible-api';
 import { BOOKS, VERSIONS, bookById } from '@/server/bible';
 import Portal from '@/components/Portal';
+import { useAuth } from '@/lib/auth';
+
+type VerseMark = { id: string; note: string };
+type BmMap = Record<number, VerseMark>;
+
+async function bmGet(version: string, bookId: string, chapter: number): Promise<BmMap> {
+  const r = await fetch(`/api/v1/bible/bookmarks?version=${encodeURIComponent(version)}&book=${encodeURIComponent(bookId)}&chapter=${chapter}`, { cache: 'no-store' });
+  if (!r.ok) return {};
+  const j = await r.json();
+  const map: BmMap = {};
+  for (const it of (j.items || []) as any[]) {
+    if (it.verse > 0) map[it.verse] = { id: it.id, note: it.note || '' };
+  }
+  return map;
+}
 
 interface BibleReaderProps {
   version: string;
@@ -39,6 +54,80 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
   const [favorited, setFavorited] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
+  // ===== 经文笔记 / 划线高亮 =====
+  const { user } = useAuth();
+  const loggedIn = !!user;
+  const [bmMap, setBmMap] = useState<BmMap>({});
+  const [bmLoading, setBmLoading] = useState(false);
+  const [noteVerse, setNoteVerse] = useState<number | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [bmBusy, setBmBusy] = useState(false);
+  const [chapterNotesOpen, setChapterNotesOpen] = useState(false);
+
+  // 加载本章书签 / 笔记
+  useEffect(() => {
+    let alive = true;
+    if (!loggedIn) { setBmMap({}); return; }
+    setBmLoading(true);
+    bmGet(version, book, parseInt(chapter, 10))
+      .then((m) => { if (alive) setBmMap(m); })
+      .catch(() => {})
+      .finally(() => { if (alive) setBmLoading(false); });
+    return () => { alive = false; };
+  }, [loggedIn, version, book, chapter]);
+
+  const openNote = async (verse: number) => {
+    if (!loggedIn) { setToast('登录后可使用经文笔记'); return; }
+    setNoteDraft(bmMap[verse]?.note || '');
+    if (!bmMap[verse]) {
+      try {
+        const r = await fetch('/api/v1/bible/bookmarks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ version, bookId: book, chapter: parseInt(chapter, 10), verse }),
+        });
+        const j = await r.json();
+        if (r.ok && j.id) setBmMap((m) => ({ ...m, [verse]: { id: j.id, note: '' } }));
+      } catch { /* ignore */ }
+    }
+    setNoteVerse(verse);
+  };
+
+  const saveNote = async () => {
+    if (noteVerse == null) return;
+    const cur = bmMap[noteVerse];
+    if (!cur) return;
+    setBmBusy(true);
+    try {
+      const r = await fetch('/api/v1/bible/bookmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ version, bookId: book, chapter: parseInt(chapter, 10), verse: noteVerse, note: noteDraft }),
+      });
+      if (r.ok) setBmMap((m) => ({ ...m, [noteVerse]: { id: cur.id, note: noteDraft } }));
+      setNoteVerse(null);
+      setToast(noteDraft.trim() ? '笔记已保存' : '已更新高亮');
+    } catch {
+      setToast('保存失败，请重试');
+    } finally {
+      setBmBusy(false);
+    }
+  };
+
+  const removeMark = async (verse: number) => {
+    const cur = bmMap[verse];
+    if (!cur) return;
+    setBmBusy(true);
+    try {
+      await fetch(`/api/v1/bible/bookmarks?id=${cur.id}`, { method: 'DELETE' });
+      setBmMap((m) => { const n = { ...m }; delete n[verse]; return n; });
+      if (noteVerse === verse) setNoteVerse(null);
+    } catch { /* ignore */ }
+    finally { setBmBusy(false); }
+  };
+
+  const markedVerses = Object.keys(bmMap).map(Number).sort((a, b) => a - b);
+
   // 圣经数据
   const [books, setBooks] = useState<typeof BOOKS>(BOOKS);
   const [versions] = useState(VERSIONS);
@@ -67,6 +156,14 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
         setLoading(true);
         const data = await fetchBibleChapter(version, book, parseInt(chapter, 10));
         setVerses(data.verses);
+        const jv = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jumpVerse') : null;
+        if (jv) {
+          sessionStorage.removeItem('jumpVerse');
+          setTimeout(() => {
+            const el = document.getElementById(`verse-${jv}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 350);
+        }
       } catch (e) {
         console.error('Failed to load chapter:', e);
         setError('加载失败，请重试');
@@ -156,8 +253,9 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
     setToast(!favorited ? '已收藏本章' : '已取消收藏');
   };
 
-  const addNote = () => {
-    setToast('已加入灵修笔记');
+  const openChapterNotes = () => {
+    if (!loggedIn) { setToast('登录后可使用经文笔记'); return; }
+    setChapterNotesOpen(true);
   };
 
   // 暗色主题变体
@@ -483,9 +581,11 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
                       收藏本章
                     </button>
                     <button
-                      onClick={addNote}
+                      onClick={openChapterNotes}
                       className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                        darkMode
+                        markedVerses.length > 0
+                          ? 'bg-gradient-to-r from-gold-500 to-gold-400 text-white shadow-gold'
+                          : darkMode
                           ? 'bg-primary-600/30 text-primary-200 hover:bg-primary-600/50 border border-primary-500/30'
                           : 'bg-primary-50 text-primary-700 hover:bg-primary-100 border border-primary-200'
                       }`}
@@ -493,7 +593,9 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
-                      加入灵修笔记
+                      本章笔记{markedVerses.length > 0 && (
+                        <span className="ml-0.5 px-1.5 py-0.5 rounded-full bg-white/25 text-[11px] font-bold leading-none">{markedVerses.length}</span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -511,26 +613,34 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
               >
                 {verses && verses.length > 0 ? (
                   <div className="space-y-4 md:space-y-5 font-serif leading-[2] md:leading-[2.2]">
-                    {verses.map((v, i) => (
-                      <p key={i} className="group flex gap-2 md:gap-3 items-start">
-                        <sup
-                          className={`flex-shrink-0 mt-1 text-xs font-bold w-5 text-center transition-colors ${
-                            darkMode
-                              ? 'text-primary-400 group-hover:text-primary-300'
-                              : 'text-primary-600 group-hover:text-primary-700'
-                          }`}
-                        >
-                          {i + 1}
-                        </sup>
+                    {verses.map((v, i) => {
+                      const verseNo = i + 1;
+                      const marked = !!bmMap[verseNo];
+                      return (
+                      <p key={i} id={`verse-${verseNo}`} className={`group flex gap-2 md:gap-3 items-start rounded-lg transition-colors ${marked ? (darkMode ? 'bg-gold-500/10 -mx-2 px-2' : 'bg-gold-50 -mx-2 px-2') : ''}`}>
+                        <span className="flex-shrink-0 mt-1 flex items-center gap-0.5">
+                          <sup
+                            className={`text-xs font-bold w-5 text-center transition-colors ${marked ? (darkMode ? 'text-gold-300' : 'text-gold-600') : (darkMode ? 'text-primary-400 group-hover:text-primary-300' : 'text-primary-600 group-hover:text-primary-700')}`}
+                          >
+                            {verseNo}
+                          </sup>
+                          <button
+                            type="button"
+                            onClick={() => openNote(verseNo)}
+                            title={marked ? '查看 / 编辑笔记' : '标记高亮并加笔记'}
+                            className={`opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity w-5 h-5 inline-flex items-center justify-center rounded text-[12px] ${marked ? (darkMode ? 'text-gold-300' : 'text-gold-600') : (darkMode ? 'text-ink-400 hover:text-primary-300' : 'text-ink-400 hover:text-primary-600')}`}
+                          >
+                            {marked ? '✎' : '＋'}
+                          </button>
+                        </span>
                         <span
-                          className={`${
-                            darkMode ? 'text-ink-100' : 'text-ink-800'
-                          } antialiased`}
+                          className={`${darkMode ? 'text-ink-100' : 'text-ink-800'} antialiased`}
                         >
                           {v.text}
                         </span>
                       </p>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="py-20 text-center">
@@ -639,6 +749,118 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
           onClose={() => setMobileSheetOpen(false)}
           onSelect={(bookId, ch) => navigateTo(bookId, ch)}
         />
+      )}
+
+      {/* ===== 经文笔记编辑面板 ===== */}
+      {noteVerse != null && (
+        <div
+          className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setNoteVerse(null)}
+        >
+          <div
+            className={`w-full md:max-w-lg md:rounded-2xl rounded-t-2xl p-5 shadow-card ${darkMode ? 'bg-ink-900 text-ink-100' : 'bg-white text-ink-900'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display text-lg font-bold">
+                {currentBook?.name} 第 {chapter} 章 : {noteVerse}
+              </h3>
+              <button
+                onClick={() => setNoteVerse(null)}
+                className={`w-8 h-8 rounded-lg inline-flex items-center justify-center ${darkMode ? 'text-ink-400 hover:text-white hover:bg-white/10' : 'text-ink-400 hover:text-ink-700 hover:bg-ink-100'}`}
+              >
+                ✕
+              </button>
+            </div>
+            <textarea
+              autoFocus
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value.slice(0, 280))}
+              placeholder="写下你的领受、疑问或祷告…（最多 280 字）"
+              rows={4}
+              className={`w-full rounded-xl border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500/40 ${darkMode ? 'bg-ink-800 border-white/10 text-ink-100 placeholder:text-ink-500' : 'bg-ink-50 border-ink-200 text-ink-900 placeholder:text-ink-400'}`}
+            />
+            <div className="flex items-center justify-between mt-3">
+              <span className="text-xs text-ink-400">{noteDraft.length}/280</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => removeMark(noteVerse)}
+                  disabled={bmBusy}
+                  className="px-3 py-2 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+                >
+                  删除高亮
+                </button>
+                <button
+                  onClick={saveNote}
+                  disabled={bmBusy}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-700 shadow-glow disabled:opacity-50"
+                >
+                  保存
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== 本章笔记列表面板 ===== */}
+      {chapterNotesOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setChapterNotesOpen(false)}
+        >
+          <div
+            className={`w-full md:max-w-lg md:rounded-2xl rounded-t-2xl p-5 shadow-card max-h-[80vh] overflow-y-auto ${darkMode ? 'bg-ink-900 text-ink-100' : 'bg-white text-ink-900'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-display text-lg font-bold">本章笔记（{markedVerses.length}）</h3>
+              <button
+                onClick={() => setChapterNotesOpen(false)}
+                className={`w-8 h-8 rounded-lg inline-flex items-center justify-center ${darkMode ? 'text-ink-400 hover:text-white hover:bg-white/10' : 'text-ink-400 hover:text-ink-700 hover:bg-ink-100'}`}
+              >
+                ✕
+              </button>
+            </div>
+            {bmLoading ? (
+              <p className="text-sm text-ink-400 py-6 text-center">加载中…</p>
+            ) : markedVerses.length === 0 ? (
+              <p className="text-sm text-ink-400 py-6 text-center">
+                本章还没有高亮或笔记。
+                <br />
+                把鼠标移到节号旁的 ＋ 即可标记。
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {markedVerses.map((vn) => (
+                  <div
+                    key={vn}
+                    className={`flex items-start gap-2 rounded-xl border px-3 py-2 ${darkMode ? 'border-white/10 bg-ink-800/50' : 'border-ink-100 bg-ink-50/50'}`}
+                  >
+                    <button
+                      onClick={() => {
+                        setChapterNotesOpen(false);
+                        openNote(vn);
+                      }}
+                      className="flex-shrink-0 font-semibold text-primary-600 text-sm pt-0.5"
+                    >
+                      {vn}节
+                    </button>
+                    <p className="flex-1 text-sm text-ink-600 dark:text-ink-300 whitespace-pre-wrap break-words min-w-0">
+                      {bmMap[vn].note || <span className="text-ink-400">（仅高亮，无笔记）</span>}
+                    </p>
+                    <button
+                      onClick={() => removeMark(vn)}
+                      className="flex-shrink-0 text-ink-300 hover:text-rose-500 text-xs px-1"
+                    >
+                      删除
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       )}
 
       {/* ===== Toast ===== */}

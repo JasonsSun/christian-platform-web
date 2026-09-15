@@ -347,3 +347,44 @@ async function saveOnboarding(userId: string, done: string[], dismissed: boolean
     [userId, JSON.stringify(done), dismissed ? 1 : 0, ts()]
   );
 }
+
+/* ---------------- 读经打卡热力图 + 成就 ---------------- */
+
+export interface HeatDay {
+  date: string;
+  active: boolean;
+}
+
+export interface HeatmapView {
+  days: HeatDay[]; // 过去 365 天（含今天），升序
+  yearDays: HeatDay[]; // 本年
+  streak: number; // 当前连续天数
+  longestStreak: number; // 历史最长连续
+  totalDays: number; // 累计打卡天数
+  yearActive: number; // 本年打卡天数
+  noteCount: number; // 经文笔记 / 高亮条数
+}
+
+/** 过去 365 天每日活跃热力图 + 读经成就统计（纯读取，无副作用） */
+export async function heatmapView(userId: string): Promise<HeatmapView> {
+  const today = todayStr();
+  const days = await loadDays(userId);
+  const set = new Set(days);
+  const past: HeatDay[] = [];
+  for (let i = 364; i >= 0; i--) {
+    const d = dayOffset(today, -i);
+    past.push({ date: d, active: set.has(d) });
+  }
+  const year = today.slice(0, 4);
+  const yearDays = past.filter((x) => x.date.startsWith(year));
+  const noteRow = await one<{ c: number }>(`SELECT COUNT(*) AS c FROM bible_bookmarks WHERE user_id = ?`, [userId]);
+  return {
+    days: past,
+    yearDays,
+    streak: calcStreak(set, today),
+    longestStreak: longestStreak([...days].sort()),
+    totalDays: days.length,
+    yearActive: yearDays.filter((d) => d.active).length,
+    noteCount: Number(noteRow?.c || 0),
+  };
+}
