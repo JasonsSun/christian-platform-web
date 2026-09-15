@@ -587,9 +587,23 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         a.pause();
         a.src = '';
       } catch { /* ignore */ }
+      try { a.remove(); } catch { /* ignore */ }
       audioRef.current = null;
       setMediaEl((cur) => (cur === a ? null : cur));
     }
+  }, []);
+
+  /**
+   * 把朗读用的 <audio> 挂进 DOM(隐藏)。
+   * **必须挂**:Media Session / 息屏守卫靠 window 上的 play/pause/timeupdate/ended 事件,
+   * 而脱离文档树的 <audio> 事件不会冒泡到 window → 锁屏控件永远挂不上、朗读卡会误标「息屏暂停」。
+   */
+  const mountAudio = useCallback((el: HTMLAudioElement) => {
+    try {
+      el.style.display = 'none';
+      el.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(el);
+    } catch { /* ignore */ }
   }, []);
 
   // ---- 浏览器直连兜底 ----
@@ -679,6 +693,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
         const audio = new Audio(baiduTtsUrl(seg.text));
         audio.preload = 'auto';
         audio.playbackRate = rateRef.current;
+        mountAudio(audio);
         audioRef.current = audio;
         setMediaEl(audio);
         pendingAudioRef.current = null;
@@ -723,7 +738,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       };
       step();
     },
-    [buildText, syncSpeakingKey, serverStopInner]
+    [buildText, syncSpeakingKey, serverStopInner, mountAudio]
   );
 
   /** 用户点击「点此播放」:播放已就绪但被自动播放策略拦下的兜底音频 */
@@ -797,6 +812,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audio.playbackRate = rateRef.current;
+      mountAudio(audio);
       audioRef.current = audio;
       setMediaEl(audio);
       audio.ontimeupdate = () => {
@@ -812,7 +828,14 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       };
       audio.onended = () => {
         serverStopInner();
-        if (!stoppedRef.current && genRef.current === gen) onEndRef.current?.();
+        if (!stoppedRef.current && genRef.current === gen) {
+          // 整段读完:必须自己回到 idle,否则 UI 永远停在「暂停朗读」,
+          // 之后再点只会 pause/resume 一个已销毁的 <audio>(表现为点了没声音、也停不下来)。
+          setState('idle');
+          setSpeakingKey(null);
+          speakCharRef.current = null;
+          onEndRef.current?.();
+        }
       };
       await audio.play();
       setState('playing');
@@ -835,7 +858,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       if (abortRef.current === ctrl) abortRef.current = null;
       setTtsLoading(false);
     }
-  }, [buildText, syncSpeakingKey, serverStopInner, clientStart, unlockAudio]);
+  }, [buildText, syncSpeakingKey, serverStopInner, clientStart, unlockAudio, mountAudio]);
 
   // 浏览器引擎静默失败时由 speakRange 调用(用 ref 打破定义顺序依赖)
   useEffect(() => {
@@ -1004,7 +1027,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   }, [opts.mediaTitle, opts.mediaSubtitle, opts.mediaHref]);
 
   useMediaBackplay({
-    getEl: () => mediaElRef.current,
+    // 用 audioRef(创建元素时同步赋值),**不要**用 state 版 mediaElRef:
+    // audio.play() 触发的 play 事件会早于「mediaEl state → effect」生效,
+    // 用 mediaElRef 时 belongToUs 判定失败 → 锁屏控件永远挂不上
+    // (朗读卡也会跟着误标「息屏暂停」)。
+    getEl: () => audioRef.current ?? mediaElRef.current,
     meta: () => ({
       title: metaTitleRef.current || '经文朗读',
       artist: metaSubRef.current || '圣约社区 · 朗读',
@@ -1035,8 +1062,9 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       title: metaTitleRef.current || '经文朗读',
       subtitle: metaSubRef.current || undefined,
       state: ttsLoading ? 'loading' : state === 'playing' ? 'playing' : 'paused',
-      // 只有走 <audio> 的朗读能在息屏后继续;speechSynthesis 会被系统挂起
-      backplayable: ttsMode === 'server' && !!mediaElRef.current,
+      // 只有走 <audio> 的朗读能在息屏后继续;speechSynthesis 会被系统挂起。
+      // 判据用 audioRef(同步赋值)而非 mediaElRef(state 版,晚一拍),否则会误标「息屏暂停」。
+      backplayable: ttsMode === 'server' && !!audioRef.current,
       toggle: () => {
         const c = ctrlRef.current;
         if (ttsLoading) return;

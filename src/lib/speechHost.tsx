@@ -69,6 +69,8 @@ export function useHostedSpeech(
   ctxRef.current = ctx;
   const contentRef = useRef<{ items: SpeechItem[]; opts: SpeechOptions }>({ items, opts });
   contentRef.current = { items, opts };
+  // 点击序号:同一轮里只为最后一次点击开读
+  const seqRef = useRef(0);
 
   const start = useCallback((fromKey?: number) => {
     const host = ctxRef.current;
@@ -79,9 +81,15 @@ export function useHostedSpeech(
     // 先解锁音频(同步栈),再提交内容,最后在下一轮调度里真正开读
     unlockGesture();
     host.commit(contentRef.current.items, contentRef.current.opts);
+    const seq = ++seqRef.current;
     setTimeout(() => {
-      if (ctxRef.current !== host) return;
-      host.speech.start(fromKey);
+      if (seq !== seqRef.current) return; // 期间又点了一次,只认最后一次
+      // 注意:**不能**拿「点击时捕获的 host」做身份校验——commit 必然让 Provider
+      // 重渲染,而 context value 每次渲染都是新对象,那个校验恒为真,start 会被
+      // 直接吞掉(表现:点朗读完全没反应、无任何合成请求)。这里重新取最新 context。
+      const latest = ctxRef.current;
+      if (!latest) return; // Provider 没了(极端情况)才放弃
+      latest.speech.start(fromKey);
     }, 0);
   }, [local]);
 
