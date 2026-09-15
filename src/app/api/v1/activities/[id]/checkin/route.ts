@@ -18,7 +18,19 @@ export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
     `SELECT id FROM activity_registrations WHERE activity_id = ? AND user_id = ? AND status <> 'cancelled'`,
     [activityId, user.id]
   );
-  if (!reg) throw forbidden('请先报名该活动再签到');
+  // 创建人即第一个参与人:历史活动可能漏写报名记录,这里兜底补齐,避免「已自动加入」却签到被拦。
+  if (!reg) {
+    if (act.organizer_id === user.id) {
+      await exec(
+        `INSERT INTO activity_registrations (id, activity_id, user_id, status, created_at)
+         VALUES (?,?,?,'confirmed',?)
+         ON DUPLICATE KEY UPDATE status='confirmed'`,
+        [newId('reg'), activityId, user.id, ts()]
+      );
+    } else {
+      throw forbidden('请先报名该活动再签到');
+    }
+  }
 
   const existing = await one<any>(
     `SELECT id FROM activity_checkins WHERE activity_id = ? AND user_id = ?`, [activityId, user.id]

@@ -73,6 +73,12 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
   const user = await requireUser(req);
   const activityId = ctx.params.id;
 
+  // 创建人即第一个参与人,不应从自己创建的活动里「取消报名」消失。
+  const act = await one<any>(`SELECT organizer_id FROM activities WHERE id = ?`, [activityId]);
+  if (act && act.organizer_id === user.id) {
+    throw conflict('你是活动创建人，已自动参与，无需取消报名');
+  }
+
   const promoted = await tx(async (conn) => {
     const [rows] = await conn.query<any[]>(
       `SELECT id, status FROM activity_registrations WHERE activity_id = ? AND user_id = ? FOR UPDATE`,
