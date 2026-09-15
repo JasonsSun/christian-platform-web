@@ -135,6 +135,13 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ===== 多版本对照 =====
+  const [compareVersion, setCompareVersion] = useState('');
+  const [compareVerses, setCompareVerses] = useState<Array<{ verse: number; text: string }>>([]);
+  const [compareLoading, setCompareLoading] = useState(false);
+  // ===== 离线状态 =====
+  const [offline, setOffline] = useState(false);
+
   // 当前卷书信息
   const allBooks = useMemo(() => books, [books]);
   const currentBook = useMemo(
@@ -149,13 +156,30 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
     [versions, version]
   );
 
-  // 加载章节数据
+  // 对照译本按节索引
+  const compareMap = useMemo(() => {
+    const m: Record<number, string> = {};
+    for (const v of compareVerses) m[v.verse] = v.text;
+    return m;
+  }, [compareVerses]);
+  const compareVersionName = useMemo(
+    () => versions.find((v) => v.id === compareVersion)?.name,
+    [versions, compareVersion]
+  );
+
+  // 加载章节数据 + 读经进度记忆
   useEffect(() => {
     const loadChapter = async () => {
       try {
         setLoading(true);
         const data = await fetchBibleChapter(version, book, parseInt(chapter, 10));
         setVerses(data.verses);
+        // 记录读经进度(书/章) — 复用首页 localLast 的 bible:last 键,匿名用户也能续读
+        try {
+          const raw = localStorage.getItem('bible:last');
+          const prev = raw ? JSON.parse(raw) : {};
+          localStorage.setItem('bible:last', JSON.stringify({ ...prev, version, bookId: book, chapter: parseInt(chapter, 10) }));
+        } catch { /* ignore */ }
         const jv = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('jumpVerse') : null;
         if (jv) {
           sessionStorage.removeItem('jumpVerse');
@@ -163,6 +187,18 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
             const el = document.getElementById(`verse-${jv}`);
             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }, 350);
+        } else {
+          // 无跳转指令时,恢复到上次读到的节
+          try {
+            const raw = localStorage.getItem('bible:last');
+            const lr = raw ? JSON.parse(raw) : null;
+            if (lr && lr.bookId === book && Number(lr.chapter) === parseInt(chapter, 10) && lr.verse) {
+              setTimeout(() => {
+                const el = document.getElementById(`verse-${lr.verse}`);
+                if (el) el.scrollIntoView({ block: 'center' });
+              }, 350);
+            }
+          } catch { /* ignore */ }
         }
       } catch (e) {
         console.error('Failed to load chapter:', e);
@@ -173,6 +209,18 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
     };
     loadChapter();
   }, [version, book, chapter]);
+
+  // 对照译本数据
+  useEffect(() => {
+    let alive = true;
+    if (!compareVersion) { setCompareVerses([]); return; }
+    setCompareLoading(true);
+    fetchBibleChapter(compareVersion, book, parseInt(chapter, 10))
+      .then((d) => { if (alive) setCompareVerses(d.verses); })
+      .catch(() => { if (alive) setCompareVerses([]); })
+      .finally(() => { if (alive) setCompareLoading(false); });
+    return () => { alive = false; };
+  }, [compareVersion, version, book, chapter]);
 
 
   // 主题持久化
@@ -190,6 +238,50 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
   useEffect(() => {
     localStorage.setItem('bible-font-size', String(fontSize));
   }, [fontSize]);
+
+  // ===== 对照译本偏好 + 离线状态 + 读经进度记忆 =====
+  useEffect(() => {
+    const savedCmp = localStorage.getItem('bible-compare-version');
+    if (savedCmp) setCompareVersion(savedCmp);
+    const updateOnline = () => setOffline(typeof navigator !== 'undefined' && !navigator.onLine);
+    updateOnline();
+    window.addEventListener('online', updateOnline);
+    window.addEventListener('offline', updateOnline);
+    return () => {
+      window.removeEventListener('online', updateOnline);
+      window.removeEventListener('offline', updateOnline);
+    };
+  }, []);
+
+  // 滚动时记录当前最靠近顶部的节(读经进度记忆)
+  useEffect(() => {
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        const mid = 120;
+        let best = 1;
+        let bestDist = Infinity;
+        for (let n = 1; n <= 200; n++) {
+          const el = document.getElementById(`verse-${n}`);
+          if (!el) continue;
+          const dist = Math.abs(el.getBoundingClientRect().top - mid);
+          if (dist < bestDist) { bestDist = dist; best = n; }
+        }
+        try {
+          const raw = localStorage.getItem('bible:last');
+          const prev = raw ? JSON.parse(raw) : {};
+          localStorage.setItem('bible:last', JSON.stringify({ ...prev, verse: best }));
+        } catch { /* ignore */ }
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, [book, chapter]);
 
   // Toast 提示
   useEffect(() => {
@@ -343,6 +435,43 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
               </select>
             </div>
 
+            {/* 对照译本（桌面端） */}
+            <div className="hidden md:flex items-center gap-2">
+              <label
+                className={`text-xs font-medium ${
+                  darkMode ? 'text-ink-400' : 'text-ink-500'
+                }`}
+              >
+                对照
+              </label>
+              <select
+                value={compareVersion}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCompareVersion(v);
+                  try { localStorage.setItem('bible-compare-version', v); } catch { /* ignore */ }
+                }}
+                className={`appearance-none cursor-pointer pl-3 pr-8 py-2 rounded-xl text-sm font-medium border transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/40 ${
+                  darkMode
+                    ? 'bg-ink-800 border-white/10 text-white'
+                    : 'bg-white border-ink-200 text-ink-900 hover:border-primary-300'
+                }`}
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ba3c4'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center',
+                  backgroundSize: '16px',
+                }}
+              >
+                <option value="">不对照</option>
+                {bibleData.versions.filter((v) => v.id !== version).map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* 书名 & 章节（桌面端中间） */}
             <div className="hidden md:flex items-center gap-2 mx-4">
               <span
@@ -462,6 +591,19 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
                 </svg>
               )}
             </button>
+
+            {/* 离线状态 */}
+            <span
+              className={`hidden md:inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                offline
+                  ? 'bg-amber-100 text-amber-700'
+                  : 'bg-emerald-100 text-emerald-700'
+              }`}
+              title={offline ? '当前离线：已读过的章节仍可阅读' : '在线'}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${offline ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+              {offline ? '离线可用' : '在线'}
+            </span>
 
             {/* 侧边栏按钮（md+） */}
             <button
@@ -611,13 +753,21 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
                 }`}
                 style={{ fontSize: `${fontSize}px` }}
               >
+                {compareVersion && (
+                  <div className={`mb-4 flex items-center gap-2 text-xs font-medium ${darkMode ? 'text-ink-400' : 'text-ink-500'}`}>
+                    <span className={`px-2 py-1 rounded-full ${darkMode ? 'bg-white/10' : 'bg-ink-100'}`}>{currentVersion.name}</span>
+                    <span>对照</span>
+                    <span className={`px-2 py-1 rounded-full ${darkMode ? 'bg-white/10' : 'bg-ink-100'}`}>{compareVersionName}</span>
+                    {compareLoading && <span className="text-amber-500">（加载中…）</span>}
+                  </div>
+                )}
                 {verses && verses.length > 0 ? (
                   <div className="space-y-4 md:space-y-5 font-serif leading-[2] md:leading-[2.2]">
                     {verses.map((v, i) => {
                       const verseNo = i + 1;
                       const marked = !!bmMap[verseNo];
-                      return (
-                      <p key={i} id={`verse-${verseNo}`} className={`group flex gap-2 md:gap-3 items-start rounded-lg transition-colors ${marked ? (darkMode ? 'bg-gold-500/10 -mx-2 px-2' : 'bg-gold-50 -mx-2 px-2') : ''}`}>
+                      const cmp = compareVersion ? compareMap[verseNo] : undefined;
+                      const numCol = (
                         <span className="flex-shrink-0 mt-1 flex items-center gap-0.5">
                           <sup
                             className={`text-xs font-bold w-5 text-center transition-colors ${marked ? (darkMode ? 'text-gold-300' : 'text-gold-600') : (darkMode ? 'text-primary-400 group-hover:text-primary-300' : 'text-primary-600 group-hover:text-primary-700')}`}
@@ -633,12 +783,29 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
                             {marked ? '✎' : '＋'}
                           </button>
                         </span>
-                        <span
-                          className={`${darkMode ? 'text-ink-100' : 'text-ink-800'} antialiased`}
-                        >
+                      );
+                      const mainText = (
+                        <span className={`${darkMode ? 'text-ink-100' : 'text-ink-800'} antialiased`}>
                           {v.text}
                         </span>
-                      </p>
+                      );
+                      if (cmp !== undefined) {
+                        return (
+                          <div key={i} id={`verse-${verseNo}`} className={`group rounded-lg transition-colors ${marked ? (darkMode ? 'bg-gold-500/10 -mx-2 px-2' : 'bg-gold-50 -mx-2 px-2') : ''}`}>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1 py-1.5">
+                              <p className="flex gap-2 md:gap-3 items-start leading-[2] md:leading-[2.2]">{numCol}{mainText}</p>
+                              <p className={`flex gap-2 md:gap-3 items-start leading-[2] md:leading-[2.2] ${darkMode ? 'text-ink-300' : 'text-ink-500'}`}>
+                                <span className="flex-shrink-0 mt-1 w-5" />
+                                <span className="antialiased">{cmp || '—'}</span>
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return (
+                        <p key={i} id={`verse-${verseNo}`} className={`group flex gap-2 md:gap-3 items-start rounded-lg transition-colors ${marked ? (darkMode ? 'bg-gold-500/10 -mx-2 px-2' : 'bg-gold-50 -mx-2 px-2') : ''}`}>
+                          {numCol}{mainText}
+                        </p>
                       );
                     })}
                   </div>
