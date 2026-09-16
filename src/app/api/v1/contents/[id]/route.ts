@@ -70,11 +70,23 @@ export const PATCH = withApi(async (req: NextRequest, ctx: Ctx) => {
   const byModule = !isOwner && (await isModuleModerator(viewer, 'contents'));
   if (!isOwner && !isAdmin && !byModule) throw forbidden('只能修改自己的内容');
 
-  const body = await readJson<{ title?: string; body?: string; contentType?: string; tags?: string[]; cover?: string }>(req);
+  const body = await readJson<{ title?: string; body?: string; contentType?: string; tags?: string[]; cover?: string; status?: string }>(req);
   const fields: string[] = [];
   const args: any[] = [];
   if (body.title) { fields.push('title = ?'); args.push(body.title); }
-  if (body.body) { fields.push('body = ?'); args.push(body.body); fields.push("status = 'pending_review'"); }
+  if (body.body) {
+    fields.push('body = ?');
+    args.push(body.body);
+    // 改了正文就要重新过审，除非作者明确要求「存草稿」。
+    // 只有作者本人能改状态，审核员改正文不应顺手把内容改成草稿。
+    if (isOwner && body.status === 'draft') {
+      fields.push('status = ?'); args.push('draft');
+    } else {
+      fields.push('status = ?'); args.push('pending_review');
+    }
+  } else if (isOwner && (body.status === 'draft' || body.status === 'pending_review')) {
+    fields.push('status = ?'); args.push(body.status);
+  }
   if (body.contentType) { fields.push('content_type = ?'); args.push(body.contentType); }
   if (body.tags) { fields.push('tags = ?'); args.push(body.tags.join(',')); }
   if (body.cover) { fields.push('cover = ?'); args.push(body.cover); }

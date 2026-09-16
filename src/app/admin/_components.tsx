@@ -106,7 +106,10 @@ const NAV_GROUPS: {
     { href: '/admin/messages', label: '管理消息' },
   ] },
   { group: '内容', items: [
+    { href: '/admin/contents', label: '内容管理', module: 'contents' },
     { href: '/admin/reviews', label: '内容审核', module: 'contents' },
+    { href: '/admin/comments', label: '评论管理', module: 'contents' },
+    { href: '/admin/tags', label: '标签管理', module: 'contents' },
     { href: '/admin/reports', label: '举报处理', module: 'reports' },
     { href: '/admin/prayers', label: '代祷墙管理', module: 'prayers' },
     { href: '/admin/bible', label: '圣经管理', adminOnly: true },

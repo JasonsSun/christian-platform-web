@@ -53,6 +53,7 @@ export default function ActivityDetailPage() {
   const [qrData, setQrData] = useState('');
   const [qrUrl, setQrUrl] = useState('');
   const autoFired = useRef(false);
+  const qrAction = useAction();
 
   async function handleRegister() {
     if (!user) { router.push('/login'); return; }
@@ -106,7 +107,7 @@ export default function ActivityDetailPage() {
       router.push('/login');
       return;
     }
-    if (!a.registered) {
+    if (!data?.registered) {
       setCheckinError('请先报名');
       return;
     }
@@ -121,6 +122,20 @@ export default function ActivityDetailPage() {
       reload();
     }
   }
+
+  // 扫码签到：成员用手机扫签到码打开 ?checkin=1 时，登录且已报名则自动签到。
+  // 注意：useEffect 必须写在任何条件 return 之前，否则 hook 数量随渲染变化 → React #310。
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (new URLSearchParams(window.location.search).get('checkin') !== '1') return;
+    if (!user || !data) return;
+    if (data.registered && !data.checkedIn && !autoFired.current) {
+      autoFired.current = true;
+      handleCheckin();
+    } else if (!data.registered) {
+      setCheckinError('请先报名后再扫码签到');
+    }
+  }, [user, data]);
 
   if (loading) {
     return (
@@ -144,8 +159,6 @@ export default function ActivityDetailPage() {
   const isCancelled = a.status === 'cancelled';
   const canCancelActivity = !!user && (a.organizer.id === user.id || user.role === 'admin') && !isCancelled;
 
-  // 签到二维码（创建人 / 管理员生成）
-  const qrAction = useAction();
   const openQr = async () => {
     const res = await qrAction.run(() =>
       apiGet<{ qr: string; url: string }>(`/activities/${id}/checkin-qr`)
@@ -157,18 +170,6 @@ export default function ActivityDetailPage() {
     }
   };
 
-  // 扫码签到：成员用手机扫签到码打开 ?checkin=1 时，登录且已报名则自动签到
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (new URLSearchParams(window.location.search).get('checkin') !== '1') return;
-    if (!user || !a) return;
-    if (a.registered && !a.checkedIn && !autoFired.current) {
-      autoFired.current = true;
-      handleCheckin();
-    } else if (!a.registered) {
-      setCheckinError('请先报名后再扫码签到');
-    }
-  }, [user, a]);
   const percent = a.capacity > 0 ? Math.min(100, Math.round((a.confirmedCount / a.capacity) * 100)) : 0;
   const ended = a.endAt ? new Date(a.endAt).getTime() < Date.now() : new Date(a.startAt).getTime() < Date.now();
   const confirmed = a.participants.filter((p) => p.status === 'confirmed');

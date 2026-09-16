@@ -92,18 +92,23 @@ export default function CreateContentPage() {
       .map((t) => t.trim())
       .filter(Boolean);
 
-    // 编辑模式：PATCH 更新已有内容
+    // 编辑模式：PATCH 更新已有内容。status 一并传过去 —— 作者可以「存草稿」，
+    // 否则改了正文会直接进入待审核。
     if (editId) {
       const res = await action.run(() =>
-        apiPatch<ContentItem>(`/contents/${editId}`, {
+        apiPatch<{ id: string; updated: boolean }>(`/contents/${editId}`, {
           title: title.trim(),
           body: body.trim(),
           contentType,
           tags,
           cover,
+          status,
         })
       );
-      if (res?.id) router.push(`/contents/${res.id}`);
+      if (res?.id) {
+        notice.success(status === 'draft' ? '草稿已保存' : '已提交，等待审核');
+        router.push(status === 'draft' ? '/me?tab=drafts' : `/contents/${res.id}`);
+      }
       return;
     }
 
@@ -268,8 +273,11 @@ export default function CreateContentPage() {
                 <button onClick={() => router.push(`/contents/${editId}`)} className="btn-secondary flex-1">
                   取消
                 </button>
+                <button onClick={() => submit('draft')} disabled={action.pending} className="btn-secondary flex-1">
+                  存草稿
+                </button>
                 <button onClick={() => submit('pending_review')} disabled={action.pending} className="btn-primary flex-1">
-                  {action.pending ? '保存中…' : '保存修改'}
+                  {action.pending ? '保存中…' : '保存并提交审核'}
                 </button>
               </div>
             ) : (

@@ -846,7 +846,8 @@ function MyDrafts() {
             >
               删除
             </button>
-            <Link href={`/contents/${c.id}`} className="btn-secondary text-sm py-1.5 px-3">继续编辑</Link>
+            {/* 「继续编辑」必须进编辑页；此前跳的是详情页，点进去只能看不能改 */}
+            <Link href={`/community/create?edit=${c.id}`} className="btn-secondary text-sm py-1.5 px-3">继续编辑</Link>
             <button
               onClick={() => submit(c)}
               disabled={submittingId === c.id}

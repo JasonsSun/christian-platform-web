@@ -29,9 +29,23 @@ const ENV_TIPS = [
   '数据库定期备份与慢查询监控，敏感操作需开启双因素认证',
 ];
 
+interface ErrorEntry {
+  at: string;
+  level: string;
+  message: string;
+  ctx: { scope?: string; userId?: string; [k: string]: unknown };
+}
+
 export default function AdminSystemPage() {
   const { user, loading: authLoading } = useAuth();
   const { data, loading, error, reload } = useApi<HealthData>('/health');
+  // 错误日志接口仅管理员可见（审核员调会 403），所以用 null path 跳过请求
+  const isAdmin = user?.role === 'admin';
+  const {
+    data: errData,
+    loading: errLoading,
+    reload: reloadErrors,
+  } = useApi<{ items: ErrorEntry[]; monitor: boolean }>(isAdmin ? '/admin/errors?limit=50' : null, [isAdmin]);
 
   if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
   if (user === null)
@@ -80,6 +94,37 @@ export default function AdminSystemPage() {
           </>
         )}
       </div>
+
+      {/* 最近错误（仅管理员） */}
+      {isAdmin && (
+        <div className="glass rounded-2xl p-5 shadow-soft mb-6">
+          <div className="flex items-center justify-between">
+            <SectionTitle>最近错误（进程内最近 100 条）</SectionTitle>
+            <button className="btn-secondary text-xs" onClick={reloadErrors}>刷新</button>
+          </div>
+          {errLoading ? (
+            <Loading />
+          ) : !errData?.items?.length ? (
+            <Empty label="当前没有捕获到错误" />
+          ) : (
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {errData.items.map((e, i) => (
+                <div key={`${e.at}-${i}`} className="rounded-xl bg-ink-50 px-4 py-2.5">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <Badge tone={e.level === 'error' ? 'red' : e.level === 'warn' ? 'gold' : 'gray'}>{e.level}</Badge>
+                    <span className="text-ink-400">{new Date(e.at).toLocaleString('zh-CN')}</span>
+                    {e.ctx?.scope && <span className="text-ink-500">scope: {e.ctx.scope}</span>}
+                  </div>
+                  <p className="text-sm text-ink-800 mt-1 break-words whitespace-pre-wrap">{e.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="text-xs text-ink-400 mt-3">
+            错误只在进程内存中保留，重启即清空；需要长期留存请配置 <code>SENTRY_DSN</code> 接入外部监控。
+          </p>
+        </div>
+      )}
 
       {/* 技术栈 */}
       <div className="glass rounded-2xl p-5 shadow-soft mb-6">
