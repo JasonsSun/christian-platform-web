@@ -55,8 +55,11 @@ export async function ensurePaymentColumns(): Promise<void> {
       ['alipay_private_key', '支付宝 应用私钥 (RSA2)'],
       ['alipay_public_key', '支付宝 支付宝公钥'],
       ['wechat_mchid', '微信支付 商户号 MchID'],
+      ['wechat_appid', '微信支付 AppID'],
       ['wechat_api_v3_key', '微信支付 APIv3 密钥'],
       ['wechat_private_key', '微信支付 商户API私钥'],
+      ['wechat_serial_no', '微信支付 商户证书序列号'],
+      ['wechat_platform_cert', '微信支付 平台证书(公钥 PEM)'],
       ['stripe_secret_key', 'Stripe Secret Key'],
       ['stripe_webhook_secret', 'Stripe Webhook Secret'],
     ];

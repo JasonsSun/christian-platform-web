@@ -1,12 +1,17 @@
+import { exec, one } from './db';
+
 /**
  * 限流（零依赖起步，可平滑升级到 Redis）。
  *
  * 背景：原先只有 2 个接口接入限流，且计数只存在单进程内存里 ——
  * 多实例部署时每个实例各算一份，形同虚设。
  *
- * 现在：
- * - 存储抽象成接口：默认内存（单实例够用），设了 REDIS_URL 且装了 ioredis 则自动走 Redis，
- *   多实例共享计数。没装 ioredis 也不会报错，静默降级。
+ * 现在（优先级从高到低）：
+ * - REDIS_URL 且装了 ioredis → Redis 共享计数（最稳的多实例方案）；
+ * - 否则 → MySQL 原子计数器（rate_limits 表，无需额外组件，多实例同样一致）；
+ * - 兜底 → 内存（仅单实例语义）。
+ * 本项目必定有 MySQL，因此默认即为「DB 共享」，开箱多实例安全。
+ *
  * - 提供 guardRequest(req, action, limit, windowMs)：按 IP + 用户维度限流，
  *   业务代码一行接入，并自动带上 Retry-After 语义。
  */
@@ -65,6 +70,50 @@ class RedisStore implements Store {
   }
 }
 
+/**
+ * MySQL 原子计数器（多实例共享，无需 Redis）。
+ * 固定窗口：windowStart = floor(now/windowMs)，同一窗口的所有请求打到同一行并 +1，
+ * 天然原子（INSERT...ON DUPLICATE KEY UPDATE 是行级锁）。
+ */
+class DbStore implements Store {
+  async incr(key: string, windowMs: number) {
+    const now = Date.now();
+    const windowStart = Math.floor(now / windowMs);
+    await ensureRateLimitsTable();
+    await exec(
+      `INSERT INTO rate_limits (bucket, window_start, count) VALUES (?, ?, 1)
+       ON DUPLICATE KEY UPDATE count = count + 1`,
+      [key, windowStart]
+    );
+    const row = await one<{ count: number }>(
+      `SELECT count FROM rate_limits WHERE bucket=? AND window_start=?`,
+      [key, windowStart]
+    );
+    // 顺手清掉 2 小时前的旧窗口，避免表无限增长
+    await exec(`DELETE FROM rate_limits WHERE window_start < ?`, [
+      Math.floor((now - 2 * 60 * 60 * 1000) / windowMs),
+    ]).catch(() => undefined);
+    return { count: row?.count ?? 1, resetAt: (windowStart + 1) * windowMs };
+  }
+}
+
+let rateTableReady = false;
+async function ensureRateLimitsTable(): Promise<void> {
+  if (rateTableReady) return;
+  rateTableReady = true;
+  try {
+    await exec(`CREATE TABLE IF NOT EXISTS rate_limits (
+      bucket VARCHAR(191) NOT NULL,
+      window_start BIGINT NOT NULL,
+      count INT NOT NULL DEFAULT 0,
+      PRIMARY KEY (bucket, window_start)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`);
+  } catch {
+    // 建表失败则本次退化为内存计数；不影响主流程
+    rateTableReady = false;
+  }
+}
+
 let store: Store | null = null;
 let storeInitPromise: Promise<Store> | null = null;
 
@@ -87,8 +136,11 @@ async function getStore(): Promise<Store> {
           console.warn('[ratelimit] 使用 Redis 共享计数（多实例生效）');
           return new RedisStore(client);
         } catch {
-          console.warn('[ratelimit] REDIS_URL 已设置但 ioredis 不可用，降级为内存计数');
+          console.warn('[ratelimit] REDIS_URL 已设置但 ioredis 不可用，降级为 MySQL 计数');
         }
+      } else {
+        console.warn('[ratelimit] 使用 MySQL 共享计数（多实例生效，无需 Redis）');
+        return new DbStore();
       }
       return new MemoryStore();
     })();

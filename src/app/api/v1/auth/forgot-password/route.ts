@@ -4,7 +4,7 @@ import { requestPasswordReset } from '@/server/passwordReset';
 import { clientIp } from '@/server/http';
 import { audit } from '@/server/services';
 import { one } from '@/server/db';
-import { rateLimit } from '@/server/ratelimit';
+import { rateLimitAsync } from '@/server/ratelimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
  */
 export const POST = withApi(async (req: NextRequest) => {
   const ip = clientIp(req);
-  const rl = rateLimit(`forgot:${ip}`, 5, 10 * 60 * 1000);
+  const rl = await rateLimitAsync(`forgot:${ip}`, 5, 10 * 60 * 1000);
   if (!rl.ok) {
     throw new HttpError(429, 'RATE_LIMITED', '请求过于频繁，请稍后再试');
   }

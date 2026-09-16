@@ -3,7 +3,7 @@ import { ok, withApi, notFound, HttpError, readJson } from '@/server/http';
 import { requireUser } from '@/server/auth';
 import { getRoom, addMessage, listMessages, countViewers } from '@/server/live';
 import { broadcastChat } from '@/server/realtime';
-import { rateLimit } from '@/server/ratelimit';
+import { rateLimitAsync } from '@/server/ratelimit';
 import { notifyRole } from '@/server/services';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +25,7 @@ export const GET = withApi(async (req: NextRequest, ctx: any) => {
 export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const id = ctx.params.id as string;
   const user = await requireUser(req);
-  const rl = rateLimit(`chat:${user.id}`, 10, 10_000);
+  const rl = await rateLimitAsync(`chat:${user.id}`, 10, 10_000);
   if (!rl.ok) throw new HttpError(429, 'RATE_LIMITED', '发言过于频繁,请稍后再试');
   const room = await getRoom(id);
   if (!room) throw notFound('直播间不存在');

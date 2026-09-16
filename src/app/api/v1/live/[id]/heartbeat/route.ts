@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { ok, withApi, notFound } from '@/server/http';
 import { getRoom, heartbeat } from '@/server/live';
-import { rateLimit } from '@/server/ratelimit';
+import { rateLimitAsync } from '@/server/ratelimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -14,7 +14,7 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const sp = new URL(req.url).searchParams;
   const session = sp.get('s') || Math.random().toString(36).slice(2);
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.ip || 'unknown';
-  const rl = rateLimit(`beat:ip:${ip}`, 8, 10_000);
+  const rl = await rateLimitAsync(`beat:ip:${ip}`, 8, 10_000);
   if (!rl.ok) return ok({ viewerCount: 0, session, retryAfterMs: rl.retryAfterMs });
   const count = await heartbeat(room.id, session);
   return ok({ viewerCount: count, session });

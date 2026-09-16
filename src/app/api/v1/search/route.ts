@@ -3,9 +3,12 @@ import { q } from '@/server/db';
 import { ok, withApi, HttpError } from '@/server/http';
 import { mapContent, mapSong, mapActivity, mapGroup } from '@/server/mappers';
 import { bookById } from '@/server/bible';
-import { ftAvailable } from '@/server/searchCap';
+import { ftAvailable, ensureFulltextIndex } from '@/server/searchCap';
 
 export const dynamic = 'force-dynamic';
+
+// 首次被访问时自动补齐全文索引（免运维手动跑迁移 004）；不阻塞本次响应。
+void ensureFulltextIndex();
 
 /** 清理布尔全文里的保留字符，避免语法错误。 */
 function ftQuery(kw: string): string {

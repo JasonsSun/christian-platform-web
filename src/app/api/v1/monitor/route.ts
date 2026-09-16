@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { ok, withApi, clientIp, readJson } from '@/server/http';
 import { captureMessage } from '@/server/monitor';
-import { rateLimit } from '@/server/ratelimit';
+import { rateLimitAsync } from '@/server/ratelimit';
 import { currentUser } from '@/server/auth';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
  */
 export const POST = withApi(async (req: NextRequest) => {
   const ip = clientIp(req);
-  const rl = rateLimit(`monitor:${ip}`, 20, 60_000);
+  const rl = await rateLimitAsync(`monitor:${ip}`, 20, 60_000);
   if (!rl.ok) {
     // 超限直接丢弃，不报错（避免客户端重试风暴）
     return ok({ dropped: true });

@@ -26,3 +26,28 @@ stages:
           # 构建期不需要真实密钥，但 auth.ts 在生产模式下会校验长度 ≥32
           JWT_SECRET: ci-only-placeholder-secret-at-least-32-chars
           NEXT_TELEMETRY_DISABLED: '1'
+
+  - name: e2e
+    displayName: 真实环境 e2e 回归
+    steps:
+      - step: build@nodejs
+        displayName: 建库 → 起服务 → 全量 e2e
+        inputs:
+          nodeVersion: '20'
+          buildCommand: |
+            cd apps/web
+            npm ci
+            bash scripts/ci-e2e.sh
+        env:
+          DB_HOST: mysql
+          DB_PORT: '3306'
+          DB_USER: root
+          DB_PASSWORD: testpass
+          DB_NAME: christian_platform
+          JWT_SECRET: ci-e2e-secret-at-least-32-chars-long
+    services:
+      - image: mysql:8
+        name: mysql
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: christian_platform

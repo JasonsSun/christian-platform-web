@@ -41,8 +41,45 @@ jobs:
           npm test
           npm run test:plan
 
-      # e2e 脚本需要真实服务 + MySQL + 种子账号，CI 里跑不稳，
-      # 保留在本地/CI 手动触发：npm run test:e2e:sermons 等 18 个脚本。
-      # 如需接入，可加 mysql service 后：
-      #   npm run migrate && npm start & npx wait-on http://127.0.0.1:3000
-      #   再逐个跑 scripts/e2e-*.mjs
+  e2e:
+    needs: check
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: testpass
+          MYSQL_DATABASE: christian_platform
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptestpass"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_USER: root
+      DB_PASSWORD: testpass
+      DB_NAME: christian_platform
+      JWT_SECRET: ci-e2e-secret-at-least-32-chars-long
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: 安装依赖
+        working-directory: apps/web
+        run: npm ci
+
+      - name: 真实环境 e2e（建库 → 迁移 → 起服务 → 全量回归）
+        working-directory: apps/web
+        run: bash scripts/ci-e2e.sh

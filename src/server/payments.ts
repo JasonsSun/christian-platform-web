@@ -1,4 +1,4 @@
-import { createSign, createVerify, randomBytes } from 'node:crypto';
+import { createSign, createVerify, randomBytes, createDecipheriv, createHmac } from 'node:crypto';
 import { exec, one, q } from './db';
 import { ensurePaymentColumns } from './paymentColumns';
 import { getBool, getSetting } from './settings';
@@ -76,8 +76,11 @@ const SECRET_ENV: Record<string, string> = {
   alipay_private_key: 'ALIPAY_PRIVATE_KEY',
   alipay_public_key: 'ALIPAY_PUBLIC_KEY',
   wechat_mchid: 'WECHAT_MCHID',
+  wechat_appid: 'WECHAT_APPID',
   wechat_api_v3_key: 'WECHAT_API_V3_KEY',
   wechat_private_key: 'WECHAT_PRIVATE_KEY',
+  wechat_serial_no: 'WECHAT_SERIAL_NO',
+  wechat_platform_cert: 'WECHAT_PLATFORM_CERT',
   stripe_secret_key: 'STRIPE_SECRET_KEY',
   stripe_webhook_secret: 'STRIPE_WEBHOOK_SECRET',
 };
@@ -222,22 +225,110 @@ const alipay: PaymentGateway = {
 };
 
 /* ------------------------------------------------------------------ */
-/* 微信支付 Native / Stripe：结构已就位，等真实商户密钥到位后接入           */
+/* 微信支付 v3 Native / Stripe：纯 node:crypto 实现，零三方 SDK          */
 /* ------------------------------------------------------------------ */
+
+/** 微信 v3 请求签名：Authorization: WECHATPAY2-SHA256-RSA2048 mchid=... */
+function wechatV3Auth(method: string, urlPath: string, body: string, mchid: string, serialNo: string, privateKey: string): string {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const nonce = randomBytes(16).toString('hex');
+  const message = `${method.toUpperCase()}\n${urlPath}\n${timestamp}\n${nonce}\n${body}\n`;
+  const signature = createSign('RSA-SHA256').update(message, 'utf8').sign(privateKey, 'base64');
+  return `WECHATPAY2-SHA256-RSA2048 mchid="${mchid}",nonce_str="${nonce}",signature="${signature}",timestamp="${timestamp}",serial_no="${serialNo}"`;
+}
+
+/** 微信回调 resource 的 AES-256-GCM 解密（ciphertext 末尾 16 字节即 GCM tag） */
+function aesGcmDecrypt(ciphertextB64: string, apiV3Key: string, ivB64: string, associated?: string): string {
+  const data = Buffer.from(ciphertextB64, 'base64');
+  const tag = data.subarray(data.length - 16);
+  const enc = data.subarray(0, data.length - 16);
+  const decipher = createDecipheriv('aes-256-gcm', Buffer.from(apiV3Key, 'utf8'), Buffer.from(ivB64, 'base64'));
+  decipher.setAuthTag(tag);
+  if (associated) decipher.setAAD(Buffer.from(associated, 'utf8'));
+  return Buffer.concat([decipher.update(enc), decipher.final()]).toString('utf8');
+}
+
+/** 校验微信回调签名（用平台证书公钥） */
+function verifyWechatNotifySig(timestamp: string, nonce: string, body: string, signatureB64: string, platformCertPem: string): boolean {
+  try {
+    const message = `${timestamp}\n${nonce}\n${body}\n`;
+    return createVerify('RSA-SHA256').update(message, 'utf8').verify(platformCertPem, signatureB64, 'base64');
+  } catch {
+    return false;
+  }
+}
+
+/** 校验 Stripe webhook 签名（常量时间比较，防时序攻击） */
+function verifyStripeSig(payload: string, header: string, secret: string): boolean {
+  const m = /^t=(\d+),v1=(.+)$/.exec(header || '');
+  if (!m) return false;
+  const expected = createHmac('sha256', secret).update(`${m[1]}.${payload}`).digest('hex');
+  const a = Buffer.from(m[2]);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+  return diff === 0;
+}
 
 const wechat: PaymentGateway = {
   key: 'wechat',
   label: '微信支付',
   configured: async () =>
-    !!(await secret('wechat_mchid')) && !!(await secret('wechat_api_v3_key')) && !!(await secret('wechat_private_key')),
-  async createPayment() {
-    // 微信 Native 需要 v3 接口签名(WECHATPAY2-SHA256-RSA2048) + 商户证书序列号，
-    // 回调还要用平台证书验签并对 resource 做 AES-GCM 解密。结构已按该形态设计：
-    // 真实下单返回 codeUrl，前端用现有 qrcode 渲染即可。
-    throw new Error('微信支付适配器待接入：拿到商户号后补齐 v3 签名与回调解密');
+    !!(await secret('wechat_mchid')) && !!(await secret('wechat_api_v3_key')) &&
+    !!(await secret('wechat_private_key')) && !!(await secret('wechat_appid')) &&
+    !!(await secret('wechat_serial_no')) && !!(await secret('wechat_platform_cert')),
+  async createPayment({ outTradeNo, amountCents, subject, notifyUrl, clientIp }) {
+    const mchid = await secret('wechat_mchid');
+    const apiV3Key = await secret('wechat_api_v3_key');
+    const privateKey = await secret('wechat_private_key');
+    const appid = await secret('wechat_appid');
+    const serialNo = await secret('wechat_serial_no');
+    if (!mchid || !apiV3Key || !privateKey || !appid || !serialNo) {
+      throw new Error('微信支付未配置：请后台填写 商户号/Mchid、APIv3密钥、商户API私钥、AppID、证书序列号');
+    }
+    const bodyObj = {
+      mchid, appid,
+      description: subject.slice(0, 120),
+      notify_url: notifyUrl,
+      out_trade_no: outTradeNo,
+      amount: { total: amountCents, currency: 'CNY' },
+      ...(clientIp ? { spbill_create_ip: clientIp } : {}),
+    };
+    const body = JSON.stringify(bodyObj);
+    const urlPath = '/v3/pay/transactions/native';
+    const auth = wechatV3Auth('POST', urlPath, body, mchid, serialNo, privateKey);
+    const resp = await fetch(`https://api.mweixin.qq.com${urlPath}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: auth },
+      body,
+    });
+    const text = await resp.text();
+    if (!resp.ok) throw new Error(`微信下单失败 ${resp.status}: ${text}`);
+    const json = JSON.parse(text) as { code_url?: string };
+    if (!json.code_url) throw new Error('微信下单未返回 code_url');
+    return { gateway: 'wechat', outTradeNo, codeUrl: json.code_url };
   },
-  async parseNotify() {
-    throw new Error('微信支付适配器待接入');
+  async parseNotify(req) {
+    const apiV3Key = await secret('wechat_api_v3_key');
+    const platformCert = await secret('wechat_platform_cert');
+    if (!apiV3Key || !platformCert) throw new Error('微信支付未配置 APIv3 密钥或平台证书');
+    const timestamp = req.headers.get('wechatpay-timestamp') || '';
+    const nonce = req.headers.get('wechatpay-nonce') || '';
+    const signature = req.headers.get('wechatpay-signature') || '';
+    const body = await req.text();
+    if (!verifyWechatNotifySig(timestamp, nonce, body, signature, platformCert)) {
+      throw new Error('微信回调验签失败');
+    }
+    const resource = (JSON.parse(body) as any).resource;
+    const plain = aesGcmDecrypt(resource.ciphertext, apiV3Key, resource.iv, resource.associated_data);
+    const data = JSON.parse(plain) as { out_trade_no?: string; transaction_id?: string; trade_state?: string; amount?: { total?: number } };
+    if (data.trade_state !== 'SUCCESS') throw new Error(`微信未成交状态 ${data.trade_state}`);
+    return {
+      outTradeNo: data.out_trade_no || '',
+      transactionId: data.transaction_id || '',
+      amountCents: Number(data.amount?.total || 0),
+    };
   },
   successReply: () => new Response(JSON.stringify({ code: 'SUCCESS', message: '成功' }), { status: 200 }),
   failureReply: (m) => new Response(JSON.stringify({ code: 'FAIL', message: m }), { status: 400 }),
@@ -247,13 +338,48 @@ const stripe: PaymentGateway = {
   key: 'stripe',
   label: 'Stripe',
   configured: async () => !!(await secret('stripe_secret_key')) && !!(await secret('stripe_webhook_secret')),
-  async createPayment() {
-    // Stripe Checkout Session 需要服务端调用其 REST 建会话再跳转；
-    // 回调用 stripe-signature 头的 HMAC-SHA256 验签，不依赖官方 SDK。
-    throw new Error('Stripe 适配器待接入：需要境外主体与 webhook secret');
+  async createPayment({ outTradeNo, amountCents, subject, notifyUrl, returnUrl }) {
+    const sk = await secret('stripe_secret_key');
+    if (!sk) throw new Error('Stripe 未配置：请在后台「支付配置」填写 Secret Key');
+    const currency = (process.env.STRIPE_CURRENCY || 'cny').toLowerCase();
+    const params = new URLSearchParams();
+    params.set('mode', 'payment');
+    params.set('success_url', `${returnUrl || notifyUrl}?paid=1&session_id={CHECKOUT_SESSION_ID}`);
+    params.set('cancel_url', `${returnUrl || notifyUrl}?canceled=1`);
+    params.set('client_reference_id', outTradeNo);
+    params.set('line_items[0][price_data][currency]', currency);
+    params.set('line_items[0][price_data][product_data][name]', subject.slice(0, 120));
+    params.set('line_items[0][price_data][unit_amount]', String(amountCents));
+    params.set('line_items[0][quantity]', '1');
+    params.set('payment_method_types[0]', 'card');
+    const resp = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${sk}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
+    });
+    const text = await resp.text();
+    if (!resp.ok) throw new Error(`Stripe 建会话失败 ${resp.status}: ${text}`);
+    const json = JSON.parse(text) as { url?: string };
+    if (!json.url) throw new Error('Stripe 未返回跳转地址');
+    return { gateway: 'stripe', outTradeNo, payUrl: json.url };
   },
-  async parseNotify() {
-    throw new Error('Stripe 适配器待接入');
+  async parseNotify(req) {
+    const whSecret = await secret('stripe_webhook_secret');
+    if (!whSecret) throw new Error('Stripe 未配置 Webhook Secret');
+    const sig = req.headers.get('stripe-signature') || '';
+    const payload = await req.text();
+    if (!verifyStripeSig(payload, sig, whSecret)) throw new Error('Stripe 回调验签失败');
+    const event = JSON.parse(payload) as any;
+    if (event.type !== 'checkout.session.completed') {
+      // 其它事件直接回 200，让 Stripe 不再重发
+      return { outTradeNo: '', transactionId: '', amountCents: 0 };
+    }
+    const s = event.data?.object || {};
+    return {
+      outTradeNo: s.client_reference_id || '',
+      transactionId: s.payment_intent || '',
+      amountCents: Number(s.amount_total || 0),
+    };
   },
   successReply: () => new Response('{}', { status: 200 }),
   failureReply: (m) => new Response(JSON.stringify({ error: m }), { status: 400 }),

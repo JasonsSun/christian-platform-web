@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { ok, withApi, HttpError, clientIp } from '@/server/http';
 import { resetPasswordWithToken, verifyResetToken } from '@/server/passwordReset';
-import { rateLimit } from '@/server/ratelimit';
+import { rateLimitAsync } from '@/server/ratelimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ export const GET = withApi(async (req: NextRequest) => {
 /** 用令牌设置新密码 */
 export const POST = withApi(async (req: NextRequest) => {
   const ip = clientIp(req);
-  const rl = rateLimit(`reset:${ip}`, 10, 10 * 60 * 1000);
+  const rl = await rateLimitAsync(`reset:${ip}`, 10, 10 * 60 * 1000);
   if (!rl.ok) {
     throw new HttpError(429, 'RATE_LIMITED', '尝试过于频繁，请稍后再试');
   }
