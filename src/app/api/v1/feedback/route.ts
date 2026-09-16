@@ -3,6 +3,7 @@ import { exec, newId, one, q, ts } from '@/server/db';
 import { HttpError, ok, readJson, withApi } from '@/server/http';
 import { requireUser, UserRow } from '@/server/auth';
 import { audit, notifyRole } from '@/server/services';
+import { guardWrite } from '@/server/guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,7 @@ const CATEGORY_LABEL: Record<string, string> = {
  */
 export const POST = withApi(async (req: NextRequest) => {
   const user = (await requireUser(req)) as UserRow;
+  await guardWrite(req, 'feedback', user.id);
   const b = await readJson<{ category?: string; content?: string; contact?: string; pageUrl?: string }>(req);
 
   const content = (b.content || '').trim();

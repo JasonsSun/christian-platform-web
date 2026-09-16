@@ -3,6 +3,7 @@ import { exec, newId, one, q, ts } from '@/server/db';
 import { ok, withApi, readJson, HttpError, num } from '@/server/http';
 import { currentUser, requireUser, UserRow } from '@/server/auth';
 import { mapPrayer } from '@/server/mappers';
+import { guardWrite } from '@/server/guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,6 +40,7 @@ export const GET = withApi(async (req: NextRequest) => {
 
 export const POST = withApi(async (req: NextRequest) => {
   const user = await requireUser(req);
+  await guardWrite(req, 'prayer', user.id);
   const body = await readJson<{ body?: string }>(req);
   const text = (body.body || '').trim();
   if (text.length < 5) throw new HttpError(422, 'VALIDATION_FAILED', '代祷内容至少 5 个字');

@@ -4,6 +4,7 @@ import { ok, withApi, notFound, readJson, HttpError } from '@/server/http';
 import { requireUser } from '@/server/auth';
 import { mapMessage } from '@/server/mappers';
 import { notify } from '@/server/services';
+import { guardWrite } from '@/server/guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,7 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
 
 export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
   const user = await requireUser(req);
+  await guardWrite(req, 'message', user.id);
   const peerId = ctx.params.peerId;
   if (peerId === user.id) throw new HttpError(400, 'BAD_REQUEST', '不能给自己发消息');
   const peer = await one<any>(`SELECT id, display_name FROM users WHERE id = ?`, [peerId]);

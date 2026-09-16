@@ -4,6 +4,7 @@ import { ok, readJson, withApi, HttpError, clientIp, num } from '@/server/http';
 import { currentUser, requireUser, UserRow } from '@/server/auth';
 import { mapContent } from '@/server/mappers';
 import { audit, dispatchOutbox, emit } from '@/server/services';
+import { guardWrite } from '@/server/guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +84,7 @@ export const GET = withApi(async (req: NextRequest) => {
 
 export const POST = withApi(async (req: NextRequest) => {
   const user = await requireUser(req);
+  await guardWrite(req, 'content', user.id);
   const body = await readJson<{
     title?: string; body?: string; contentType?: string; tags?: string[]; cover?: string; status?: string;
     mediaIds?: string[];

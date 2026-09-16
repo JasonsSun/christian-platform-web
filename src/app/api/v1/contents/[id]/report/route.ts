@@ -3,6 +3,7 @@ import { exec, one, newId, ts } from '@/server/db';
 import { ok, withApi, badRequest, notFound } from '@/server/http';
 import { requireUser, UserRow } from '@/server/auth';
 import { audit, notifyRole } from '@/server/services';
+import { guardWrite } from '@/server/guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,7 @@ const REASON_LABEL: Record<string, string> = {
 /** POST /api/v1/contents/{id}/report  body:{reason, detail?} */
 export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
   const user = (await requireUser(req)) as UserRow;
+  await guardWrite(req, 'report', user.id);
   const contentId = ctx.params.id;
   const content = await one<any>(`SELECT id, title, author_id FROM contents WHERE id = ?`, [contentId]);
   if (!content) throw notFound('内容不存在');

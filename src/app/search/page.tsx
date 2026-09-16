@@ -19,6 +19,23 @@ type SearchResp = {
   groups: GroupItem[];
   verses: VerseHit[];
   users: SearchUser[];
+  media: MediaHit[];
+  sermons: SermonHit[];
+  prayers: PrayerHit[];
+};
+
+type MediaHit = {
+  id: string; title: string; description: string; kind: string;
+  durationSec: number | null; createdAt: string;
+};
+type SermonHit = {
+  id: string; title: string; speaker: string; scripture: string;
+  description: string; mediaType: string; durationSec: number;
+  cover: string; viewCount: number; preachedAt: string; createdAt: string;
+};
+type PrayerHit = {
+  id: string; body: string; amenCount: number; answered: boolean;
+  createdAt: string; userId: string; userName: string; userColor: string;
 };
 
 const HISTORY_KEY = 'search_history';
@@ -312,9 +329,63 @@ function SearchInner() {
             </section>
           )}
 
+          {/* 讲道 */}
+          {(data.sermons?.length ?? 0) > 0 && (
+            <section>
+              <SectionTitle icon="🎙️" title="讲道" total={data.sermons.length} href={`/sermons?q=${enc}`} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {data.sermons.slice(0, 6).map((s) => (
+                  <Link key={s.id} href={`/sermons/${s.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
+                    <h4 className="font-semibold text-ink-900 truncate">{s.title}</h4>
+                    <p className="text-xs text-ink-500 mt-1 truncate">
+                      {[s.speaker, s.scripture, s.preachedAt].filter(Boolean).join(' · ')}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 媒体 */}
+          {(data.media?.length ?? 0) > 0 && (
+            <section>
+              <SectionTitle icon="🎬" title="媒体" total={data.media.length} href={`/media?q=${enc}`} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {data.media.slice(0, 6).map((m) => (
+                  <Link key={m.id} href={`/media/${m.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
+                    <h4 className="font-semibold text-ink-900 truncate">{m.title}</h4>
+                    <p className="text-xs text-ink-500 mt-1 truncate">
+                      {m.kind === 'audio' ? '音频' : m.kind === 'video' ? '视频' : m.kind === 'image' ? '图片' : m.kind === 'score' ? '曲谱' : '资料'}
+                      {m.durationSec ? ` · ${Math.round(m.durationSec / 60)} 分钟` : ''}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* 代祷 */}
+          {(data.prayers?.length ?? 0) > 0 && (
+            <section>
+              <SectionTitle icon="🙏" title="代祷" total={data.prayers.length} href={`/prayers?q=${enc}`} />
+              <div className="space-y-3">
+                {data.prayers.slice(0, 5).map((p) => (
+                  <Link key={p.id} href="/prayers" className="block bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
+                    <p className="text-ink-800 text-sm line-clamp-2">{p.body}</p>
+                    <p className="text-xs text-ink-500 mt-2">
+                      {p.userName} · {p.amenCount} 个阿们{p.answered ? ' · 已蒙应允' : ''}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* 空态 */}
           {data.contents.length === 0 && data.songs.length === 0 && data.activities.length === 0 &&
-            data.groups.length === 0 && data.verses.length === 0 && data.users.length === 0 && (
+            data.groups.length === 0 && data.verses.length === 0 && data.users.length === 0 &&
+            (data.sermons?.length ?? 0) === 0 && (data.media?.length ?? 0) === 0 &&
+            (data.prayers?.length ?? 0) === 0 && (
               <div className="bg-white rounded-2xl p-12 shadow-soft border border-ink-100 text-center">
                 <div className="text-5xl mb-4">📭</div>
                 <h3 className="font-display text-xl font-bold text-ink-900 mb-2">没有找到「{q}」</h3>

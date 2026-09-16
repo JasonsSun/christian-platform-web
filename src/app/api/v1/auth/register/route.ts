@@ -4,11 +4,14 @@ import { ok, readJson, withApi, clientIp, HttpError } from '@/server/http';
 import { createSession, findUserById, hashPassword, publicUser, signAccessToken } from '@/server/auth';
 import { audit, notify } from '@/server/services';
 import { verifyCaptcha, isBlocked, recordFailure, resetAttempts } from '@/server/captcha';
+import { guardWrite } from '@/server/guard';
 
 export const dynamic = 'force-dynamic';
 
 export const POST = withApi(async (req: NextRequest) => {
   const ip = clientIp(req);
+  // 注册按 IP 限流（此时还没有用户身份）
+  await guardWrite(req, 'register');
   // 限流：同一 IP 连续失败过多则拒绝
   if (isBlocked(ip)) throw new HttpError(429, 'TOO_MANY_ATTEMPTS', '尝试次数过多，请稍后再试');
 
@@ -71,7 +74,7 @@ export const POST = withApi(async (req: NextRequest) => {
   return ok(
     {
       user: publicUser(user),
-      accessToken: signAccessToken(user),
+      accessToken: signAccessToken(user, session.sessionId),
       refreshToken: session.refresh,
       expiresIn: Number(process.env.JWT_ACCESS_TTL || 900),
     },

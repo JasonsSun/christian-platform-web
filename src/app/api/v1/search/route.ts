@@ -12,7 +12,7 @@ export const GET = withApi(async (req: NextRequest) => {
   if (!keyword) throw new HttpError(400, 'BAD_REQUEST', '请输入搜索关键词');
   const like = `%${keyword}%`;
 
-  const [contents, songs, activities, groups, verses, users] = await Promise.all([
+  const [contents, songs, activities, groups, verses, users, media, sermons, prayers] = await Promise.all([
     q<any>(`SELECT c.id, c.title, c.body, c.content_type, c.status, c.cover, c.tags,
                    c.like_count, c.comment_count, c.view_count,
                    DATE_FORMAT(c.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
@@ -49,6 +49,28 @@ export const GET = withApi(async (req: NextRequest) => {
     q<any>(`SELECT id, username, display_name, avatar_color, city, church
             FROM users WHERE status='active' AND (username LIKE ? OR display_name LIKE ? OR church LIKE ?) LIMIT 8`,
       [like, like, like]),
+    // 媒体：只出已审核通过且未回收的，避免把待审/回收站内容搜出来
+    q<any>(`SELECT id, title, description, kind, duration_sec, status, review_status,
+                   DATE_FORMAT(created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at
+            FROM media_files
+            WHERE status='ready' AND review_status='approved'
+              AND (title LIKE ? OR description LIKE ? OR file_name LIKE ?)
+            ORDER BY created_at DESC LIMIT 8`, [like, like, like]),
+    // 讲道：草稿只对审核员可见，这里一律只出已发布
+    q<any>(`SELECT id, title, speaker, scripture, description, media_type, duration_sec,
+                   cover, view_count, like_count,
+                   DATE_FORMAT(preached_at,'%Y-%m-%d') AS preached_at,
+                   DATE_FORMAT(created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at
+            FROM sermons
+            WHERE status='published'
+              AND (title LIKE ? OR speaker LIKE ? OR scripture LIKE ? OR description LIKE ?)
+            ORDER BY created_at DESC LIMIT 8`, [like, like, like, like]),
+    q<any>(`SELECT p.id, p.body, p.amen_count, p.answered,
+                   DATE_FORMAT(p.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
+                   u.id AS user_id, u.display_name AS user_name, u.avatar_color AS user_color
+            FROM prayers p JOIN users u ON u.id = p.user_id
+            WHERE p.body LIKE ?
+            ORDER BY p.created_at DESC LIMIT 8`, [like]),
   ]);
 
   return ok({
@@ -64,6 +86,24 @@ export const GET = withApi(async (req: NextRequest) => {
     users: users.map((u) => ({
       id: u.id, username: u.username, displayName: u.display_name,
       avatarColor: u.avatar_color, city: u.city, church: u.church,
+    })),
+    media: media.map((m) => ({
+      id: m.id, title: m.title || m.file_name || '未命名媒体',
+      description: m.description || '', kind: m.kind,
+      durationSec: m.duration_sec ?? null,
+      createdAt: m.created_at,
+    })),
+    sermons: sermons.map((s) => ({
+      id: s.id, title: s.title, speaker: s.speaker || '',
+      scripture: s.scripture || '', description: s.description || '',
+      mediaType: s.media_type, durationSec: s.duration_sec || 0,
+      cover: s.cover || '', viewCount: s.view_count || 0,
+      preachedAt: s.preached_at || '', createdAt: s.created_at,
+    })),
+    prayers: prayers.map((p) => ({
+      id: p.id, body: p.body, amenCount: Number(p.amen_count || 0),
+      answered: !!p.answered, createdAt: p.created_at,
+      userId: p.user_id, userName: p.user_name, userColor: p.user_color,
     })),
   });
 });

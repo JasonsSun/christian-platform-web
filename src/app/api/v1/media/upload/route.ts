@@ -13,6 +13,7 @@ import { scheduleMediaPipeline } from '@/server/mediaPipeline';
 import { validateUpload, extOf, guessMime, kindLabel, publicUrlFor } from '@/server/media';
 import { probeDuration } from '@/server/transcode';
 import { assertUploadAllowed, assertDurationAllowed, getQuota, fmtMin, MB } from '@/server/quota';
+import { guardWrite } from '@/server/guard';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -51,6 +52,7 @@ async function streamToDisk(file: File, ext: string) {
 /** 上传媒体(图片/音乐/视频/曲谱/资料):配额校验 → 落盘 → 时长校验 → 建记录 → 待审核 */
 export const POST = withApi(async (req: NextRequest) => {
   const user = (await requireUser(req)) as UserRow;
+  await guardWrite(req, 'upload', user.id);
 
   const ct = req.headers.get('content-type') || '';
   if (!ct.includes('multipart/form-data')) {

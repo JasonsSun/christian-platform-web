@@ -3,6 +3,7 @@ import { exec, newId, one, q, ts } from '@/server/db';
 import { ok, withApi, notFound, readJson, HttpError } from '@/server/http';
 import { currentUser, requireUser, UserRow } from '@/server/auth';
 import { mapComment } from '@/server/mappers';
+import { guardWrite } from '@/server/guard';
 import { dispatchOutbox, emit, notify } from '@/server/services';
 
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,7 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
 
 export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
   const user = await requireUser(req);
+  await guardWrite(req, 'comment', user.id);
   const id = ctx.params.id;
   const content = await one<any>(`SELECT id FROM contents WHERE id = ?`, [id]);
   if (!content) throw notFound('内容不存在');

@@ -4,12 +4,14 @@ import { ok, withApi, notFound, conflict, badRequest, HttpError, clientIp } from
 import { requireUser, UserRow } from '@/server/auth';
 import { notify, audit } from '@/server/services';
 import { readJson } from '@/server/http';
+import { guardWrite } from '@/server/guard';
 
 export const dynamic = 'force-dynamic';
 
 /** POST /api/v1/friends/request  { addresseeId, message? } */
 export const POST = withApi(async (req: NextRequest) => {
   const user = (await requireUser(req)) as UserRow;
+  await guardWrite(req, 'follow', user.id);
   const { addresseeId, message } = await readJson<{ addresseeId?: string; message?: string }>(req);
   if (!addresseeId) throw badRequest('缺少 addresseeId');
   if (addresseeId === user.id) throw new HttpError(400, 'BAD_REQUEST', '不能添加自己为好友');
