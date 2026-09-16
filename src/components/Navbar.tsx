@@ -83,7 +83,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
     pathname === href || (href !== '/' && pathname.startsWith(href));
 
   const linkCls = (active: boolean) =>
-    `relative whitespace-nowrap px-2.5 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
+    `relative whitespace-nowrap px-2 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
       active
         ? isScrolled
           ? 'text-primary-600'
@@ -106,7 +106,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
           : 'bg-gradient-to-r from-primary-950/90 via-primary-900/85 to-primary-950/90 backdrop-blur-lg border-b border-white/10'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 md:h-20">
           <Link href="/" className="flex items-center gap-2 group shrink-0">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
@@ -128,7 +128,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
 
           {/* mx-auto 而非 justify-center：溢出时可正常横向滚动，不会两头被裁 */}
           <div className="hidden xl:flex flex-1 min-w-0 overflow-x-auto no-scrollbar">
-            <div className="mx-auto flex items-center gap-1 px-1">
+            <div className="mx-auto flex items-center gap-0.5 px-1">
               {links.map((link) => {
                 const active = isActive(link.href);
                 return (
@@ -150,8 +150,8 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
-              title="推荐给朋友"
-              aria-label="推荐给朋友"
+              title={t('nav.shareTitle')}
+              aria-label={t('nav.shareTitle')}
               className={iconBtnCls}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -172,7 +172,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                   </Link>
                 )}
 
-                <Link href="/notifications" className={`relative ${iconBtnCls}`} title="通知" aria-label="通知">
+                <Link href="/notifications" className={`relative ${iconBtnCls}`} title={t('nav.notifications')} aria-label={t('nav.notifications')}>
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
@@ -201,19 +201,19 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                   {menuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-card border border-ink-100 py-2 overflow-hidden">
                       <Link href="/me" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.profile')}</Link>
-                      {!moduleOff('/community/create') && <Link href="/community/create" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">发布内容</Link>}
-                      {!moduleOff('/messages') && <Link href="/messages" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">我的消息</Link>}
+                      {!moduleOff('/community/create') && <Link href="/community/create" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.createContent')}</Link>}
+                      {!moduleOff('/messages') && <Link href="/messages" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.messages')}</Link>}
                       <Link href="/friends?tab=requests" className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">
-                        <span>好友申请</span>
+                        <span>{t('nav.friendRequests')}</span>
                         {!!frReq?.total && (
                           <span className="min-w-[18px] h-4 px-1 rounded-full bg-primary-600 text-white text-[10px] flex items-center justify-center">
                             {frReq.total > 99 ? '99+' : frReq.total}
                           </span>
                         )}
                       </Link>
-                      <Link href="/feedback" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">💡 给平台提建议</Link>
+                      <Link href="/feedback" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.feedback')}</Link>
                       {isStaff && <Link href="/admin" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.admin')}</Link>}
-                      {isStaff && <Link href="/admin/reviews" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">审核队列</Link>}
+                      {isStaff && <Link href="/admin/reviews" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.reviewQueue')}</Link>}
                       <div className="divider-gradient my-1" />
                       <button
                         onClick={async () => {
@@ -222,7 +222,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                         }}
                         className="block w-full text-left px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 whitespace-nowrap"
                       >
-                        退出登录
+                        {t('nav.logout')}
                       </button>
                     </div>
                   )}
@@ -233,14 +233,14 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                 <Link href="/login" className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
                   isScrolled ? 'text-primary-600 hover:bg-primary-50' : 'text-white/90 hover:text-white hover:bg-white/10'
                 }`}>
-                  登录
+                  {t('nav.login')}
                 </Link>
                 <Link href="/login?mode=register" className={`whitespace-nowrap px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-300 ${
                   isScrolled
                     ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/40 hover:-translate-y-0.5'
                     : 'bg-white text-primary-700 hover:bg-primary-50 hover:-translate-y-0.5 shadow-lg'
                 }`}>
-                  免费注册
+                  {t('nav.register')}
                 </Link>
               </>
             )}
@@ -251,7 +251,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
             className={`xl:hidden ml-auto p-2 rounded-lg transition-colors ${
               isScrolled ? 'text-ink-700 hover:bg-ink-100' : 'text-white hover:bg-white/10'
             }`}
-            aria-label="Toggle menu"
+            aria-label={t('nav.toggleMenu')}
             aria-expanded={isMobileMenuOpen}
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -280,7 +280,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
             </div>
 
             <MenuRow onClick={() => { setShareOpen(true); setIsMobileMenuOpen(false); }}>
-              📤 分享本系统
+              📤 {t('nav.shareSystem')}
             </MenuRow>
 
             <div className="divider-gradient my-2" />
@@ -293,10 +293,10 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
               <>
                 <Link href="/me" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.profile')}</Link>
                 <Link href="/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.notifications')}</Link>
-                <Link href="/settings/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">提醒设置</Link>
-                <Link href="/feedback" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">💡 给平台提建议</Link>
+                <Link href="/settings/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.reminderSettings')}</Link>
+                <Link href="/feedback" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.feedback')}</Link>
                 <Link href="/friends?tab=requests" className="flex items-center justify-between gap-2 px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">
-                  <span>好友申请</span>
+                  <span>{t('nav.friendRequests')}</span>
                   {!!frReq?.total && (
                     <span className="min-w-[18px] h-4 px-1 rounded-full bg-primary-600 text-white text-[10px] flex items-center justify-center">
                       {frReq.total > 99 ? '99+' : frReq.total}
@@ -311,14 +311,14 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                   }}
                   className="block w-full px-4 py-3 rounded-xl font-medium text-rose-600 text-left hover:bg-rose-50 whitespace-nowrap"
                 >
-                  退出登录
+                  {t('nav.logout')}
                 </button>
               </>
             ) : (
               <>
-                <Link href="/login" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 text-center whitespace-nowrap">登录</Link>
+                <Link href="/login" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 text-center whitespace-nowrap">{t('nav.login')}</Link>
                 <Link href="/login?mode=register" className="block px-4 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary-600 to-primary-500 text-white text-center shadow-lg shadow-primary-500/25 whitespace-nowrap">
-                  免费注册
+                  {t('nav.register')}
                 </Link>
               </>
             )}

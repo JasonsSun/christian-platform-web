@@ -17,11 +17,6 @@ import { useTheme, type Theme } from '@/lib/theme';
  * `inline` 供移动端汉堡菜单直接内嵌使用（不做绝对定位，避免嵌套浮层）。
  */
 
-const LANG_LABEL: Record<string, string> = { zh: '中文', en: 'EN' };
-const VARIANT_LABEL: Record<Variant, string> = { s: '简体', t: '繁體' };
-const THEME_LABEL: Record<Theme, string> = { light: '浅色', dark: '深色', sepia: '护眼' };
-const FONT_LABEL: Record<FontScale, string> = { normal: '标准', lg: '大', xl: '特大' };
-
 function Seg<T extends string>({
   value,
   options,
@@ -83,11 +78,25 @@ export default function PreferenceMenu({
   tone?: 'dark' | 'light';
   inline?: boolean;
 }) {
-  const { locale, setLocale, variant, setVariant } = useI18n();
+  const { locale, setLocale, variant, setVariant, t } = useI18n();
   const { fontScale, contrast, reduceMotion, setFontScale, setContrast, setReduceMotion } = useA11y();
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  const langOptions = LOCALES.map((l) => ({ value: l, label: t('lang.' + l) }));
+  const variantOptions = (['s', 't'] as Variant[]).map((v) => ({
+    value: v,
+    label: t(v === 's' ? 'pref.simplified' : 'pref.traditional'),
+  }));
+  const themeOptions = (['light', 'sepia', 'dark'] as Theme[]).map((v) => ({
+    value: v,
+    label: t('pref.' + v),
+  }));
+  const fontOptions = (['normal', 'lg', 'xl'] as FontScale[]).map((v) => ({
+    value: v,
+    label: t('pref.' + v),
+  }));
 
   useEffect(() => {
     if (inline) return;
@@ -109,55 +118,39 @@ export default function PreferenceMenu({
         inline ? 'mt-2 w-full' : 'absolute right-0 mt-2 w-72'
       } bg-white rounded-2xl shadow-card border border-ink-100 p-4 space-y-3 z-50 text-ink-800`}
       role="dialog"
-      aria-label="显示与偏好设置"
+      aria-label={t('pref.settings')}
       data-guard="preference-menu"
     >
-      <Row label="语言">
-        <Seg
-          value={locale}
-          options={LOCALES.map((l) => ({ value: l, label: LANG_LABEL[l] }))}
-          onChange={setLocale}
-        />
+      <Row label={t('pref.language')}>
+        <Seg value={locale} options={langOptions} onChange={setLocale} />
       </Row>
 
       {locale === 'zh' && (
-        <Row label="字形">
-          <Seg
-            value={variant}
-            options={(['s', 't'] as Variant[]).map((v) => ({ value: v, label: VARIANT_LABEL[v] }))}
-            onChange={setVariant}
-          />
+        <Row label={t('pref.variant')}>
+          <Seg value={variant} options={variantOptions} onChange={setVariant} />
         </Row>
       )}
 
-      <Row label="主题">
-        <Seg
-          value={theme}
-          options={(['light', 'sepia', 'dark'] as Theme[]).map((t) => ({ value: t, label: THEME_LABEL[t] }))}
-          onChange={setTheme}
-        />
+      <Row label={t('pref.theme')}>
+        <Seg value={theme} options={themeOptions} onChange={setTheme} />
       </Row>
 
-      <Row label="字号">
-        <Seg
-          value={fontScale}
-          options={(['normal', 'lg', 'xl'] as FontScale[]).map((f) => ({ value: f, label: FONT_LABEL[f] }))}
-          onChange={setFontScale}
-        />
+      <Row label={t('pref.fontSize')}>
+        <Seg value={fontScale} options={fontOptions} onChange={setFontScale} />
       </Row>
 
-      <Row label="高对比">
+      <Row label={t('pref.highContrast')}>
         <Toggle
           on={contrast === 'high'}
-          label={contrast === 'high' ? '已开启' : '开启高对比度'}
+          label={t(contrast === 'high' ? 'pref.contrastOn' : 'pref.contrastOff')}
           onClick={() => setContrast((contrast === 'high' ? 'normal' : 'high') as Contrast)}
         />
       </Row>
 
-      <Row label="动效">
+      <Row label={t('pref.motion')}>
         <Toggle
           on={reduceMotion}
-          label={reduceMotion ? '已减少动效' : '减少动效'}
+          label={t(reduceMotion ? 'pref.motionOn' : 'pref.motionOff')}
           onClick={() => setReduceMotion(!reduceMotion)}
         />
       </Row>
@@ -172,7 +165,7 @@ export default function PreferenceMenu({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
-          显示与偏好
+          {t('pref.title')}
         </div>
         {panel}
       </div>
@@ -185,8 +178,8 @@ export default function PreferenceMenu({
         type="button"
         onClick={() => setOpen(!open)}
         className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${base}`}
-        title="显示与偏好"
-        aria-label="显示与偏好"
+        title={t('pref.title')}
+        aria-label={t('pref.title')}
         aria-haspopup="true"
         aria-expanded={open}
       >

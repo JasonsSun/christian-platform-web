@@ -1,15 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import { useA11y, type FontScale } from '@/lib/a11y';
 
-const FONT_OPTIONS: { value: FontScale; label: string }[] = [
-  { value: 'normal', label: '标准' },
-  { value: 'lg', label: '大' },
-  { value: 'xl', label: '特大' },
-];
-
 export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
+  const { t } = useI18n();
   const { fontScale, contrast, reduceMotion, setFontScale, setContrast, setReduceMotion } = useA11y();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -27,13 +23,19 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
       ? 'text-white/85 hover:text-white hover:bg-white/10'
       : 'text-ink-600 hover:text-primary-600 hover:bg-primary-50';
 
+  const fontOptions: { value: FontScale; label: string }[] = [
+    { value: 'normal', label: t('pref.normal') },
+    { value: 'lg', label: t('pref.lg') },
+    { value: 'xl', label: t('pref.xl') },
+  ];
+
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
         className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${base}`}
-        title="无障碍设置"
-        aria-label="无障碍设置"
+        title={t('pref.a11yTitle')}
+        aria-label={t('pref.a11yTitle')}
         aria-haspopup="true"
         aria-expanded={open}
       >
@@ -46,12 +48,12 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
         <div
           className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-card border border-ink-100 p-4 z-50 text-ink-800"
           role="dialog"
-          aria-label="无障碍设置面板"
+          aria-label={t('pref.a11yPanel')}
           data-guard="a11y-menu"
         >
-          <p className="text-xs font-semibold text-ink-500 mb-2">文字大小</p>
+          <p className="text-xs font-semibold text-ink-500 mb-2">{t('pref.fontSizeLabel')}</p>
           <div className="flex gap-2 mb-4">
-            {FONT_OPTIONS.map((o) => (
+            {fontOptions.map((o) => (
               <button
                 key={o.value}
                 onClick={() => setFontScale(o.value)}
@@ -67,7 +69,7 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
             ))}
           </div>
 
-          <p className="text-xs font-semibold text-ink-500 mb-2">高对比度</p>
+          <p className="text-xs font-semibold text-ink-500 mb-2">{t('pref.highContrast')}</p>
           <button
             onClick={() => setContrast(contrast === 'high' ? 'normal' : 'high')}
             className={`w-full py-2 rounded-lg text-sm border transition-colors mb-4 ${
@@ -77,10 +79,10 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
             }`}
             aria-pressed={contrast === 'high'}
           >
-            {contrast === 'high' ? '已开启高对比' : '开启高对比度'}
+            {t(contrast === 'high' ? 'pref.contrastOn' : 'pref.contrastOff')}
           </button>
 
-          <p className="text-xs font-semibold text-ink-500 mb-2">动效</p>
+          <p className="text-xs font-semibold text-ink-500 mb-2">{t('pref.motion')}</p>
           <button
             onClick={() => setReduceMotion(!reduceMotion)}
             className={`w-full py-2 rounded-lg text-sm border transition-colors ${
@@ -90,7 +92,7 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
             }`}
             aria-pressed={reduceMotion}
           >
-            {reduceMotion ? '已减少动效' : '减少动效'}
+            {t(reduceMotion ? 'pref.motionOn' : 'pref.motionOff')}
           </button>
         </div>
       )}

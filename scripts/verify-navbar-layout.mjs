@@ -160,7 +160,10 @@ const WRAP_PROBE = `(() => {
   }
   const deskRow = nav.querySelector('.no-scrollbar');
   const deskVisible = !!deskRow && vis(deskRow);
-  const burger = [...nav.querySelectorAll('button')].find(b => (b.getAttribute('aria-label') || '') === 'Toggle menu');
+  const burger = [...nav.querySelectorAll('button')].find(b => {
+    const al = b.getAttribute('aria-label') || '';
+    return al === 'Toggle menu' || al === '切换菜单';
+  });
   return {
     vw: window.innerWidth,
     wrapped,
@@ -250,7 +253,7 @@ console.log('\n[D] 汉堡菜单（平板/窄屏）');
 await setW(1100);
 await goto('/me');
 const burgerOpened = await clickUntil(
-  `(() => { const b = [...document.querySelectorAll('nav button')].find(x => (x.getAttribute('aria-label')||'')==='Toggle menu'); if (b) b.click(); return !!b; })()`,
+  `(() => { const b = [...document.querySelectorAll('nav button')].find(x => { const al = x.getAttribute('aria-label')||''; return al==='Toggle menu' || al==='切换菜单'; }); if (b) b.click(); return !!b; })()`,
   `(() => { const p = document.querySelector('nav [data-nav-mobile-menu]'); return !!p && p.innerText.includes('显示与偏好'); })()`
 );
 check('汉堡菜单可展开', burgerOpened);
@@ -272,7 +275,7 @@ console.log('\n[E] 移动端（375）');
 await setW(375);
 await goto('/me');
 const mOpened = await clickUntil(
-  `(() => { const b = [...document.querySelectorAll('nav button')].find(x => (x.getAttribute('aria-label')||'')==='Toggle menu'); if (b) b.click(); return !!b; })()`,
+  `(() => { const b = [...document.querySelectorAll('nav button')].find(x => { const al = x.getAttribute('aria-label')||''; return al==='Toggle menu' || al==='切换菜单'; }); if (b) b.click(); return !!b; })()`,
   `(() => { const p = document.querySelector('nav [data-nav-mobile-menu]'); return !!p && p.getBoundingClientRect().height > 200; })()`
 );
 check('375 汉堡菜单可展开', mOpened);
