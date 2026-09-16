@@ -12,6 +12,7 @@ import { timeAgo } from '@/lib/format';
 import type { Author, GroupItem } from '@/lib/types';
 import RichText from '@/components/RichText';
 import Portal from '@/components/Portal';
+import GroupPlans from '@/components/GroupPlans';
 
 interface Member {
   id: string;
@@ -291,6 +292,9 @@ export default function GroupDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* 小组共读 */}
+      <GroupPlans groupId={data.id} isOwner={isOwner} isMember={isMember} />
 
       {/* 团长退出：先决定团契归属 */}
       {ownerExitOpen && (
