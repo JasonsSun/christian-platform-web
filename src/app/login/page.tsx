@@ -162,6 +162,13 @@ function LoginInner() {
                   {showPassword ? '隐藏' : '显示'}
                 </button>
               </div>
+              {mode === 'login' && (
+                <div className="mt-2 text-right">
+                  <Link href="/forgot" className="text-sm text-primary-700 hover:underline">
+                    忘记密码？
+                  </Link>
+                </div>
+              )}
             </div>
 
             {error && (

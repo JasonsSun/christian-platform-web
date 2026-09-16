@@ -12,6 +12,7 @@ import { AccessibilityProvider, a11yNoFlashScript } from '@/lib/a11y'
 import { ThemeProvider, themeNoFlashScript } from '@/lib/theme'
 import { NotificationProvider } from '@/lib/notifyStream'
 import SWRegister from '@/components/SWRegister'
+import ErrorReporter from '@/components/ErrorReporter'
 import NetworkBanner from '@/components/NetworkBanner'
 import SiteNoticeBar from '@/components/SiteNoticeBar'
 import { disabledModules } from '@/server/modules'
@@ -82,6 +83,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ThemeProvider>
           <AccessibilityProvider>
           <SWRegister />
+          {/* 浏览器未捕获异常上报（生产才有意义，开发期也无害） */}
+          <ErrorReporter />
           <I18nProvider initialLocale={initialLocale} initialVariant={initialVariant}>
             <AuthProvider>
             <NotificationProvider>

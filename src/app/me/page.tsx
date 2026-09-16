@@ -194,6 +194,12 @@ export default function MePage() {
           >
             修改密码
           </button>
+          <Link
+            href="/settings/sessions"
+            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 text-sm font-medium transition-colors"
+          >
+            登录设备
+          </Link>
           <button
             onClick={async () => { await logout(); router.push('/'); }}
             className="px-5 py-2.5 rounded-xl text-rose-600 border border-rose-200 hover:bg-rose-50 text-sm font-medium transition-colors"

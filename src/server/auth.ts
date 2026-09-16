@@ -82,8 +82,20 @@ export function verify(token: string): JwtPayload {
   return payload;
 }
 
-export function signAccessToken(user: { id: string; role: string }) {
-  return sign({ sub: user.id, role: user.role, typ: 'access', exp: Math.floor(Date.now() / 1000) + ACCESS_TTL });
+/**
+ * 签发访问令牌。
+ * sid 为可选会话 id：带上后服务端能识别"当前请求来自哪台设备"，
+ * 用于会话管理页标记当前设备、以及只踢其它设备时排除自己。
+ * 老令牌没有 sid 也不会失效，只是无法标记为"当前设备"。
+ */
+export function signAccessToken(user: { id: string; role: string }, sessionId?: string) {
+  return sign({
+    sub: user.id,
+    role: user.role,
+    typ: 'access',
+    ...(sessionId ? { sid: sessionId } : {}),
+    exp: Math.floor(Date.now() / 1000) + ACCESS_TTL,
+  });
 }
 
 export function signRefreshToken(userId: string, sessionId: string) {
@@ -135,7 +147,7 @@ export async function rotateSession(refresh: string) {
   );
   const user = await findUserById(userId);
   if (!user) throw unauthorized('用户不存在');
-  return { user, refresh: newRefresh, access: signAccessToken(user), sessionId: newSessionId };
+  return { user, refresh: newRefresh, access: signAccessToken(user, newSessionId), sessionId: newSessionId };
 }
 
 export async function revokeSession(refresh: string | null) {
@@ -185,6 +197,22 @@ export async function requireUser(req: NextRequest | Request): Promise<UserRow> 
   const user = await currentUser(req);
   if (!user) throw unauthorized();
   return user;
+}
+
+/**
+ * 取当前请求所属会话 id（access token 里的 sid）。
+ * 老令牌没有 sid，返回 null —— 调用方需能处理 null（此时无法区分"当前设备"）。
+ */
+export function currentSessionId(req: NextRequest | Request): string | null {
+  const token = tokenFrom(req);
+  if (!token) return null;
+  try {
+    const payload = verify(token) as JwtPayload & { sid?: string };
+    if (payload.typ !== 'access') return null;
+    return payload.sid || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function requireRole(req: NextRequest | Request, roles: string[]): Promise<UserRow> {

@@ -52,8 +52,9 @@ async function assertWritable(req: any) {
 /** 统一异常处理包装 */
 export function withApi<T extends any[]>(fn: (...args: T) => Promise<Response>) {
   return async (...args: T): Promise<Response> => {
+    // 提到 try 外：catch 里也要用它拼错误上下文
+    const first: any = args[0];
     try {
-      const first: any = args[0];
       const method = typeof first?.method === 'string' ? first.method.toUpperCase() : '';
       if (WRITE_METHODS.has(method)) await assertWritable(first);
       // 模块开关：命中已下线模块的接口一律 403（管理员/该模块审核员豁免）
@@ -63,10 +64,29 @@ export function withApi<T extends any[]>(fn: (...args: T) => Promise<Response>) 
       }
       return await fn(...args);
     } catch (e: any) {
-      if (e instanceof HttpError) return fail(e.status, e.code, e.message);
+      if (e instanceof HttpError) {
+        // 业务异常也进监控，但 4xx 会降级为 warning，不触发告警噪音
+        const { captureException } = await import('./monitor');
+        captureException(e, {
+          scope: 'api',
+          method: typeof first?.method === 'string' ? first.method : '',
+          path: typeof first?.url === 'string' ? safePath(first.url) : '',
+          status: e.status,
+          code: e.code,
+        });
+        return fail(e.status, e.code, e.message);
+      }
       // 兼容 `throw notFound(...)` 这类直接抛出 Response 的写法
       if (e instanceof Response) return e;
-      console.error('[api-error]', e);
+      // 未捕获异常 = 真正的 500，必须进监控
+      const { captureException } = await import('./monitor');
+      captureException(e, {
+        scope: 'api',
+        method: typeof first?.method === 'string' ? first.method : '',
+        path: typeof first?.url === 'string' ? safePath(first.url) : '',
+        status: 500,
+        code: 'INTERNAL_ERROR',
+      });
       // 生产环境不回传内部异常信息（避免泄漏 SQL/路径等细节给客户端）
       const detail =
         process.env.NODE_ENV === 'production'
@@ -98,6 +118,19 @@ export function num(v: any, def: number): number {
   if (v === null || v === undefined || v === '') return def;
   const n = Number(v);
   return Number.isFinite(n) ? n : def;
+}
+
+/**
+ * 只取 URL 的 path 部分（去掉 query 与 hash）。
+ * 用于日志/监控：query 里可能带 token、验证码等敏感参数，不能原样落盘。
+ */
+export function safePath(url: string): string {
+  try {
+    const u = new URL(url);
+    return u.pathname;
+  } catch {
+    return String(url || '').split('?')[0].slice(0, 200);
+  }
 }
 
 /**
