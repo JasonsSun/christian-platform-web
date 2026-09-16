@@ -63,6 +63,25 @@ export function listProviders(): { key: string; name: string }[] {
     });
 }
 
+/** 运行时幂等建表（与项目既有 ensureXxxTable 模式一致，免得忘了跑迁移就 500）。 */
+export async function ensureOAuthTable(): Promise<void> {
+  await exec(`CREATE TABLE IF NOT EXISTS user_oauth (
+    id              VARCHAR(36)  NOT NULL PRIMARY KEY,
+    user_id         VARCHAR(36)  NOT NULL,
+    provider        VARCHAR(40)  NOT NULL,
+    provider_user_id VARCHAR(255) NOT NULL,
+    provider_email   VARCHAR(255) DEFAULT NULL,
+    display_name     VARCHAR(120) DEFAULT NULL,
+    access_token     VARCHAR(1024) DEFAULT NULL,
+    refresh_token    VARCHAR(1024) DEFAULT NULL,
+    expires_at       BIGINT       DEFAULT NULL,
+    created_at       BIGINT       NOT NULL,
+    updated_at       BIGINT       NOT NULL,
+    UNIQUE KEY uniq_provider_sub (provider, provider_user_id),
+    KEY idx_user (user_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+}
+
 export function getProviderConfig(key: string): OAuthProvider | null {
   const k = key.toUpperCase();
   const clientId = process.env[`OAUTH_${k}_CLIENT_ID`];
@@ -160,6 +179,7 @@ async function avatarColor(): Promise<string> {
 }
 
 async function resolveUser(cfg: OAuthProvider, profile: OAuthProfile): Promise<{ userId: string; isNew: boolean }> {
+  await ensureOAuthTable();
   // 1) 已绑定的第三方身份
   const linked = await one<{ user_id: string }>(
     `SELECT user_id FROM user_oauth WHERE provider=? AND provider_user_id=?`,
