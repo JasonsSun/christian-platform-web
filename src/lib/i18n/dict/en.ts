@@ -6,6 +6,7 @@ const en: Dict = {
     bible: 'Bible',
     plans: 'Reading Plans',
     songs: 'Hymns',
+    sermons: 'Sermons',
     media: 'Media',
     live: 'Live',
     activities: 'Events',

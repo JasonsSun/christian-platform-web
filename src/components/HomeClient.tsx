@@ -157,7 +157,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
               </div>
 
               <div className="mt-8 flex flex-wrap gap-4 pt-6 border-t border-white/10 justify-center lg:justify-start">
-                {[['nav.bible', '/bible'], ['nav.plans', '/plans'], ['nav.songs', '/songs'], ['nav.activities', '/activities'], ['nav.groups', '/groups']].filter(([, href]) => !isOff(href as string)).map(([labelKey, href]) => (
+                {[['nav.bible', '/bible'], ['nav.plans', '/plans'], ['nav.songs', '/songs'], ['nav.activities', '/activities'], ['nav.groups', '/groups'], ['nav.sermons', '/sermons']].filter(([, href]) => !isOff(href as string)).map(([labelKey, href]) => (
                   <Link key={href} href={href} className="text-white/70 hover:text-white transition-colors font-medium text-sm md:text-base">
                     {t(labelKey)}
                   </Link>

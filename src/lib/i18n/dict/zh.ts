@@ -4,6 +4,7 @@ const zh = {
     bible: '圣经',
     plans: '读经计划',
     songs: '诗歌',
+    sermons: '讲道',
     media: '媒体',
     live: '直播',
     activities: '活动',

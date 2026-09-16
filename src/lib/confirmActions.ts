@@ -105,6 +105,16 @@ export async function runConfirmAction(
       await apiDelete(`/me/devotionals/${s(params, 'id')}`);
       return { ok: true, message: '这篇灵修日记已删除' };
 
+    // ---------- 讲道体系 ----------
+    // 讲道/系列属教会发布内容，删除不可逆，走确认页。
+    case 'sermon.delete':
+      await apiDelete(`/sermons/${s(params, 'id')}`);
+      return { ok: true, message: '该讲道已删除' };
+
+    case 'sermon-series.delete':
+      await apiDelete(`/sermon-series/${s(params, 'id')}`);
+      return { ok: true, message: '该讲道系列已删除（其下讲道的系列归属将置空）' };
+
     default:
       return { ok: false, message: `不支持的操作：${name}` };
   }

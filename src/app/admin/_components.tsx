@@ -112,6 +112,7 @@ const NAV_GROUPS: {
     { href: '/admin/bible', label: '圣经管理', adminOnly: true },
     { href: '/admin/songs', label: '赞美诗管理', module: 'songs' },
     { href: '/admin/media', label: '媒体中心', module: 'media' },
+    { href: '/admin/sermons', label: '讲道管理', module: 'media' },
     { href: '/admin/live', label: '直播管理', module: 'live' },
   ] },
   { group: '社交', items: [

@@ -888,3 +888,58 @@ CREATE TABLE IF NOT EXISTS devotionals (
   KEY idx_dev_user_created (user_id, created_at),
   CONSTRAINT fk_dev_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ======================================================================
+-- 讲道体系（sermon system）
+-- 讲道是教会发布的教导内容，结构化为「系列 + 单篇讲道 + 讲员 + 经文 + 音视频」，
+-- 与 UGC 内容（contents：文章/见证/灵修，带审核流）区分。公开只读，写操作限
+-- 媒体模块审核员或管理员（见 src/server/moderation.ts 的 requireModeratorModule）。
+-- 老库升级由 src/server/sermons.ts 的 ensureSermonTables() 运行时幂等补建。
+-- ======================================================================
+
+CREATE TABLE IF NOT EXISTS sermon_series (
+  id          CHAR(36)      NOT NULL PRIMARY KEY,
+  title       VARCHAR(120) NOT NULL,
+  description VARCHAR(500) NOT NULL DEFAULT '',
+  cover       VARCHAR(64)  NOT NULL DEFAULT '',
+  sort_order  INT           NOT NULL DEFAULT 0,
+  status      VARCHAR(16)  NOT NULL DEFAULT 'published',  -- published | draft
+  created_at  DATETIME      NOT NULL,
+  updated_at  DATETIME      NOT NULL,
+  KEY idx_ss_order (sort_order),
+  KEY idx_ss_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS sermons (
+  id          CHAR(36)     NOT NULL PRIMARY KEY,
+  series_id   CHAR(36)     NULL,
+  title       VARCHAR(200) NOT NULL,
+  speaker     VARCHAR(80)  NOT NULL DEFAULT '',
+  scripture   VARCHAR(120) NOT NULL DEFAULT '',  -- 经文范围，如「约翰福音 3:16-21」
+  preached_at DATE         NULL,
+  description VARCHAR(1000) NOT NULL DEFAULT '',
+  notes       MEDIUMTEXT   NOT NULL,             -- 讲章 / 大纲
+  media_type  VARCHAR(16)  NOT NULL DEFAULT 'none',  -- audio | video | none
+  media_url   VARCHAR(512) NOT NULL DEFAULT '',
+  duration_sec INT         NOT NULL DEFAULT 0,
+  cover       VARCHAR(64)  NOT NULL DEFAULT '',
+  view_count  INT          NOT NULL DEFAULT 0,
+  like_count  INT          NOT NULL DEFAULT 0,
+  status      VARCHAR(16)  NOT NULL DEFAULT 'published',  -- published | draft
+  created_at  DATETIME     NOT NULL,
+  updated_at  DATETIME     NOT NULL,
+  KEY idx_sermons_series (series_id),
+  KEY idx_sermons_status (status),
+  KEY idx_sermons_preached (preached_at),
+  KEY idx_sermons_speaker (speaker),
+  CONSTRAINT fk_sermons_series FOREIGN KEY (series_id) REFERENCES sermon_series (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS sermon_likes (
+  sermon_id CHAR(36) NOT NULL,
+  user_id   CHAR(36) NOT NULL,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (sermon_id, user_id),
+  CONSTRAINT fk_sl_sermon FOREIGN KEY (sermon_id) REFERENCES sermons (id) ON DELETE CASCADE,
+  CONSTRAINT fk_sl_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
