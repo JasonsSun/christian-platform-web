@@ -47,6 +47,26 @@ export async function ensurePaymentColumns(): Promise<void> {
        VALUES ('donation_online_payment', 'false', '开启线上支付', 'general', NOW())
        ON DUPLICATE KEY UPDATE label = VALUES(label)`
     ).catch(() => undefined);
+
+    // 支付网关密钥配置行（payment 组）。值留空，由管理员在后台「支付配置」加密填写。
+    // 读取时 settings 优先于 .env，因此这里只要保证行存在即可（无需默认密文）。
+    const paymentSeeds: Array<[string, string]> = [
+      ['alipay_app_id', '支付宝 应用 APP_ID'],
+      ['alipay_private_key', '支付宝 应用私钥 (RSA2)'],
+      ['alipay_public_key', '支付宝 支付宝公钥'],
+      ['wechat_mchid', '微信支付 商户号 MchID'],
+      ['wechat_api_v3_key', '微信支付 APIv3 密钥'],
+      ['wechat_private_key', '微信支付 商户API私钥'],
+      ['stripe_secret_key', 'Stripe Secret Key'],
+      ['stripe_webhook_secret', 'Stripe Webhook Secret'],
+    ];
+    for (const [k, label] of paymentSeeds) {
+      await exec(
+        `INSERT INTO settings (key_name, value, label, group_name, updated_at)
+         VALUES (?, '', ?, 'payment', NOW())
+         ON DUPLICATE KEY UPDATE label = VALUES(label)`
+      , [k, label]).catch(() => undefined);
+    }
   } catch {
     // 补列失败不阻断:最多是线上支付不可用，原有线下登记流程不受影响
   }

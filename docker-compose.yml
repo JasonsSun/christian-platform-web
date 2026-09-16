@@ -70,6 +70,19 @@ services:
       TTS_PROXY: ${TTS_PROXY:-}
       # 站点对外地址：影响 sitemap.xml / robots.txt / og:image 的绝对地址
       SITE_URL: ${SITE_URL:-https://amen.dpdns.org}
+      # 支付网关密钥：优先在「后台 → 支付配置」页面填写（AES 加密存库、即时生效）。
+      # 下面这些 .env 变量仅作兜底——后台已配置则无需在此重复填。
+      ALIPAY_APP_ID: ${ALIPAY_APP_ID:-}
+      ALIPAY_PRIVATE_KEY: ${ALIPAY_PRIVATE_KEY:-}
+      ALIPAY_PUBLIC_KEY: ${ALIPAY_PUBLIC_KEY:-}
+      WECHAT_MCHID: ${WECHAT_MCHID:-}
+      WECHAT_API_V3_KEY: ${WECHAT_API_V3_KEY:-}
+      WECHAT_PRIVATE_KEY: ${WECHAT_PRIVATE_KEY:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      # 密钥加密主密钥：用于 AES-256-GCM 加密落库的支付密钥。
+      # 部署前务必设一个长随机值；一旦设置后不要随意更换（换了旧密文解不开）。
+      SETTINGS_SECRET: ${SETTINGS_SECRET:-}
       # NODE_ENV 由 server.js --prod 设置，无需在此覆盖
     volumes:
       - ./data/recordings:/recordings   # 与 mediamtx 共享录像目录

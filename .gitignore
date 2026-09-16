@@ -2,6 +2,7 @@
 node_modules/
 .next/
 .next.*
+.next-*/
 .next-verify/
 .next-verify.*
 .next-navdev/

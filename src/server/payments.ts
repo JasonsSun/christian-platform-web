@@ -1,7 +1,8 @@
 import { createSign, createVerify, randomBytes } from 'node:crypto';
 import { exec, one, q } from './db';
 import { ensurePaymentColumns } from './paymentColumns';
-import { getBool } from './settings';
+import { getBool, getSetting } from './settings';
+import { unpackSecret } from './secret';
 import { notify } from './services';
 
 /**
@@ -51,7 +52,7 @@ export type NotifyResult = {
 export interface PaymentGateway {
   key: GatewayKey;
   label: string;
-  configured(): boolean;
+  configured(): boolean | Promise<boolean>;
   createPayment(input: CreatePaymentInput): Promise<CreatePaymentResult>;
   parseNotify(req: Request): Promise<NotifyResult>;
   successReply(): Response;
@@ -69,7 +70,27 @@ function newOutTradeNo(): string {
   return `DN${stamp}${randomBytes(4).toString('hex').toUpperCase()}`;
 }
 
-const env = (k: string) => (process.env[k] || '').trim();
+/** 密钥配置来源优先级：数据库(settings 表，加密存储) > 环境变量(.env 兜底) */
+const SECRET_ENV: Record<string, string> = {
+  alipay_app_id: 'ALIPAY_APP_ID',
+  alipay_private_key: 'ALIPAY_PRIVATE_KEY',
+  alipay_public_key: 'ALIPAY_PUBLIC_KEY',
+  wechat_mchid: 'WECHAT_MCHID',
+  wechat_api_v3_key: 'WECHAT_API_V3_KEY',
+  wechat_private_key: 'WECHAT_PRIVATE_KEY',
+  stripe_secret_key: 'STRIPE_SECRET_KEY',
+  stripe_webhook_secret: 'STRIPE_WEBHOOK_SECRET',
+};
+
+/**
+ * 读取支付密钥：先查 settings 表（解密），未配置时回退到环境变量。
+ * 于是管理员在后台「支付配置」页填的密钥优先于 .env，且改完即时生效（无需重启）。
+ */
+async function secret(name: string): Promise<string> {
+  const dbv = (await getSetting(name, '')).trim();
+  if (dbv) return unpackSecret(dbv);
+  return (process.env[SECRET_ENV[name]] || '').trim();
+}
 
 /** RSA2(SHA256withRSA) 私钥签名 */
 function rsaSign(content: string, privateKeyPem: string): string {
@@ -139,8 +160,15 @@ const ALIPAY_GATEWAY = 'https://openapi.alipay.com/gateway.do';
 const alipay: PaymentGateway = {
   key: 'alipay',
   label: '支付宝',
-  configured: () => !!(env('ALIPAY_APP_ID') && env('ALIPAY_PRIVATE_KEY') && env('ALIPAY_PUBLIC_KEY')),
+  configured: async () =>
+    !!(await secret('alipay_app_id')) && !!(await secret('alipay_private_key')) && !!(await secret('alipay_public_key')),
   async createPayment({ outTradeNo, amountCents, subject, notifyUrl, returnUrl }) {
+    const appId = await secret('alipay_app_id');
+    const privateKey = await secret('alipay_private_key');
+    const publicKey = await secret('alipay_public_key');
+    if (!appId || !privateKey || !publicKey) {
+      throw new Error('支付宝未配置：请在后台「支付配置」填写 APP_ID / 应用私钥 / 支付宝公钥');
+    }
     const biz = {
       out_trade_no: outTradeNo,
       total_amount: (amountCents / 100).toFixed(2),
@@ -148,7 +176,7 @@ const alipay: PaymentGateway = {
       product_code: 'FAST_INSTANT_TRADE_PAY',
     };
     const params: Record<string, string> = {
-      app_id: env('ALIPAY_APP_ID'),
+      app_id: appId,
       method: 'alipay.trade.page.pay',
       format: 'JSON',
       charset: 'utf-8',
@@ -160,7 +188,7 @@ const alipay: PaymentGateway = {
     };
     if (returnUrl) params.return_url = returnUrl;
     const content = buildQuery(params);
-    const sign = rsaSign(content, env('ALIPAY_PRIVATE_KEY'));
+    const sign = rsaSign(content, privateKey);
     const fields = { ...params, sign };
     return {
       gateway: 'alipay',
@@ -173,7 +201,9 @@ const alipay: PaymentGateway = {
     const sign = data.sign || '';
     const signType = data.sign_type || 'RSA2';
     if (!sign || signType.toUpperCase() !== 'RSA2') throw new Error('签名类型不支持');
-    const ok = rsaVerify(buildQuery(data, ['sign', 'sign_type']), sign, env('ALIPAY_PUBLIC_KEY'));
+    const publicKey = await secret('alipay_public_key');
+    if (!publicKey) throw new Error('支付宝公钥未配置');
+    const ok = rsaVerify(buildQuery(data, ['sign', 'sign_type']), sign, publicKey);
     if (!ok) throw new Error('验签失败');
     // trade_status 可能是 WAIT_BUYER_PAY / TRADE_CLOSED，只有成功类才入账
     const status = data.trade_status || '';
@@ -198,7 +228,8 @@ const alipay: PaymentGateway = {
 const wechat: PaymentGateway = {
   key: 'wechat',
   label: '微信支付',
-  configured: () => !!(env('WECHAT_MCHID') && env('WECHAT_API_V3_KEY') && env('WECHAT_PRIVATE_KEY')),
+  configured: async () =>
+    !!(await secret('wechat_mchid')) && !!(await secret('wechat_api_v3_key')) && !!(await secret('wechat_private_key')),
   async createPayment() {
     // 微信 Native 需要 v3 接口签名(WECHATPAY2-SHA256-RSA2048) + 商户证书序列号，
     // 回调还要用平台证书验签并对 resource 做 AES-GCM 解密。结构已按该形态设计：
@@ -215,7 +246,7 @@ const wechat: PaymentGateway = {
 const stripe: PaymentGateway = {
   key: 'stripe',
   label: 'Stripe',
-  configured: () => !!(env('STRIPE_SECRET_KEY') && env('STRIPE_WEBHOOK_SECRET')),
+  configured: async () => !!(await secret('stripe_secret_key')) && !!(await secret('stripe_webhook_secret')),
   async createPayment() {
     // Stripe Checkout Session 需要服务端调用其 REST 建会话再跳转；
     // 回调用 stripe-signature 头的 HMAC-SHA256 验签，不依赖官方 SDK。
@@ -239,12 +270,12 @@ export function resolveGateway(key: string): PaymentGateway {
 /** 给前端用：哪些通道可用（含总闸状态），用于渲染付款选项 */
 export async function listGateways() {
   const enabled = await onlinePaymentEnabled();
-  const items = [alipay, wechat, stripe].map((g) => ({
-    key: g.key,
-    label: g.label,
-    configured: g.configured(),
-    available: enabled && g.configured(),
-  }));
+  const items = await Promise.all(
+    [alipay, wechat, stripe].map(async (g) => {
+      const configured = await g.configured();
+      return { key: g.key, label: g.label, configured, available: enabled && configured };
+    })
+  );
   return {
     onlineEnabled: enabled,
     online: items,
@@ -296,7 +327,7 @@ export async function startDonationPayment(input: StartPayInput): Promise<Create
   // 线上通道要走总闸 + 该通道自身配置；offline 永远放行
   if (gw.key !== 'offline') {
     if (!(await onlinePaymentEnabled())) throw new Error('线上支付已关闭，请使用线下转账');
-    if (!gw.configured()) throw new Error(`${gw.label}暂未开通`);
+    if (!(await gw.configured())) throw new Error(`${gw.label}暂未开通`);
   }
 
   // 已存在的订单号直接复用，避免用户重复点击产生多个订单

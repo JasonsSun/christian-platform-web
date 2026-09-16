@@ -137,6 +137,7 @@ const NAV_GROUPS: {
     { href: '/admin/audit', label: '审计日志', adminOnly: true },
     { href: '/admin/system', label: '系统诊断', adminOnly: true },
     { href: '/admin/settings', label: '系统设置', adminOnly: true },
+    { href: '/admin/payments', label: '支付配置', adminOnly: true },
   ] },
 ];
 

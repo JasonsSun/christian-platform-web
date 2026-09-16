@@ -11,10 +11,11 @@ export const dynamic = 'force-dynamic';
 /** 系统设置:读取全部配置项（仅管理员——属系统级治理，不下放模块审核员） */
 export const GET = withApi(async (req: NextRequest) => {
   await requireRole(req, ['admin']);
+  // 支付网关密钥(payment 组)含敏感密文，走专用接口 /admin/payments，不在此处暴露。
   const rows = await q<any>(
     `SELECT key_name, value, label, group_name,
             DATE_FORMAT(updated_at,'%Y-%m-%dT%H:%i:%sZ') AS updated_at
-     FROM settings ORDER BY group_name, key_name`
+     FROM settings WHERE group_name <> 'payment' ORDER BY group_name, key_name`
   );
   return ok({
     items: rows.map((r) => ({
