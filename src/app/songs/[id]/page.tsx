@@ -221,6 +221,13 @@ export default function SongDetailPage() {
                   <IconHeart className="w-5 h-5 inline-block mr-1 -mt-0.5" strokeWidth={2} fill={favorited ? 'currentColor' : 'none'} />
                   {favorited ? '已收藏' : '收藏'}
                 </button>
+                <Link
+                  href={`/songs/${data.id}/present`}
+                  className="px-6 py-3 text-base rounded-2xl border bg-white/10 border-white/20 text-white hover:bg-white/20 inline-flex items-center"
+                  title="全屏大字投屏，适合主日崇拜投影"
+                >
+                  投屏
+                </Link>
                 <span className="text-white/50 text-sm flex items-center gap-1">
                   <IconEye className="w-4 h-4" strokeWidth={1.8} />
                   {data.playCount} 次播放

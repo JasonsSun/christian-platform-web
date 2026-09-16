@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { apiDelete, apiPost } from '@/lib/api';
+import { apiDelete, apiGet, apiPost } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
@@ -47,6 +47,10 @@ export default function ActivityDetailPage() {
   const [busy, setBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [qrOpen, setQrOpen] = useState(false);
+  const [qrData, setQrData] = useState('');
+  const [qrUrl, setQrUrl] = useState('');
+  const autoFired = useRef(false);
 
   async function handleRegister() {
     if (!user) { router.push('/login'); return; }
@@ -137,6 +141,32 @@ export default function ActivityDetailPage() {
   const a = data;
   const isCancelled = a.status === 'cancelled';
   const canCancelActivity = !!user && (a.organizer.id === user.id || user.role === 'admin') && !isCancelled;
+
+  // 签到二维码（创建人 / 管理员生成）
+  const qrAction = useAction();
+  const openQr = async () => {
+    const res = await qrAction.run(() =>
+      apiGet<{ qr: string; url: string }>(`/activities/${id}/checkin-qr`)
+    );
+    if (res) {
+      setQrData(res.qr);
+      setQrUrl(res.url);
+      setQrOpen(true);
+    }
+  };
+
+  // 扫码签到：成员用手机扫签到码打开 ?checkin=1 时，登录且已报名则自动签到
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (new URLSearchParams(window.location.search).get('checkin') !== '1') return;
+    if (!user || !a) return;
+    if (a.registered && !a.checkedIn && !autoFired.current) {
+      autoFired.current = true;
+      handleCheckin();
+    } else if (!a.registered) {
+      setCheckinError('请先报名后再扫码签到');
+    }
+  }, [user, a]);
   const percent = a.capacity > 0 ? Math.min(100, Math.round((a.confirmedCount / a.capacity) * 100)) : 0;
   const ended = a.endAt ? new Date(a.endAt).getTime() < Date.now() : new Date(a.startAt).getTime() < Date.now();
   const confirmed = a.participants.filter((p) => p.status === 'confirmed');
@@ -334,6 +364,15 @@ export default function ActivityDetailPage() {
                   {busy || pending ? '处理中…' : a.checkedIn ? '已签到 ✓' : '签到'}
                 </button>
               )}
+              {canCancelActivity && (
+                <button
+                  onClick={openQr}
+                  disabled={qrAction.pending}
+                  className="w-full mt-2 py-2.5 rounded-xl border border-primary-200 text-primary-600 text-sm font-semibold hover:bg-primary-50 transition disabled:opacity-50"
+                >
+                  {qrAction.pending ? '生成中…' : '生成签到二维码'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -387,6 +426,45 @@ export default function ActivityDetailPage() {
                 </button>
               </div>
               {actionError ? <p className="text-rose-600 text-xs mt-2 text-center">{actionError}</p> : null}
+            </div>
+          </div>
+        </Portal>
+      )}
+
+      {/* 签到二维码 */}
+      {qrOpen && (
+        <Portal>
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(17,24,39,0.45)' }}
+            onClick={() => !qrAction.pending && setQrOpen(false)}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-card-hover max-w-sm w-full p-6 text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="font-display text-lg font-bold text-ink-900 mb-3">签到二维码</h3>
+              {qrData ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={qrData} alt="签到二维码" className="mx-auto w-60 h-60 rounded-xl" />
+              ) : (
+                <div className="mx-auto w-60 h-60 rounded-xl bg-ink-100 flex items-center justify-center text-ink-400 text-sm">
+                  生成中…
+                </div>
+              )}
+              <p className="text-xs text-ink-500 mt-3 leading-relaxed">
+                让成员用手机扫码打开活动页，登录且已报名即可
+                <span className="text-primary-600 font-semibold">自动签到</span>。
+              </p>
+              <p className="text-[11px] text-ink-400 mt-2 break-all">{qrUrl}</p>
+              <button
+                onClick={() => setQrOpen(false)}
+                className="mt-4 w-full py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition"
+              >
+                关闭
+              </button>
             </div>
           </div>
         </Portal>
