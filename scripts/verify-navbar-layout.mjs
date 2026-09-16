@@ -195,6 +195,37 @@ for (const w of [1920, 1837, 1536, 1440, 1280, 1279, 1100, 900, 768, 480, 375]) 
   await shot(`${OUT}/nav-verify-${w}.png`);
 }
 
+console.log('\n[A2] 分类目录 mega menu（桌面）');
+await setW(1440);
+await goto('/me');
+const catalogOpened = await clickUntil(
+  `(() => { const b = document.querySelector('button[aria-haspopup="dialog"]'); if (b) b.click(); return !!b; })()`,
+  `!!document.querySelector('[role="dialog"][aria-label="全部功能"]')`
+);
+check('分类目录可打开', catalogOpened);
+const catalogText = catalogOpened ? await evaluate(`(() => {
+  const d = document.querySelector('[role="dialog"][aria-label="全部功能"]');
+  if (!d) return null;
+  return d.innerText.replace(/\\n+/g, '|');
+})()`) : null;
+const groupsNeed = ['神的话语', '敬拜与媒体', '社区与生活', '支持平台'];
+check('分类目录含 4 个分组', !!catalogText && groupsNeed.every((k) => catalogText.includes(k)), catalogText ? catalogText.slice(0, 120) : '');
+// 默认只显示第一个分类的子项，需切换验证其余子项
+const groupItems = [
+  { name: '神的话语', items: ['读经计划', '讲道'] },
+  { name: '敬拜与媒体', items: ['诗歌', '媒体', '直播'] },
+  { name: '社区与生活', items: ['活动', '代祷', '团契'] },
+  { name: '支持平台', items: ['捐赠'] },
+];
+for (const g of groupItems) {
+  const switched = await clickUntil(
+    `(() => { const btns = [...document.querySelectorAll('[role="dialog"][aria-label="全部功能"] button')]; const b = btns.find(x => x.textContent.trim() === '${g.name}'); if (b) b.click(); return !!b; })()`,
+    `(() => { const d = document.querySelector('[role="dialog"][aria-label="全部功能"]'); return !!d && ${JSON.stringify(g.items)}.every(k => d.innerText.includes(k)); })()`
+  );
+  check(`切换「${g.name}」显示子项`, switched);
+}
+await shot(`${OUT}/nav-verify-catalog.png`);
+
 console.log('\n[B] 偏好弹层（桌面）');
 await setW(1440);
 await goto('/me');

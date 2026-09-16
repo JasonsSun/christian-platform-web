@@ -28,6 +28,13 @@ const zh = {
     shareSystem: '分享本系统',
     toggleMenu: '切换菜单',
     feedback: '💡 给平台提建议',
+    catalog: '全部功能',
+    group: {
+      bibleStudy: '神的话语',
+      worship: '敬拜与媒体',
+      community: '社区与生活',
+      support: '支持平台',
+    },
   },
   pref: {
     title: '显示与偏好',

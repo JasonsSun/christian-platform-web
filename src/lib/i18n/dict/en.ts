@@ -30,6 +30,13 @@ const en: Dict = {
     shareSystem: 'Share',
     toggleMenu: 'Toggle menu',
     feedback: '💡 Feedback',
+    catalog: 'Browse',
+    group: {
+      bibleStudy: 'Bible & Study',
+      worship: 'Worship & Media',
+      community: 'Community & Life',
+      support: 'Support',
+    },
   },
   pref: {
     title: 'Display & Preferences',

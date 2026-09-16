@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -12,28 +13,163 @@ import ShareModal from '@/components/ShareModal';
 import { moduleOfPath } from '@/lib/siteModules';
 import { useDisabledModules } from '@/lib/useSiteModules';
 
-const navLinks = [
+const topLinks = [
   { href: '/', key: 'nav.home' },
   { href: '/bible', key: 'nav.bible' },
-  { href: '/plans', key: 'nav.plans' },
-  { href: '/songs', key: 'nav.songs' },
-  { href: '/sermons', key: 'nav.sermons' },
-  { href: '/media', key: 'nav.media' },
-  { href: '/live', key: 'nav.live' },
-  { href: '/activities', key: 'nav.activities' },
   { href: '/community', key: 'nav.community' },
-  { href: '/prayers', key: 'nav.prayers' },
-  { href: '/groups', key: 'nav.groups' },
-  { href: '/donate', key: 'nav.donate' },
 ];
+
+const navGroups = [
+  {
+    key: 'bibleStudy',
+    labelKey: 'nav.group.bibleStudy',
+    items: [
+      { href: '/plans', key: 'nav.plans' },
+      { href: '/sermons', key: 'nav.sermons' },
+    ],
+  },
+  {
+    key: 'worship',
+    labelKey: 'nav.group.worship',
+    items: [
+      { href: '/songs', key: 'nav.songs' },
+      { href: '/media', key: 'nav.media' },
+      { href: '/live', key: 'nav.live' },
+    ],
+  },
+  {
+    key: 'community',
+    labelKey: 'nav.group.community',
+    items: [
+      { href: '/activities', key: 'nav.activities' },
+      { href: '/prayers', key: 'nav.prayers' },
+      { href: '/groups', key: 'nav.groups' },
+    ],
+  },
+  {
+    key: 'support',
+    labelKey: 'nav.group.support',
+    items: [
+      { href: '/donate', key: 'nav.donate' },
+    ],
+  },
+];
+
+type NavItem = { href: string; key: string };
+type NavGroup = { key: string; labelKey: string; items: NavItem[] };
+
+/**
+ * 桌面端分类目录 mega menu。
+ * 左侧分类列表，右侧当前分类子项；点击外部 / ESC / 路由变化自动关闭。
+ */
+function CatalogMenu({ groups, buttonClass, isActive }: { groups: NavGroup[]; buttonClass: string; isActive: (href: string) => boolean }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) { setActiveKey(null); return; }
+    setActiveKey(groups[0]?.key || null);
+  }, [open, groups]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const onClick = (e: MouseEvent) => {
+      if (btnRef.current?.contains(e.target as Node)) return;
+      if (panelRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onClick);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onClick); };
+  }, [open]);
+
+  const activeGroup = groups.find((g) => g.key === activeKey) || groups[0];
+
+  const portal = typeof document === 'undefined' ? null : createPortal(
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('nav.catalog')}
+      data-guard="nav-catalog"
+      className="fixed top-[64px] md:top-[80px] left-0 right-0 z-40 hidden xl:block"
+    >
+      <div className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-2xl shadow-card border border-ink-100 overflow-hidden flex">
+          <div className="w-56 shrink-0 border-r border-ink-100 bg-ink-50/50 py-2">
+            {groups.map((g) => (
+              <button
+                key={g.key}
+                type="button"
+                onMouseEnter={() => setActiveKey(g.key)}
+                onClick={() => setActiveKey(g.key)}
+                className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-colors border-l-4 whitespace-nowrap ${
+                  activeKey === g.key
+                    ? 'bg-white text-primary-600 border-primary-500'
+                    : 'text-ink-600 border-transparent hover:bg-white hover:text-primary-600'
+                }`}
+              >
+                {t(g.labelKey as any)}
+              </button>
+            ))}
+          </div>
+          <div className="flex-1 p-6 min-w-0">
+            {activeGroup && (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {activeGroup.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setOpen(false)}
+                    className={`block px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
+                      isActive(item.href)
+                        ? 'bg-primary-100 text-primary-700'
+                        : 'text-ink-700 hover:bg-primary-50 hover:text-primary-700'
+                    }`}
+                  >
+                    {t(item.key as any)}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        className={`${buttonClass} inline-flex items-center gap-0.5 ${open ? 'bg-white/10' : ''}`}
+      >
+        {t('nav.catalog')}
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={open ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+        </svg>
+      </button>
+      {open && portal}
+    </>
+  );
+}
 
 /**
  * 顶栏响应式约定（动这段前先读）：
  * 桌面版导航容器 max-w-7xl（1280px）减去左右 px-8 只剩 1216px 可用。
- * 12 个中文字链接 + 右侧工具区一旦超过它，flex 会把每个「文字 flex item」压到 min-content，
+ * 12 个导航项平铺 + 右侧工具区一旦超过它，flex 会把每个「文字 flex item」压到 min-content，
  * 中文 min-content 就是「一个字」——于是整条导航变成一字一行竖排（历史缺陷）。
- * 因此：① 所有文字项一律 whitespace-nowrap；② 桌面版从 xl(1280) 起才出现，
- * 以下退回汉堡菜单（内容完整）；③ 语言/简繁/无障碍/主题收进一个 PreferenceMenu。
+ * 修复策略：桌面 xl 以上只平铺最高频入口（Home/Bible/Community），其余按「神的话语 / 敬拜与媒体 / 社区与生活 / 支持平台」
+ * 收入 CatalogMenu 分类目录；汉堡菜单仍保留全部入口的双列网格。
  */
 export default function Navbar({ disabledModules = [] }: { disabledModules?: string[] }) {
   // 服务端快照 + 水合后校正的首页 ISR 旧壳
@@ -77,7 +213,16 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
     const m = moduleOfPath(href);
     return !!m && offModules.includes(m);
   };
-  const links = navLinks.filter((l) => !moduleOff(l.href));
+
+  const visibleTopLinks = useMemo(() => topLinks.filter((l) => !moduleOff(l.href)), [offModules]);
+  const visibleGroups = useMemo(
+    () => navGroups.map((g) => ({ ...g, items: g.items.filter((l) => !moduleOff(l.href)) })).filter((g) => g.items.length > 0),
+    [offModules]
+  );
+  const mobileLinks = useMemo(
+    () => [...visibleTopLinks, ...visibleGroups.flatMap((g) => g.items)],
+    [visibleTopLinks, visibleGroups]
+  );
 
   const isActive = (href: string) =>
     pathname === href || (href !== '/' && pathname.startsWith(href));
@@ -129,7 +274,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
           {/* mx-auto 而非 justify-center：溢出时可正常横向滚动，不会两头被裁 */}
           <div className="hidden xl:flex flex-1 min-w-0 overflow-x-auto no-scrollbar">
             <div className="mx-auto flex items-center gap-0.5 px-1">
-              {links.map((link) => {
+              {visibleTopLinks.map((link) => {
                 const active = isActive(link.href);
                 return (
                   <Link key={link.href} href={link.href} className={linkCls(active)}>
@@ -142,6 +287,9 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                   </Link>
                 );
               })}
+              {visibleGroups.length > 0 && (
+                <CatalogMenu groups={visibleGroups} buttonClass={linkCls(false)} isActive={isActive} />
+              )}
             </div>
           </div>
 
@@ -270,7 +418,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
           <div data-nav-mobile-menu="1" className="bg-white rounded-2xl p-4 space-y-2 shadow-card border border-ink-100">
             {/* 双列而非单列长列表：导航项已有 12 个，单列在平板/窄桌面会拉出一整屏还要滚动 */}
             <div className="grid grid-cols-2 gap-2">
-              {links.map((link) => (
+              {mobileLinks.map((link) => (
                 <Link key={link.href} href={link.href} className={`block px-4 py-3 rounded-xl font-medium whitespace-nowrap transition-all ${
                   isActive(link.href) ? 'bg-primary-100 text-primary-700' : 'text-ink-700 hover:bg-ink-100'
                 }`}>
