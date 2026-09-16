@@ -4,6 +4,7 @@ import { Readable } from 'stream';
 import { once } from 'events';
 import crypto from 'crypto';
 import path from 'path';
+import os from 'os';
 import { promises as fs } from 'fs';
 import { exec, newId, ts } from '@/server/db';
 import { ok, withApi, HttpError, clientIp } from '@/server/http';
@@ -11,6 +12,7 @@ import { requireUser, UserRow } from '@/server/auth';
 import { audit, notifyRole, notify } from '@/server/services';
 import { scheduleMediaPipeline } from '@/server/mediaPipeline';
 import { validateUpload, extOf, guessMime, kindLabel, publicUrlFor } from '@/server/media';
+import { commitToStorage } from '@/server/storage';
 import { probeDuration } from '@/server/transcode';
 import { assertUploadAllowed, assertDurationAllowed, getQuota, fmtMin, MB } from '@/server/quota';
 import { guardWrite } from '@/server/guard';
@@ -21,14 +23,16 @@ export const runtime = 'nodejs';
 /** 绝对硬上限(防误传超大文件),真正的限制由用户等级配额决定 */
 const HARD_MAX_BYTES = 4 * 1024 * MB;
 
-/** 流式落盘:边写边算 sha256,避免大文件整体进内存 */
+/** 流式落盘到临时暂存:边写边算 sha256,避免大文件整体进内存。
+ *  返回相对键 rel 与暂存绝对路径 abs;提交阶段再由 commitToStorage 落库/上传。 */
 async function streamToDisk(file: File, ext: string) {
   const now = new Date();
   const dir = `uploads/${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const absDir = path.join(process.cwd(), 'public', dir);
-  await fs.mkdir(absDir, { recursive: true });
   const name = `${crypto.randomUUID()}.${ext}`;
-  const abs = path.join(absDir, name);
+  const rel = `${dir}/${name}`;
+  const stagingDir = path.join(os.tmpdir(), 'cp-upload');
+  await fs.mkdir(stagingDir, { recursive: true });
+  const abs = path.join(stagingDir, `${crypto.randomUUID()}.${ext}`);
   const hash = crypto.createHash('sha256');
   let size = 0;
   const ws = createWriteStream(abs);
@@ -46,7 +50,7 @@ async function streamToDisk(file: File, ext: string) {
   }
   ws.end();
   await once(ws, 'finish');
-  return { rel: `${dir}/${name}`, abs, size, checksum: hash.digest('hex') };
+  return { rel, abs, size, checksum: hash.digest('hex') };
 }
 
 /** 上传媒体(图片/音乐/视频/曲谱/资料):配额校验 → 落盘 → 时长校验 → 建记录 → 待审核 */
@@ -80,10 +84,8 @@ export const POST = withApi(async (req: NextRequest) => {
 
   // 3) 流式落盘(不整体占用内存)
   const saved = await streamToDisk(file, ext);
-  const storageKey = saved.rel;
-  const url = publicUrlFor(storageKey);
 
-  // 4) 音视频时长校验(超出等级上限则删除文件)
+  // 音视频时长校验(超出等级上限则清理暂存并拒绝)
   let duration: number | null = null;
   if (kind === 'video' || kind === 'audio') {
     duration = await probeDuration(saved.abs);
@@ -96,6 +98,10 @@ export const POST = withApi(async (req: NextRequest) => {
       }
     }
   }
+
+  // 4) 提交到存储后端(本地=移入 public/uploads;S3=上传对象),得到最终 storageKey
+  const storageKey = await commitToStorage(saved.abs, saved.rel, mime);
+  const url = publicUrlFor(storageKey);
 
   const id = newId('med');
   const processing = kind === 'video' || kind === 'audio';

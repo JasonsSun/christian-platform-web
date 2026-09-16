@@ -1,10 +1,10 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
-import { apiGet } from '@/lib/api';
+import { apiGet, tokenStore } from '@/lib/api';
 import { safeNext } from '@/lib/nav';
 
 function LoginInner() {
@@ -16,7 +16,9 @@ function LoginInner() {
   const initialMode = modeParam === 'register' || inviteCode ? 'register' : 'login';
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const router = useRouter();
-  const { login, login2fa, register, user } = useAuth();
+  const { login, login2fa, register, user, setUser } = useAuth();
+  const oauthWinRef = useRef<Window | null>(null);
+  const [oauthProviders, setOauthProviders] = useState<{ key: string; name: string }[]>([]);
 
   // ===== 双因素第二步 =====
   const [twoFaTicket, setTwoFaTicket] = useState('');
@@ -54,6 +56,40 @@ function LoginInner() {
     loadCaptcha();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
+
+  // 拉取已配置的第三方登录方式
+  useEffect(() => {
+    apiGet<{ providers: { key: string; name: string }[] }>('/auth/oauth/providers')
+      .then((d) => setOauthProviders(d.providers || []))
+      .catch(() => {});
+  }, []);
+
+  // 第三方登录回跳窗口通过 postMessage 交还令牌
+  useEffect(() => {
+    function onMsg(e: MessageEvent) {
+      if (e.origin !== window.location.origin) return;
+      const data = e.data;
+      if (data?.type === 'oauth_success') {
+        tokenStore.set(data.accessToken);
+        tokenStore.setRefresh(data.refreshToken);
+        setUser(data.user);
+        router.push(nextPath);
+      } else if (data?.type === 'oauth_error') {
+        setError(data.message || '第三方登录失败');
+      }
+    }
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, [nextPath, router, setUser]);
+
+  async function startOAuth(provider: string) {
+    try {
+      const d = await apiGet<{ url: string }>(`/auth/oauth/start?provider=${encodeURIComponent(provider)}`);
+      window.open(d.url, 'oauth', 'width=520,height=680');
+    } catch {
+      setError('发起第三方登录失败，请稍后重试');
+    }
+  }
 
   if (user && !loading) {
     // 已登录则跳转（带 next 时回到来源页）
@@ -289,6 +325,28 @@ function LoginInner() {
             <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 disabled:opacity-70">
               {loading ? (mode === 'login' ? '登录中…' : '注册中…') : mode === 'login' ? '登录' : '注册并登录'}
             </button>
+
+            {oauthProviders.length > 0 && (
+              <>
+                <div className="flex items-center gap-3 my-1">
+                  <div className="h-px flex-1 bg-white/20" />
+                  <span className="text-xs text-white/60">或使用第三方账号</span>
+                  <div className="h-px flex-1 bg-white/20" />
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {oauthProviders.map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => startOAuth(p.key)}
+                      className="w-full py-2.5 rounded-xl border border-white/25 text-white/90 bg-white/5 hover:bg-white/10 transition-colors text-sm font-medium"
+                    >
+                      {p.name} 登录
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </form>
         </div>
 

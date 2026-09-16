@@ -14,7 +14,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { exec, q, one, newId, ts } from './db';
-import { absFromStorageKey, kindLabel } from './media';
+import { kindLabel } from './media';
+import { deleteStorageObject } from './storage';
 import { mediaPath } from './mediamtx';
 import type { LiveRoomRow } from './live';
 
@@ -170,10 +171,9 @@ export async function cleanupExpiredLiveRecordings(maxAgeHours = 24): Promise<{ 
       `UPDATE media_files SET status='trashed', updated_at=? WHERE id=?`,
       [ts(), r.id]
     );
-    // 删物理文件
+    // 删物理文件(本地直接删;S3 调对象存储删除)
     if (r.storage_key) {
-      const abs = absFromStorageKey(r.storage_key);
-      try { if (fs.existsSync(abs)) fs.unlinkSync(abs); } catch { /* ignore */ }
+      await deleteStorageObject(r.storage_key).catch(() => {});
     }
     // 解除直播房间关联(便于重新录制时不再被旧记录阻断)
     await exec(

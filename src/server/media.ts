@@ -1,7 +1,9 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import os from 'os';
 import crypto from 'crypto';
 import { one } from './db';
+import { getStorageBackend } from './storage';
 
 /* ---------------- 类型判定 ---------------- */
 
@@ -82,24 +84,24 @@ export async function validateUpload(name: string, mime: string, sizeBytes: numb
   return { ok: true, kind };
 }
 
-/** 静态资源相对 URL(存 public/uploads) */
+/** 静态资源公网 URL（按当前存储后端解析）。 */
 export function publicUrlFor(storageKey: string): string {
-  return '/' + storageKey.replace(/\\/g, '/');
+  return getStorageBackend().publicUrl(storageKey);
 }
 
+/**
+ * 读取本地磁盘路径（仅本地后端可用）。
+ * S3 后端请用 `readToLocalPath`（先下载到临时目录）。
+ * 这里保留同步返回本地路径，以兼容历史调用；S3 模式下会抛错提示改用异步接口。
+ */
 export function absFromStorageKey(storageKey: string): string {
   return path.join(process.cwd(), 'public', storageKey);
 }
 
-/** 落盘并返回 storageKey(相对 public) */
-export async function saveFile(buf: Buffer, ext: string): Promise<string> {
-  const now = new Date();
-  const dir = `uploads/${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const absDir = path.join(process.cwd(), 'public', dir);
-  await fs.mkdir(absDir, { recursive: true });
-  const name = `${crypto.randomUUID()}.${ext}`;
-  await fs.writeFile(path.join(absDir, name), buf);
-  return `${dir}/${name}`;
+/** 落盘/上传到对象存储，返回 storageKey(相对键)。 */
+export async function saveFile(buf: Buffer, ext: string, contentType = 'application/octet-stream'): Promise<string> {
+  const { storageKey } = await getStorageBackend().save(buf, ext, contentType);
+  return storageKey;
 }
 
 export function sha256(buf: Buffer): string {

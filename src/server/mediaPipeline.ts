@@ -1,7 +1,8 @@
 import path from 'path';
-import { promises as fs } from 'fs';
+import os from 'os';
+import crypto from 'crypto';
 import { exec, newId, one, ts } from './db';
-import { absFromStorageKey } from './media';
+import { readToLocalPath, commitToStorage, deleteStorageObject } from './storage';
 import {
   ffmpegAvailable, makePoster, makeThumbnail, normalizeAudio, probeDuration, transcodeToMp4,
 } from './transcode';
@@ -30,12 +31,13 @@ async function upsertTask(mediaId: string, taskType: string, status: 'running' |
   return id;
 }
 
-/** 相对 public 的路径 -> 同目录新文件名 */
-function sibling(storageKey: string, suffix: string, ext: string): { rel: string; abs: string } {
+/** 相对键 -> 同目录新文件名(写入临时目录,处理完再由 commitToStorage 落库/上传) */
+function sibling(storageKey: string, suffix: string, ext: string): { rel: string; tmpAbs: string } {
   const dir = path.dirname(storageKey);
   const base = path.basename(storageKey, path.extname(storageKey));
   const rel = `${dir}/${base}${suffix}.${ext}`;
-  return { rel, abs: path.join(process.cwd(), 'public', rel) };
+  const tmpAbs = path.join(os.tmpdir(), 'cp-media-out', `${crypto.randomUUID()}.${ext}`);
+  return { rel, tmpAbs };
 }
 
 /**
@@ -46,7 +48,7 @@ function sibling(storageKey: string, suffix: string, ext: string): { rel: string
  * 返回处理结果
  */
 export async function runMediaPipeline(mediaId: string, storageKey: string, kind: string, ext: string) {
-  const abs = absFromStorageKey(storageKey);
+  const abs = await readToLocalPath(storageKey);
   const result: Record<string, any> = { duration: null, transcoded: false, poster: '', thumbnail: '' };
 
   // 安全扫描:文件头校验 + 危险载体检测(可选 ClamAV)。不通过直接拒收,不进入转码。
@@ -83,13 +85,14 @@ export async function runMediaPipeline(mediaId: string, storageKey: string, kind
     // 2. 转码
     if (kind === 'video' && ext !== 'mp4') {
       const out = sibling(storageKey, '_conv', 'mp4');
-      const okc = await transcodeToMp4(abs, out.abs);
+      const okc = await transcodeToMp4(abs, out.tmpAbs);
       if (okc) {
+        const finalRel = await commitToStorage(out.tmpAbs, out.rel, 'video/mp4');
         await exec(`UPDATE media_files SET storage_key=?, extension='mp4', mime_type='video/mp4' WHERE id=?`,
-          [out.rel, mediaId]);
+          [finalRel, mediaId]);
         result.transcoded = true;
-        result.storageKey = out.rel;
-        await upsertTask(mediaId, 'transcode', 'done', `已转码为标准 MP4: ${out.rel}`);
+        result.storageKey = finalRel;
+        await upsertTask(mediaId, 'transcode', 'done', `已转码为标准 MP4: ${finalRel}`);
       } else {
         await upsertTask(mediaId, 'transcode', 'failed', '', '转码失败');
       }
@@ -99,13 +102,14 @@ export async function runMediaPipeline(mediaId: string, storageKey: string, kind
 
     if (kind === 'audio' && ext !== 'mp3') {
       const out = sibling(storageKey, '_conv', 'mp3');
-      const okc = await normalizeAudio(abs, out.abs);
+      const okc = await normalizeAudio(abs, out.tmpAbs);
       if (okc) {
+        const finalRel = await commitToStorage(out.tmpAbs, out.rel, 'audio/mpeg');
         await exec(`UPDATE media_files SET storage_key=?, extension='mp3', mime_type='audio/mpeg' WHERE id=?`,
-          [out.rel, mediaId]);
+          [finalRel, mediaId]);
         result.transcoded = true;
-        result.storageKey = out.rel;
-        await upsertTask(mediaId, 'audio_normalize', 'done', `已标准化为 MP3: ${out.rel}`);
+        result.storageKey = finalRel;
+        await upsertTask(mediaId, 'audio_normalize', 'done', `已标准化为 MP3: ${finalRel}`);
       } else {
         await upsertTask(mediaId, 'audio_normalize', 'failed', '', '音频转码失败');
       }
@@ -116,13 +120,14 @@ export async function runMediaPipeline(mediaId: string, storageKey: string, kind
     // 3. 封面 / 缩略图
     if (kind === 'video') {
       const cur = await one<{ storage_key: string }>(`SELECT storage_key FROM media_files WHERE id=?`, [mediaId]);
-      const curAbs = absFromStorageKey(cur?.storage_key || storageKey);
+      const curAbs = await readToLocalPath(cur?.storage_key || storageKey);
       const out = sibling(cur?.storage_key || storageKey, '_poster', 'jpg');
-      const okp = await makePoster(curAbs, out.abs, Math.min(3, Math.max(1, Math.floor((result.duration || 4) / 3))));
+      const okp = await makePoster(curAbs, out.tmpAbs, Math.min(3, Math.max(1, Math.floor((result.duration || 4) / 3))));
       if (okp) {
-        await exec(`UPDATE media_files SET poster_key=? WHERE id=?`, [out.rel, mediaId]);
-        result.poster = out.rel;
-        await upsertTask(mediaId, 'poster', 'done', `已生成封面: ${out.rel}`);
+        const posterRel = await commitToStorage(out.tmpAbs, out.rel, 'image/jpeg');
+        await exec(`UPDATE media_files SET poster_key=? WHERE id=?`, [posterRel, mediaId]);
+        result.poster = posterRel;
+        await upsertTask(mediaId, 'poster', 'done', `已生成封面: ${posterRel}`);
       } else {
         await upsertTask(mediaId, 'poster', 'failed', '', '封面抽取失败');
       }
@@ -130,10 +135,11 @@ export async function runMediaPipeline(mediaId: string, storageKey: string, kind
 
     if (kind === 'image') {
       const out = sibling(storageKey, '_thumb', 'jpg');
-      const okt = await makeThumbnail(abs, out.abs, 640);
+      const okt = await makeThumbnail(abs, out.tmpAbs, 640);
       if (okt) {
-        result.thumbnail = out.rel;
-        await upsertTask(mediaId, 'thumbnail', 'done', `已生成缩略图: ${out.rel}`);
+        const thumbRel = await commitToStorage(out.tmpAbs, out.rel, 'image/jpeg');
+        result.thumbnail = thumbRel;
+        await upsertTask(mediaId, 'thumbnail', 'done', `已生成缩略图: ${thumbRel}`);
       } else {
         await upsertTask(mediaId, 'thumbnail', 'failed', '', '缩略图生成失败');
       }
@@ -160,8 +166,6 @@ export async function removeDerived(storageKey: string) {
   const dir = path.dirname(storageKey);
   const base = path.basename(storageKey, path.extname(storageKey));
   for (const suffix of ['_conv.mp4', '_conv.mp3', '_poster.jpg', '_thumb.jpg']) {
-    try {
-      await fs.unlink(path.join(process.cwd(), 'public', dir, base + suffix));
-    } catch { /* 不存在则忽略 */ }
+    await deleteStorageObject(`${dir}/${base}${suffix}`).catch(() => {});
   }
 }
