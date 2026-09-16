@@ -4,7 +4,42 @@ import { NextRequest } from 'next/server';
 import { one, q, exec, newId, ts } from './db';
 import { HttpError, unauthorized, forbidden } from './http';
 
-const SECRET = process.env.JWT_SECRET || 'change-me-in-production-change-me-in-production';
+const DEV_FALLBACK_SECRET = 'change-me-in-production-change-me-in-production';
+const COMPOSE_FALLBACK_SECRET = 'please-set-a-long-random-secret';
+
+/**
+ * 生产环境绝不允许拿公开可见的占位密钥签名 JWT ——
+ * 谁拿到密钥谁就能伪造任意用户(含 admin)的令牌，且全程无报错。
+ *
+ * 这里刻意做成「惰性校验」而非模块顶层 throw：
+ * Dockerfile 里 `RUN npm run build` 阶段没有 .env，顶层 throw 会让镜像构建直接失败，
+ * 而密钥是否合规只与运行时有关。故改为首次签发/校验时才判。
+ *
+ * 存量环境若尚未配置、又需要立刻恢复服务，可临时设 ALLOW_WEAK_JWT_SECRET=1 放行
+ * （仅作过渡，务必随后补上强密钥）。
+ */
+let secretWarned = false;
+
+function resolveSecret(): string {
+  const raw = process.env.JWT_SECRET || '';
+  const isProd = process.env.NODE_ENV === 'production';
+  const isWeak =
+    !raw || raw === DEV_FALLBACK_SECRET || raw === COMPOSE_FALLBACK_SECRET || raw.length < 32;
+
+  if (isProd && isWeak && process.env.ALLOW_WEAK_JWT_SECRET !== '1') {
+    if (!secretWarned) {
+      secretWarned = true;
+      console.error(
+        '[auth][FATAL] 生产环境 JWT_SECRET 缺失或为弱值/占位符(长度需 ≥32)。' +
+          '任何知道该密钥的人都可伪造任意用户(含管理员)令牌。' +
+          '请设置强密钥: openssl rand -hex 32 ;' +
+          '临时过渡可设 ALLOW_WEAK_JWT_SECRET=1 (不推荐)。'
+      );
+    }
+    throw new Error('JWT_SECRET 未正确配置，拒绝签发/校验令牌');
+  }
+  return raw || DEV_FALLBACK_SECRET;
+}
 const ACCESS_TTL = Number(process.env.JWT_ACCESS_TTL || 900);
 const REFRESH_TTL = Number(process.env.JWT_REFRESH_TTL || 2592000);
 const ISSUER = 'christian-platform';
@@ -33,14 +68,14 @@ function sign(payload: Omit<JwtPayload, 'iss'>): string {
   const body = { ...payload, iss: ISSUER };
   const head = b64(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
   const data = b64(JSON.stringify(body));
-  const sig = crypto.createHmac('sha256', SECRET).update(`${head}.${data}`).digest('base64url');
+  const sig = crypto.createHmac('sha256', resolveSecret()).update(`${head}.${data}`).digest('base64url');
   return `${head}.${data}.${sig}`;
 }
 
 export function verify(token: string): JwtPayload {
   const [head, data, sig] = token.split('.');
   if (!head || !data || !sig) throw new HttpError(401, 'INVALID_TOKEN', '令牌格式错误');
-  const expect = crypto.createHmac('sha256', SECRET).update(`${head}.${data}`).digest('base64url');
+  const expect = crypto.createHmac('sha256', resolveSecret()).update(`${head}.${data}`).digest('base64url');
   if (expect !== sig) throw new HttpError(401, 'INVALID_TOKEN', '签名校验失败');
   const payload = JSON.parse(Buffer.from(data, 'base64url').toString()) as JwtPayload;
   if (payload.exp * 1000 < Date.now()) throw new HttpError(401, 'TOKEN_EXPIRED', '令牌已过期');

@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
-import { qs, apiDelete } from '@/lib/api';
+import { qs, apiDelete, apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useHostedSpeech } from '@/lib/speechHost';
 import { timeAgo, formatDate } from '@/lib/format';
@@ -51,11 +51,10 @@ export default function BibleHome() {
       return;
     }
     try {
-      const r = await fetch('/api/v1/me/checkin', { method: 'POST' });
-      const j = await r.json();
+      const j = await apiPost<{ message?: string; already?: boolean }>('/me/checkin');
       setCheckinMsg(j.message || (j.already ? '今天已经打卡了' : '打卡成功'));
-    } catch {
-      setCheckinMsg('打卡失败，请重试');
+    } catch (e: any) {
+      setCheckinMsg(e?.message || '打卡失败，请重试');
     }
     setTimeout(() => setCheckinMsg(null), 2500);
   };

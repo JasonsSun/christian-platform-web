@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
+import { apiGet, apiDelete } from '@/lib/api';
 import { downloadText, safeFilename } from '@/lib/download';
 
 type BmItem = {
@@ -29,9 +30,7 @@ export default function BibleNotesPage() {
     setLoading(true);
     setError(null);
     try {
-      const r = await fetch('/api/v1/bible/bookmarks', { cache: 'no-store' });
-      if (!r.ok) throw new Error('加载失败');
-      const j = await r.json();
+      const j = await apiGet<{ items: BmItem[] }>('/bible/bookmarks');
       setItems(j.items || []);
     } catch (e: any) {
       setError(e?.message || '加载失败');
@@ -48,7 +47,7 @@ export default function BibleNotesPage() {
   const del = async (id: string) => {
     setDeletingId(id);
     try {
-      await fetch(`/api/v1/bible/bookmarks?id=${id}`, { method: 'DELETE' });
+      await apiDelete<{ deleted: boolean }>(`/bible/bookmarks?id=${encodeURIComponent(id)}`);
       setItems((it) => it.filter((x) => x.id !== id));
     } catch {
       /* ignore */

@@ -7,19 +7,24 @@ import { fetchBibleBooks, fetchBibleChapter } from '@/lib/bible-api';
 import { BOOKS, VERSIONS, bookById } from '@/server/bible';
 import Portal from '@/components/Portal';
 import { useAuth } from '@/lib/auth';
+import { apiGet, apiPost, apiDelete, qs } from '@/lib/api';
 
 type VerseMark = { id: string; note: string };
 type BmMap = Record<number, VerseMark>;
 
 async function bmGet(version: string, bookId: string, chapter: number): Promise<BmMap> {
-  const r = await fetch(`/api/v1/bible/bookmarks?version=${encodeURIComponent(version)}&book=${encodeURIComponent(bookId)}&chapter=${chapter}`, { cache: 'no-store' });
-  if (!r.ok) return {};
-  const j = await r.json();
-  const map: BmMap = {};
-  for (const it of (j.items || []) as any[]) {
-    if (it.verse > 0) map[it.verse] = { id: it.id, note: it.note || '' };
+  try {
+    const j = await apiGet<{ items?: any[] }>(
+      `/bible/bookmarks${qs({ version, book: bookId, chapter })}`
+    );
+    const map: BmMap = {};
+    for (const it of (j?.items || []) as any[]) {
+      if (it.verse > 0) map[it.verse] = { id: it.id, note: it.note || '' };
+    }
+    return map;
+  } catch {
+    return {};
   }
-  return map;
 }
 
 interface BibleReaderProps {
@@ -81,13 +86,13 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
     setNoteDraft(bmMap[verse]?.note || '');
     if (!bmMap[verse]) {
       try {
-        const r = await fetch('/api/v1/bible/bookmarks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ version, bookId: book, chapter: parseInt(chapter, 10), verse }),
+        const j = await apiPost<{ id?: string }>('/bible/bookmarks', {
+          version,
+          bookId: book,
+          chapter: parseInt(chapter, 10),
+          verse,
         });
-        const j = await r.json();
-        if (r.ok && j.id) setBmMap((m) => ({ ...m, [verse]: { id: j.id, note: '' } }));
+        if (j?.id) setBmMap((m) => ({ ...m, [verse]: { id: j.id!, note: '' } }));
       } catch { /* ignore */ }
     }
     setNoteVerse(verse);
@@ -99,16 +104,18 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
     if (!cur) return;
     setBmBusy(true);
     try {
-      const r = await fetch('/api/v1/bible/bookmarks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ version, bookId: book, chapter: parseInt(chapter, 10), verse: noteVerse, note: noteDraft }),
+      await apiPost<{ id?: string }>('/bible/bookmarks', {
+        version,
+        bookId: book,
+        chapter: parseInt(chapter, 10),
+        verse: noteVerse,
+        note: noteDraft,
       });
-      if (r.ok) setBmMap((m) => ({ ...m, [noteVerse]: { id: cur.id, note: noteDraft } }));
+      setBmMap((m) => ({ ...m, [noteVerse]: { id: cur.id, note: noteDraft } }));
       setNoteVerse(null);
       setToast(noteDraft.trim() ? '笔记已保存' : '已更新高亮');
-    } catch {
-      setToast('保存失败，请重试');
+    } catch (e: any) {
+      setToast(e?.message || '保存失败，请重试');
     } finally {
       setBmBusy(false);
     }
@@ -119,7 +126,7 @@ export function BibleReader({ version, book, chapter }: BibleReaderProps) {
     if (!cur) return;
     setBmBusy(true);
     try {
-      await fetch(`/api/v1/bible/bookmarks?id=${cur.id}`, { method: 'DELETE' });
+      await apiDelete<{ deleted: boolean }>(`/bible/bookmarks?id=${encodeURIComponent(cur.id)}`);
       setBmMap((m) => { const n = { ...m }; delete n[verse]; return n; });
       if (noteVerse === verse) setNoteVerse(null);
     } catch { /* ignore */ }

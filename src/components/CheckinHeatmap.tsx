@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { apiGet } from '@/lib/api';
 
 interface HeatDay {
   date: string;
@@ -35,19 +36,14 @@ export default function CheckinHeatmap() {
 
   useEffect(() => {
     let alive = true;
-    fetch('/api/v1/me/checkin-heatmap', { cache: 'no-store' })
-      .then(async (r) => {
-        if (r.status === 401) {
-          setNeedLogin(true);
-          return null;
-        }
-        if (!r.ok) throw new Error();
-        return (await r.json()) as HeatmapView;
-      })
+    apiGet<HeatmapView>('/me/checkin-heatmap')
       .then((j) => {
         if (alive && j) setData(j);
       })
-      .catch(() => {})
+      .catch((e: any) => {
+        // 401 说明确实没登录(api.ts 已尝试静默刷新仍失败), 其余错误静默忽略
+        if (alive && e?.status === 401) setNeedLogin(true);
+      })
       .finally(() => {
         if (alive) setLoading(false);
       });

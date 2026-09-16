@@ -22,8 +22,18 @@ export const tokenStore = {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(ACCESS_KEY);
     localStorage.removeItem(REFRESH_KEY);
+    // 换账号/登出后必须丢弃全部 GET 缓存：否则新身份在 TTL 内会读到旧身份的数据
+    clearApiCache();
   },
 };
+
+/** 取 token 的短指纹（只作缓存键区分身份用，不可用于任何安全判定） */
+function tokenFingerprint(token: string): string {
+  const tail = token.slice(-16); // JWT 签名尾部，换账号/刷新后必然不同
+  let h = 5381;
+  for (let i = 0; i < tail.length; i++) h = ((h << 5) + h + tail.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
 
 export class ApiError extends Error {
   status: number;
@@ -78,6 +88,27 @@ async function refreshOnce(): Promise<boolean> {
 }
 
 /**
+ * 刷新单飞（single-flight）：并发 401 只允许一个真实刷新在跑。
+ *
+ * 为什么必须这么做：服务端 `rotateSession` 是「一次性 refresh token」——
+ * 旧 refresh token 一旦被第二次提交，即判定为 TOKEN_REPLAYED 并撤销该用户
+ * *全部* 会话（见 src/server/auth.ts）。页面首屏会并发打出多个受保护请求，
+ * 若它们各自去刷新，就会用同一个旧 refresh token 打多次 → 触发重放判定 →
+ * 所有端被强制登出。这里把并发刷新合并成同一个 Promise，刷新结束后清空，
+ * 后续 401（例如新 token 已过期）仍可再次刷新。
+ */
+let refreshPromise: Promise<boolean> | null = null;
+
+function refreshShared(): Promise<boolean> {
+  if (!refreshPromise) {
+    refreshPromise = refreshOnce().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
+/**
  * GET 短期内存缓存 + 并发去重。
  * 弱网/跨境环境下每个请求都是 1~10s 的开销,页面来回切换、组件重复挂载
  * 会打出大量相同请求;这里让同 URL 的 GET 在 TTL 内直接复用,并合并并发请求。
@@ -117,7 +148,9 @@ export async function api<T = any>(
 
   const isGet = !init.method || init.method.toUpperCase() === 'GET';
   const cacheable = isGet && !noCache && !init.signal && typeof window !== 'undefined';
-  const cacheKey = `${token ? 'a' : 'p'}:${path}`;
+  // 缓存键带上 token 指纹：同一浏览器切换账号/重新登录后 token 必然变化,
+  // 仅用 'a'/'p' 会让新账号在 TTL 内读到上一个账号的响应。
+  const cacheKey = `${token ? 'a' + tokenFingerprint(token) : 'p'}:${path}`;
 
   if (cacheable) {
     const hit = getCache.get(cacheKey);
@@ -163,9 +196,12 @@ async function request<T = any>(
     });
 
     if (res.status === 401 && retry && token) {
-      const okRefresh = await refreshOnce();
+      const okRefresh = await refreshShared();
+      // 刷新成功：用新 token 重试（noCache 避免读回 401 之前的缓存）
       if (okRefresh) return api<T>(path, init, { retry: false, noCache: true });
+      // 刷新失败才视为登录失效
       tokenStore.clear();
+      clearApiCache();
     }
 
     const text = await res.text();
