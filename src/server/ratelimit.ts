@@ -135,14 +135,15 @@ async function getStore(): Promise<Store> {
           });
           console.warn('[ratelimit] 使用 Redis 共享计数（多实例生效）');
           return new RedisStore(client);
-        } catch {
-          console.warn('[ratelimit] REDIS_URL 已设置但 ioredis 不可用，降级为 MySQL 计数');
+        } catch (e: any) {
+          // 关键：一旦 Redis 不可用，必须继续往下落到 MySQL ——
+          // 早期这里直接 return 内存实现，结果「配了 REDIS_URL 却没装 ioredis」时
+          // 多实例各算各的，限流形同虚设且毫无报错。MySQL 是更稳的第二选择。
+          console.warn(`[ratelimit] REDIS_URL 已设置但不可用（${e?.message || e}），降级为 MySQL 计数`);
         }
-      } else {
-        console.warn('[ratelimit] 使用 MySQL 共享计数（多实例生效，无需 Redis）');
-        return new DbStore();
       }
-      return new MemoryStore();
+      console.warn('[ratelimit] 使用 MySQL 共享计数（多实例生效，无需 Redis）');
+      return new DbStore();
     })();
   }
   store = await storeInitPromise;
@@ -158,36 +159,40 @@ export interface RateResult {
 /**
  * 固定窗口限流。
  * 注意：异步实现下"判断+自增"是一次原子 incr，不存在并发超发。
+ *
+ * 共享存储（Redis/MySQL）万一抖动，这里退化为进程内计数而不是让接口 500 ——
+ * 宁可本副本的限流偏松，也不能把登录 / 打赏这些正常请求打挂。
+ * 退化是有日志的（且节流打印），运维能从日志看出多实例防护暂时失效。
  */
+const memoryFallback = new MemoryStore();
+let fallbackWarnedAt = 0;
+
 export async function rateLimitAsync(
   key: string,
   limit: number,
   windowMs: number
 ): Promise<RateResult> {
   const s = await getStore();
-  const { count, resetAt } = await s.incr(key, windowMs);
+  let res: { count: number; resetAt: number };
+  try {
+    res = await s.incr(key, windowMs);
+  } catch (e: any) {
+    res = await memoryFallback.incr(key, windowMs);
+    const now = Date.now();
+    if (now - fallbackWarnedAt > 60_000) {
+      fallbackWarnedAt = now;
+      console.warn(`[ratelimit] 共享存储不可用，本次退化为进程内计数（多实例防护暂时失效）：${e?.message || e}`);
+    }
+  }
+  const { count, resetAt } = res;
   if (count > limit) {
     return { ok: false, remaining: 0, retryAfterMs: Math.max(0, resetAt - Date.now()) };
   }
   return { ok: true, remaining: Math.max(0, limit - count), retryAfterMs: 0 };
 }
 
-/** 同步版本（仅内存有效，用于无法 await 的老调用点） */
-const syncMemory = new MemoryStore();
-export function rateLimit(key: string, limit: number, windowMs: number): RateResult {
-  // 同步路径无法用 Redis，保留内存实现；语义与旧版一致
-  const now = Date.now();
-  // 用反射拿到内部桶，避免重复实现两套逻辑
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const buckets = (syncMemory as any).buckets as Map<string, Bucket>;
-  let b = buckets.get(key);
-  if (!b || b.resetAt <= now) {
-    b = { count: 0, resetAt: now + windowMs };
-    buckets.set(key, b);
-  }
-  if (b.count >= limit) {
-    return { ok: false, remaining: 0, retryAfterMs: b.resetAt - now };
-  }
-  b.count += 1;
-  return { ok: true, remaining: limit - b.count, retryAfterMs: 0 };
-}
+/**
+ * 对照上面的 rateLimitAsync：本模块不再导出任何同步/单进程计数入口。
+ * 历史上存在的 `rateLimit()` 是纯内存实现，多实例部署时每个副本各算一份，
+ * 形同虚设 —— 现已无调用点，删除以免被误用。所有调用点请使用 rateLimitAsync。
+ */

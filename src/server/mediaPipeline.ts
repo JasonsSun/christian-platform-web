@@ -1,7 +1,7 @@
 import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
-import { exec, newId, one, ts } from './db';
+import { exec, newId, one, q, ts } from './db';
 import { readToLocalPath, commitToStorage, deleteStorageObject } from './storage';
 import {
   ffmpegAvailable, makePoster, makeThumbnail, normalizeAudio, probeDuration, transcodeToMp4,
@@ -159,6 +159,59 @@ export function scheduleMediaPipeline(mediaId: string, storageKey: string, kind:
   void runMediaPipeline(mediaId, storageKey, kind, ext).catch((e) => {
     console.error('[media-pipeline]', mediaId, e?.message);
   });
+}
+
+/**
+ * 多副本/崩溃恢复：接管「卡在 running」的处理任务，重新跑一遍流水线。
+ *
+ * 为什么需要：流水线是在处理上传请求的那个进程里异步跑的（scheduleMediaPipeline）。
+ * 这个进程被重启 / kill / 滚动发布顶掉之后，任务行会永远停在 running，
+ * 用户的媒体就一直显示「处理中」，而且不会有人再来管它 ——
+ * 单副本时代重启肉眼可见，多副本部署时副本 A 倒下、副本 B 完全不知道有活没干完，
+ * 这个问题会被放大。
+ *
+ * 做法是一个轻量租约：任何副本启动时都扫一遍「running 且超过陈旧阈值」的任务，
+ * 用「UPDATE ... WHERE attempts=旧值」的乐观锁认领；多个副本同时抢时
+ * 只有 affectedRows=1 的那个副本会真正重跑，不会重复转码。
+ * attempts 达到上限就放弃，避免坏文件被无限重试。
+ */
+export async function rescueStuckMediaTasks(staleMinutes = 20, maxAttempts = 3): Promise<number> {
+  let rows: Array<{
+    task_id: string; media_file_id: string; storage_key: string;
+    kind: string; extension: string; attempts: number;
+  }> = [];
+  try {
+    rows = await q<any>(
+      `SELECT t.id AS task_id, f.id AS media_file_id, f.storage_key, f.kind, f.extension, t.attempts
+         FROM media_processing_tasks t
+         JOIN media_files f ON f.id = t.media_file_id
+        WHERE t.status = 'running'
+          AND t.attempts < ?
+          AND t.created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
+        LIMIT 20`,
+      [maxAttempts, staleMinutes]
+    );
+  } catch {
+    // 表还没建好（首次迁移未完成）/ DB 抖动：不影响启动，下一轮再试
+    return 0;
+  }
+
+  let claimed = 0;
+  for (const r of rows) {
+    const res = await exec(
+      `UPDATE media_processing_tasks SET attempts = attempts + 1
+        WHERE id = ? AND attempts = ? AND status = 'running'`,
+      [r.task_id, r.attempts]
+    ).catch(() => null);
+    // 抢不到说明被别的副本接走了，或状态已被它自己改成 done/failed
+    if (!res || res.affectedRows !== 1) continue;
+    claimed += 1;
+    scheduleMediaPipeline(r.media_file_id, r.storage_key, r.kind, r.extension);
+  }
+  if (claimed > 0) {
+    console.warn(`[media-pipeline] 接管 ${claimed} 个超时未完成的媒体处理任务`);
+  }
+  return claimed;
 }
 
 /** 删除媒体关联的衍生文件(转码产物 / 封面 / 缩略图) */

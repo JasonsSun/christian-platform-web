@@ -42,18 +42,30 @@ PORT="${PORT}" DB_HOST="${DB_HOST}" DB_PORT="${DB_PORT}" DB_USER="${DB_USER}" DB
 SRV=$!
 
 echo "==> 等待服务就绪 (${BASE_URL}/api/v1/settings/public)"
+READY=0
 for i in $(seq 1 40); do
   if node -e "fetch(process.env.U).then(r=>{if(r.ok)process.exit(0);process.exit(1)}).catch(()=>process.exit(1))" U="${BASE_URL}/api/v1/settings/public" 2>/dev/null; then
-    echo "service up after ${i} tries"; break
+    echo "service up after ${i} tries"; READY=1; break
   fi
   sleep 2
 done
+if [ "$READY" -ne 1 ]; then
+  echo "E2E FAILED: 服务未能在 80s 内就绪"; kill "$SRV" 2>/dev/null; exit 1
+fi
+
+echo "==> 收集 e2e 脚本（自动枚举 package.json 的 test:e2e:*，新增脚本无需改这里）"
+SCRIPTS=$(node -e "
+const s = require('./package.json').scripts;
+Object.keys(s).filter(k => k.startsWith('test:e2e:')).forEach(k => console.log(k));
+")
+COUNT=$(echo "$SCRIPTS" | grep -c . )
+echo "共 ${COUNT} 个 e2e 脚本"
 
 echo "==> 运行全部 e2e 脚本"
 FAIL=0
-for s in plan readdot dot admin-song notifications prayer-delete moderator module-moderator settings module-switch ssr-backplay governance navbar sermons payments; do
-  echo "---- test:e2e:${s} ----"
-  BASE_URL="${BASE_URL}" JWT_SECRET="${JWT_SECRET}" npm run "test:e2e:${s}" || { echo "FAILED: test:e2e:${s}"; FAIL=1; }
+for s in $SCRIPTS; do
+  echo "---- ${s} ----"
+  BASE_URL="${BASE_URL}" JWT_SECRET="${JWT_SECRET}" npm run "$s" || { echo "FAILED: ${s}"; FAIL=1; }
 done
 
 echo "==> 停止服务"

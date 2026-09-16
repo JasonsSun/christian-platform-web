@@ -35,11 +35,14 @@ jobs:
           NEXT_TELEMETRY_DISABLED: '1'
         run: npm run build
 
-      - name: 单元测试（安全扫描 / 读经计划判定）
+      - name: 单元测试（安全扫描 / 读经计划判定 / 支付加密链路 / TOTP / 团契退出）
         working-directory: apps/web
         run: |
           npm test
           npm run test:plan
+          npm run test:payments
+          npm run test:2fa
+          npm run test:group
 
   e2e:
     needs: check

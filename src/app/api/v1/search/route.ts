@@ -7,7 +7,8 @@ import { ftAvailable, ensureFulltextIndex } from '@/server/searchCap';
 
 export const dynamic = 'force-dynamic';
 
-// 首次被访问时自动补齐全文索引（免运维手动跑迁移 004）；不阻塞本次响应。
+// 兜底：正常情况下 instrumentation.ts 已在服务启动时补齐过全文索引；
+// 这里再兜一次，覆盖「启动时表还没建好导致那一轮失败」的情况（内部有 5 分钟冷却）。
 void ensureFulltextIndex();
 
 /** 清理布尔全文里的保留字符，避免语法错误。 */

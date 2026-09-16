@@ -1,9 +1,12 @@
-import { createSign, createVerify, randomBytes, createDecipheriv, createHmac } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { exec, one, q } from './db';
 import { ensurePaymentColumns } from './paymentColumns';
 import { getBool, getSetting } from './settings';
 import { unpackSecret } from './secret';
 import { notify } from './services';
+import {
+  aesGcmDecrypt, buildQuery, rsaSign, rsaVerify, verifyStripeSig, verifyWechatNotifySig, wechatV3Auth,
+} from './paymentCrypto';
 
 /**
  * 支付网关适配层。
@@ -93,29 +96,6 @@ async function secret(name: string): Promise<string> {
   const dbv = (await getSetting(name, '')).trim();
   if (dbv) return unpackSecret(dbv);
   return (process.env[SECRET_ENV[name]] || '').trim();
-}
-
-/** RSA2(SHA256withRSA) 私钥签名 */
-function rsaSign(content: string, privateKeyPem: string): string {
-  return createSign('RSA-SHA256').update(content, 'utf8').sign(privateKeyPem, 'base64');
-}
-
-/** RSA2 公钥验签 */
-function rsaVerify(content: string, signature: string, publicKeyPem: string): boolean {
-  try {
-    return createVerify('RSA-SHA256').update(content, 'utf8').verify(publicKeyPem, signature, 'base64');
-  } catch {
-    return false;
-  }
-}
-
-/** 参数按 key 升序拼成 key=value&key=value（各网关的待签串规则略有差异，按需要排除字段） */
-function buildQuery(params: Record<string, string>, exclude: string[] = []): string {
-  return Object.keys(params)
-    .filter((k) => k && params[k] !== '' && !exclude.includes(k))
-    .sort()
-    .map((k) => `${k}=${params[k]}`)
-    .join('&');
 }
 
 async function readForm(req: Request): Promise<Record<string, string>> {
@@ -228,49 +208,6 @@ const alipay: PaymentGateway = {
 /* 微信支付 v3 Native / Stripe：纯 node:crypto 实现，零三方 SDK          */
 /* ------------------------------------------------------------------ */
 
-/** 微信 v3 请求签名：Authorization: WECHATPAY2-SHA256-RSA2048 mchid=... */
-function wechatV3Auth(method: string, urlPath: string, body: string, mchid: string, serialNo: string, privateKey: string): string {
-  const timestamp = Math.floor(Date.now() / 1000).toString();
-  const nonce = randomBytes(16).toString('hex');
-  const message = `${method.toUpperCase()}\n${urlPath}\n${timestamp}\n${nonce}\n${body}\n`;
-  const signature = createSign('RSA-SHA256').update(message, 'utf8').sign(privateKey, 'base64');
-  return `WECHATPAY2-SHA256-RSA2048 mchid="${mchid}",nonce_str="${nonce}",signature="${signature}",timestamp="${timestamp}",serial_no="${serialNo}"`;
-}
-
-/** 微信回调 resource 的 AES-256-GCM 解密（ciphertext 末尾 16 字节即 GCM tag） */
-function aesGcmDecrypt(ciphertextB64: string, apiV3Key: string, ivB64: string, associated?: string): string {
-  const data = Buffer.from(ciphertextB64, 'base64');
-  const tag = data.subarray(data.length - 16);
-  const enc = data.subarray(0, data.length - 16);
-  const decipher = createDecipheriv('aes-256-gcm', Buffer.from(apiV3Key, 'utf8'), Buffer.from(ivB64, 'base64'));
-  decipher.setAuthTag(tag);
-  if (associated) decipher.setAAD(Buffer.from(associated, 'utf8'));
-  return Buffer.concat([decipher.update(enc), decipher.final()]).toString('utf8');
-}
-
-/** 校验微信回调签名（用平台证书公钥） */
-function verifyWechatNotifySig(timestamp: string, nonce: string, body: string, signatureB64: string, platformCertPem: string): boolean {
-  try {
-    const message = `${timestamp}\n${nonce}\n${body}\n`;
-    return createVerify('RSA-SHA256').update(message, 'utf8').verify(platformCertPem, signatureB64, 'base64');
-  } catch {
-    return false;
-  }
-}
-
-/** 校验 Stripe webhook 签名（常量时间比较，防时序攻击） */
-function verifyStripeSig(payload: string, header: string, secret: string): boolean {
-  const m = /^t=(\d+),v1=(.+)$/.exec(header || '');
-  if (!m) return false;
-  const expected = createHmac('sha256', secret).update(`${m[1]}.${payload}`).digest('hex');
-  const a = Buffer.from(m[2]);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
-  return diff === 0;
-}
-
 const wechat: PaymentGateway = {
   key: 'wechat',
   label: '微信支付',
@@ -320,7 +257,14 @@ const wechat: PaymentGateway = {
     if (!verifyWechatNotifySig(timestamp, nonce, body, signature, platformCert)) {
       throw new Error('微信回调验签失败');
     }
-    const resource = (JSON.parse(body) as any).resource;
+    const payload = JSON.parse(body) as { event_type?: string; resource?: Record<string, string> };
+    // 同一个回调地址会收到退款等其它事件的通知。
+    // 这些事件一律「已收到但与我无关」：回 ACK 让微信别再重发，绝不进入入账流程。
+    const eventType = payload.event_type || '';
+    if (eventType && eventType !== 'TRANSACTION.SUCCESS') {
+      return { outTradeNo: '', transactionId: '', amountCents: 0 };
+    }
+    const resource = payload.resource;
     const plain = aesGcmDecrypt(resource.ciphertext, apiV3Key, resource.iv, resource.associated_data);
     const data = JSON.parse(plain) as { out_trade_no?: string; transaction_id?: string; trade_state?: string; amount?: { total?: number } };
     if (data.trade_state !== 'SUCCESS') throw new Error(`微信未成交状态 ${data.trade_state}`);

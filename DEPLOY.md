@@ -209,6 +209,17 @@ sudo systemctl enable containerd   # 若为独立 containerd 服务
 ```
 重启验证：`sudo reboot` 后 `docker compose ps` 三个容器应为 Up。
 
+## 多副本部署要点
+水平扩容（`docker compose up -d --scale web=N`）时这三项已经做过共享化处理，无需额外组件：
+
+- **限流**：默认走 MySQL `rate_limits` 表的原子计数，多副本共享；
+  只有当容器里同时满足「有 `REDIS_URL` 且装了 `ioredis`」时才走 Redis。
+  Redis 不可用会自动降级 MySQL（日志 `[ratelimit] REDIS_URL 已设置但不可用`），不会静默退回单进程内存。
+- **媒体处理**：任务状态在 `media_processing_tasks` 表；副本被重启而遗留的 running 任务，
+  会由任意副本在启动 30s 后接管重跑（超时 20 分钟、最多 3 次），多副本并发抢任务有乐观锁，不会重复转码。
+- **全文索引**：服务启动时自动补齐迁移 004 的 FULLTEXT（`instrumentation.ts`），
+  不必手动跑迁移；若那一轮因表尚未建好而失败，5 分钟冷却后会自动重试。相关度排序在建好后自动生效。
+
 ## 常见问题
 - **构建慢**：Next.js 首次 `npm ci` + `build` 需几分钟，属正常。
 - **内存不足**：构建阶段建议 VPS ≥ 2GB 内存；1GB 机器可先加 swap。

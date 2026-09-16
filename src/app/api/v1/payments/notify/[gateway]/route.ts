@@ -19,6 +19,9 @@ async function handle(req: NextRequest, gatewayKey: string): Promise<Response> {
   }
   try {
     const n = await gw.parseNotify(req);
+    // 空流水号 = 与入账无关的事件（退款通知、非支付类 webhook）：
+    // 必须回成功让网关停止重发，否则 Stripe/微信会一直重试同一条通知。
+    if (!n.outTradeNo) return gw.successReply();
     const r = await confirmPaid({ ...n, gateway: gw.key });
     if (r.ok) return gw.successReply();
     return gw.failureReply('reason' in r ? r.reason : 'notify failed');
