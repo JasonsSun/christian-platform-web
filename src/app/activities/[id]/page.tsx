@@ -11,6 +11,7 @@ import { formatDateTime, countdown } from '@/lib/format';
 import type { ActivityItem } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
 import Portal from '@/components/Portal';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 interface Participant {
   id: string;
@@ -43,6 +44,7 @@ export default function ActivityDetailPage() {
   const notice = useNotice();
 
   const { data, loading, error, reload } = useApi<Detail>(`/activities/${id}`, [id]);
+  const { convert } = useI18n();
   const { run, pending, error: actionError } = useAction();
   const [busy, setBusy] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -202,7 +204,7 @@ export default function ActivityDetailPage() {
               {a.myStatus === 'waitlist' ? '候补中' : '已报名'}
             </span>
           )}
-          <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mt-3 drop-shadow-lg">{a.title}</h1>
+          <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mt-3 drop-shadow-lg">{convert(a.title)}</h1>
         </div>
       </div>
 
@@ -223,7 +225,7 @@ export default function ActivityDetailPage() {
               <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center text-primary-600">
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 6 0 016 0z" /></svg>
               </div>
-              <div><div className="font-semibold">{a.city} · {a.location}</div></div>
+              <div><div className="font-semibold">{convert(a.city)} · {convert(a.location)}</div></div>
             </div>
             <Link href={`/users/${a.organizer.id}`} className="flex items-center gap-3 text-ink-700 hover:text-primary-600 transition-colors">
               <Avatar name={a.organizer.displayName} color={a.organizer.avatarColor} size={40} />
@@ -244,13 +246,13 @@ export default function ActivityDetailPage() {
                 className="w-9 h-9 rounded-full flex items-center justify-center text-ink-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
               />
             </div>
-            <p className="text-ink-600 whitespace-pre-wrap leading-relaxed">{a.description}</p>
+            <p className="text-ink-600 whitespace-pre-wrap leading-relaxed">{convert(a.description)}</p>
           </div>
 
           {/* 参与者 */}
           <div className="glass rounded-2xl p-6 shadow-card">
             <h2 className="font-display text-xl font-bold text-ink-900 mb-4">参与者 ({confirmed.length + waitlist.length})</h2>
-            {a.participants.length === 0 && <p className="text-ink-500 text-sm">还没有人报名，快来成为第一个吧！</p>}
+            {a.participants.length === 0 && <p className="text-ink-500 text-sm">{convert('还没有人报名，快来成为第一个吧！')}</p>}
             {confirmed.length > 0 && (
               <div className="mb-4">
                 <h3 className="text-sm font-semibold text-ink-700 mb-2">已确认 ({confirmed.length})</h3>

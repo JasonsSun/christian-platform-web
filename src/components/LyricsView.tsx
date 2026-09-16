@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 
 export interface LyricLine {
   /** 起始秒;无时间轴时为 -1 */
@@ -71,6 +72,7 @@ export default function LyricsView({
     () => parseLyrics(lyrics, duration),
     [lyrics, duration]
   );
+  const { convert } = useI18n();
 
   // 当前高亮行:取最后一个已到达的时间点
   const activeIdx = useMemo(() => {
@@ -99,7 +101,7 @@ export default function LyricsView({
   if (!lines.length) {
     return (
       <div className={`text-sm py-6 text-center ${dark ? 'text-white/40' : 'text-ink-400'} ${className}`}>
-        暂无歌词
+        {convert('暂无歌词')}
       </div>
     );
   }
@@ -108,7 +110,7 @@ export default function LyricsView({
     <div className={className}>
       {!timed && duration > 0 ? (
         <p className={`text-xs mb-2 px-1 ${dark ? 'text-white/40' : 'text-ink-400'}`}>
-          该歌词未标记时间轴，高亮为按总时长估算；点击任意一行可跳转到对应位置。
+          {convert('该歌词未标记时间轴，高亮为按总时长估算；点击任意一行可跳转到对应位置。')}
         </p>
       ) : null}
       <div
@@ -132,7 +134,7 @@ export default function LyricsView({
                     : 'text-ink-500 hover:bg-ink-50 text-sm md:text-base'
               }`}
             >
-              {l.text}
+              {convert(l.text)}
             </button>
           );
         })}

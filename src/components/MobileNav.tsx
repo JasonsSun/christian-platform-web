@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { moduleOfPath } from '@/lib/siteModules';
 import { useDisabledModules } from '@/lib/useSiteModules';
+import VariantSwitcher from '@/components/VariantSwitcher';
+import AccessibilityMenu from '@/components/AccessibilityMenu';
 
 const items = [
   {
@@ -78,6 +80,12 @@ export default function MobileNav({ disabledModules = [] }: { disabledModules?: 
   });
 
   return (
+    <>
+    {/* 移动端简繁 / 无障碍入口：顶部右侧胶囊，避免挤占底部标签栏 */}
+    <div className="md:hidden fixed top-14 right-2 z-[60] flex items-center gap-1 rounded-full bg-primary-900/90 px-1 py-1 shadow-lg backdrop-blur">
+      <VariantSwitcher tone="light" />
+      <AccessibilityMenu tone="light" />
+    </div>
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-ink-200/60 shadow-[0_-4px_30px_-8px_rgba(30,38,100,0.1)] pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around h-16">
         {shown.map((item) => {
@@ -106,5 +114,6 @@ export default function MobileNav({ disabledModules = [] }: { disabledModules?: 
         })}
       </div>
     </nav>
+    </>
   );
 }

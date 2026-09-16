@@ -8,14 +8,29 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { DEFAULT_LOCALE, LOCALES, LOCALE_COOKIE, type Locale } from './config';
+import {
+  DEFAULT_LOCALE,
+  DEFAULT_VARIANT,
+  LOCALES,
+  LOCALE_COOKIE,
+  VARIANT_COOKIE,
+  isLocale,
+  isVariant,
+  type Locale,
+  type Variant,
+} from './config';
 import { getDictionary } from './dict';
+import { convert } from './variant';
 
 type Vars = Record<string, string | number>;
 
 type I18nContextValue = {
   locale: Locale;
   setLocale: (l: Locale) => void;
+  variant: Variant;
+  setVariant: (v: Variant) => void;
+  /** 将简体文本按当前 variant 转换（variant==='t' 转繁体，否则原样） */
+  convert: (text: string) => string;
   t: (key: string, vars?: Vars) => string;
 };
 
@@ -33,31 +48,44 @@ function lookup(dict: unknown, key: string): string | undefined {
   return typeof cur === 'string' ? cur : undefined;
 }
 
+/** 根据 locale + variant 计算 <html lang> */
+function resolveLang(locale: Locale, variant: Variant): string {
+  if (locale === 'zh') return variant === 't' ? 'zh-Hant' : 'zh-CN';
+  return locale;
+}
+
 export function I18nProvider({
   children,
   initialLocale = DEFAULT_LOCALE,
+  initialVariant = DEFAULT_VARIANT,
 }: {
   children: ReactNode;
   initialLocale?: Locale;
+  initialVariant?: Variant;
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale);
+  const [variant, setVariantState] = useState<Variant>(initialVariant);
 
   // 客户端挂载后，按 localStorage 同步用户偏好（初始值与 SSR 一致，避免 hydration 不匹配）
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('platform_locale');
-      if (saved && (LOCALES as readonly string[]).includes(saved) && saved !== locale) {
-        setLocaleState(saved as Locale);
+      const savedLocale = localStorage.getItem('platform_locale');
+      if (savedLocale && isLocale(savedLocale) && savedLocale !== locale) {
+        setLocaleState(savedLocale);
+      }
+      const savedVariant = localStorage.getItem('platform_variant');
+      if (savedVariant && isVariant(savedVariant) && savedVariant !== variant) {
+        setVariantState(savedVariant);
       }
     } catch {
       /* ignore */
     }
-  }, [locale]);
+  }, [locale, variant]);
 
   // 同步 <html lang>
   useEffect(() => {
-    document.documentElement.lang = locale === 'zh' ? 'zh-CN' : locale;
-  }, [locale]);
+    document.documentElement.lang = resolveLang(locale, variant);
+  }, [locale, variant]);
 
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l);
@@ -73,9 +101,29 @@ export function I18nProvider({
     }
   }, []);
 
+  const setVariant = useCallback((v: Variant) => {
+    setVariantState(v);
+    try {
+      localStorage.setItem('platform_variant', v);
+    } catch {
+      /* ignore */
+    }
+    try {
+      document.cookie = `${VARIANT_COOKIE}=${v};path=/;max-age=31536000;samesite=lax`;
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const convertForVariant = useCallback(
+    (text: string) => (variant === 't' ? convert(text, 't') : text),
+    [variant]
+  );
+
   const t = useCallback(
     (key: string, vars?: Vars) => {
       let str = lookup(getDictionary(locale), key) ?? lookup(getDictionary(DEFAULT_LOCALE), key) ?? key;
+      if (variant === 't') str = convert(str, 't');
       if (vars) {
         for (const [k, v] of Object.entries(vars)) {
           str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
@@ -83,10 +131,14 @@ export function I18nProvider({
       }
       return str;
     },
-    [locale]
+    [locale, variant]
   );
 
-  return <I18nContext.Provider value={{ locale, setLocale, t }}>{children}</I18nContext.Provider>;
+  return (
+    <I18nContext.Provider value={{ locale, setLocale, variant, setVariant, convert: convertForVariant, t }}>
+      {children}
+    </I18nContext.Provider>
+  );
 }
 
 export function useI18n(): I18nContextValue {

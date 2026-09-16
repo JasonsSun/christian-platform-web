@@ -459,3 +459,86 @@ article.font-serif {
 [data-theme="sepia"] .border-primary-100 { border-color: rgba(184, 134, 11, 0.30) !important; }
 [data-theme="sepia"] .divide-ink-200 > * + * { border-color: #e6d8bd !important; }
 [data-theme="sepia"] .input-styled { background-color: #fbf4e6 !important; color: #4a3f2f !important; border-color: #e6d8bd !important; }
+
+/* ======================================================================
+   无障碍（Accessibility）：字体缩放 / 高对比 / 减少动效 / 键盘可达
+   这些偏好由 <html data-a11y-*> 控制，AccessibilityProvider 在首屏前
+   通过内联脚本写入，避免刷新闪动。
+   ====================================================================== */
+
+/* 字体缩放：放大根字号（rem 体系下的文字与间距同步放大），最大 +4px 控制位移 */
+html[data-a11y-font="lg"] { font-size: 18px; }
+html[data-a11y-font="xl"] { font-size: 20px; }
+html[data-a11y-font="lg"] body,
+html[data-a11y-font="xl"] body { line-height: 1.75; }
+
+/* 高对比度：纯黑文字 + 白底 + 蓝链接 + 黑边框，去掉低对比灰与装饰背景 */
+html[data-a11y-contrast="high"] body {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+html[data-a11y-contrast="high"] [class*="bg-"] {
+  background-color: #ffffff !important;
+}
+html[data-a11y-contrast="high"] [class*="text-"],
+html[data-a11y-contrast="high"] [class*="text-"] * {
+  color: #000000 !important;
+  text-shadow: none !important;
+}
+html[data-a11y-contrast="high"] a,
+html[data-a11y-contrast="high"] a * {
+  color: #0033cc !important;
+  text-decoration: underline !important;
+}
+html[data-a11y-contrast="high"] [class*="border"],
+html[data-a11y-contrast="high"] [class*="border-"],
+html[data-a11y-contrast="high"] [class*="divider"] {
+  border-color: #000000 !important;
+}
+html[data-a11y-contrast="high"] * {
+  box-shadow: none !important;
+}
+
+/* 减少动效：系统级与手动开关双保险 */
+html[data-a11y-reduce-motion="1"] *,
+html[data-a11y-reduce-motion="1"] *::before,
+html[data-a11y-reduce-motion="1"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 键盘焦点可见：所有可聚焦元素显示清晰描边（鼠标点击不触发） */
+:focus-visible {
+  outline: 3px solid #f59e0b !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+/* 跳过导航：视觉隐藏，键盘聚焦时显现，直达主内容 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.75rem 1.25rem;
+  background: #1e2664;
+  color: #ffffff;
+  border-radius: 0 0 0.75rem 0;
+  font-weight: 600;
+  transition: left 0.15s ease;
+}
+.skip-link:focus {
+  left: 0;
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}

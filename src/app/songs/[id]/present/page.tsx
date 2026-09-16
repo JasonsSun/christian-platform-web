@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { parseLyrics } from '@/components/LyricsView';
+import { useI18n } from '@/lib/i18n/I18nProvider';
 import type { SongItem } from '@/lib/types';
 
 export default function SongPresentPage() {
@@ -16,6 +17,7 @@ export default function SongPresentPage() {
     () => (data ? parseLyrics(data.lyrics || '', data.durationSec || 0).lines : []),
     [data],
   );
+  const { convert } = useI18n();
 
   const [idx, setIdx] = useState(0);
   const [showUI, setShowUI] = useState(true);
@@ -94,8 +96,8 @@ export default function SongPresentPage() {
           ← 退出投屏
         </Link>
         <div className="text-white/60 text-sm">
-          {data.title}
-          {data.author ? ` · ${data.author}` : ''}
+          {convert(data.title)}
+          {data.author ? ` · ${convert(data.author)}` : ''}
         </div>
         <button
           onClick={(e) => {
@@ -111,10 +113,10 @@ export default function SongPresentPage() {
       {/* 歌词主体 */}
       <div className="min-h-screen flex flex-col items-center justify-center px-8 text-center">
         <div className="text-4xl md:text-6xl lg:text-7xl font-display font-bold leading-tight max-w-5xl">
-          {cur ? cur.text : '（无歌词）'}
+          {cur ? convert(cur.text) : convert('（无歌词）')}
         </div>
         {next && (
-          <div className="mt-8 text-xl md:text-3xl text-white/40 leading-snug max-w-4xl">{next.text}</div>
+          <div className="mt-8 text-xl md:text-3xl text-white/40 leading-snug max-w-4xl">{convert(next.text)}</div>
         )}
       </div>
 
