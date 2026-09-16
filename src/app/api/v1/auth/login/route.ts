@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { ok, readJson, withApi, clientIp, HttpError } from '@/server/http';
 import {
   checkPassword, createSession, findUserByIdentifier, publicUser, signAccessToken,
+  signTwoFactorTicket,
 } from '@/server/auth';
 import { audit } from '@/server/services';
 import { verifyCaptcha, isBlocked, recordFailure, resetAttempts } from '@/server/captcha';
@@ -34,11 +35,25 @@ export const POST = withApi(async (req: NextRequest) => {
 
   resetAttempts(ip); // 成功则重置失败计数
   const session = await createSession(user.id, req);
+
+  // 开了 2FA 时不直接发令牌：先给一张 5 分钟的中间票据，
+  // 校验通过动态码后再换正式 token（见 /auth/2fa/verify）
+  const { getStatus } = await import('@/server/twoFactor');
+  const st = await getStatus(user.id).catch(() => null);
+  if (st?.enabled) {
+    return ok({
+      require2fa: true,
+      ticket: signTwoFactorTicket(user.id, session.sessionId),
+      // 提示前端展示方式，不泄露是否配置了恢复码之外的信息
+      hint: '请输入验证器 App 中的 6 位动态码',
+    });
+  }
+
   await audit(user.id, 'LOGIN_SUCCESS', 'user', user.id, `登录成功`, ip);
 
   return ok({
     user: publicUser(user),
-    accessToken: signAccessToken(user),
+    accessToken: signAccessToken(user, session.sessionId),
     refreshToken: session.refresh,
     expiresIn: Number(process.env.JWT_ACCESS_TTL || 900),
   });

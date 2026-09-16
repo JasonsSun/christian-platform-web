@@ -200,6 +200,12 @@ export default function MePage() {
           >
             登录设备
           </Link>
+          <Link
+            href="/settings/two-factor"
+            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 text-sm font-medium transition-colors"
+          >
+            双因素认证
+          </Link>
           <button
             onClick={async () => { await logout(); router.push('/'); }}
             className="px-5 py-2.5 rounded-xl text-rose-600 border border-rose-200 hover:bg-rose-50 text-sm font-medium transition-colors"

@@ -16,7 +16,11 @@ function LoginInner() {
   const initialMode = modeParam === 'register' || inviteCode ? 'register' : 'login';
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const router = useRouter();
-  const { login, register, user } = useAuth();
+  const { login, login2fa, register, user } = useAuth();
+
+  // ===== 双因素第二步 =====
+  const [twoFaTicket, setTwoFaTicket] = useState('');
+  const [twoFaCode, setTwoFaCode] = useState('');
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -68,6 +72,27 @@ function LoginInner() {
     return null;
   }
 
+  // 双因素第二步：单独提交，不需要图形验证码（票据本身已限流）
+  async function submit2fa(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    const code = twoFaCode.replace(/\s/g, '');
+    if (!/^(\d{6}|[A-Z0-9]{10})$/i.test(code)) {
+      setError('请输入 6 位动态码，或 10 位恢复码');
+      return;
+    }
+    setLoading(true);
+    try {
+      await login2fa(twoFaTicket, code);
+      setTwoFaTicket('');
+      router.push(nextPath);
+    } catch (e: any) {
+      setError(e?.message || '验证失败，请重试');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
@@ -78,7 +103,18 @@ function LoginInner() {
     setLoading(true);
     try {
       if (mode === 'login') {
-        await login(identifier.trim(), password, { captchaId, captchaCode: captchaCode.trim() });
+        try {
+          await login(identifier.trim(), password, { captchaId, captchaCode: captchaCode.trim() });
+        } catch (e2: any) {
+          // 开了双因素：切到动态码输入，票据只在内存里，不落 localStorage
+          if (e2?.code === 'REQUIRE_2FA' && e2.ticket) {
+            setTwoFaTicket(e2.ticket);
+            setError('');
+            setLoading(false);
+            return;
+          }
+          throw e2;
+        }
       } else {
         await register({
           username: identifier.trim(),
@@ -119,9 +155,58 @@ function LoginInner() {
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center mx-auto mb-4 shadow-glow">
               <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v18m9-9H3" /></svg>
             </div>
-            <h1 className="font-display text-3xl font-bold text-ink-900 mb-2">{mode === 'login' ? '欢迎回来' : '创建账号'}</h1>
-            <p className="text-ink-500">{mode === 'login' ? '登录圣约社区，继续你的属灵之旅' : '加入圣约社区，与弟兄姐妹彼此建立'}</p>
+            <h1 className="font-display text-3xl font-bold text-ink-900 mb-2">
+              {twoFaTicket ? '双因素验证' : mode === 'login' ? '欢迎回来' : '创建账号'}
+            </h1>
+            <p className="text-ink-500">
+              {twoFaTicket
+                ? '请输入验证器 App 上的 6 位动态码'
+                : mode === 'login'
+                  ? '登录圣约社区，继续你的属灵之旅'
+                  : '加入圣约社区，与弟兄姐妹彼此建立'}
+            </p>
           </div>
+
+          {/* 双因素第二步：替换掉整个主表单 */}
+          {twoFaTicket && (
+            <form onSubmit={submit2fa} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-ink-700 mb-1.5">动态码 / 恢复码</label>
+                <input
+                  className="input-styled text-center text-lg tracking-[0.3em] font-mono"
+                  placeholder="000000"
+                  value={twoFaCode}
+                  onChange={(e) => setTwoFaCode(e.target.value)}
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  maxLength={10}
+                  autoFocus
+                />
+                <p className="text-xs text-ink-400 mt-1.5">
+                  手机没电了？可以输入绑定时保存的 10 位恢复码。
+                </p>
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+                  <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 disabled:opacity-70">
+                {loading ? '验证中…' : '验证并登录'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setTwoFaTicket(''); setTwoFaCode(''); setError(''); setPassword(''); loadCaptcha(); }}
+                className="block w-full text-center text-sm text-ink-500 hover:text-primary-700"
+              >
+                返回重新登录
+              </button>
+            </form>
+          )}
 
           {/* 模式切换 */}
           <div className="flex bg-ink-100 rounded-xl p-1 mb-6">
@@ -129,7 +214,7 @@ function LoginInner() {
             <button onClick={() => { setMode('register'); setError(''); }} className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'register' ? 'bg-white text-primary-700 shadow' : 'text-ink-500'}`}>注册</button>
           </div>
 
-          <form onSubmit={submit} className="space-y-4">
+          <form onSubmit={submit} className={`space-y-4 ${twoFaTicket ? 'hidden' : ''}`}>
             {inviteCode && mode === 'register' && (
               <div className="rounded-xl bg-primary-50 border border-primary-100 px-4 py-3 text-sm text-primary-800">
                 你正通过好友邀请注册（邀请码 <b className="font-mono">{inviteCode}</b>），注册后你和对方都会获得成长奖励。

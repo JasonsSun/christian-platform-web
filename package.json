@@ -29,7 +29,8 @@
     "test:e2e:payments": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-payments-config.mjs",
     "migrate": "node bin/migrate.mjs",
     "migrate:status": "node bin/migrate.mjs status",
-    "migrate:create": "node bin/migrate.mjs create"
+    "migrate:create": "node bin/migrate.mjs create",
+    "test:2fa": "node scripts/test-2fa.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

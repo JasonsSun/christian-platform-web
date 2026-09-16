@@ -60,7 +60,16 @@ export type UserRow = {
   created_at: string;
 };
 
-export type JwtPayload = { sub: string; role: string; typ: 'access' | 'refresh'; exp: number; iss: string };
+export type JwtPayload = {
+  sub: string;
+  role: string;
+  /** 2fa = 密码已过、动态码未过的中间票据（5 分钟，一次性） */
+  typ: 'access' | 'refresh' | '2fa';
+  exp: number;
+  iss: string;
+  /** 可选：会话 id（access token 带上后可识别"当前设备"） */
+  sid?: string;
+};
 
 const b64 = (s: string | Buffer) => Buffer.from(s).toString('base64url');
 
@@ -100,6 +109,22 @@ export function signAccessToken(user: { id: string; role: string }, sessionId?: 
 
 export function signRefreshToken(userId: string, sessionId: string) {
   return sign({ sub: `${userId}:${sessionId}`, role: 'refresh', typ: 'refresh', exp: Math.floor(Date.now() / 1000) + REFRESH_TTL });
+}
+
+/**
+ * 2FA 中间票据：密码已验证、但动态码还没过的中间态凭证。
+ * 只能用来换一次完整令牌，5 分钟过期，且不含任何权限信息
+ * （verify 时 typ 必须是 '2fa'，拿它访问普通接口一律无效）。
+ */
+const TWO_FA_TTL = 5 * 60;
+
+export function signTwoFactorTicket(userId: string, sessionId: string) {
+  return sign({
+    sub: `${userId}:${sessionId}`,
+    role: '2fa',
+    typ: '2fa',
+    exp: Math.floor(Date.now() / 1000) + TWO_FA_TTL,
+  });
 }
 
 export const hashPassword = (p: string) => bcrypt.hashSync(p, 10);
