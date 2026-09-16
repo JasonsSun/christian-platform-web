@@ -1,0 +1,28 @@
+name: CI
+displayName: 类型检查与构建
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+stages:
+  - name: check
+    displayName: 检查与构建
+    steps:
+      - step: build@nodejs
+        displayName: Node 构建
+        inputs:
+          nodeVersion: '20'
+          buildCommand: |
+            cd apps/web
+            npm ci
+            npx tsc --noEmit -p tsconfig.json
+            npm run build
+            npm test
+            npm run test:plan
+        env:
+          # 构建期不需要真实密钥，但 auth.ts 在生产模式下会校验长度 ≥32
+          JWT_SECRET: ci-only-placeholder-secret-at-least-32-chars
+          NEXT_TELEMETRY_DISABLED: '1'

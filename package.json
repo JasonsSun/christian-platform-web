@@ -26,7 +26,10 @@
     "test:e2e:governance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-governance.mjs",
     "test:e2e:navbar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-navbar-layout.mjs",
     "test:e2e:sermons": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-sermons.mjs",
-    "test:e2e:payments": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-payments-config.mjs"
+    "test:e2e:payments": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-payments-config.mjs",
+    "migrate": "node bin/migrate.mjs",
+    "migrate:status": "node bin/migrate.mjs status",
+    "migrate:create": "node bin/migrate.mjs create"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
