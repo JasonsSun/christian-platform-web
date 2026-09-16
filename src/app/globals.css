@@ -60,6 +60,18 @@ html, body {
   background: linear-gradient(180deg, #3d52d9 0%, #3242b0 100%);
 }
 
+/* 可横向滚动但不显示滚动条（顶栏在窄视口/放大字号下的兜底） */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 /* 选中文本样式 */
 ::selection {
   background: #4f6df5;

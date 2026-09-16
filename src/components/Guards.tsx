@@ -8,7 +8,9 @@
  *    - 拦截非用户手势触发的 window.open 弹窗
  *    - 持续扫描 DOM，自动移除外部注入的 dialog / 遮罩层（当作广告弹窗无感关闭），
  *      并恢复被锁定的页面滚动
- *    - 携带 data-guard 标记的元素为本站合法元素，永不移除
+ *    - 携带 data-guard 标记的元素为本站合法元素，永不移除；
+ *      另有一道兜底：由 React 渲染出来的节点同样不移除（参见 isReactRendered），
+ *      避免本站浮层漏写 data-guard 时被当成广告删掉
  *
  * 2) 禁止查看源码：屏蔽 F12 / Ctrl+Shift+I(J,C,K) / Ctrl+U / Ctrl+S / 右键菜单 / 拖拽，
  *    并在检测到开发者工具打开时覆盖整页提示（关闭后自动恢复）。
@@ -54,6 +56,27 @@ function guardEnabled(): boolean {
 /** 永不移除的元素（本站点/框架自身合法元素） */
 const KEEP_TAGS = new Set(['NEXTJS-PORTAL', 'NEXT-ROUTE-ANNOUNCER', 'SCRIPT', 'STYLE', 'LINK', 'META', 'TITLE']);
 
+/**
+ * 判断宿主节点是否由 React 创建。
+ *
+ * React 挂载宿主节点时会在节点上写入 `__reactFiber$xxx` / `__reactProps$xxx` 内部属性
+ * （dev 与 prod 都有），而外部脚本注入的广告弹窗走 createElement / innerHTML，不会有。
+ *
+ * 为什么必须加这一条：本站有大量合法浮层（快捷设置、无障碍面板、进度榜、签到二维码…）
+ * 都带 `role="dialog"` / `aria-modal="true"`。一旦某个组件漏写 `data-guard`，
+ * 就会被下面的清扫当成广告「无感关闭」——表现为「点了没反应 / 面板一闪就没」，
+ * 排查成本极高（DOM 里查不到任何痕迹）。加了这道兜底，漏标也不会再误删。
+ * 约定仍然是：本站浮层一律带 `data-guard`（见 components/Portal.tsx 注释）。
+ */
+function isReactRendered(el: Element): boolean {
+  const keys = Object.keys(el);
+  for (let i = 0; i < keys.length; i++) {
+    const k = keys[i];
+    if (k.startsWith('__reactFiber$') || k.startsWith('__reactProps$')) return true;
+  }
+  return false;
+}
+
 function isKeepable(el: Element): boolean {
   if (KEEP_TAGS.has(el.tagName)) return true;
   if (el.hasAttribute(KEEP_ATTR)) return true;
@@ -62,7 +85,7 @@ function isKeepable(el: Element): boolean {
     if (p.hasAttribute && p.hasAttribute(KEEP_ATTR)) return true;
     p = p.parentElement;
   }
-  return false;
+  return isReactRendered(el);
 }
 
 export default function Guards() {

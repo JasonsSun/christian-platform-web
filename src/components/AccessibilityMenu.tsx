@@ -47,6 +47,7 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
           className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-card border border-ink-100 p-4 z-50 text-ink-800"
           role="dialog"
           aria-label="无障碍设置面板"
+          data-guard="a11y-menu"
         >
           <p className="text-xs font-semibold text-ink-500 mb-2">文字大小</p>
           <div className="flex gap-2 mb-4">

@@ -277,6 +277,7 @@ export default function GroupPlans({
       {progressOpen && (
         <Portal>
           <div
+            data-guard="group-plan-progress-modal"
             role="dialog"
             aria-modal="true"
             className="fixed inset-0 z-50 flex items-center justify-center p-4"

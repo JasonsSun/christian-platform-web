@@ -23,7 +23,8 @@
     "migrate:moderation-scopes": "node bin/migrate-moderation-scopes.mjs",
     "migrate:settings-seed": "node bin/migrate-settings-seed.mjs",
     "migrate:activity-organizer-reg": "node bin/migrate-activity-organizer-reg.mjs",
-    "test:e2e:governance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-governance.mjs"
+    "test:e2e:governance": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-governance.mjs",
+    "test:e2e:navbar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-navbar-layout.mjs"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

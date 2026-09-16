@@ -1,16 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useApi } from '@/lib/useApi';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { useNotifications } from '@/lib/notifyStream';
-import { useTheme } from '@/lib/theme';
-import LocaleSwitcher from '@/components/LocaleSwitcher';
-import VariantSwitcher from '@/components/VariantSwitcher';
-import AccessibilityMenu from '@/components/AccessibilityMenu';
+import PreferenceMenu from '@/components/PreferenceMenu';
 import ShareModal from '@/components/ShareModal';
 import { moduleOfPath } from '@/lib/siteModules';
 import { useDisabledModules } from '@/lib/useSiteModules';
@@ -20,6 +17,7 @@ const navLinks = [
   { href: '/bible', key: 'nav.bible' },
   { href: '/plans', key: 'nav.plans' },
   { href: '/songs', key: 'nav.songs' },
+  { href: '/sermons', key: 'nav.sermons' },
   { href: '/media', key: 'nav.media' },
   { href: '/live', key: 'nav.live' },
   { href: '/activities', key: 'nav.activities' },
@@ -29,6 +27,14 @@ const navLinks = [
   { href: '/donate', key: 'nav.donate' },
 ];
 
+/**
+ * 顶栏响应式约定（动这段前先读）：
+ * 桌面版导航容器 max-w-7xl（1280px）减去左右 px-8 只剩 1216px 可用。
+ * 12 个中文字链接 + 右侧工具区一旦超过它，flex 会把每个「文字 flex item」压到 min-content，
+ * 中文 min-content 就是「一个字」——于是整条导航变成一字一行竖排（历史缺陷）。
+ * 因此：① 所有文字项一律 whitespace-nowrap；② 桌面版从 xl(1280) 起才出现，
+ * 以下退回汉堡菜单（内容完整）；③ 语言/简繁/无障碍/主题收进一个 PreferenceMenu。
+ */
 export default function Navbar({ disabledModules = [] }: { disabledModules?: string[] }) {
   // 服务端快照 + 水合后校正的首页 ISR 旧壳
   const offModules = useDisabledModules(disabledModules);
@@ -40,7 +46,6 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { theme, cycle } = useTheme();
   const { t } = useI18n();
 
   const { data: frReq } = useApi<{ total: number }>(user ? '/friends/requests?pageSize=1' : null, [user?.id]);
@@ -74,14 +79,23 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
   };
   const links = navLinks.filter((l) => !moduleOff(l.href));
 
-  const themeIcon = theme === 'dark' ? (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" /></svg>
-  ) : theme === 'sepia' ? (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-  ) : (
-    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-  );
-  const themeLabel = theme === 'dark' ? '深色模式' : theme === 'sepia' ? '护眼模式' : '浅色模式';
+  const isActive = (href: string) =>
+    pathname === href || (href !== '/' && pathname.startsWith(href));
+
+  const linkCls = (active: boolean) =>
+    `relative whitespace-nowrap px-2.5 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
+      active
+        ? isScrolled
+          ? 'text-primary-600'
+          : 'text-white bg-white/20'
+        : isScrolled
+          ? 'text-ink-600 hover:text-primary-600 hover:bg-primary-50'
+          : 'text-white/80 hover:text-white hover:bg-white/10'
+    }`;
+
+  const iconBtnCls = `p-2 rounded-lg transition-colors ${
+    isScrolled ? 'text-ink-600 hover:text-primary-600 hover:bg-primary-50' : 'text-white/85 hover:text-white hover:bg-white/10'
+  }`;
 
   return (
     <>
@@ -93,8 +107,8 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16 md:h-20">
-          <Link href="/" className="flex items-center gap-2 group">
+        <div className="flex items-center h-16 md:h-20">
+          <Link href="/" className="flex items-center gap-2 group shrink-0">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
               isScrolled
                 ? 'bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg shadow-primary-500/30'
@@ -112,61 +126,33 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-1">
-            {links.map((link) => {
-              const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href));
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`relative px-3 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
-                    isActive
-                      ? isScrolled ? 'text-primary-600' : 'text-white bg-white/20'
-                      : isScrolled ? 'text-ink-600 hover:text-primary-600 hover:bg-primary-50' : 'text-white/80 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {t(link.key)}
-                  {isActive && (
-                    <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full transition-colors ${
-                      isScrolled ? 'bg-primary-500' : 'bg-gold-400'
-                    }`} />
-                  )}
-                </Link>
-              );
-            })}
+          {/* mx-auto 而非 justify-center：溢出时可正常横向滚动，不会两头被裁 */}
+          <div className="hidden xl:flex flex-1 min-w-0 overflow-x-auto no-scrollbar">
+            <div className="mx-auto flex items-center gap-1 px-1">
+              {links.map((link) => {
+                const active = isActive(link.href);
+                return (
+                  <Link key={link.href} href={link.href} className={linkCls(active)}>
+                    {t(link.key)}
+                    {active && (
+                      <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full transition-colors ${
+                        isScrolled ? 'bg-primary-500' : 'bg-gold-400'
+                      }`} />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-2">
-            <LocaleSwitcher tone="light" />
-            <VariantSwitcher tone="light" />
-            <AccessibilityMenu tone="light" />
-            <button
-              type="button"
-              onClick={cycle}
-              title={themeLabel}
-              className={`p-2 rounded-lg transition-colors ${
-                isScrolled ? 'text-ink-600 hover:text-primary-600 hover:bg-primary-50' : 'text-white/85 hover:text-white hover:bg-white/10'
-              }`}
-              aria-label="切换主题"
-            >
-              {themeIcon}
-            </button>
-            {isStaff && (
-              <Link href="/admin" className={`px-3 py-2 rounded-lg text-sm font-medium ${
-                isScrolled ? 'text-ink-600 hover:text-primary-600' : 'text-white/85 hover:text-white'
-              }`}>
-                {t('nav.admin')}
-              </Link>
-            )}
-
+          <div className="hidden xl:flex items-center gap-1 shrink-0">
+            <PreferenceMenu tone="light" />
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
               title="推荐给朋友"
               aria-label="推荐给朋友"
-              className={`p-2 rounded-lg transition-colors ${
-                isScrolled ? 'text-ink-600 hover:text-primary-600 hover:bg-primary-50' : 'text-white/85 hover:text-white hover:bg-white/10'
-              }`}
+              className={iconBtnCls}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 0V16.5a2.5 2.5 0 01-5 0v-.5" />
@@ -175,9 +161,18 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
 
             {user ? (
               <>
-                <Link href="/notifications" className={`relative p-2 rounded-lg ${
-                  isScrolled ? 'text-ink-600 hover:text-primary-600' : 'text-white/85 hover:text-white'
-                }`} title="通知" aria-label="通知">
+                {isStaff && (
+                  <Link
+                    href="/admin"
+                    className={`whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium ${
+                      isScrolled ? 'text-ink-600 hover:text-primary-600 hover:bg-primary-50' : 'text-white/85 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {t('nav.admin')}
+                  </Link>
+                )}
+
+                <Link href="/notifications" className={`relative ${iconBtnCls}`} title="通知" aria-label="通知">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
@@ -192,23 +187,23 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                   <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white/10 transition-colors">
                     {user.avatarUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={user.avatarUrl} alt={user.displayName} className="w-8 h-8 rounded-full object-cover" />
+                      <img src={user.avatarUrl} alt={user.displayName} className="w-8 h-8 rounded-full object-cover shrink-0" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
                         style={{ background: user.avatarColor }}>
                         {user.displayName.slice(0, 1)}
                       </div>
                     )}
-                    <span className={`text-sm font-medium ${isScrolled ? 'text-ink-700' : 'text-white'}`}>
+                    <span className={`hidden 2xl:inline max-w-[10rem] truncate text-sm font-medium ${isScrolled ? 'text-ink-700' : 'text-white'}`}>
                       {user.displayName}
                     </span>
                   </button>
                   {menuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-card border border-ink-100 py-2 overflow-hidden">
-                      <Link href="/me" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">{t('nav.profile')}</Link>
-                      {!moduleOff('/community/create') && <Link href="/community/create" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">发布内容</Link>}
-                      {!moduleOff('/messages') && <Link href="/messages" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">我的消息</Link>}
-                      <Link href="/friends?tab=requests" className="flex items-center justify-between px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">
+                      <Link href="/me" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.profile')}</Link>
+                      {!moduleOff('/community/create') && <Link href="/community/create" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">发布内容</Link>}
+                      {!moduleOff('/messages') && <Link href="/messages" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">我的消息</Link>}
+                      <Link href="/friends?tab=requests" className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">
                         <span>好友申请</span>
                         {!!frReq?.total && (
                           <span className="min-w-[18px] h-4 px-1 rounded-full bg-primary-600 text-white text-[10px] flex items-center justify-center">
@@ -216,15 +211,16 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                           </span>
                         )}
                       </Link>
-                      <Link href="/feedback" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">💡 给平台提建议</Link>
-                      {isStaff && <Link href="/admin/reviews" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50">审核队列</Link>}
+                      <Link href="/feedback" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">💡 给平台提建议</Link>
+                      {isStaff && <Link href="/admin" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.admin')}</Link>}
+                      {isStaff && <Link href="/admin/reviews" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">审核队列</Link>}
                       <div className="divider-gradient my-1" />
                       <button
                         onClick={async () => {
                           await logout();
                           router.push('/');
                         }}
-                        className="block w-full text-left px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50"
+                        className="block w-full text-left px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 whitespace-nowrap"
                       >
                         退出登录
                       </button>
@@ -234,12 +230,12 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
               </>
             ) : (
               <>
-                <Link href="/login" className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
+                <Link href="/login" className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
                   isScrolled ? 'text-primary-600 hover:bg-primary-50' : 'text-white/90 hover:text-white hover:bg-white/10'
                 }`}>
                   登录
                 </Link>
-                <Link href="/login?mode=register" className={`px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-300 ${
+                <Link href="/login?mode=register" className={`whitespace-nowrap px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-300 ${
                   isScrolled
                     ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/40 hover:-translate-y-0.5'
                     : 'bg-white text-primary-700 hover:bg-primary-50 hover:-translate-y-0.5 shadow-lg'
@@ -252,10 +248,11 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`md:hidden p-2 rounded-lg transition-colors ${
+            className={`xl:hidden ml-auto p-2 rounded-lg transition-colors ${
               isScrolled ? 'text-ink-700 hover:bg-ink-100' : 'text-white hover:bg-white/10'
             }`}
             aria-label="Toggle menu"
+            aria-expanded={isMobileMenuOpen}
           >
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               {isMobileMenuOpen ? (
@@ -267,41 +264,38 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
           </button>
         </div>
 
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[80vh] overflow-y-auto pb-4' : 'max-h-0'}`}>
-          <div className="glass rounded-2xl p-4 space-y-2 shadow-card">
-            {links.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link key={link.href} href={link.href} className={`block px-4 py-3 rounded-xl font-medium transition-all ${
-                  isActive ? 'bg-primary-100 text-primary-700' : 'text-ink-700 hover:bg-ink-100'
+        <div className={`xl:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[75vh] overflow-y-auto pb-4' : 'max-h-0'}`}>
+          {/* 用实色卡片而非 .glass：glass 带 backdrop-filter，叠在深色导航上会被冲淡成灰紫，
+              浅色文字对比度不足（暗色主题下更明显）。实色卡片在任何主题/滚动态下都可读。 */}
+          <div data-nav-mobile-menu="1" className="bg-white rounded-2xl p-4 space-y-2 shadow-card border border-ink-100">
+            {/* 双列而非单列长列表：导航项已有 12 个，单列在平板/窄桌面会拉出一整屏还要滚动 */}
+            <div className="grid grid-cols-2 gap-2">
+              {links.map((link) => (
+                <Link key={link.href} href={link.href} className={`block px-4 py-3 rounded-xl font-medium whitespace-nowrap transition-all ${
+                  isActive(link.href) ? 'bg-primary-100 text-primary-700' : 'text-ink-700 hover:bg-ink-100'
                 }`}>
                   {t(link.key)}
                 </Link>
-              );
-            })}
-            <button
-              type="button"
-              onClick={cycle}
-              className="flex items-center justify-between w-full px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100"
-            >
-              <span>{theme === 'dark' ? '🌙 深色模式' : theme === 'sepia' ? '📜 护眼模式' : '☀ 浅色模式'}</span>
-              <span className="text-xs text-ink-400">点击切换</span>
-            </button>
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setShareOpen(true); setIsMobileMenuOpen(false); }}
-              className="block w-full text-left px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100"
-            >
+              ))}
+            </div>
+
+            <MenuRow onClick={() => { setShareOpen(true); setIsMobileMenuOpen(false); }}>
               📤 分享本系统
-            </button>
+            </MenuRow>
+
             <div className="divider-gradient my-2" />
+
+            <PreferenceMenu tone="dark" inline />
+
+            <div className="divider-gradient my-2" />
+
             {user ? (
               <>
-                <Link href="/me" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">{t('nav.profile')}</Link>
-                <Link href="/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">{t('nav.notifications')}</Link>
-                <Link href="/settings/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">提醒设置</Link>
-                <Link href="/feedback" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">💡 给平台提建议</Link>
-                <Link href="/friends?tab=requests" className="flex items-center justify-between px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">
+                <Link href="/me" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.profile')}</Link>
+                <Link href="/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.notifications')}</Link>
+                <Link href="/settings/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">提醒设置</Link>
+                <Link href="/feedback" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">💡 给平台提建议</Link>
+                <Link href="/friends?tab=requests" className="flex items-center justify-between gap-2 px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">
                   <span>好友申请</span>
                   {!!frReq?.total && (
                     <span className="min-w-[18px] h-4 px-1 rounded-full bg-primary-600 text-white text-[10px] flex items-center justify-center">
@@ -309,21 +303,21 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                     </span>
                   )}
                 </Link>
-                {isStaff && <Link href="/admin" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100">{t('nav.admin')}</Link>}
+                {isStaff && <Link href="/admin" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.admin')}</Link>}
                 <button
                   onClick={async () => {
                     await logout();
                     router.push('/');
                   }}
-                  className="block w-full px-4 py-3 rounded-xl font-medium text-rose-600 text-left hover:bg-rose-50"
+                  className="block w-full px-4 py-3 rounded-xl font-medium text-rose-600 text-left hover:bg-rose-50 whitespace-nowrap"
                 >
                   退出登录
                 </button>
               </>
             ) : (
               <>
-                <Link href="/login" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 text-center">登录</Link>
-                <Link href="/login?mode=register" className="block px-4 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary-600 to-primary-500 text-white text-center shadow-lg shadow-primary-500/25">
+                <Link href="/login" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 text-center whitespace-nowrap">登录</Link>
+                <Link href="/login?mode=register" className="block px-4 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary-600 to-primary-500 text-white text-center shadow-lg shadow-primary-500/25 whitespace-nowrap">
                   免费注册
                 </Link>
               </>
@@ -334,5 +328,17 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
     </nav>
     <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
     </>
+  );
+}
+
+function MenuRow({ children, onClick }: { children: ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="block w-full text-left px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap"
+    >
+      {children}
+    </button>
   );
 }

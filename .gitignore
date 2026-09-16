@@ -4,6 +4,7 @@ node_modules/
 .next.*
 .next-verify/
 .next-verify.*
+.next-navdev/
 out/
 build_output.txt
 .build-trash/

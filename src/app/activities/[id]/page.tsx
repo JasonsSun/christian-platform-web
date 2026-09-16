@@ -437,6 +437,7 @@ export default function ActivityDetailPage() {
       {qrOpen && (
         <Portal>
           <div
+            data-guard="activity-qr-modal"
             role="dialog"
             aria-modal="true"
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
