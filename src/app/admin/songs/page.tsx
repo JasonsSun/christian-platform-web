@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from 'react';
 import { useApi } from '@/lib/useApi';
-import { apiPatch } from '@/lib/api';
+import { apiPatch, apiPost } from '@/lib/api';
 import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
 
 interface AdminSong {
@@ -40,6 +40,13 @@ export default function AdminSongsPage() {
   const [busyId, setBusyId] = useState('');
   const [tip, setTip] = useState('');
   const [editor, setEditor] = useState<Editor | null>(null);
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [batchText, setBatchText] = useState('');
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [batchResult, setBatchResult] = useState<{
+    created: number; skipped: number; errors: number; detail: { created: string[]; skipped: string[]; errors: { line: number; title: string; reason: string }[] };
+  } | null>(null);
+  const [batchErr, setBatchErr] = useState('');
   const { data, loading, error, reload } = useApi<{
     items: AdminSong[]; total: number;
     byCategory: { category: string; c: number }[];
@@ -130,6 +137,27 @@ export default function AdminSongsPage() {
     }
   }
 
+  /** 批量导入诗歌：提交纯文本，刷新列表 */
+  async function runBatch() {
+    if (!batchText.trim()) {
+      setBatchErr('请先粘贴诗歌文本');
+      return;
+    }
+    setBatchBusy(true);
+    setBatchErr('');
+    setBatchResult(null);
+    try {
+      const r = await apiPost('/admin/songs/batch', { text: batchText });
+      setBatchResult(r as typeof batchResult);
+      setBatchText('');
+      reload();
+    } catch (e: any) {
+      setBatchErr(e?.message || '批量导入失败');
+    } finally {
+      setBatchBusy(false);
+    }
+  }
+
   return (
     <AdminLayout>
       <SectionTitle>赞美诗管理</SectionTitle>
@@ -163,6 +191,13 @@ export default function AdminSongsPage() {
             <Badge key={c.category} tone="gold">{c.category} · {c.c}</Badge>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() => { setBatchOpen(true); setBatchResult(null); setBatchErr(''); }}
+          className="ml-auto text-sm px-4 py-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700 whitespace-nowrap"
+        >
+          批量导入
+        </button>
       </div>
 
       {loading ? (
@@ -348,6 +383,64 @@ export default function AdminSongsPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {batchOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16" onClick={() => !batchBusy && setBatchOpen(false)}>
+          <div className="w-full max-w-2xl glass rounded-2xl shadow-soft p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold text-ink-900">批量导入诗歌</h3>
+              <button
+                type="button"
+                onClick={() => !batchBusy && setBatchOpen(false)}
+                className="text-ink-400 hover:text-ink-700 text-sm"
+              >
+                关闭
+              </button>
+            </div>
+            <p className="text-xs text-ink-500 mb-2 leading-relaxed">
+              每首以独立 <code className="bg-ink-100 px-1 rounded">---</code> 行分隔（或以 <code className="bg-ink-100 px-1 rounded"># 标题</code> 分段）。支持字段：
+              <code className="bg-ink-100 px-1 rounded">作者/分类/原调/标签/和弦</code>（和弦段与歌词之间留空行）。
+            </p>
+            <textarea
+              className="input-styled w-full font-mono text-xs"
+              rows={10}
+              placeholder={'# 奇异恩典\n作者：约翰·牛顿\n分类：恩典\n原调：G\n标签：救恩, 安慰\n\n[C]Amazing [G]grace how [Am]sweet the [F]sound\n\n---\n# 第二首\n作者：佚名\n歌词内容…'}
+              value={batchText}
+              onChange={(e) => setBatchText(e.target.value)}
+            />
+            {batchErr && <p className="text-rose-600 text-xs mt-2">{batchErr}</p>}
+            {batchResult && (
+              <div className="mt-3 text-xs rounded-xl bg-emerald-50 text-emerald-800 px-3 py-2 space-y-1">
+                <p>导入完成：新建 {batchResult.created} 首 · 跳过 {batchResult.skipped} 首 · 错误 {batchResult.errors} 首</p>
+                {batchResult.detail.skipped.length > 0 && (
+                  <p className="text-emerald-700/80">跳过：{batchResult.detail.skipped.join('、')}</p>
+                )}
+                {batchResult.detail.errors.length > 0 && (
+                  <p className="text-rose-600">错误：{batchResult.detail.errors.map((e) => `第${e.line}行 ${e.title}(${e.reason})`).join('；')}</p>
+                )}
+              </div>
+            )}
+            <div className="flex items-center gap-2 mt-4 justify-end">
+              <button
+                type="button"
+                onClick={() => { setBatchOpen(false); setBatchResult(null); setBatchErr(''); }}
+                disabled={batchBusy}
+                className="text-sm px-4 py-2 rounded-xl bg-white text-ink-600 border border-ink-200 hover:bg-ink-50 disabled:opacity-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={runBatch}
+                disabled={batchBusy || !batchText.trim()}
+                className="text-sm px-4 py-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
+              >
+                {batchBusy ? '导入中…' : '开始导入'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </AdminLayout>
