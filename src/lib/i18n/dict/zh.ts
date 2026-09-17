@@ -8,6 +8,7 @@ const zh = {
     media: '媒体',
     live: '直播',
     activities: '活动',
+    calendar: '日历',
     community: '社区',
     topics: '话题',
     prayers: '代祷',

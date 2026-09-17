@@ -76,6 +76,7 @@ const PAGES: Item[] = [
   { id: 'p-live', group: '导航', label: '直播', href: '/live', keywords: 'live zhibo' },
   { id: 'p-community', group: '导航', label: '社区', href: '/community', keywords: 'community shequ' },
   { id: 'p-topics', group: '导航', label: '话题广场', href: '/topics', keywords: 'topics huati tag biaoqian 标签 话题' },
+  { id: 'p-calendar', group: '导航', label: '聚会日历', href: '/calendar', keywords: 'calendar rili 日历 月历 活动 打卡' },
   { id: 'p-feed', group: '导航', label: '动态流', href: '/feed', keywords: 'feed dongtai' },
   { id: 'p-groups', group: '导航', label: '团契小组', href: '/groups', keywords: 'group tuanqi xiaozu' },
   { id: 'p-activities', group: '导航', label: '活动', href: '/activities', keywords: 'activity huodong' },

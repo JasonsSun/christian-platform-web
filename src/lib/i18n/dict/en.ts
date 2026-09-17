@@ -10,6 +10,7 @@ const en: Dict = {
     media: 'Media',
     live: 'Live',
     activities: 'Events',
+    calendar: 'Calendar',
     community: 'Community',
     topics: 'Topics',
     prayers: 'Prayer',

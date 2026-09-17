@@ -44,6 +44,7 @@ const navGroups = [
     items: [
       { href: '/topics', key: 'nav.topics' },
       { href: '/activities', key: 'nav.activities' },
+      { href: '/calendar', key: 'nav.calendar' },
       { href: '/prayers', key: 'nav.prayers' },
       { href: '/groups', key: 'nav.groups' },
     ],
