@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
-import { qs } from '@/lib/api';
+import { useParams, useRouter } from 'next/navigation';
+import { qs, apiPost, apiDelete, clearApiCache } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { timeAgo, formatDate } from '@/lib/format';
 import type { ContentItem, ListResult } from '@/lib/types';
@@ -22,6 +22,9 @@ interface TopicOverview {
   related: { name: string; count: number }[];
   recent: { id: string; title: string; contentType: string; at: string; authorName: string }[];
   empty: boolean;
+  loggedIn: boolean;
+  following: boolean;
+  followers: number;
 }
 
 const TYPE_BADGE: Record<string, { label: string; cls: string }> = {
@@ -45,6 +48,7 @@ const PAGE_SIZE = 10;
 
 export default function TopicDetailPage() {
   const params = useParams<{ tag: string }>();
+  const router = useRouter();
   const raw = params?.tag || '';
   let tag = raw;
   try {
@@ -56,10 +60,38 @@ export default function TopicDetailPage() {
   const [type, setType] = useState('all');
   const [sort, setSort] = useState<'new' | 'hot'>('new');
   const [page, setPage] = useState(1);
+  const [followBusy, setFollowBusy] = useState(false);
 
   // 注意：这里刻意不做整页 loading 分支 —— Hero 用 URL 上的 tag 立即渲染，
   // 保证 SSR 首屏就有话题标题（对分享/SEO 友好），下半部分各自出骨架。
-  const { data: ov } = useApi<TopicOverview>(tag ? `/topics/${encodeURIComponent(tag)}` : null, [tag]);
+  const { data: ov, setData: setOv } = useApi<TopicOverview>(tag ? `/topics/${encodeURIComponent(tag)}` : null, [tag]);
+
+  /** 关注/取关：乐观更新概览里的 following/followers，失败回滚 */
+  const toggleFollow = async () => {
+    if (!ov) return;
+    if (!ov.loggedIn) {
+      router.push(`/login?next=${encodeURIComponent(`/topics/${encodeURIComponent(tag)}`)}`);
+      return;
+    }
+    const was = ov.following;
+    setFollowBusy(true);
+    setOv((prev) =>
+      prev
+        ? { ...prev, following: !was, followers: Math.max(0, prev.followers + (was ? -1 : 1)) }
+        : prev
+    );
+    try {
+      if (was) await apiDelete(`/me/topics/${encodeURIComponent(tag)}`);
+      else await apiPost('/me/topics', { tag });
+      clearApiCache('/topics');
+    } catch {
+      setOv((prev) =>
+        prev ? { ...prev, following: was, followers: Math.max(0, prev.followers + (was ? 1 : -1)) } : prev
+      );
+    } finally {
+      setFollowBusy(false);
+    }
+  };
 
   const listPath =
     tag
@@ -92,9 +124,23 @@ export default function TopicDetailPage() {
             </svg>
             返回话题广场
           </Link>
-          <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2 text-glow break-words">
-            #{ov?.tag || tag}
-          </h1>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+            <h1 className="font-display text-3xl sm:text-4xl font-bold text-white text-glow break-words">
+              #{ov?.tag || tag}
+            </h1>
+            <button
+              onClick={toggleFollow}
+              disabled={followBusy}
+              className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all disabled:opacity-60 flex items-center gap-1.5 flex-shrink-0 ${
+                ov?.following
+                  ? 'border-gold-300/70 bg-gold-400/20 text-gold-200 hover:bg-gold-400/30'
+                  : 'border-white/40 text-white/90 hover:bg-white/15'
+              }`}
+            >
+              {ov?.following ? '★ 已关注' : '☆ 关注话题'}
+              {!!ov?.followers && <span className="text-xs opacity-80">{ov.followers} 人</span>}
+            </button>
+          </div>
           {ov && !ov.empty && (
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-white/85 text-sm">
               <span>{ov.count} 篇内容</span>

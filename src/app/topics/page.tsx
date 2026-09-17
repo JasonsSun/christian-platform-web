@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { qs } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+import { qs, apiPost, apiDelete, clearApiCache } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { timeAgo } from '@/lib/format';
 import { Skeleton } from '@/components/Skeleton';
@@ -17,6 +18,8 @@ interface TopicItem {
   heat: number;
   heatPct: number;
   countPct: number;
+  following: boolean;
+  followers: number;
 }
 
 const SORT_TABS = [
@@ -29,15 +32,69 @@ const SORT_TABS = [
 const topicHref = (name: string) => `/topics/${encodeURIComponent(name)}`;
 
 export default function TopicsPage() {
+  const router = useRouter();
   const [q, setQ] = useState('');
   const [kw, setKw] = useState('');
   const [sort, setSort] = useState('hot');
+  const [onlyFollowing, setOnlyFollowing] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  const { data, loading, error } = useApi<{
+  const { data, loading, error, setData } = useApi<{
     items: TopicItem[];
     total: number;
     contentTotal: number;
-  }>(`/topics${qs({ sort, q: kw || undefined, limit: 120 })}`, [sort, kw]);
+    loggedIn: boolean;
+  }>(`/topics${qs({ sort, q: kw || undefined, limit: 120, only: onlyFollowing ? 'following' : undefined })}`, [
+    sort,
+    kw,
+    onlyFollowing,
+  ]);
+
+  const loggedIn = !!data?.loggedIn;
+
+  /** 关注/取关。卡片本身是 Link，按钮必须阻止冒泡与默认跳转。 */
+  const toggleFollow = async (e: React.MouseEvent, name: string, following: boolean) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!loggedIn) {
+      router.push('/login?next=/topics');
+      return;
+    }
+    setBusy(name);
+    // 乐观更新：先翻状态，失败再翻回来，避免弱网下按钮没反应
+    setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            items: prev.items.map((t) =>
+              t.name === name
+                ? { ...t, following: !following, followers: Math.max(0, t.followers + (following ? -1 : 1)) }
+                : t
+            ),
+          }
+        : prev
+    );
+    try {
+      if (following) await apiDelete(`/me/topics/${encodeURIComponent(name)}`);
+      else await apiPost('/me/topics', { tag: name });
+      clearApiCache('/topics');
+    } catch {
+      setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((t) =>
+                t.name === name
+                  ? { ...t, following, followers: Math.max(0, t.followers + (following ? 1 : -1)) }
+                  : t
+              ),
+            }
+          : prev
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const items = data?.items || [];
   const maxHeat = items.reduce((m, t) => Math.max(m, t.heat), 1);
@@ -126,6 +183,19 @@ export default function TopicsPage() {
                 </button>
               ))}
             </div>
+            {loggedIn && (
+              <button
+                onClick={() => setOnlyFollowing((v) => !v)}
+                className={`px-3.5 py-2 rounded-xl text-sm font-medium border transition-all flex items-center gap-1.5 ${
+                  onlyFollowing
+                    ? 'border-gold-300 bg-gold-50 text-gold-700 shadow-sm'
+                    : 'border-ink-200 text-ink-600 hover:border-primary-300 hover:text-primary-700'
+                }`}
+              >
+                <span className="text-xs">★</span>
+                我的关注
+              </button>
+            )}
           </div>
 
           {error && (
@@ -146,11 +216,21 @@ export default function TopicsPage() {
 
           {!loading && !error && items.length === 0 && (
             <div className="card-tech rounded-2xl p-10 text-center text-ink-400">
-              {kw ? `没有匹配「${kw}」的话题` : '还没有带标签的已发布内容'}
+              {onlyFollowing
+                ? '你还没有关注任何话题，点卡片上的 ☆ 就能关注'
+                : kw
+                ? `没有匹配「${kw}」的话题`
+                : '还没有带标签的已发布内容'}
               <div className="mt-3">
-                <Link href="/community/create" className="text-primary-600 hover:underline">
-                  去发布第一条 →
-                </Link>
+                {onlyFollowing ? (
+                  <button onClick={() => setOnlyFollowing(false)} className="text-primary-600 hover:underline">
+                    去话题广场逛逛 →
+                  </button>
+                ) : (
+                  <Link href="/community/create" className="text-primary-600 hover:underline">
+                    去发布第一条 →
+                  </Link>
+                )}
               </div>
             </div>
           )}
@@ -194,7 +274,21 @@ export default function TopicsPage() {
 
                 <div className="mt-2.5 flex items-center justify-between text-[11px] text-ink-400">
                   <span>热度 {t.heat}</span>
-                  {t.lastAt ? <span>{timeAgo(t.lastAt)}活跃</span> : null}
+                  <div className="flex items-center gap-2">
+                    {t.lastAt ? <span>{timeAgo(t.lastAt)}活跃</span> : null}
+                    <button
+                      onClick={(e) => toggleFollow(e, t.name, t.following)}
+                      disabled={busy === t.name}
+                      className={`relative z-10 px-2 py-0.5 rounded-full border text-[11px] font-medium transition-all disabled:opacity-50 ${
+                        t.following
+                          ? 'border-gold-300 bg-gold-50 text-gold-700'
+                          : 'border-ink-200 text-ink-500 hover:border-primary-300 hover:text-primary-700'
+                      }`}
+                    >
+                      {t.following ? '★ 已关注' : '☆ 关注'}
+                      {t.followers > 0 && <span className="ml-1 opacity-70">{t.followers}</span>}
+                    </button>
+                  </div>
                 </div>
               </Link>
             ))}
@@ -202,7 +296,7 @@ export default function TopicsPage() {
 
           {!loading && data && data.total > items.length && (
             <p className="text-center text-sm text-ink-400 mt-6">
-              已显示热度最高的 {items.length} 个话题（共 {data.total} 个）
+              已显示 {items.length} 个话题（共 {data.total} 个）
             </p>
           )}
         </div>

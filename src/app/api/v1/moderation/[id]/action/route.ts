@@ -3,6 +3,7 @@ import { exec, one, ts } from '@/server/db';
 import { ok, withApi, notFound, readJson, HttpError, clientIp } from '@/server/http';
 import { requireModeratorModule } from '@/server/moderation';
 import { audit, dispatchOutbox, emit } from '@/server/services';
+import { notifyTopicFollowers } from '@/server/topicFollows';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,9 +34,27 @@ export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
   await emit(action === 'approve' ? 'content.approved' : 'content.rejected',
     { contentId: content.id, reason: body.reason || '' });
   await dispatchOutbox();
+  // 上架瞬间通知话题关注者。放在审核之后而不是投稿时：审核期就通知的话，
+  // 用户点进去是 404/无权限，等于骚扰。通知失败不能回滚审核结果。
+  let notified = 0;
+  if (action === 'approve') {
+    try {
+      const author = await one<any>(`SELECT display_name, username FROM users WHERE id = ?`, [content.author_id]);
+      notified = await notifyTopicFollowers({
+        id: content.id,
+        title: content.title,
+        tags: content.tags,
+        authorId: content.author_id,
+        authorName: author?.display_name || author?.username || '',
+      });
+    } catch {
+      /* 通知失败不影响审核结果 */
+    }
+  }
+
   await audit(reviewer.id, action === 'approve' ? 'CONTENT_APPROVE' : 'CONTENT_REJECT',
     'content', content.id, `《${content.title}》${action === 'approve' ? '通过' : '驳回'}:${body.reason || '-'}`,
     clientIp(req));
 
-  return ok({ id: task.id, contentId: content.id, status: nextStatus });
+  return ok({ id: task.id, contentId: content.id, status: nextStatus, notified });
 });

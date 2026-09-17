@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { q } from '@/server/db';
 import { ok, withApi, HttpError } from '@/server/http';
 import { currentUser, UserRow } from '@/server/auth';
+import { reminderMapFor, LEAD_OPTIONS } from '@/server/activityReminders';
 
 export const dynamic = 'force-dynamic';
 
@@ -121,6 +122,9 @@ export const GET = withApi(async (req: NextRequest) => {
     to,
     loggedIn: !!viewer,
     days: items,
+    // 我对本月活动的提醒设置：activityId -> { leadMinutes, notifyAt, sent }
+    reminders: viewer ? await reminderMapFor(viewer.id, acts.map((a) => String(a.id))) : {},
+    leadOptions: LEAD_OPTIONS,
     summary: {
       activities: acts.length,
       checkins: checkedIn.size,

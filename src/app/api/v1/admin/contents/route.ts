@@ -4,6 +4,7 @@ import { ok, withApi, readJson, clientIp, HttpError } from '@/server/http';
 import { UserRow } from '@/server/auth';
 import { requireModeratorModule } from '@/server/moderation';
 import { audit } from '@/server/services';
+import { notifyTopicFollowers } from '@/server/topicFollows';
 
 export const dynamic = 'force-dynamic';
 
@@ -120,6 +121,16 @@ export const PATCH = withApi(async (req: NextRequest) => {
   if (!allowed.includes(status)) throw new HttpError(422, 'VALIDATION_FAILED', '目标状态不合法');
 
   const ph = ids.map(() => '?').join(',');
+  // 只给「本次才刚上架」的内容通知话题关注者：重复上架同一篇会再刷一遍通知，
+  // 属于骚扰。这里先记下上架前的状态，事后只对转 published 的那些发。
+  let newlyPublished: Array<{ id: string; title: string; tags: string; author_id: string }> = [];
+  if (status === 'published') {
+    newlyPublished = await q<{ id: string; title: string; tags: string; author_id: string }>(
+      `SELECT id, title, tags, author_id FROM contents WHERE id IN (${ph}) AND status <> 'published'`,
+      ids
+    );
+  }
+
   // 上架时补 published_at，下架/退回草稿时清空，避免「已发布但无发布时间」的脏数据
   if (status === 'published') {
     await exec(
@@ -130,8 +141,22 @@ export const PATCH = withApi(async (req: NextRequest) => {
     await exec(`UPDATE contents SET status = ?, published_at = NULL WHERE id IN (${ph})`, [status, ...ids]);
   }
 
+  let notified = 0;
+  for (const c of newlyPublished) {
+    try {
+      notified += await notifyTopicFollowers({
+        id: c.id,
+        title: c.title,
+        tags: c.tags,
+        authorId: c.author_id,
+      });
+    } catch {
+      /* 通知失败不影响上架结果 */
+    }
+  }
+
   await audit(user.id, 'CONTENT_STATUS_CHANGE', 'content', ids[0] || '', `批量改为 ${status}（${ids.length} 条）`, clientIp(req));
-  return ok({ updated: ids.length, status });
+  return ok({ updated: ids.length, status, notified });
 });
 
 /**

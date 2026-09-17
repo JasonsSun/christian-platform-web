@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { q } from '@/server/db';
 import { ok, withApi, num } from '@/server/http';
+import { currentUser, UserRow } from '@/server/auth';
+import { followedSet, followerCounts } from '@/server/topicFollows';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +79,7 @@ export const GET = withApi(async (req: NextRequest) => {
   const sort: SortKey = (SORTS as readonly string[]).includes(rawSort) ? (rawSort as SortKey) : 'hot';
   const limit = Math.min(Math.max(num(sp.get('limit'), 60), 1), 200);
   const min = Math.max(num(sp.get('min'), 1), 1);
+  const only = str(sp.get('only')).trim(); // 'following' = 只看我关注的
 
   let items = await aggregate();
   const contentTotal = await q<{ c: number }>(
@@ -85,6 +88,12 @@ export const GET = withApi(async (req: NextRequest) => {
 
   if (min > 1) items = items.filter((t) => t.count >= min);
   if (kw) items = items.filter((t) => t.name.toLowerCase().includes(kw));
+
+  // 关注态：未登录一律 false，前端据此隐藏关注按钮
+  const viewer = (await currentUser(req).catch(() => null)) as UserRow | null;
+  const following = viewer ? await followedSet(viewer.id) : new Set<string>();
+  if (only === 'following') items = items.filter((t) => following.has(t.name));
+  const followers = await followerCounts(items.map((t) => t.name));
 
   const total = items.length;
   const maxCount = items.reduce((m, t) => Math.max(m, t.count), 1);
@@ -103,9 +112,12 @@ export const GET = withApi(async (req: NextRequest) => {
       // 0~100，供前端画热度条
       heatPct: Math.max(4, Math.round((t.heat / maxHeat) * 100)),
       countPct: Math.max(4, Math.round((t.count / maxCount) * 100)),
+      following: following.has(t.name),
+      followers: followers.get(t.name) || 0,
     })),
     total,
     contentTotal,
     sort,
+    loggedIn: !!viewer,
   });
 });

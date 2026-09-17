@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { qs } from '@/lib/api';
+import { useRouter } from 'next/navigation';
+import { qs, apiPost, apiDelete, clearApiCache } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { Skeleton } from '@/components/Skeleton';
 
@@ -25,6 +26,12 @@ interface CalDay {
   count: number;
 }
 
+interface ReminderState {
+  leadMinutes: number;
+  notifyAt: string;
+  sent: boolean;
+}
+
 const WEEK = ['一', '二', '三', '四', '五', '六', '日'];
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -35,6 +42,15 @@ const CATEGORY_LABEL: Record<string, string> = {
   prayer: '祷告',
   outreach: '外展',
   other: '其他',
+};
+
+/** 与 src/server/activityReminders.ts 的 LEAD_OPTIONS 保持一致 */
+const LEAD_OPTIONS = [30, 120, 1440, 4320];
+const LEAD_LABEL: Record<number, string> = {
+  30: '开始前 30 分钟',
+  120: '开始前 2 小时',
+  1440: '开始前 1 天',
+  4320: '开始前 3 天',
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -50,20 +66,25 @@ function shiftMonth(month: string, delta: number) {
 }
 
 export default function CalendarPage() {
+  const router = useRouter();
   const today = todayStr();
   const [month, setMonth] = useState(today.slice(0, 7));
   const [selected, setSelected] = useState(today);
+  const [openFor, setOpenFor] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
 
-  const { data, loading, error } = useApi<{
+  const { data, loading, error, reload } = useApi<{
     month: string;
     days: CalDay[];
     loggedIn: boolean;
+    reminders: Record<string, ReminderState>;
     summary: { activities: number; checkins: number; planDays: number; activeDays: number };
   }>(`/calendar${qs({ month })}`, [month]);
 
   const days = data?.days || [];
   const byDate = new Map(days.map((d) => [d.date, d]));
   const cur = byDate.get(selected);
+  const reminders = data?.reminders || {};
 
   // 月历首格偏移：周一为一周第一天
   const [yy, mm] = month.split('-').map(Number);
@@ -75,6 +96,41 @@ export default function CalendarPage() {
     setMonth(today.slice(0, 7));
     setSelected(today);
   };
+
+  /** 订阅提醒。未登录先去登录 —— 提醒是按用户存的，匿名没法落地。 */
+  const setReminder = async (activityId: string, leadMinutes: number) => {
+    if (!data?.loggedIn) {
+      router.push('/login?next=/calendar');
+      return;
+    }
+    setBusy(activityId);
+    try {
+      await apiPost('/me/activity-reminders', { activityId, leadMinutes });
+      setOpenFor(null);
+      clearApiCache('/calendar');
+      await reload();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const cancelReminder = async (activityId: string) => {
+    setBusy(activityId);
+    try {
+      await apiDelete(`/me/activity-reminders?activityId=${encodeURIComponent(activityId)}`);
+      setOpenFor(null);
+      clearApiCache('/calendar');
+      await reload();
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // 侧栏「我的提醒」：把本月所有已订阅的活动摊平
+  const myReminders = days
+    .flatMap((d) => d.activities.map((a) => ({ ...a, state: reminders[a.id] })))
+    .filter((x) => x.state)
+    .sort((a, b) => (a.date + a.startTime > b.date + b.startTime ? 1 : -1));
 
   return (
     <div className="min-h-screen">
@@ -133,6 +189,14 @@ export default function CalendarPage() {
               <span className="flex items-center gap-1">
                 <i className="w-2 h-2 rounded-full bg-gold-500 inline-block" />读经
               </span>
+              {/* 订阅到系统日历：站外也能收到提醒，无需登录在线 */}
+              <a
+                href="/api/v1/calendar/ics"
+                className="px-3 py-1.5 rounded-xl text-xs border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-700 transition-colors"
+                title="下载 .ics 订阅到手机/电脑日历"
+              >
+                📆 订阅日历
+              </a>
             </div>
           </div>
 
@@ -182,6 +246,7 @@ export default function CalendarPage() {
                         const isToday = d.date === today;
                         const isSel = d.date === selected;
                         const hasAct = d.activities.length > 0;
+                        const reminded = d.activities.some((a) => reminders[a.id]);
                         return (
                           <button
                             key={d.date}
@@ -202,6 +267,7 @@ export default function CalendarPage() {
                             <div className="mt-1 space-y-0.5">
                               {hasAct && (
                                 <div className="truncate text-[10px] leading-tight px-1 py-0.5 rounded bg-primary-50 text-primary-700">
+                                  {reminded ? '🔔 ' : ''}
                                   {d.activities[0].cover ? `${d.activities[0].cover} ` : ''}
                                   {d.activities[0].title}
                                 </div>
@@ -225,7 +291,7 @@ export default function CalendarPage() {
             </div>
 
             {/* 当天详情 */}
-            <aside className="min-w-0">
+            <aside className="min-w-0 space-y-4">
               <div className="card-tech rounded-2xl p-5 sticky top-24">
                 <h3 className="font-display font-bold text-ink-900 mb-1">
                   {selected.slice(5).replace('-', ' 月 ')} 日
@@ -238,23 +304,73 @@ export default function CalendarPage() {
 
                 {cur && cur.activities.length > 0 && (
                   <div className="space-y-2.5 mb-4">
-                    {cur.activities.map((a) => (
-                      <Link
-                        key={a.id}
-                        href={`/activities/${a.id}`}
-                        className="block p-3 rounded-xl border border-ink-100 hover:border-primary-300 hover:bg-primary-50/40 transition-colors"
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-lg">{a.cover || '📅'}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 border border-primary-100">
-                            {CATEGORY_LABEL[a.category] || a.category}
-                          </span>
-                          <span className="ml-auto text-xs text-ink-500">{a.startTime}</span>
+                    {cur.activities.map((a) => {
+                      const st = reminders[a.id];
+                      const open = openFor === a.id;
+                      return (
+                        <div
+                          key={a.id}
+                          className="p-3 rounded-xl border border-ink-100 hover:border-primary-300 transition-colors"
+                        >
+                          <Link href={`/activities/${a.id}`} className="block">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-lg">{a.cover || '📅'}</span>
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 border border-primary-100">
+                                {CATEGORY_LABEL[a.category] || a.category}
+                              </span>
+                              <span className="ml-auto text-xs text-ink-500">{a.startTime}</span>
+                            </div>
+                            <div className="text-sm font-medium text-ink-900 truncate">{a.title}</div>
+                            {a.location && (
+                              <div className="text-xs text-ink-400 mt-0.5 truncate">📍 {a.location}</div>
+                            )}
+                          </Link>
+
+                          {/* 提醒：站内通知 + Web Push，未登录引导去登录 */}
+                          <div className="mt-2 flex items-center gap-2">
+                            <button
+                              onClick={() => setOpenFor(open ? null : a.id)}
+                              disabled={busy === a.id}
+                              className={`text-[11px] px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+                                st
+                                  ? 'border-gold-300 bg-gold-50 text-gold-700'
+                                  : 'border-ink-200 text-ink-500 hover:border-primary-300 hover:text-primary-700'
+                              }`}
+                            >
+                              {st ? `🔔 ${LEAD_LABEL[st.leadMinutes] || '已订阅'}` : '🔕 提醒我'}
+                            </button>
+                            {st && (
+                              <button
+                                onClick={() => cancelReminder(a.id)}
+                                disabled={busy === a.id}
+                                className="text-[11px] text-ink-400 hover:text-rose-500 transition-colors disabled:opacity-50"
+                              >
+                                取消
+                              </button>
+                            )}
+                          </div>
+
+                          {open && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {LEAD_OPTIONS.map((l) => (
+                                <button
+                                  key={l}
+                                  onClick={() => setReminder(a.id, l)}
+                                  disabled={busy === a.id}
+                                  className={`text-[11px] px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+                                    st?.leadMinutes === l
+                                      ? 'border-primary-400 bg-primary-50 text-primary-700'
+                                      : 'border-ink-200 text-ink-600 hover:border-primary-300'
+                                  }`}
+                                >
+                                  {LEAD_LABEL[l]}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-sm font-medium text-ink-900 truncate">{a.title}</div>
-                        {a.location && <div className="text-xs text-ink-400 mt-0.5 truncate">📍 {a.location}</div>}
-                      </Link>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
@@ -267,7 +383,26 @@ export default function CalendarPage() {
                     <Link href="/login" className="text-primary-600 hover:underline">
                       登录
                     </Link>
-                    后可在这里看到你的读经打卡与计划进度
+                    后可在这里看到你的读经打卡与计划进度，也能订阅活动提醒
+                  </div>
+                )}
+
+                {myReminders.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-ink-100">
+                    <h4 className="text-xs font-semibold text-ink-700 mb-2">本月我的提醒</h4>
+                    <ul className="space-y-1.5">
+                      {myReminders.slice(0, 6).map((r) => (
+                        <li key={r.id} className="flex items-center gap-2 text-[11px] text-ink-500">
+                          <span className="flex-shrink-0">🔔</span>
+                          <Link href={`/activities/${r.id}`} className="truncate hover:text-primary-700">
+                            {r.date.slice(5)} {r.startTime} · {r.title}
+                          </Link>
+                          <span className="ml-auto flex-shrink-0 text-ink-400">
+                            {LEAD_LABEL[r.state.leadMinutes] || ''}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 

@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 import { q } from '@/server/db';
 import { ok, withApi, HttpError } from '@/server/http';
+import { currentUser, UserRow } from '@/server/auth';
+import { isFollowing, followerCount } from '@/server/topicFollows';
 
 export const dynamic = 'force-dynamic';
 
@@ -125,6 +127,8 @@ export const GET = withApi(async (req: NextRequest, ctx: { params: { tag: string
     authorName: String(r.display_name || r.username || '匿名'),
   }));
 
+  const viewer = (await currentUser(req).catch(() => null)) as UserRow | null;
+
   return ok({
     tag,
     count,
@@ -139,5 +143,8 @@ export const GET = withApi(async (req: NextRequest, ctx: { params: { tag: string
     recent,
     sampled: rows.length,
     empty: count === 0,
+    loggedIn: !!viewer,
+    following: viewer ? await isFollowing(viewer.id, tag) : false,
+    followers: await followerCount(tag),
   });
 });

@@ -21,6 +21,8 @@
     "test:e2e:topics": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-topics.mjs",
     "test:e2e:favorite-folders": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-favorite-folders.mjs",
     "test:e2e:calendar": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-calendar.mjs",
+    "test:e2e:topic-follows": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-topic-follows.mjs",
+    "test:e2e:activity-reminders": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-activity-reminders.mjs",
     "test:e2e:settings": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-settings.mjs",
     "test:e2e:module-switch": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-module-switch.mjs",
     "test:e2e:ssr-backplay": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/smoke-backplay.mjs",
