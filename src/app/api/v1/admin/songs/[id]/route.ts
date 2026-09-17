@@ -20,7 +20,7 @@ export const PATCH = withApi(async (req: NextRequest, { params }: { params: { id
   const id = params.id;
 
   const song = await one<any>(
-    `SELECT id, title, audio_url, audio_type, audio_credit, listen_url, listen_source
+    `SELECT id, title, audio_url, audio_type, audio_credit, listen_url, listen_source, chords, original_key
        FROM songs WHERE id = ?`,
     [id]
   );
@@ -31,6 +31,8 @@ export const PATCH = withApi(async (req: NextRequest, { params }: { params: { id
   const nextCredit = body.audioCredit === undefined ? undefined : String(body.audioCredit).trim();
   const nextListenUrl = body.listenUrl === undefined ? undefined : String(body.listenUrl).trim();
   const nextListenSource = body.listenSource === undefined ? undefined : String(body.listenSource).trim();
+  const nextChords = body.chords === undefined ? undefined : String(body.chords);
+  const nextOriginalKey = body.originalKey === undefined ? undefined : String(body.originalKey).trim().slice(0, 8);
 
   if (nextType !== undefined && !(AUDIO_TYPES as readonly string[]).includes(nextType)) {
     throw new HttpError(422, 'VALIDATION_FAILED', `audioType 只能是 ${AUDIO_TYPES.join(' / ')}`);
@@ -52,7 +54,8 @@ export const PATCH = withApi(async (req: NextRequest, { params }: { params: { id
   }
   if (
     nextType === undefined && nextCredit === undefined &&
-    nextListenUrl === undefined && nextListenSource === undefined
+    nextListenUrl === undefined && nextListenSource === undefined &&
+    nextChords === undefined && nextOriginalKey === undefined
   ) {
     throw new HttpError(422, 'VALIDATION_FAILED', '没有需要更新的字段');
   }
@@ -63,6 +66,8 @@ export const PATCH = withApi(async (req: NextRequest, { params }: { params: { id
   if (nextCredit !== undefined) { fields.push('audio_credit = ?'); args.push(nextCredit); }
   if (nextListenUrl !== undefined) { fields.push('listen_url = ?'); args.push(nextListenUrl); }
   if (nextListenSource !== undefined) { fields.push('listen_source = ?'); args.push(nextListenSource); }
+  if (nextChords !== undefined) { fields.push('chords = ?'); args.push(nextChords); }
+  if (nextOriginalKey !== undefined) { fields.push('original_key = ?'); args.push(nextOriginalKey); }
   await exec(`UPDATE songs SET ${fields.join(', ')} WHERE id = ?`, [...args, id]);
 
   const before = normalizeAudioType(song.audio_type, song.audio_url);
@@ -71,7 +76,9 @@ export const PATCH = withApi(async (req: NextRequest, { params }: { params: { id
     admin.id, 'SONG_META_UPDATE', 'songs', id,
     `诗歌「${song.title}」音频类型 ${before} -> ${after}` +
       (nextCredit !== undefined ? `，授权说明：${nextCredit || '(清空)'}` : '') +
-      (nextListenUrl !== undefined ? `，外部试听：${nextListenUrl || '(清空)'}` : ''),
+      (nextListenUrl !== undefined ? `，外部试听：${nextListenUrl || '(清空)'}` : '') +
+      (nextChords !== undefined ? `，和弦谱：${nextChords ? '已更新' : '(清空)'}` : '') +
+      (nextOriginalKey !== undefined ? `，原调：${nextOriginalKey || '(清空)'}` : ''),
     clientIp(req)
   );
 
@@ -81,5 +88,7 @@ export const PATCH = withApi(async (req: NextRequest, { params }: { params: { id
     audioCredit: nextCredit !== undefined ? nextCredit : song.audio_credit || '',
     listenUrl: nextListenUrl !== undefined ? nextListenUrl : song.listen_url || '',
     listenSource: nextListenSource !== undefined ? nextListenSource : song.listen_source || '',
+    chords: nextChords !== undefined ? nextChords : song.chords || '',
+    originalKey: nextOriginalKey !== undefined ? nextOriginalKey : song.original_key || '',
   });
 });

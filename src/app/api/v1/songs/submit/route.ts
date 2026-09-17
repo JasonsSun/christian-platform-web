@@ -52,6 +52,8 @@ export const POST = withApi(async (req: NextRequest) => {
   const category = String(form.get('category') || '赞美').trim();
   const tags = String(form.get('tags') || '').trim();
   const lyrics = String(form.get('lyrics') || '').trim();
+  const chords = String(form.get('chords') || '').trim();
+  const originalKey = String(form.get('originalKey') || '').trim().slice(0, 8);
   const credit = String(form.get('audioCredit') || '').trim();
   const rawType = String(form.get('audioType') || '').trim();
   // 可选：不提供音频、但提供一个“这首歌在哪儿能听到人声版”的外部链接
@@ -95,10 +97,10 @@ export const POST = withApi(async (req: NextRequest) => {
   const id = newId('sng');
   await exec(
     `INSERT INTO songs
-       (id, title, author, category, tags, lyrics, audio_url, audio_type, audio_credit,
+       (id, title, author, category, tags, lyrics, chords, original_key, audio_url, audio_type, audio_credit,
         listen_url, listen_source, play_count, source, submitter_id, status, created_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,0,'upload',?,'pending',?)`,
-    [id, title, author || '佚名', category, tags, lyrics, audioUrl, audioType,
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,0,'upload',?,'pending',?)`,
+    [id, title, author || '佚名', category, tags, lyrics, chords, originalKey, audioUrl, audioType,
      audioUrl ? credit : '', listenUrl, listenUrl ? listenSource : '', user.id, ts()]
   );
 

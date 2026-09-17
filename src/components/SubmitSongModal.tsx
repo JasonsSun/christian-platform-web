@@ -25,6 +25,8 @@ export default function SubmitSongModal({
   const [category, setCategory] = useState('赞美');
   const [tags, setTags] = useState('');
   const [lyrics, setLyrics] = useState('');
+  const [chords, setChords] = useState('');
+  const [originalKey, setOriginalKey] = useState('');
   const [audio, setAudio] = useState<File | null>(null);
   // 默认按"真人演唱"投稿：平台上缺的就是人声版本
   const [audioKind, setAudioKind] = useState<'vocal' | 'instrumental'>('vocal');
@@ -53,6 +55,8 @@ export default function SubmitSongModal({
       fd.set('category', category.trim());
       fd.set('tags', tags.trim());
       fd.set('lyrics', lyrics.trim());
+      fd.set('chords', chords.trim());
+      fd.set('originalKey', originalKey.trim());
       if (audio) {
         fd.set('audio', audio);
         fd.set('audioType', audioKind);
@@ -109,6 +113,20 @@ export default function SubmitSongModal({
             <label className="block text-sm font-medium text-ink-700 mb-1">歌词 *</label>
             <textarea value={lyrics} onChange={(e) => setLyrics(e.target.value)} rows={6} placeholder="粘贴或输入歌词…" className="input-styled w-full" />
           </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-ink-700 mb-1">和弦谱（可选）</label>
+              <textarea value={chords} onChange={(e) => setChords(e.target.value)} rows={4}
+                placeholder={'用 [和弦] 标记，例如：\n[C]Amazing [G]grace how [Am]sweet the [F]sound'}
+                className="input-styled w-full font-mono text-sm" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-ink-700 mb-1">原调</label>
+              <input value={originalKey} onChange={(e) => setOriginalKey(e.target.value)} maxLength={8}
+                placeholder="如 C / G / Am" className="input-styled w-full" />
+            </div>
+          </div>
+          <p className="-mt-1 text-xs text-ink-400">有和弦谱时，诗歌详情页会以和弦谱形式展示，并支持一键移调。</p>
           <div>
             <label className="block text-sm font-medium text-ink-700 mb-1">音频文件（可选，mp3/wav/m4a，≤30MB）</label>
             <input type="file" accept="audio/*" onChange={(e) => setAudio(e.target.files?.[0] || null)} className="text-sm text-ink-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-full file:border-0 file:bg-gold-100 file:text-gold-700 file:text-sm file:font-medium" />

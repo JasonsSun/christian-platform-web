@@ -12,6 +12,7 @@ import { formatDate } from '@/lib/format';
 import { audioTypeMeta, vocalListenTarget } from '@/lib/audioType';
 import { usePlayer } from '@/lib/player';
 import LyricsView from '@/components/LyricsView';
+import ChordSheet from '@/components/ChordSheet';
 import SubmitSongModal from '@/components/SubmitSongModal';
 import ShareButton from '@/components/ShareButton';
 import { IconMusicNote, IconPlay, IconPause, IconHeart, IconEye, IconArrowLeft, IconExternalLink, IconMicrophone, IconDocument, IconLink } from '@/components/icons';
@@ -262,6 +263,8 @@ export default function SongDetailPage() {
                       className="font-serif leading-loose"
                     />
                   </>
+                ) : data.chords ? (
+                  <ChordSheet chords={data.chords} originalKey={data.originalKey} variant="dark" />
                 ) : (
                   <div className="font-serif text-lg md:text-xl leading-loose text-white/90 whitespace-pre-wrap">
                     {data.lyrics}

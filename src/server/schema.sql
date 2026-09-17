@@ -306,6 +306,10 @@ CREATE TABLE IF NOT EXISTS songs (
   submitter_id CHAR(36)     NULL,                          -- 用户投稿时记录投稿人
   status       VARCHAR(20)  NOT NULL DEFAULT 'published', -- published|pending|rejected
   created_at   DATETIME     NOT NULL,
+  -- 和弦谱：带 [C] 标记的文本，前端 ChordSheet 解析渲染并支持移调
+  chords       TEXT         NOT NULL,
+  -- 原调（如 C / G / Am / F#m），用于曲谱移调时的"原调 → 选调"显示
+  original_key VARCHAR(8)   NOT NULL DEFAULT '',
   KEY idx_songs_category (category),
   KEY idx_songs_status (status),
   KEY idx_songs_audio_type (audio_type)

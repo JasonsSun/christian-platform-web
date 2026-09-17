@@ -116,6 +116,10 @@ export interface SongItem {
   listenUrl?: string;
   /** 外部试听来源名，如 B站 / 网易云 / 教会授权 */
   listenSource?: string;
+  /** 和弦谱：带 [C] 标记的文本，前端 ChordSheet 解析渲染并支持移调 */
+  chords?: string;
+  /** 原调，如 C / G / Am / F#m，用于曲谱移调显示 */
+  originalKey?: string;
   durationSec?: number;
   playCount: number;
   createdAt: string;

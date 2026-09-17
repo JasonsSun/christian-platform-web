@@ -36,7 +36,7 @@ export const GET = withApi(async (req: NextRequest) => {
 
   const rows = await q<any>(
     `SELECT id, title, author, category, tags, lyrics, audio_url, audio_type, audio_credit,
-            listen_url, listen_source, play_count,
+            listen_url, listen_source, play_count, chords, original_key,
             DATE_FORMAT(created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at
      FROM songs ${whereSql} ORDER BY ${orderBy} LIMIT ? OFFSET ?`,
     [...args, pageSize, (page - 1) * pageSize]

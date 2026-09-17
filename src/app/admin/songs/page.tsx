@@ -10,6 +10,7 @@ interface AdminSong {
   hasAudio: boolean; playCount: number; favoriteCount: number; lyricsLen: number; createdAt: string;
   audioType: 'vocal' | 'instrumental' | 'none'; audioCredit: string;
   listenUrl: string; listenSource: string;
+  chords: string; originalKey: string;
   source: string; status: string; submitterName: string;
 }
 
@@ -30,6 +31,8 @@ interface Editor {
   credit: string;
   listenUrl: string;
   listenSource: string;
+  chords: string;
+  originalKey: string;
 }
 
 export default function AdminSongsPage() {
@@ -61,6 +64,8 @@ export default function AdminSongsPage() {
       credit: song.audioCredit || '',
       listenUrl: song.listenUrl || '',
       listenSource: song.listenSource || '',
+      chords: song.chords || '',
+      originalKey: song.originalKey || '',
     });
   }
 
@@ -77,6 +82,8 @@ export default function AdminSongsPage() {
       credit: song.audioCredit || '',
       listenUrl: song.listenUrl || '',
       listenSource: song.listenSource || '',
+      chords: song.chords || '',
+      originalKey: song.originalKey || '',
     });
   }
 
@@ -100,6 +107,9 @@ export default function AdminSongsPage() {
       patch.listenUrl = url;
       patch.listenSource = url ? editor.listenSource.trim() || '外部平台' : '';
     }
+    // 和弦谱与原调：无论当前编辑模式，只要与原始值不同就一并保存（用户主动清空＝清除）
+    if ((editor.chords || '') !== (song.chords || '')) patch.chords = editor.chords;
+    if ((editor.originalKey || '').trim() !== (song.originalKey || '')) patch.originalKey = editor.originalKey.trim();
     setBusyId(song.id);
     setTip('');
     try {
@@ -294,6 +304,24 @@ export default function AdminSongsPage() {
                             />
                           </>
                         )}
+                        <div className="flex items-center gap-2 w-full mt-2 pt-2 border-t border-primary-200">
+                          <span className="text-xs text-ink-500">和弦谱</span>
+                          <textarea
+                            className="input-styled text-xs py-1 flex-1 min-w-[260px] font-mono"
+                            rows={2}
+                            placeholder="用 [和弦] 标记，例如：[C]Amazing [G]grace"
+                            value={editor.chords}
+                            onChange={(e) => setEditor({ ...editor, chords: e.target.value })}
+                          />
+                          <span className="text-xs text-ink-500 ml-2">原调</span>
+                          <input
+                            className="input-styled text-xs py-1 w-[90px]"
+                            placeholder="如 C / Am"
+                            value={editor.originalKey}
+                            maxLength={8}
+                            onChange={(e) => setEditor({ ...editor, originalKey: e.target.value })}
+                          />
+                        </div>
                         <div className="flex items-center gap-2 ml-auto">
                           <button
                             type="button"

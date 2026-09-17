@@ -23,7 +23,7 @@ export const GET = withApi(async (req: NextRequest) => {
 
   const rows = await q<any>(
     `SELECT s.id, s.title, s.author, s.category, s.tags, s.audio_url, s.audio_type, s.audio_credit,
-            s.listen_url, s.listen_source, s.play_count,
+            s.listen_url, s.listen_source, s.play_count, s.chords, s.original_key,
             s.source, s.status, s.submitter_id,
             u.display_name AS submitter_name,
             DATE_FORMAT(s.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
@@ -45,6 +45,7 @@ export const GET = withApi(async (req: NextRequest) => {
       lyricsLen: Number(r.lyrics_len), createdAt: r.created_at,
       audioType: normalizeAudioType(r.audio_type, r.audio_url), audioCredit: r.audio_credit || '',
       listenUrl: r.listen_url || '', listenSource: r.listen_source || '',
+      chords: r.chords || '', originalKey: r.original_key || '',
       source: r.source, status: r.status, submitterName: r.submitter_name || '',
     })),
     total: Number(total?.c || 0), page, pageSize,

@@ -148,6 +148,8 @@ export const mapSong = (r: any) => ({
   playCount: r.play_count,
   source: r.source || 'internal',
   status: r.status || 'published',
+  chords: r.chords || '',
+  originalKey: r.original_key || '',
   createdAt: r.created_at,
 });
 

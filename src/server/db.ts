@@ -491,6 +491,9 @@ async function ensureColumns(pool: Pool): Promise<void> {
     // 活动地点坐标(WGS-84)
     ['activities', 'lat', 'DECIMAL(10,8) NULL'],
     ['activities', 'lng', 'DECIMAL(11,8) NULL'],
+    // 诗歌和弦谱与原调
+    ['songs', 'chords', 'TEXT NOT NULL'],
+    ['songs', 'original_key', "VARCHAR(8) NOT NULL DEFAULT ''"],
   ];
   for (const [table, col, ddl] of needed) {
     try {
