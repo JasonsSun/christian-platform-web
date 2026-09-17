@@ -14,6 +14,7 @@ import { apiPost } from '@/lib/api';
 import { useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
+import LocationMap from '@/components/LocationMap';
 
 const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南京'];
 
@@ -42,8 +43,42 @@ export default function NewActivityPage() {
     startAt: '',
     capacity: '50',
     cover: COVERS[0],
+    lat: null as number | null,
+    lng: null as number | null,
   });
   const [localError, setLocalError] = useState('');
+  const [geocoding, setGeocoding] = useState(false);
+  const [geoMsg, setGeoMsg] = useState('');
+
+  /** 用地址反查坐标（Nominatim，best-effort，失败不影响发布） */
+  async function locateByAddress() {
+    const q = `${form.city} ${form.location}`.trim();
+    if (!q) {
+      setGeoMsg('请先填写城市与地点');
+      return;
+    }
+    setGeocoding(true);
+    setGeoMsg('');
+    try {
+      const r = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
+        { headers: { Accept: 'application/json' } }
+      );
+      const data = await r.json();
+      if (Array.isArray(data) && data[0]?.lat) {
+        const lat = Number(data[0].lat);
+        const lng = Number(data[0].lon);
+        setForm((f) => ({ ...f, lat, lng }));
+        setGeoMsg('已定位到坐标，可拖动地图微调');
+      } else {
+        setGeoMsg('未能根据地址定位，请在地图上手动点选');
+      }
+    } catch {
+      setGeoMsg('定位服务暂不可用，请在地图上手动点选');
+    } finally {
+      setGeocoding(false);
+    }
+  }
 
   useEffect(() => {
     if (!loading && !user) {
@@ -78,6 +113,8 @@ export default function NewActivityPage() {
         description: form.description.trim(),
         capacity: Number(form.capacity) || 50,
         startAt: new Date(form.startAt).toISOString(),
+        lat: form.lat,
+        lng: form.lng,
       })
     );
     if (res?.id) {
@@ -201,6 +238,42 @@ export default function NewActivityPage() {
                 value={form.startAt}
                 onChange={(e) => setForm({ ...form, startAt: e.target.value })}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-ink-700 mb-1.5">地点坐标（选填）</label>
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={locateByAddress}
+                  disabled={geocoding}
+                  className="text-xs px-3 py-2 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition disabled:opacity-60"
+                >
+                  {geocoding ? '定位中…' : '用地址定位'}
+                </button>
+                {form.lat != null && form.lng != null && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, lat: null, lng: null }))}
+                    className="text-xs px-3 py-2 rounded-lg border border-ink-200 text-ink-500 hover:bg-ink-50 transition"
+                  >
+                    清除坐标
+                  </button>
+                )}
+              </div>
+              {geoMsg && <p className="text-xs text-ink-500 mb-2">{geoMsg}</p>}
+              {form.lat != null && form.lng != null ? (
+                <LocationMap
+                  lat={form.lat}
+                  lng={form.lng}
+                  title={form.location || form.title}
+                  height={220}
+                  interactive
+                  onPick={({ lat, lng }) => setForm((f) => ({ ...f, lat, lng }))}
+                />
+              ) : (
+                <p className="text-xs text-ink-400">填写地址后点「用地址定位」，或在地图上点选以标注活动位置。</p>
+              )}
             </div>
 
             <div>

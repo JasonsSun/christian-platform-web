@@ -5,6 +5,7 @@ import { currentUser, requireUser, UserRow } from '@/server/auth';
 import { mapActivity } from '@/server/mappers';
 import { audit } from '@/server/services';
 import { assertCanCancelActivity, cancelActivity } from '@/server/activities';
+import { str } from '@/server/sanitize';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,7 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
   const id = ctx.params.id;
   const vid = viewer?.id;
   const row = await one<any>(
-    `SELECT a.id, a.title, a.description, a.category, a.location, a.city, a.capacity, a.cover, a.status,
+    `SELECT a.id, a.title, a.description, a.category, a.location, a.city, a.lat, a.lng, a.capacity, a.cover, a.status,
             DATE_FORMAT(a.start_at,'%Y-%m-%dT%H:%i:%sZ') AS start_at,
             DATE_FORMAT(a.end_at,'%Y-%m-%dT%H:%i:%sZ') AS end_at,
             DATE_FORMAT(a.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
@@ -63,24 +64,42 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
 export const PATCH = withApi(async (req: NextRequest, ctx: Ctx) => {
   const user = await requireUser(req);
   const id = ctx.params.id;
-  const body = await readJson<{ status?: string; reason?: string }>(req).catch(
-    () => ({ status: '', reason: '' }) as { status?: string; reason?: string },
+  const body = await readJson<{ status?: string; reason?: string; location?: string; city?: string; lat?: number | null; lng?: number | null }>(req).catch(
+    () => ({}) as any,
   );
-
-  if (body.status !== 'cancelled') {
-    throw new HttpError(422, 'VALIDATION_FAILED', '仅支持将活动状态改为 cancelled（取消活动）');
-  }
 
   const act = await one<any>(`SELECT id, title, status, organizer_id FROM activities WHERE id = ?`, [id]);
   if (!act) throw notFound('活动不存在');
-  assertCanCancelActivity(act, user);
+  const isOrganizerOrAdmin = act.organizer_id === user.id || user.role === 'admin';
+  if (!isOrganizerOrAdmin) throw new HttpError(403, 'FORBIDDEN', '只有活动组织者或管理员可以修改');
 
-  const res = await cancelActivity(id, { actorId: user.id, reason: body.reason });
-  if (!res.alreadyCancelled) {
-    await audit(user.id, 'ACTIVITY_CANCEL_BY_ORGANIZER', 'activity', id,
-      `取消活动《${res.title}》，通知 ${res.notified} 名参与人`, clientIp(req));
+  // 地点 / 坐标编辑
+  const sets: string[] = [];
+  const params: any[] = [];
+  if (body.location !== undefined) { sets.push('location = ?'); params.push(str(body.location).slice(0, 200)); }
+  if (body.city !== undefined) { sets.push('city = ?'); params.push(str(body.city).slice(0, 64)); }
+  if (body.lat !== undefined) { sets.push('lat = ?'); params.push(body.lat == null || body.lat === '' ? null : Number(body.lat)); }
+  if (body.lng !== undefined) { sets.push('lng = ?'); params.push(body.lng == null || body.lng === '' ? null : Number(body.lng)); }
+  if (sets.length) {
+    await exec(`UPDATE activities SET ${sets.join(', ')} WHERE id = ?`, [...params, id]);
   }
-  return ok({ id, status: 'cancelled', notified: res.notified, alreadyCancelled: res.alreadyCancelled });
+
+  // 取消活动
+  if (body.status === 'cancelled') {
+    if (!isOrganizerOrAdmin) throw new HttpError(403, 'FORBIDDEN', '只有活动组织者或管理员可以取消');
+    assertCanCancelActivity(act, user);
+    const res = await cancelActivity(id, { actorId: user.id, reason: body.reason });
+    if (!res.alreadyCancelled) {
+      await audit(user.id, 'ACTIVITY_CANCEL_BY_ORGANIZER', 'activity', id,
+        `取消活动《${res.title}》，通知 ${res.notified} 名参与人`, clientIp(req));
+    }
+    return ok({ id, status: 'cancelled', notified: res.notified, alreadyCancelled: res.alreadyCancelled });
+  }
+
+  if (!sets.length && body.status === undefined) {
+    throw new HttpError(422, 'VALIDATION_FAILED', '没有可更新的字段');
+  }
+  return ok({ id, updated: true });
 });
 
 /** 删除活动（仅创建人或管理员）。报名/签到由外键级联清除。 */

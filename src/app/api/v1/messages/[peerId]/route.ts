@@ -5,6 +5,7 @@ import { requireUser } from '@/server/auth';
 import { mapMessage } from '@/server/mappers';
 import { notify } from '@/server/services';
 import { guardWrite } from '@/server/guard';
+import { canDm } from '@/server/dm';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +40,8 @@ export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
   const user = await requireUser(req);
   await guardWrite(req, 'message', user.id);
   const peerId = ctx.params.peerId;
-  if (peerId === user.id) throw new HttpError(400, 'BAD_REQUEST', '不能给自己发消息');
+  // 隐私策略校验：拉黑 / allow_dm 限制（含"不能给自己发消息"）
+  await canDm(user.id, peerId);
   const peer = await one<any>(`SELECT id, display_name FROM users WHERE id = ?`, [peerId]);
   if (!peer) throw notFound('用户不存在');
 

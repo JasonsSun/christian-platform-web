@@ -23,7 +23,7 @@ export const GET = withApi(async (req: NextRequest) => {
 export const PATCH = withApi(async (req: NextRequest) => {
   const user = await requireUser(req);
   const body = await req.json().catch(() => ({}));
-  const allowed = ['display_name', 'bio', 'city', 'church', 'avatar_url'];
+  const allowed = ['display_name', 'bio', 'city', 'church', 'avatar_url', 'allow_dm'];
   const fields: string[] = [];
   const values: any[] = [];
   const map: Record<string, string> = {
@@ -32,10 +32,18 @@ export const PATCH = withApi(async (req: NextRequest) => {
     city: 'city',
     church: 'church',
     avatarUrl: 'avatar_url',
+    allowDm: 'allow_dm',
   };
   for (const [k, v] of Object.entries(body || {})) {
     const col = allowed.includes(k) ? k : map[k];
-    if (col && allowed.includes(col) && typeof v === 'string') {
+    if (!col || !allowed.includes(col)) continue;
+    if (col === 'allow_dm') {
+      if (!['everyone', 'followers', 'none'].includes(String(v))) {
+        throw new HttpError(400, 'BAD_REQUEST', '无效的私信权限设置');
+      }
+      fields.push(`${col}=?`);
+      values.push(String(v));
+    } else if (typeof v === 'string') {
       fields.push(`${col}=?`);
       values.push(v.slice(0, 512));
     }

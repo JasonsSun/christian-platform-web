@@ -483,6 +483,14 @@ async function ensureColumns(pool: Pool): Promise<void> {
     ['users', 'phone_verified', 'TINYINT(1) NOT NULL DEFAULT 0'],
     // 头像图片地址(为空则用 avatar_color 生成的字母头像)
     ['users', 'avatar_url', 'VARCHAR(512) NOT NULL DEFAULT \'\''],
+    // 隐私设置：谁可以给我发私信
+    ['users', 'allow_dm', "VARCHAR(16) NOT NULL DEFAULT 'everyone'"],
+    // 群公告
+    ['groups', 'announcement', "VARCHAR(1000) NOT NULL DEFAULT ''"],
+    ['groups', 'announced_at', 'DATETIME NULL'],
+    // 活动地点坐标(WGS-84)
+    ['activities', 'lat', 'DECIMAL(10,8) NULL'],
+    ['activities', 'lng', 'DECIMAL(11,8) NULL'],
   ];
   for (const [table, col, ddl] of needed) {
     try {

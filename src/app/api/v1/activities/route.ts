@@ -61,6 +61,7 @@ export const POST = withApi(async (req: NextRequest) => {
   const body = await readJson<{
     title?: string; description?: string; category?: string; location?: string;
     city?: string; startAt?: string; endAt?: string; capacity?: number; cover?: string;
+    lat?: number | null; lng?: number | null;
   }>(req);
 
   const title = (body.title || '').trim();
@@ -70,11 +71,15 @@ export const POST = withApi(async (req: NextRequest) => {
   const startAt = body.startAt ? new Date(body.startAt) : null;
   if (!startAt || Number.isNaN(startAt.getTime())) throw new HttpError(422, 'VALIDATION_FAILED', '开始时间无效');
 
+  const lat = body.lat != null && Number.isFinite(Number(body.lat)) ? Number(body.lat) : null;
+  const lng = body.lng != null && Number.isFinite(Number(body.lng)) ? Number(body.lng) : null;
+
   const id = newId('act');
   await exec(
-    `INSERT INTO activities (id, organizer_id, title, description, category, location, city, start_at, end_at, capacity, cover, status, created_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,'published',?)`,
+    `INSERT INTO activities (id, organizer_id, title, description, category, location, city, lat, lng, start_at, end_at, capacity, cover, status, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'published',?)`,
     [id, user.id, title, description, body.category || 'fellowship', body.location || '', body.city || '',
+     lat, lng,
      ts(startAt), body.endAt ? ts(new Date(body.endAt)) : ts(new Date(startAt.getTime() + 7200000)),
      Math.max(1, Number(body.capacity || 50)), body.cover || '📅', ts()]
   );

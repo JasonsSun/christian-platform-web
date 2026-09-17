@@ -1,8 +1,9 @@
 import { NextRequest } from 'next/server';
-import { one, q } from '@/server/db';
-import { ok, withApi, notFound } from '@/server/http';
-import { currentUser, UserRow } from '@/server/auth';
+import { one, q, exec } from '@/server/db';
+import { ok, withApi, notFound, HttpError, readJson } from '@/server/http';
+import { currentUser, requireUser, UserRow } from '@/server/auth';
 import { mapGroup } from '@/server/mappers';
+import { str } from '@/server/sanitize';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,7 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
   const vid = viewer?.id;
   const row = await one<any>(
     `SELECT g.id, g.name, g.description, g.category, g.city, g.cover,
+            g.announcement, DATE_FORMAT(g.announced_at,'%Y-%m-%dT%H:%i:%sZ') AS announced_at,
             DATE_FORMAT(g.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
             u.id AS owner_id, u.username AS owner_username,
             u.display_name AS owner_name, u.avatar_color AS owner_color,
@@ -47,4 +49,24 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
       user: { id: p.user_id, username: p.username, displayName: p.display_name, avatarColor: p.avatar_color },
     })),
   });
+});
+
+/** 团长更新群公告 */
+export const PATCH = withApi(async (req: NextRequest, ctx: Ctx) => {
+  const id = ctx.params.id;
+  const me = await requireUser(req);
+  const g = await one<any>(`SELECT id, owner_id FROM \`groups\` WHERE id = ?`, [id]);
+  if (!g) throw notFound('团契不存在');
+  if (g.owner_id !== me.id) throw new HttpError(403, 'FORBIDDEN', '只有团长可以编辑群公告');
+  const b = await readJson<{ announcement?: string }>(req);
+  const announcement = str(b.announcement ?? '').slice(0, 1000);
+  await exec(
+    `UPDATE \`groups\` SET announcement = ?, announced_at = ${announcement ? 'NOW()' : 'NULL'} WHERE id = ?`,
+    [announcement, id]
+  );
+  const row = await one<any>(
+    `SELECT g.announcement, DATE_FORMAT(g.announced_at,'%Y-%m-%dT%H:%i:%sZ') AS announced_at
+       FROM \`groups\` g WHERE g.id = ?`, [id]
+  );
+  return ok({ announcement: row.announcement || '', announcedAt: row.announced_at || null });
 });

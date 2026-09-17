@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { apiDelete, apiGet, apiPost } from '@/lib/api';
+import { apiDelete, apiGet, apiPost, apiPatch } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
@@ -11,6 +11,7 @@ import { formatDateTime, countdown } from '@/lib/format';
 import type { ActivityItem } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
 import Portal from '@/components/Portal';
+import LocationMap from '@/components/LocationMap';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 
 interface Participant {
@@ -23,7 +24,7 @@ interface Participant {
   joinedAt: string;
 }
 
-type Detail = ActivityItem & { participants: Participant[]; checkinCount: number; checkedIn: boolean };
+type Detail = ActivityItem & { participants: Participant[]; checkinCount: number; checkedIn: boolean; lat?: number | null; lng?: number | null };
 
 function Avatar({ name, color, size = 40 }: { name: string; color: string; size?: number }) {
   return (
@@ -54,6 +55,52 @@ export default function ActivityDetailPage() {
   const [qrUrl, setQrUrl] = useState('');
   const autoFired = useRef(false);
   const qrAction = useAction();
+  const [editLocOpen, setEditLocOpen] = useState(false);
+  const [editLat, setEditLat] = useState<number | null>(null);
+  const [editLng, setEditLng] = useState<number | null>(null);
+  const [geoQuery, setGeoQuery] = useState('');
+  const [geoMsg, setGeoMsg] = useState('');
+  const [geocoding, setGeocoding] = useState(false);
+  const [savingLoc, setSavingLoc] = useState(false);
+
+  async function locateByAddress() {
+    const q = geoQuery.trim() || `${a.city} ${a.location}`.trim();
+    if (!q) { setGeoMsg('请填写要定位的地址'); return; }
+    setGeocoding(true);
+    setGeoMsg('');
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, {
+        headers: { Accept: 'application/json' },
+      });
+      const data = await r.json();
+      if (Array.isArray(data) && data[0]?.lat) {
+        setEditLat(Number(data[0].lat));
+        setEditLng(Number(data[0].lon));
+        setGeoMsg('已定位，可在地图上点选微调');
+      } else {
+        setGeoMsg('未找到该地址，请在地图上手动点选');
+      }
+    } catch {
+      setGeoMsg('定位服务暂不可用，请在地图上手动点选');
+    } finally {
+      setGeocoding(false);
+    }
+  }
+
+  async function saveLocation() {
+    if (editLat == null || editLng == null) { setGeoMsg('请先在地图上选点'); return; }
+    setSavingLoc(true);
+    try {
+      const res = await apiPatch<{ updated: boolean }>(`/activities/${id}`, { lat: editLat, lng: editLng });
+      if (res?.updated) {
+        notice.success('地点坐标已更新');
+        setEditLocOpen(false);
+        reload();
+      }
+    } finally {
+      setSavingLoc(false);
+    }
+  }
 
   async function handleRegister() {
     if (!user) { router.push('/login'); return; }
@@ -158,6 +205,7 @@ export default function ActivityDetailPage() {
   const a = data;
   const isCancelled = a.status === 'cancelled';
   const canCancelActivity = !!user && (a.organizer.id === user.id || user.role === 'admin') && !isCancelled;
+  const canEditActivity = !!user && (a.organizer.id === user.id || user.role === 'admin');
 
   const openQr = async () => {
     const res = await qrAction.run(() =>
@@ -235,6 +283,112 @@ export default function ActivityDetailPage() {
                 <div className="text-xs text-ink-500">组织者</div>
               </div>
             </Link>
+          </div>
+
+          {/* 活动地点 + 地图 */}
+          <div className="glass rounded-2xl p-6 shadow-card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-xl font-bold text-ink-900">活动地点</h2>
+              {canEditActivity && (
+                <button
+                  onClick={() => {
+                    setEditLat(a.lat);
+                    setEditLng(a.lng);
+                    setGeoQuery('');
+                    setGeoMsg('');
+                    setEditLocOpen((v) => !v);
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition"
+                >
+                  {a.lat != null && a.lng != null ? '重新标注' : '标注地点'}
+                </button>
+              )}
+            </div>
+
+            {editLocOpen ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    value={geoQuery}
+                    onChange={(e) => setGeoQuery(e.target.value)}
+                    placeholder={`地址，如 ${a.city} ${a.location}`}
+                    className="input-styled flex-1"
+                  />
+                  <button
+                    onClick={locateByAddress}
+                    disabled={geocoding}
+                    className="text-xs px-3 py-2 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition disabled:opacity-60"
+                  >
+                    {geocoding ? '定位中…' : '定位'}
+                  </button>
+                </div>
+                {geoMsg && <p className="text-xs text-ink-500">{geoMsg}</p>}
+                {editLat != null && editLng != null ? (
+                  <LocationMap
+                    lat={editLat}
+                    lng={editLng}
+                    title={convert(a.location) || a.title}
+                    height={240}
+                    interactive
+                    onPick={({ lat, lng }) => { setEditLat(lat); setEditLng(lng); }}
+                  />
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-ink-200 py-10 text-center text-sm text-ink-400">
+                    在地图上点选，或填写地址后点「定位」
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setEditLocOpen(false)}
+                    className="flex-1 py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition"
+                  >
+                    取消
+                  </button>
+                  <button
+                    onClick={saveLocation}
+                    disabled={savingLoc || editLat == null || editLng == null}
+                    className="flex-1 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition disabled:opacity-50"
+                  >
+                    {savingLoc ? '保存中…' : '保存坐标'}
+                  </button>
+                </div>
+              </div>
+            ) : a.lat != null && a.lng != null ? (
+              <div className="space-y-3">
+                <LocationMap lat={a.lat} lng={a.lng} title={convert(a.location) || a.title} height={260} />
+                <p className="text-sm text-ink-600">
+                  <span className="font-semibold">{convert(a.city)}</span>
+                  {a.location ? ` · ${convert(a.location)}` : ''}
+                </p>
+                <a
+                  href={`https://www.openstreetmap.org/?mlat=${a.lat}&mlon=${a.lng}#map=16/${a.lat}/${a.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-primary-600 hover:underline"
+                >
+                  在 OpenStreetMap 中查看 ↗
+                </a>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-ink-600">
+                  <span className="font-semibold">{convert(a.city)}</span>
+                  {a.location ? ` · ${convert(a.location)}` : ''}
+                </p>
+                {a.city || a.location ? (
+                  <a
+                    href={`https://www.openstreetmap.org/search?query=${encodeURIComponent(`${a.city} ${a.location}`.trim())}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-primary-600 hover:underline"
+                  >
+                    在地图中查看位置 ↗
+                  </a>
+                ) : (
+                  <p className="text-xs text-ink-400">组织者尚未标注具体坐标</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 介绍 */}

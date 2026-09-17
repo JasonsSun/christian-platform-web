@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useCallback } from 'react';
-import { apiPost, apiDelete } from '@/lib/api';
+import { apiPost, apiDelete, apiPatch } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
@@ -13,6 +13,7 @@ import type { Author, GroupItem } from '@/lib/types';
 import RichText from '@/components/RichText';
 import Portal from '@/components/Portal';
 import GroupPlans from '@/components/GroupPlans';
+import GroupChat from '@/components/GroupChat';
 
 interface Member {
   id: string;
@@ -33,6 +34,8 @@ interface Post {
 interface GroupDetail extends GroupItem {
   members: Member[];
   posts: Post[];
+  announcement?: string;
+  announcedAt?: string | null;
 }
 
 function Avatar({ user, size = 40 }: { user: Author; size?: number }) {
@@ -63,6 +66,9 @@ export default function GroupDetailPage() {
   const exitAction = useAction();
   const postAction = useAction();
   const [postBody, setPostBody] = useState('');
+  const [announcementOpen, setAnnouncementOpen] = useState(false);
+  const [announcementDraft, setAnnouncementDraft] = useState('');
+  const [announcementSaving, setAnnouncementSaving] = useState(false);
 
   const isOwner = !!data && !!user && data.owner?.id === user.id;
 
@@ -158,6 +164,23 @@ export default function GroupDetailPage() {
     }
   }, [data, user, postBody, postAction, goLogin, notice, setData]);
 
+  const saveAnnouncement = useCallback(async () => {
+    if (!data) return;
+    setAnnouncementSaving(true);
+    try {
+      const r = await apiPatch<{ announcement: string; announcedAt: string | null }>(`/groups/${data.id}`, {
+        announcement: announcementDraft,
+      });
+      setData((prev) =>
+        prev ? { ...prev, announcement: r.announcement, announcedAt: r.announcedAt } : prev
+      );
+      setAnnouncementOpen(false);
+      notice.success(r.announcement ? '群公告已更新' : '群公告已清除');
+    } finally {
+      setAnnouncementSaving(false);
+    }
+  }, [data, announcementDraft, notice, setData]);
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-ink-400">加载中…</div>;
   }
@@ -218,6 +241,59 @@ export default function GroupDetailPage() {
           </div>
         </div>
       </section>
+
+      {/* 群公告横幅 */}
+      {(data.announcement || isOwner) && (
+        <section className="py-4">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            {data.announcement ? (
+              <div className="relative rounded-2xl bg-gold-50 border border-gold-200 px-5 py-4">
+                <div className="flex items-start gap-3">
+                  <span className="text-xl flex-shrink-0">📢</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-semibold text-gold-700">群公告</span>
+                      <span className="text-[10px] text-gold-500">
+                        {data.announcedAt ? timeAgo(data.announcedAt) : ''}
+                      </span>
+                    </div>
+                    <RichText
+                      text={data.announcement}
+                      className="block text-sm text-ink-700 leading-relaxed whitespace-pre-wrap break-words"
+                    />
+                  </div>
+                </div>
+                {isOwner && (
+                  <button
+                    onClick={() => {
+                      setAnnouncementDraft(data.announcement || '');
+                      setAnnouncementOpen(true);
+                    }}
+                    className="absolute top-3 right-3 text-xs text-gold-600 hover:text-gold-800 transition"
+                  >
+                    编辑
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-ink-200 px-5 py-4 flex items-center justify-between">
+                <span className="text-sm text-ink-400">还没有群公告</span>
+                {isOwner && (
+                  <button
+                    onClick={() => {
+                      setAnnouncementDraft('');
+                      setAnnouncementOpen(true);
+                    }}
+                    className="text-xs px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition"
+                  >
+                    发布群公告
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-3 gap-6">
@@ -290,6 +366,13 @@ export default function GroupDetailPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* 群聊 */}
+      <section className="pb-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <GroupChat groupId={data.id} isMember={isMember} isOwner={isOwner} />
         </div>
       </section>
 
@@ -383,6 +466,53 @@ export default function GroupDetailPage() {
                   {exitAction.error ? <p className="text-rose-600 text-xs mt-2 text-center">{exitAction.error}</p> : null}
                 </>
               )}
+            </div>
+          </div>
+        </Portal>
+      )}
+
+      {/* 团长编辑群公告 */}
+      {announcementOpen && (
+        <Portal>
+          <div
+            data-guard="announcement-modal"
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(17,24,39,0.45)' }}
+            onClick={() => !announcementSaving && setAnnouncementOpen(false)}
+          >
+            <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+              <h3 className="font-display text-xl font-bold text-ink-900 mb-1">群公告</h3>
+              <p className="text-sm text-ink-500 mb-4">
+                发布后将在团契顶部展示给所有成员。留空并保存即可清除公告。
+              </p>
+              <textarea
+                value={announcementDraft}
+                onChange={(e) => setAnnouncementDraft(e.target.value)}
+                maxLength={1000}
+                rows={5}
+                placeholder="例如：本周日团契聚会时间调整为下午 3 点…"
+                className="input-styled w-full resize-none"
+              />
+              <div className="flex gap-3 mt-4">
+                <button
+                  type="button"
+                  disabled={announcementSaving}
+                  onClick={() => setAnnouncementOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  disabled={announcementSaving}
+                  onClick={saveAnnouncement}
+                  className="flex-1 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition disabled:opacity-50"
+                >
+                  {announcementSaving ? '保存中…' : '保存'}
+                </button>
+              </div>
             </div>
           </div>
         </Portal>

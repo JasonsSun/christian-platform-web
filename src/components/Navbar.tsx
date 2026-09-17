@@ -442,6 +442,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                 <Link href="/me" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.profile')}</Link>
                 <Link href="/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.notifications')}</Link>
                 <Link href="/settings/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.reminderSettings')}</Link>
+                <Link href="/settings/privacy" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">私信隐私</Link>
                 <Link href="/feedback" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.feedback')}</Link>
                 <Link href="/friends?tab=requests" className="flex items-center justify-between gap-2 px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">
                   <span>{t('nav.friendRequests')}</span>

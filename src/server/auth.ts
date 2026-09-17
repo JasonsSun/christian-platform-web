@@ -57,6 +57,7 @@ export type UserRow = {
   city: string;
   region: string;
   church: string;
+  allow_dm: string;
   created_at: string;
 };
 
@@ -263,6 +264,7 @@ export function publicUser(u: UserRow) {
     city: u.city,
     region: u.region,
     church: u.church,
+    allowDm: (u.allow_dm || 'everyone') as string,
     createdAt: u.created_at,
   };
 }

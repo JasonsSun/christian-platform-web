@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   city          VARCHAR(64)  NOT NULL DEFAULT '',
   region        VARCHAR(32)  NOT NULL DEFAULT 'CN',
   church        VARCHAR(120) NOT NULL DEFAULT '',
+  allow_dm      VARCHAR(16)  NOT NULL DEFAULT 'everyone', -- everyone | followers | none
   created_at    DATETIME     NOT NULL,
   UNIQUE KEY uk_users_username (username),
   UNIQUE KEY uk_users_email (email),
@@ -111,6 +112,8 @@ CREATE TABLE IF NOT EXISTS activities (
   category     VARCHAR(32)  NOT NULL DEFAULT 'fellowship',
   location     VARCHAR(200) NOT NULL DEFAULT '',
   city         VARCHAR(64)  NOT NULL DEFAULT '',
+  lat          DECIMAL(10,8) NULL,   -- 活动地点纬度(WGS-84)
+  lng          DECIMAL(11,8) NULL,   -- 活动地点经度(WGS-84)
   start_at     DATETIME     NOT NULL,
   end_at       DATETIME     NULL,
   capacity     INT          NOT NULL DEFAULT 50,
@@ -141,6 +144,8 @@ CREATE TABLE IF NOT EXISTS `groups` (
   owner_id    CHAR(36)     NOT NULL,
   city        VARCHAR(64)  NOT NULL DEFAULT '',
   cover       VARCHAR(20)  NOT NULL DEFAULT '',
+  announcement VARCHAR(1000) NOT NULL DEFAULT '',  -- 群公告(团长可编辑)
+  announced_at DATETIME     NULL,
   created_at  DATETIME     NOT NULL,
   CONSTRAINT fk_groups_owner FOREIGN KEY (owner_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -164,6 +169,18 @@ CREATE TABLE IF NOT EXISTS group_posts (
   KEY idx_gp_group (group_id),
   CONSTRAINT fk_gp_group FOREIGN KEY (group_id) REFERENCES `groups` (id) ON DELETE CASCADE,
   CONSTRAINT fk_gp_user  FOREIGN KEY (user_id)  REFERENCES users (id)  ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* 团契群聊：仅成员可发/看；删除话题或成员时级联清理 */
+CREATE TABLE IF NOT EXISTS group_messages (
+  id         CHAR(36)     NOT NULL PRIMARY KEY,
+  group_id   CHAR(36)     NOT NULL,
+  user_id    CHAR(36)     NOT NULL,
+  content    VARCHAR(2000) NOT NULL,
+  created_at DATETIME     NOT NULL,
+  KEY idx_gm_group_time (group_id, created_at),
+  CONSTRAINT fk_gmsg_group FOREIGN KEY (group_id) REFERENCES `groups` (id) ON DELETE CASCADE,
+  CONSTRAINT fk_gmsg_user  FOREIGN KEY (user_id)  REFERENCES users (id)  ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS prayers (
@@ -942,4 +959,17 @@ CREATE TABLE IF NOT EXISTS sermon_likes (
   PRIMARY KEY (sermon_id, user_id),
   CONSTRAINT fk_sl_sermon FOREIGN KEY (sermon_id) REFERENCES sermons (id) ON DELETE CASCADE,
   CONSTRAINT fk_sl_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* 数据库备份管理：记录由后台「立即备份」产生的逻辑备份(自包含 SQL 快照) */
+CREATE TABLE IF NOT EXISTS db_backups (
+  id          CHAR(36)     NOT NULL PRIMARY KEY,
+  filename    VARCHAR(255) NOT NULL,
+  size_bytes  BIGINT       NOT NULL DEFAULT 0,
+  tables_json TEXT         NOT NULL,        -- 本次备份涉及的表清单(JSON 数组)
+  row_count   INT          NOT NULL DEFAULT 0,
+  created_by  CHAR(36)     NOT NULL,
+  created_at  DATETIME     NOT NULL,
+  KEY idx_db_backups_created (created_at),
+  CONSTRAINT fk_db_backups_user FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
