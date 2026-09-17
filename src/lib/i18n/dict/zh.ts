@@ -9,6 +9,7 @@ const zh = {
     live: '直播',
     activities: '活动',
     community: '社区',
+    topics: '话题',
     prayers: '代祷',
     groups: '团契',
     donate: '捐赠',

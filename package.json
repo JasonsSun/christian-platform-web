@@ -18,6 +18,7 @@
     "test:e2e:moderator": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-moderator-permissions.mjs",
     "test:e2e:module-moderator": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-module-moderators.mjs",
     "test:e2e:badges": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-badges.mjs",
+    "test:e2e:topics": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-topics.mjs",
     "test:e2e:settings": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-settings.mjs",
     "test:e2e:module-switch": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-module-switch.mjs",
     "test:e2e:ssr-backplay": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/smoke-backplay.mjs",

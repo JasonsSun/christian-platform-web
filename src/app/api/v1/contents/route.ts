@@ -25,6 +25,7 @@ export const GET = withApi(async (req: NextRequest) => {
   const type = sp.get('type') || '';
   const keyword = (sp.get('q') || '').trim();
   const authorId = sp.get('authorId') || '';
+  const tag = (sp.get('tag') || '').trim();
   const sort = sp.get('sort') || 'new';
   const page = num(sp.get('page'), 1);
   const pageSize = Math.min(num(sp.get('pageSize'), 10), 50);
@@ -59,6 +60,11 @@ export const GET = withApi(async (req: NextRequest) => {
   if (keyword) {
     where.push('(c.title LIKE ? OR c.body LIKE ? OR c.tags LIKE ?)');
     args.push(`%${keyword}%`, `%${keyword}%`, `%${keyword}%`);
+  }
+  // 话题页精确筛选：tags 是逗号分隔列，两侧补逗号做整词匹配（兼容中文逗号的老数据）
+  if (tag) {
+    where.push("CONCAT(',', REPLACE(c.tags, '，', ','), ',') LIKE ?");
+    args.push(`%,${tag},%`);
   }
 
   const sql = BASE.replace('%LIKED%', viewer

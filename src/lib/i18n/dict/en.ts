@@ -11,6 +11,7 @@ const en: Dict = {
     live: 'Live',
     activities: 'Events',
     community: 'Community',
+    topics: 'Topics',
     prayers: 'Prayer',
     groups: 'Groups',
     donate: 'Donate',
