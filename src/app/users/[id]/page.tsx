@@ -7,6 +7,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { apiPost, apiDelete } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { formatDate, timeAgo } from '@/lib/format';
+import BadgeWall from '@/components/BadgeWall';
 import type { Author, ContentItem } from '@/lib/types';
 
 type UserProfile = {
@@ -67,7 +68,7 @@ export default function UserProfilePage() {
   const followAction = useAction();
   const blockAction = useAction();
 
-  const [tab, setTab] = useState<'activities' | 'about'>('activities');
+  const [tab, setTab] = useState<'activities' | 'about' | 'badges'>('activities');
 
   const handleFollow = async () => {
     if (!me) {
@@ -218,6 +219,14 @@ export default function UserProfilePage() {
               >
                 关于
               </button>
+              <button
+                onClick={() => setTab('badges')}
+                className={`px-5 py-2 rounded-full font-medium text-sm transition-all ${
+                  tab === 'badges' ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/25' : 'bg-white text-ink-600 border border-ink-200 hover:border-primary-300'
+                }`}
+              >
+                成就
+              </button>
             </div>
 
             {followAction.error && <p className="text-rose-500 text-sm mb-4">{followAction.error}</p>}
@@ -236,6 +245,8 @@ export default function UserProfilePage() {
                   ))}
                 </div>
               )
+            ) : tab === 'badges' ? (
+              <BadgeWall userId={data.id} />
             ) : (
               <div className="bg-white rounded-2xl p-6 md:p-8 shadow-soft border border-ink-100 space-y-5">
                 <div className="divider-gradient" />

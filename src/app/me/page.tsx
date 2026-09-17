@@ -13,6 +13,7 @@ import { formatDate, formatSize, MEDIA_REVIEW_LABEL } from '@/lib/format';
 import QuotaCard, { type QuotaData } from '@/components/QuotaCard';
 import BackplaySettingCard from '@/components/BackplaySettingCard';
 import CheckinHeatmap from '@/components/CheckinHeatmap';
+import BadgeWall from '@/components/BadgeWall';
 import type { ContentItem, ActivityItem, GroupItem, SongItem, MediaItem } from '@/lib/types';
 
 const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南京'];
@@ -37,7 +38,7 @@ export default function MePage() {
   const notice = useNotice();
   const router = useRouter();
 
-  const [tab, setTab] = useState<'contents' | 'activities' | 'groups' | 'drafts' | 'favorites' | 'uploads' | 'growth' | 'bible' | 'contentFavs' | 'blocks' | 'favcenter'>('contents');
+  const [tab, setTab] = useState<'contents' | 'activities' | 'groups' | 'drafts' | 'favorites' | 'uploads' | 'growth' | 'bible' | 'contentFavs' | 'blocks' | 'favcenter' | 'badges'>('contents');
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ displayName: '', bio: '', city: '', church: '' });
   const [showPwdModal, setShowPwdModal] = useState(false);
@@ -47,7 +48,7 @@ export default function MePage() {
 
   useEffect(() => {
     const t = new URLSearchParams(window.location.search).get('tab');
-    const valid = ['contents', 'drafts', 'favorites', 'activities', 'groups', 'uploads', 'growth', 'bible', 'contentFavs', 'blocks', 'favcenter'];
+    const valid = ['contents', 'drafts', 'favorites', 'activities', 'groups', 'uploads', 'growth', 'bible', 'contentFavs', 'blocks', 'favcenter', 'badges'];
     if (t && valid.includes(t)) setTab(t as any);
   }, []);
 
@@ -154,6 +155,9 @@ export default function MePage() {
 
       {/* 读经打卡热力图 + 成就 */}
       <CheckinHeatmap />
+
+      {/* 成就徽章概览（紧凑） */}
+      <BadgeWall compact onMore={() => setTab('badges')} />
 
       {/* 信仰生活：灵修日记 / 读经笔记 */}
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -266,6 +270,7 @@ export default function MePage() {
             { key: 'drafts', label: '草稿' },
             { key: 'uploads', label: '媒体' },
             { key: 'growth', label: '成长与额度' },
+            { key: 'badges', label: '成就徽章' },
           ].map((t) => (
             <button
               key={t.key}
@@ -291,6 +296,7 @@ export default function MePage() {
         {tab === 'bible' && <MyBibleHistory />}
         {tab === 'uploads' && <MyUploads />}
         {tab === 'growth' && <MyGrowth />}
+        {tab === 'badges' && <BadgeWall />}
         {tab === 'activities' && <MyActivities />}
         {tab === 'groups' && <MyGroups />}
       </div>
