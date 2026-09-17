@@ -86,7 +86,7 @@ export default function MobileNav({ disabledModules = [] }: { disabledModules?: 
       <VariantSwitcher tone="light" />
       <AccessibilityMenu tone="light" />
     </div>
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass border-t border-ink-200/60 shadow-[0_-4px_30px_-8px_rgba(30,38,100,0.1)] pb-[env(safe-area-inset-bottom)]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-tech border-t border-white/20 shadow-[0_-8px_40px_-12px_rgba(30,38,100,0.18)] pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around h-16">
         {shown.map((item) => {
           const isActive = matchPath(pathname, item.href);
@@ -107,7 +107,7 @@ export default function MobileNav({ disabledModules = [] }: { disabledModules?: 
                 {item.label}
               </span>
               {isActive && (
-                <span className="absolute bottom-1.5 w-8 h-1 rounded-full bg-gradient-to-r from-primary-500 to-primary-600" />
+                <span className="absolute bottom-1.5 w-8 h-1 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 shadow-[0_0_10px_rgba(79,109,245,0.6)]" />
               )}
             </Link>
           );

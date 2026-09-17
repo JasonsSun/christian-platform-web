@@ -247,8 +247,8 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         isScrolled
-          ? 'glass shadow-card'
-          : 'bg-gradient-to-r from-primary-950/90 via-primary-900/85 to-primary-950/90 backdrop-blur-lg border-b border-white/10'
+          ? 'glass shadow-card nav-glow-line'
+          : 'bg-gradient-to-r from-primary-950/92 via-primary-900/88 to-primary-950/92 backdrop-blur-xl border-b border-white/15 nav-glow-line'
       }`}
     >
       <div className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -257,7 +257,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
               isScrolled
                 ? 'bg-gradient-to-br from-primary-500 to-primary-700 shadow-lg shadow-primary-500/30'
-                : 'bg-white/20 backdrop-blur-sm border border-white/30'
+                : 'bg-white/15 backdrop-blur-sm border border-white/30 shadow-[0_0_20px_rgba(79,109,245,0.25)]'
             }`}>
               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v18m9-9H3" />

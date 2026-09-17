@@ -114,16 +114,22 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
       {/* Hero */}
       <section className="relative min-h-[88vh] md:min-h-screen flex items-center overflow-hidden py-12 md:py-0">
         <div className="absolute inset-0 bg-animated-gradient" />
+        <div className="absolute inset-0 mesh-bg opacity-60" />
+        <div className="absolute inset-0 dot-grid opacity-40" />
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 -left-20 w-72 h-72 bg-gold-400/20 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-primary-300/20 rounded-full blur-3xl animate-float" />
+          <div className="absolute top-1/4 -left-20 w-72 h-72 bg-gold-400/20 rounded-full blur-3xl animate-float-orbit" />
+          <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-primary-300/20 rounded-full blur-3xl animate-float-orbit" style={{ animationDelay: '-4s' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary-500/10 rounded-full blur-[120px] animate-glow-pulse" />
+          <div className="absolute top-[15%] right-[20%] w-3 h-3 rounded-full bg-gold-300/80 shadow-gold animate-float" />
+          <div className="absolute top-[35%] left-[12%] w-2 h-2 rounded-full bg-white/70 shadow-[0_0_12px_rgba(255,255,255,0.6)] animate-float-slow" />
+          <div className="absolute bottom-[25%] right-[15%] w-2.5 h-2.5 rounded-full bg-primary-200/80 shadow-[0_0_14px_rgba(107,142,255,0.6)] animate-float" style={{ animationDelay: '-2s' }} />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-20">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <div className="text-white animate-slide-up text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 backdrop-blur-md border border-white/20 mb-6 max-w-full">
-                <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse shrink-0" />
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-tech mb-6 max-w-full shadow-[0_0_20px_rgba(79,109,245,0.15)]">
+                <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse shrink-0 shadow-gold" />
                 <div className="relative overflow-hidden marquee-mask w-48 sm:w-60">
                   <div className="marquee-track text-sm font-medium">
                     <span className="mr-8">{t('home.heroBadge')} ·&nbsp;</span>
@@ -133,9 +139,9 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
               </div>
 
               <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-4 md:mb-6">
-                {t('home.heroTitle1')}<span className="text-gold-400">·</span>{t('home.heroTitle2')}
+                {t('home.heroTitle1')}<span className="text-gold-400 text-glow">·</span>{t('home.heroTitle2')}
                 <br />
-                <span className="text-gradient bg-gradient-to-r from-white via-primary-200 to-gold-300 bg-clip-text text-transparent">{t('home.heroTitle3')}</span>
+                <span className="text-gradient bg-gradient-to-r from-white via-primary-200 to-gold-300 bg-clip-text text-transparent text-glow">{t('home.heroTitle3')}</span>
               </h1>
 
               <p className="text-base md:text-lg text-white/80 mb-3 md:mb-4 leading-relaxed font-serif italic">
@@ -144,13 +150,13 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
               <p className="text-white/60 mb-6 md:mb-10 text-sm md:text-base">{t('home.heroQuoteRef')}</p>
 
               <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center lg:justify-start">
-                <Link href="/bible" className="btn-gold text-base w-full sm:w-auto">{t('home.startReading')}</Link>
+                <Link href="/bible" className="btn-gold btn-shimmer text-base w-full sm:w-auto shadow-glow-gold">{t('home.startReading')}</Link>
                 {user ? (
-                  <Link href="/community/create" className="btn-secondary bg-white/10 border-white/30 text-white hover:bg-white/20 w-full sm:w-auto">
+                  <Link href="/community/create" className="btn-secondary bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 w-full sm:w-auto glass-tech">
                     {t('home.publishContent')}
                   </Link>
                 ) : (
-                  <Link href="/login" className="btn-secondary bg-white/10 border-white/30 text-white hover:bg-white/20 w-full sm:w-auto">
+                  <Link href="/login" className="btn-secondary bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 w-full sm:w-auto glass-tech">
                     {t('home.joinCommunity')}
                   </Link>
                 )}
@@ -166,9 +172,9 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
             </div>
 
             <div className="relative animate-slide-up" style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}>
-              <div className="glass rounded-3xl p-6 md:p-8 shadow-card-hover max-w-md mx-auto">
+              <div className="card-tech rounded-3xl p-6 md:p-8 shadow-card-hover max-w-md mx-auto">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-gold">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-glow-gold">
                     <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13" />
                     </svg>
@@ -227,7 +233,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
       {/* 统计 */}
       <section className="relative py-10 md:py-14 -mt-6">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="glass rounded-3xl p-6 md:p-10 shadow-card grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6">
+          <div className="card-tech rounded-3xl p-6 md:p-10 shadow-card grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-6">
             {statCards.map((s) => (
               <div key={s.label} className="text-center">
                 <div className="font-display text-2xl md:text-4xl font-bold text-gradient">{s.value}</div>
@@ -416,7 +422,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {(data?.groups || []).map((g) => (
-                <Link key={g.id} href={`/groups/${g.id}`} className="block bg-white rounded-2xl p-5 shadow-soft card-hover border border-ink-100">
+                <Link key={g.id} href={`/groups/${g.id}`} className="block card-tech rounded-2xl p-5 border border-ink-100/50">
                   <div className="flex items-start gap-3 mb-3">
                     <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-xl shrink-0">
                       {g.cover || '👥'}
@@ -515,8 +521,8 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.filter((f) => !isOff(f.href)).map((f) => (
-              <Link key={f.href} href={f.href} className="group bg-white rounded-3xl p-7 shadow-soft card-hover">
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${f.gradient} text-white flex items-center justify-center mb-5 shadow-lg transition-transform duration-500 group-hover:scale-110`}>
+              <Link key={f.href} href={f.href} className="group card-tech rounded-3xl p-7">
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${f.gradient} text-white flex items-center justify-center mb-5 shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:shadow-glow`}>
                   <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d={f.icon} />
                   </svg>
