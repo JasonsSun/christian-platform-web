@@ -12,6 +12,7 @@ import PreferenceMenu from '@/components/PreferenceMenu';
 import ShareModal from '@/components/ShareModal';
 import { moduleOfPath } from '@/lib/siteModules';
 import { useDisabledModules } from '@/lib/useSiteModules';
+import { COMMAND_PALETTE_EVENT } from '@/components/CommandPalette';
 
 const topLinks = [
   { href: '/', key: 'nav.home' },
@@ -294,6 +295,25 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
           </div>
 
           <div className="hidden xl:flex items-center gap-1 shrink-0">
+            {/* 全局命令面板入口 */}
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event(COMMAND_PALETTE_EVENT))}
+              title="全站搜索（⌘K / Ctrl+K）"
+              aria-label="全站搜索"
+              className={`group flex items-center gap-2 rounded-xl px-2.5 py-1.5 mr-1 border transition-all duration-300 ${
+                isScrolled
+                  ? 'border-ink-200 text-ink-500 hover:text-primary-600 hover:border-primary-300 hover:bg-primary-50'
+                  : 'border-white/25 text-white/85 hover:text-white hover:bg-white/10 hover:border-white/40'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <kbd className={`hidden 2xl:inline-block text-[10px] px-1.5 py-0.5 rounded ${
+                isScrolled ? 'bg-ink-100 text-ink-400' : 'bg-white/15 text-white/80'
+              }`}>⌘K</kbd>
+            </button>
             <PreferenceMenu tone="light" />
             <button
               type="button"
@@ -394,9 +414,23 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
             )}
           </div>
 
+          {/* 移动端：命令面板入口 + 菜单开关 */}
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event(COMMAND_PALETTE_EVENT))}
+            className={`xl:hidden ml-auto p-2 rounded-lg transition-colors ${
+              isScrolled ? 'text-ink-700 hover:bg-ink-100' : 'text-white hover:bg-white/10'
+            }`}
+            aria-label="全站搜索"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`xl:hidden ml-auto p-2 rounded-lg transition-colors ${
+            className={`xl:hidden p-2 rounded-lg transition-colors ${
               isScrolled ? 'text-ink-700 hover:bg-ink-100' : 'text-white hover:bg-white/10'
             }`}
             aria-label={t('nav.toggleMenu')}

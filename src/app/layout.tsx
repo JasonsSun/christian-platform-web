@@ -20,6 +20,8 @@ import { cookies } from 'next/headers'
 import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale } from '@/lib/i18n/config'
 import ActivityTracker from '@/components/ActivityTracker'
 import Guards from '@/components/Guards'
+import CommandPalette from '@/components/CommandPalette'
+import ScrollProgress from '@/components/ScrollProgress'
 import type { Metadata } from 'next'
 
 const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://amen.dpdns.org';
@@ -96,6 +98,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <SiteNoticeBar />
                   <Guards />
                   <ActivityTracker />
+                  {/* 顶部阅读进度条 */}
+                  <ScrollProgress />
+                  {/* 全局命令面板：⌘K / Ctrl+K */}
+                  <CommandPalette />
                   {/* 无障碍：键盘跳过导航直达主内容 */}
                   <a href="#main-content" className="skip-link">跳到主要内容</a>
                   <Navbar disabledModules={offModules} />
