@@ -74,7 +74,8 @@ export default function DonateNewPage() {
           anonymous,
         })
       );
-      if (res) router.push('/donate?ok=1');
+      // 登记成功 -> 进入支付页选择支付方式（含线下转账），不再直接回列表
+      if (res) router.push(`/donate/pay/${res.id}`);
     },
     [donorType, displayName, churchName, amount, message, anonymous, run, router, notice, setError]
   );

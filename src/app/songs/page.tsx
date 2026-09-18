@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
-import { qs } from '@/lib/api';
+import { qs, apiGet } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import RecentPlays from '@/components/RecentPlays';
 import SubmitSongModal from '@/components/SubmitSongModal';
@@ -70,6 +70,32 @@ export default function SongsPage() {
   const favItems = favData?.items ?? [];
   // 带人声的曲目数,用于"只要人声"这个 tab 的角标
   const vocalCount = data?.vocalCount ?? 0;
+
+  /* 站内搜不到 -> 站外找资源。走后端抓取，避免浏览器直连搜索引擎的跨域限制 */
+  type ExternalItem = { title: string; url: string; snippet: string };
+  const [externalOpen, setExternalOpen] = useState(false);
+  const [externalItems, setExternalItems] = useState<ExternalItem[]>([]);
+  const [externalLoading, setExternalLoading] = useState(false);
+  const [externalError, setExternalError] = useState('');
+
+  const searchExternal = async () => {
+    const keyword = q.trim();
+    if (!keyword) return;
+    setExternalOpen(true);
+    setExternalLoading(true);
+    setExternalError('');
+    try {
+      const d = await apiGet<{ items: ExternalItem[] }>(
+        `/songs/external-search?q=${encodeURIComponent(keyword)}`
+      );
+      setExternalItems(d.items || []);
+    } catch (e: any) {
+      setExternalItems([]);
+      setExternalError(e?.message || '站外搜索失败，请稍后重试');
+    } finally {
+      setExternalLoading(false);
+    }
+  };
 
   return (
     <div>
@@ -246,15 +272,15 @@ export default function SongsPage() {
                 : '试试更换关键词或分类筛选；也可以去站外找带唱的版本，或直接投稿收录'}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <a
-                href={`https://www.baidu.com/s?wd=${encodeURIComponent(`${q || ''} 歌词 原唱`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary inline-block px-5 py-2.5 text-sm"
+              <button
+                type="button"
+                onClick={searchExternal}
+                disabled={!q || externalLoading}
+                className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <IconSearch className="w-4 h-4" strokeWidth={2} />
-                去站外搜「{q || '带唱的版本'}」
-              </a>
+                {externalLoading ? '站外搜索中…' : `在站外搜「${q || '关键词'}」`}
+              </button>
               <button
                 onClick={() => openSubmit()}
                 className="btn-ghost inline-block px-5 py-2.5 text-sm"
@@ -263,6 +289,53 @@ export default function SongsPage() {
                 投稿人声版本
               </button>
             </div>
+
+            {/* 站外搜索结果：站内直接展示，免去跳转搜索引擎 */}
+            {externalOpen && (
+              <div className="mt-6 text-left">
+                {externalLoading ? (
+                  <p className="text-sm text-ink-500 text-center py-4">正在搜索站外资源…</p>
+                ) : externalError ? (
+                  <p className="text-sm text-rose-600 text-center py-4">{externalError}</p>
+                ) : externalItems.length === 0 ? (
+                  <p className="text-sm text-ink-500 text-center py-4">
+                    站外也没有找到相关结果，换个关键词再试试，或直接投稿收录。
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs text-ink-400">以下为站外结果，版权与内容由原站点负责</p>
+                      <a
+                        href={`https://www.baidu.com/s?wd=${encodeURIComponent(`${q} 歌词 原唱`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary-600 hover:text-primary-700"
+                      >
+                        用搜索引擎打开 →
+                      </a>
+                    </div>
+                    <div className="space-y-2">
+                      {externalItems.map((it) => (
+                        <a
+                          key={it.url}
+                          href={it.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block rounded-xl border border-ink-200 p-3 hover:border-primary-300 hover:bg-primary-50/40 transition"
+                        >
+                          <div className="text-sm font-medium text-primary-700 line-clamp-2">{it.title}</div>
+                          {it.snippet && (
+                            <div className="text-xs text-ink-500 mt-1 line-clamp-2 leading-relaxed">{it.snippet}</div>
+                          )}
+                          <div className="text-[11px] text-ink-400 mt-1.5 truncate">{it.url}</div>
+                        </a>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {tab === 'all' && !q && (
               <p className="text-ink-400 text-xs mt-4">搜索不到想要的诗歌？投稿后经审核即可被大家搜到</p>
             )}

@@ -91,6 +91,29 @@ export default function AdminMediaPage() {
     } catch (e: any) { setMsg(e?.message || '操作失败'); notice.error(e?.message || '操作失败'); } finally { setBusy(null); }
   }
 
+  /**
+   * 重新跑一遍媒体流水线：转码失败修复后、或调整过转码配置需要重出封面/时长时使用。
+   */
+  async function reprocess(id: string) {
+    setBusy(id);
+    setMsg('');
+    try {
+      const r = await apiPost<{ ffmpeg: boolean }>(`/admin/media/${id}/reprocess`, {});
+      if (r?.ffmpeg === false) {
+        setMsg('已重试：当前环境未安装 ffmpeg，仅完成了元数据补探');
+      } else {
+        setMsg('已重新执行处理流水线');
+        notice.success('处理流水线已重跑');
+      }
+      reload();
+    } catch (e: any) {
+      setMsg(e?.message || '重新处理失败');
+      notice.error(e?.message || '重新处理失败');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const items = data?.items || [];
   const t = data?.totals;
 
@@ -168,6 +191,14 @@ export default function AdminMediaPage() {
                     ) : null}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <button
+                      disabled={busy === m.id}
+                      onClick={() => reprocess(m.id)}
+                      className="text-primary-600 hover:underline disabled:opacity-50 mr-2"
+                      title="重新执行转码/封面/时长探测流水线"
+                    >
+                      重新处理
+                    </button>
                     {m.reviewStatus === 'pending' ? (
                       <>
                         <button disabled={busy === m.id} onClick={() => review(m.id, 'approve')} className="text-emerald-600 hover:underline disabled:opacity-50 mr-2">通过</button>

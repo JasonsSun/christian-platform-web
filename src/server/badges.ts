@@ -382,7 +382,8 @@ export async function earnedBadges(userId: string): Promise<BadgeView[]> {
       out.push(toView(def, def.target, r.earned_at ? String(r.earned_at) : ''));
     }
     return out;
-  } catch {
+  } catch (e) {
+    console.warn('[badges] 用户徽章列表查询失败，返回空列表:', e);
     return [];
   }
 }

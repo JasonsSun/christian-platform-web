@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { apiGet } from '@/lib/api';
+import { useState, useEffect } from 'react';
+import { apiGet, apiPost } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { AdminLayout, Badge, Loading, Empty, ErrorBox, SectionTitle } from '../_components';
@@ -36,6 +37,34 @@ interface ErrorEntry {
   ctx: { scope?: string; userId?: string; [k: string]: unknown };
 }
 
+/** 外发通知队列状态（GET /admin/notify） */
+interface NotifyInfo {
+  pending: number;
+  sent: number;
+  failed: number;
+  skipped: number;
+  byChannel: { status: string; channel: string; n: number }[];
+  channels: { email: boolean; wechat: boolean; sms: boolean };
+  recent: {
+    id: string;
+    user_id: string;
+    channel: string;
+    kind: string;
+    title: string;
+    status: string;
+    reason: string | null;
+    attempts: number;
+    created_at: string;
+  }[];
+}
+
+const NOTIFY_CHANNEL_LABEL: Record<string, string> = {
+  inapp: '站内',
+  email: '邮件',
+  wechat: '微信',
+  sms: '短信',
+};
+
 export default function AdminSystemPage() {
   const { user, loading: authLoading } = useAuth();
   const { data, loading, error, reload } = useApi<HealthData>('/health');
@@ -46,6 +75,45 @@ export default function AdminSystemPage() {
     loading: errLoading,
     reload: reloadErrors,
   } = useApi<{ items: ErrorEntry[]; monitor: boolean }>(isAdmin ? '/admin/errors?limit=50' : null, [isAdmin]);
+
+  /* ---------- 外发通知队列（该接口原先没有任何 UI 挂载） ---------- */
+  const [notifyData, setNotifyData] = useState<NotifyInfo | null>(null);
+  const [notifyLoading, setNotifyLoading] = useState(false);
+  const [flushBusy, setFlushBusy] = useState(false);
+  const [notifyMsg, setNotifyMsg] = useState('');
+
+  const loadNotify = async () => {
+    setNotifyLoading(true);
+    try {
+      setNotifyData(await apiGet<NotifyInfo>('/admin/notify?limit=8'));
+    } catch (e: any) {
+      setNotifyMsg(e?.message || '通知队列状态加载失败');
+    } finally {
+      setNotifyLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadNotify();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const flushQueue = async () => {
+    setFlushBusy(true);
+    setNotifyMsg('');
+    try {
+      const r = await apiPost<{ scanned: number; sent: number; failed: number; skipped: number; deferred: number }>(
+        '/admin/notify?limit=50',
+        {}
+      );
+      setNotifyMsg(`已冲刷：扫描 ${r.scanned} / 成功 ${r.sent} / 失败 ${r.failed} / 跳过 ${r.skipped} / 顺延 ${r.deferred}`);
+      await loadNotify();
+    } catch (e: any) {
+      setNotifyMsg(e?.message || '冲刷失败');
+    } finally {
+      setFlushBusy(false);
+    }
+  };
 
   if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
   if (user === null)
@@ -91,6 +159,89 @@ export default function AdminSystemPage() {
               <InfoRow label="通知数" value={data.counts.notifications} />
               <InfoRow label="服务时间" value={data.time} />
             </div>
+          </>
+        )}
+      </div>
+
+      {/* 外发通知队列运维 */}
+      <div className="glass rounded-2xl p-5 shadow-soft mb-6">
+        <div className="flex items-center justify-between">
+          <SectionTitle>外发通知队列</SectionTitle>
+          <div className="flex items-center gap-2">
+            <button className="btn-secondary text-xs" onClick={loadNotify} disabled={notifyLoading}>
+              {notifyLoading ? '刷新中…' : '刷新'}
+            </button>
+            <button className="btn-primary text-xs" onClick={flushQueue} disabled={flushBusy}>
+              {flushBusy ? '冲刷中…' : '冲刷队列'}
+            </button>
+          </div>
+        </div>
+        <p className="text-xs text-ink-400 mb-4">
+          生产环境由定时任务调用同一接口自动冲刷；队列堆积时可在后台手动跑一轮。
+        </p>
+
+        {notifyMsg ? <div className="mb-3 text-xs text-ink-600 bg-ink-50 rounded-xl px-3 py-2">{notifyMsg}</div> : null}
+
+        {!notifyData ? (
+          notifyLoading ? <Loading /> : <Empty label="暂无数据" />
+        ) : (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              {[
+                { label: '待发送', value: notifyData.pending },
+                { label: '已发送', value: notifyData.sent },
+                { label: '失败', value: notifyData.failed },
+                { label: '跳过', value: notifyData.skipped },
+              ].map((s) => (
+                <div key={s.label} className="rounded-xl bg-ink-50 px-3 py-2">
+                  <div className="text-xs text-ink-500">{s.label}</div>
+                  <div className="text-lg font-semibold text-ink-900">{s.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 mb-4 text-xs">
+              <span className="text-ink-500">通道就绪：</span>
+              {Object.entries(notifyData.channels || {}).map(([k, v]) => (
+                <Badge key={k} tone={v ? 'green' : 'gray'}>
+                  {NOTIFY_CHANNEL_LABEL[k] || k}
+                  {v ? ' 已配置' : ' 未配置'}
+                </Badge>
+              ))}
+            </div>
+
+            {notifyData.recent?.length ? (
+              <div className="rounded-xl border border-ink-100 overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-ink-50 text-ink-500">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-medium">通道</th>
+                      <th className="text-left px-3 py-2 font-medium">类型</th>
+                      <th className="text-left px-3 py-2 font-medium">标题</th>
+                      <th className="text-center px-3 py-2 font-medium">状态</th>
+                      <th className="text-right px-3 py-2 font-medium">时间</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {notifyData.recent.map((j) => (
+                      <tr key={j.id} className="border-t border-ink-100">
+                        <td className="px-3 py-2">{NOTIFY_CHANNEL_LABEL[j.channel] || j.channel}</td>
+                        <td className="px-3 py-2 text-ink-500">{j.kind}</td>
+                        <td className="px-3 py-2 text-ink-700 line-clamp-1 max-w-[220px]">{j.title}</td>
+                        <td className="px-3 py-2 text-center">
+                          <Badge tone={j.status === 'sent' ? 'green' : j.status === 'failed' ? 'red' : 'gold'}>
+                            {j.status}
+                          </Badge>
+                        </td>
+                        <td className="px-3 py-2 text-right text-ink-400">
+                          {j.created_at?.slice(0, 16).replace('T', ' ')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </>
         )}
       </div>

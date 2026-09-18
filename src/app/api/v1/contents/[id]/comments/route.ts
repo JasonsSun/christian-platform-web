@@ -5,15 +5,17 @@ import { currentUser, requireUser, UserRow } from '@/server/auth';
 import { mapComment } from '@/server/mappers';
 import { guardWrite } from '@/server/guard';
 import { dispatchOutbox, emit, notify } from '@/server/services';
+import { ensureCommentColumns } from '@/server/messageColumns';
 
 export const dynamic = 'force-dynamic';
 
 type Ctx = { params: { id: string } };
 
 export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
+  await ensureCommentColumns();
   const id = ctx.params.id;
   const rows = await q<any>(
-    `SELECT cm.id, cm.body, DATE_FORMAT(cm.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
+    `SELECT cm.id, cm.body, cm.attachment, DATE_FORMAT(cm.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
             u.id AS user_id, u.username, u.display_name, u.avatar_color
      FROM comments cm JOIN users u ON u.id = cm.user_id
      WHERE cm.content_id = ? ORDER BY cm.created_at ASC`, [id]
@@ -22,20 +24,23 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
 });
 
 export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
+  await ensureCommentColumns();
   const user = await requireUser(req);
   await guardWrite(req, 'comment', user.id);
   const id = ctx.params.id;
   const content = await one<any>(`SELECT id FROM contents WHERE id = ?`, [id]);
   if (!content) throw notFound('内容不存在');
 
-  const body = await readJson<{ body?: string }>(req);
-  const text = (body.body || '').trim();
-  if (text.length < 1) throw new HttpError(422, 'VALIDATION_FAILED', '评论不能为空');
+  const reqBody = await readJson<{ body?: string; attachment?: string }>(req);
+  const text = (reqBody.body || '').trim();
+  const attachment = (reqBody.attachment || '').trim().slice(0, 600);
+  // 允许纯图片评论，但不允许两者皆空
+  if (!text && !attachment) throw new HttpError(422, 'VALIDATION_FAILED', '评论不能为空');
   if (text.length > 1000) throw new HttpError(422, 'VALIDATION_FAILED', '评论最多 1000 字');
 
   const cid = newId('cmt');
-  await exec(`INSERT INTO comments (id, content_id, user_id, body, created_at) VALUES (?,?,?,?,?)`,
-    [cid, id, user.id, text, ts()]);
+  await exec(`INSERT INTO comments (id, content_id, user_id, body, attachment, created_at) VALUES (?,?,?,?,?,?)`,
+    [cid, id, user.id, text, attachment || null, ts()]);
   await exec(`UPDATE contents SET comment_count = comment_count + 1 WHERE id = ?`, [id]);
 
   // @提及：解析 @username / @昵称，给被提及的人发站内通知（去重、最多 10 个、排除自己）
@@ -58,7 +63,7 @@ export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
   await dispatchOutbox();
 
   const rows = await q<any>(
-    `SELECT cm.id, cm.body, DATE_FORMAT(cm.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
+    `SELECT cm.id, cm.body, cm.attachment, DATE_FORMAT(cm.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
             u.id AS user_id, u.username, u.display_name, u.avatar_color
      FROM comments cm JOIN users u ON u.id = cm.user_id WHERE cm.id = ?`, [cid]
   );

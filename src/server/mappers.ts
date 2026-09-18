@@ -53,6 +53,8 @@ export const mapComment = (r: any) => ({
   id: r.id,
   body: r.body,
   createdAt: r.created_at,
+  /** 图片附件地址，无图为空串 */
+  attachment: r.attachment || '',
   user: {
     id: r.user_id,
     username: r.username,
@@ -182,4 +184,15 @@ export const mapMessage = (r: any) => ({
   createdAt: r.created_at,
   fromId: r.from_id,
   toId: r.to_id,
+  /** 图片附件地址，无图为空串 */
+  attachment: r.attachment || '',
+  /** 发送方撤回时间：非空表示该条已撤回 */
+  recalledAt: r.recalled_at || null,
+  /** 已读时间：配合 read 布尔，让发送方知道对方何时读过 */
+  readAt: r.read_at || null,
+  /**
+   * 该条是否仍可撤回（由服务端用 UTC_TIMESTAMP() 判定）。
+   * 不放在前端算：列里存的是 UTC 字面量，前端拿到的字符串时区语义不可靠。
+   */
+  canRecall: !!r.can_recall,
 });

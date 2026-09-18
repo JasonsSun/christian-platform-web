@@ -36,17 +36,24 @@ export const GET = async (req: NextRequest) => {
     const cookieState = req.cookies.get('oauth_state')?.value;
     if (!cookieState || cookieState !== state) return fail('状态校验失败，请重试');
 
-    const result = await handleOAuthCallback(cfg, code, req);
+    // 设置页绑定场景：把第三方身份关联到当前登录账号，而不是新建/登录另一个账号
+    const bindUserId = req.cookies.get('oauth_bind')?.value || null;
+
+    const result = await handleOAuthCallback(cfg, code, req, bindUserId);
+
     const payload = {
       type: 'oauth_success',
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
       user: publicUser(result.user),
       isNew: result.isNew,
+      // 绑定模式：前端只刷新绑定列表，不切换账号
+      bound: bindUserId ? provider : null,
     };
-    const body = `window.addEventListener('DOMContentLoaded',function(){var w=window.opener;if(w){w.postMessage(${JSON.stringify(payload)},location.origin);}document.getElementById('msg').textContent='登录成功，正在跳转…';setTimeout(function(){if(w)window.close();},800);});`;
+    const body = `window.addEventListener('DOMContentLoaded',function(){var w=window.opener;if(w){w.postMessage(${JSON.stringify(payload)},location.origin);}document.getElementById('msg').textContent=${bindUserId ? "'绑定成功，正在返回…'" : "'登录成功，正在跳转…'"};setTimeout(function(){if(w)window.close();},800);});`;
     const res = html(body);
     res.cookies.set('oauth_state', '', { path: '/', maxAge: 0 });
+    res.cookies.set('oauth_bind', '', { path: '/', maxAge: 0 });
     return res;
   } catch (e: any) {
     return fail(e?.message || '第三方登录失败');

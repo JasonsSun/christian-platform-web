@@ -81,6 +81,20 @@ export async function runConfirmAction(
       await apiDelete(`/admin/organizations?id=${encodeURIComponent(s(params, 'orgId'))}`);
       return { ok: true, message: '组织已删除' };
 
+    // 清理过期直播录像（默认 24 小时以外的已完成录像）
+    case 'admin.live.cleanupRecordings':
+      await apiPost('/admin/live/cleanup-recordings', {
+        maxAgeHours: Number(s(params, 'maxAgeHours')) || 24,
+      });
+      return { ok: true, message: '过期录像已清理' };
+
+    // 移除组织成员
+    case 'admin.org.removeMember':
+      await apiDelete(
+        `/admin/organizations/${encodeURIComponent(s(params, 'orgId'))}/members?userId=${encodeURIComponent(s(params, 'userId'))}`
+      );
+      return { ok: true, message: '已将该成员移出组织' };
+
     // 取消活动：仅创建人与管理员可执行；会通知全部参与人，无需他们同意
     case 'admin.activity.cancel':
       await apiPatch('/admin/activities', { activityId: s(params, 'activityId'), status: 'cancelled' });

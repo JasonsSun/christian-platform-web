@@ -94,6 +94,7 @@ const PAGES: Item[] = [
   { id: 's-blocked', group: '设置', label: '屏蔽管理', href: '/settings/blocked', keywords: 'block pingbi' },
   { id: 's-sessions', group: '设置', label: '登录会话', href: '/settings/sessions', keywords: 'session denglu' },
   { id: 's-2fa', group: '设置', label: '两步验证', href: '/settings/two-factor', keywords: '2fa two factor mfa' },
+  { id: 's-oauth', group: '设置', label: '第三方账号', href: '/settings/oauth', keywords: 'oauth third party disanfang bangding' },
   { id: 'a-overview', group: '管理后台', label: '后台概览', href: '/admin', keywords: 'admin houtai' },
   { id: 'a-contents', group: '管理后台', label: '内容管理', href: '/admin/contents', keywords: 'content neirong' },
   { id: 'a-users', group: '管理后台', label: '用户管理', href: '/admin/users', keywords: 'user yonghu' },

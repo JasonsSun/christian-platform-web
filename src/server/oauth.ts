@@ -178,8 +178,26 @@ async function avatarColor(): Promise<string> {
   return palette[Math.floor(Math.random() * palette.length)];
 }
 
-async function resolveUser(cfg: OAuthProvider, profile: OAuthProfile): Promise<{ userId: string; isNew: boolean }> {
+async function resolveUser(
+  cfg: OAuthProvider,
+  profile: OAuthProfile,
+  bindUserId?: string | null
+): Promise<{ userId: string; isNew: boolean }> {
   await ensureOAuthTable();
+
+  // 0) 绑定模式：用户在设置页主动关联当前登录账号，绝不新建/串到别的账号
+  if (bindUserId) {
+    const owner = await one<{ user_id: string }>(
+      `SELECT user_id FROM user_oauth WHERE provider=? AND provider_user_id=?`,
+      [cfg.key, profile.providerUserId]
+    );
+    if (owner && owner.user_id !== bindUserId) {
+      throw new Error('该第三方账号已绑定到其它用户');
+    }
+    await linkOAuth(bindUserId, cfg, profile);
+    return { userId: bindUserId, isNew: false };
+  }
+
   // 1) 已绑定的第三方身份
   const linked = await one<{ user_id: string }>(
     `SELECT user_id FROM user_oauth WHERE provider=? AND provider_user_id=?`,
@@ -236,11 +254,12 @@ async function linkOAuth(userId: string, cfg: OAuthProvider, profile: OAuthProfi
 export async function handleOAuthCallback(
   cfg: OAuthProvider,
   code: string,
-  req: Request
+  req: Request,
+  bindUserId?: string | null
 ): Promise<{ user: any; accessToken: string; refreshToken: string; isNew: boolean }> {
   const { accessToken, refreshToken, expiresIn } = await exchangeCode(cfg, code);
   const profile = await fetchProfile(cfg, accessToken);
-  const { userId, isNew } = await resolveUser(cfg, profile);
+  const { userId, isNew } = await resolveUser(cfg, profile, bindUserId);
 
   const user = await one<any>(`SELECT * FROM users WHERE id=?`, [userId]);
   if (!user || user.status !== 'active') throw new Error('账号不可用');

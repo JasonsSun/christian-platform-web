@@ -1,3 +1,9 @@
+/**
+ * 首次连库时的初始化播种。
+ *
+ * 注意：本文件没有静态 import 方 —— 由 db.ts 在建池后动态 import 并调用 seedIfEmpty(pool)。
+ * 静态 grep 找不到引用属正常，请勿当作死代码删除。
+ */
 import type { Pool } from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
 import { ts, newId } from './db';

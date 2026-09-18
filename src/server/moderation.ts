@@ -21,8 +21,9 @@ export async function getModeratorScopes(userId: string): Promise<ModuleKey[]> {
   try {
     const rows = await q<any>(`SELECT module FROM moderator_scopes WHERE user_id = ?`, [userId]);
     return rows.map((r: any) => r.module).filter(isModuleKey);
-  } catch {
-    // 表尚未迁移时退化为无范围，避免整个后台 500
+  } catch (e) {
+    // 表尚未迁移时退化为无范围，避免整个后台 500；但要留下痕迹，否则很难排查"审核员明明分配了模块却全无权限"
+    console.warn('[moderation] getModeratorScopes 查询失败，退化为无范围:', e);
     return [];
   }
 }
@@ -197,13 +198,15 @@ export async function listStaffWithScopes(): Promise<
               DATE_FORMAT(created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at
          FROM users WHERE role IN ('admin','moderator') ORDER BY role, created_at ASC`
     );
-  } catch {
+  } catch (e) {
+    console.warn('[moderation] listStaffWithScopes 用户列表查询失败:', e);
     return [];
   }
   let scopeRows: any[] = [];
   try {
     scopeRows = await q<any>(`SELECT user_id, module FROM moderator_scopes`);
-  } catch {
+  } catch (e) {
+    console.warn('[moderation] listStaffWithScopes 范围查询失败，退化为全部无范围:', e);
     scopeRows = [];
   }
   const map = new Map<string, ModuleKey[]>();

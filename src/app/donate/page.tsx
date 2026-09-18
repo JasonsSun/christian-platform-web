@@ -75,6 +75,12 @@ export default function DonatePage() {
     if (params.get('ok') === '1') {
       notice.success('捐赠登记已提交，管理员确认后将展示在爱心名录中');
       router.replace('/donate');
+      return;
+    }
+    // 支付网关回跳（支付成功/取消都会带 paid 参数）
+    if (params.get('paid') === '1') {
+      notice.success('支付已完成，管理员确认后将展示在爱心名录中');
+      router.replace('/donate');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);

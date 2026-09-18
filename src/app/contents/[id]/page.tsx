@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useCallback, useEffect } from 'react';
-import { apiGet, apiPost, apiDelete } from '@/lib/api';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { apiGet, apiPost, apiDelete, apiForm } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
@@ -48,6 +48,10 @@ export default function ContentDetailPage() {
   const commentAction = useAction();
   const confirmNav = useConfirmNav();
   const [commentBody, setCommentBody] = useState('');
+  /** 评论附图：先上传到媒体库拿 url，再随评论一起提交 */
+  const [commentImage, setCommentImage] = useState('');
+  const [commentUploading, setCommentUploading] = useState(false);
+  const commentFileRef = useRef<HTMLInputElement>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportMsg, setReportMsg] = useState('');
   const [fav, setFav] = useState(false);
@@ -78,6 +82,25 @@ export default function ContentDetailPage() {
     if (res) setFav(res.favorited);
   }, [data, user, favAction, goLogin, notice]);
 
+  /** 上传评论附图：走媒体库，拿到 url 后随评论一起提交 */
+  const pickCommentImage = useCallback(
+    async (file: File) => {
+      setCommentUploading(true);
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const up = await apiForm<{ url?: string }>('/media/upload', fd);
+        if (!up?.url) throw new Error('上传未返回地址');
+        setCommentImage(up.url);
+      } catch (e: any) {
+        notice.error(e?.message || '图片上传失败');
+      } finally {
+        setCommentUploading(false);
+      }
+    },
+    [notice]
+  );
+
   const submitComment = useCallback(async () => {
     if (!data) return;
     if (!user) {
@@ -86,10 +109,17 @@ export default function ContentDetailPage() {
       return;
     }
     const body = commentBody.trim();
-    if (!body) return;
-    const res = await commentAction.run(() => apiPost<Comment>(`/contents/${data.id}/comments`, { body }));
+    // 纯图片评论也是允许的
+    if (!body && !commentImage) return;
+    const res = await commentAction.run(() =>
+      apiPost<Comment>(`/contents/${data.id}/comments`, {
+        body,
+        attachment: commentImage || undefined,
+      })
+    );
     if (res) {
       setCommentBody('');
+      setCommentImage('');
       setComments((prev) => ({
         items: [...(prev?.items || []), res],
         total: (prev?.total || 0) + 1,
@@ -98,7 +128,7 @@ export default function ContentDetailPage() {
       }));
       data.commentCount = (data.commentCount || 0) + 1;
     }
-  }, [data, user, commentBody, commentAction, goLogin, notice, setComments]);
+  }, [data, user, commentBody, commentImage, commentAction, goLogin, notice, setComments]);
 
   /** 能否删除这条评论：本人 / 内容作者 / 审核员·管理员 */
   const canDeleteComment = useCallback(
@@ -341,18 +371,52 @@ export default function ContentDetailPage() {
               评论 {comments.length > 0 && <span className="text-ink-400 text-base">({comments.length})</span>}
             </h2>
 
-            <div className="flex gap-2 mb-6">
-              <input
-                value={commentBody}
-                onChange={(e) => setCommentBody(e.target.value)}
-                placeholder={user ? '写下你的评论…（支持 @用户名 提及、#话题）' : '登录后可发表评论'}
-                disabled={!user}
-                className="input-styled"
-                onKeyDown={(e) => e.key === 'Enter' && submitComment()}
-              />
-              <button onClick={submitComment} disabled={!user || commentAction.pending} className="btn-primary px-5 flex-shrink-0">
-                发送
-              </button>
+            <div className="mb-6">
+              {commentImage ? (
+                <div className="mb-2 inline-flex items-center gap-2 rounded-xl border border-ink-200 p-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={commentImage} alt="评论附图" className="h-16 w-16 object-cover rounded-lg" />
+                  <button type="button" onClick={() => setCommentImage('')} className="text-xs text-rose-500 hover:underline">
+                    移除
+                  </button>
+                </div>
+              ) : null}
+
+              <div className="flex gap-2">
+                <input
+                  value={commentBody}
+                  onChange={(e) => setCommentBody(e.target.value)}
+                  placeholder={user ? '写下你的评论…（支持 @用户名 提及、#话题、附图）' : '登录后可发表评论'}
+                  disabled={!user}
+                  className="input-styled"
+                  onKeyDown={(e) => e.key === 'Enter' && submitComment()}
+                />
+                <input
+                  ref={commentFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) pickCommentImage(f);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => commentFileRef.current?.click()}
+                  disabled={!user || commentUploading}
+                  className="btn-secondary px-3 flex-shrink-0 disabled:opacity-60"
+                >
+                  {commentUploading ? '上传中…' : '图片'}
+                </button>
+                <button
+                  onClick={submitComment}
+                  disabled={!user || commentAction.pending || (!commentBody.trim() && !commentImage)}
+                  className="btn-primary px-5 flex-shrink-0 disabled:opacity-60"
+                >
+                  发送
+                </button>
+              </div>
             </div>
             {commentAction.error && <p className="text-rose-500 text-sm mb-3">{commentAction.error}</p>}
 
@@ -379,7 +443,18 @@ export default function ContentDetailPage() {
                         </button>
                       )}
                     </div>
-                    <RichText text={c.body} className="block text-ink-700 text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words" />
+                    {c.attachment ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={c.attachment}
+                        alt="评论附图"
+                        className="mt-1 max-h-56 max-w-full rounded-xl border border-ink-100 cursor-pointer"
+                        onClick={() => window.open(c.attachment, '_blank', 'noopener,noreferrer')}
+                      />
+                    ) : null}
+                    {c.body ? (
+                      <RichText text={c.body} className="block text-ink-700 text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words" />
+                    ) : null}
                   </div>
                 </div>
               ))}

@@ -64,6 +64,8 @@ export interface Comment {
   id: string;
   body: string;
   createdAt: string;
+  /** 图片附件地址，无图为空串 */
+  attachment?: string;
   user: Author;
 }
 
@@ -180,6 +182,14 @@ export interface MessageItem {
   createdAt: string;
   fromId: string;
   toId: string;
+  /** 图片附件地址，无图为空串 */
+  attachment?: string;
+  /** 撤回时间：非空表示该条已被发送方撤回 */
+  recalledAt?: string | null;
+  /** 已读时间：用于给发送方显示回执 */
+  readAt?: string | null;
+  /** 服务端判定：该条是否仍在可撤回窗口内 */
+  canRecall?: boolean;
 }
 
 export interface Conversation {

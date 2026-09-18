@@ -24,6 +24,26 @@ export default function AdminLivePage() {
   // 审核员只需处理待审核,默认锁定在「待审核」tab,且不可切换到其他管理视角
   const [tab, setTab] = useState<Tab>(isModerator ? 'pending' : 'all');
 
+  /* ---------- 录像清理运维入口（仅管理员） ---------- */
+  const [cleanupHours, setCleanupHours] = useState(24);
+
+  function cleanupAsk() {
+    confirmNav({
+      title: '清理过期直播录像',
+      desc: `将删除距今 ${cleanupHours} 小时之前的过期录像文件及其存储对象，此操作不可恢复。\n生产环境建议由定时任务调用同一接口自动清理。`,
+      danger: true,
+      confirmText: '确认清理',
+      back: '/admin/live',
+      action: 'admin.live.cleanupRecordings',
+      params: { maxAgeHours: String(cleanupHours) },
+      onConfirm: async () => {
+        await apiPost('/admin/live/cleanup-recordings', { maxAgeHours: cleanupHours });
+        notice.success('过期录像已清理');
+        reload();
+      },
+    });
+  }
+
   const all = data?.rooms || [];
   const pendingCount = all.filter((r) => r.reviewStatus === 'pending' && !r.cancelled && r.status === 'created').length;
   const liveCount = all.filter((r) => r.status === 'live').length;
@@ -129,6 +149,28 @@ export default function AdminLivePage() {
           </button>
         ))}
       </div>
+
+      {/* 录像清理：接口已存在但没有挂载运维入口，这里补上 */}
+      {canManage ? (
+        <div className="mb-4 rounded-2xl border border-ink-100 bg-ink-50/60 px-4 py-3 flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium text-ink-700">录像清理</span>
+          <span className="text-xs text-ink-500">删除距今超过</span>
+          <input
+            type="number"
+            min={1}
+            className="input-styled w-24"
+            value={cleanupHours}
+            onChange={(e) => setCleanupHours(Math.max(1, Number(e.target.value) || 24))}
+          />
+          <span className="text-xs text-ink-500">小时的过期录像（生产环境建议挂定时任务调用同一接口）</span>
+          <button
+            onClick={cleanupAsk}
+            className="ml-auto px-4 py-1.5 rounded-xl text-sm bg-primary-600 text-white hover:bg-primary-700"
+          >
+            立即清理
+          </button>
+        </div>
+      ) : null}
 
       {loading ? <Loading /> : null}
       {error ? <ErrorBox message={error} onRetry={reload} /> : null}
