@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "node server.js",
     "build": "next build",
+    "analyze": "ANALYZE=true next build",
     "start": "node server.js --prod",
     "test": "node scripts/test-safety.mjs",
     "test:plan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-plan-checkin.mjs",
@@ -61,6 +62,7 @@
     "ws": "^8.21.3"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.3.5",
     "@types/node": "20.14.0",
     "@types/react": "18.3.3",
     "autoprefixer": "^10.5.5",

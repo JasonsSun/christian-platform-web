@@ -80,4 +80,12 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// 打包体积分析:仅 ANALYZE=true 时启用(npm run analyze),常规构建完全不介入,
+// 避免分析进程成为每次构建的固定开销。产物落在 .next/analyze/。
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+  // 不自动开浏览器(CI / 本机后台构建时用不上,弹窗反而打断流程),报告落到 .next/analyze/
+  openAnalyzer: false,
+});
+
+module.exports = withBundleAnalyzer(nextConfig);

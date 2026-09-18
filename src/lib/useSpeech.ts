@@ -6,98 +6,20 @@ import { useBackgroundPlay, useMediaBackplay } from './backplay';
 import { setSpeechSession, getSpeechSession } from './speechSession';
 import { useMaybePlayer } from './player';
 
-export interface SpeechItem {
-  /** 用于高亮定位的序号(如经节号) */
-  key: number;
-  /** 要朗读的文本 */
-  text: string;
-}
+import {
+  CHUNK_VERSES,
+  TTS_CHUNK_TIMEOUT_MS,
+  TTS_PREFETCH_AHEAD,
+  CLIENT_SEG_CHARS,
+  isFatalTtsError,
+  type SpeechItem,
+  type SpeechSegment,
+  type SpeechOptions,
+  type SpeechState,
+} from './speechContract';
 
-export type SpeechState = 'idle' | 'playing' | 'paused';
-
-export interface SpeechSegment {
-  /** 该节在「全局字符空间」中的起始索引(含前面所有节) */
-  start: number;
-  /** 结束索引(不含) */
-  end: number;
-  /** 该节正文之前额外播报的字数(如「第 3 节，」),仅用于时间估算,不占高亮索引 */
-  lead?: number;
-}
-
-export interface SpeechOptions {
-  lang?: string;
-  /** 正文前先播报的标题(如「约翰福音 第 3 章」);为空则不播报 */
-  leadText?: string | null;
-  /** 是否在每个条目(经节)前播报序号 */
-  announceKey?: boolean;
-  /** 序号播报文案,默认「第 N 节」 */
-  formatKey?: (key: number) => string;
-  /**
-   * 整段自然读完(而非被 stop/cancel/换内容打断)时触发一次。
-   * 页面据此实现「读完自动下一章」——不要靠 speakingKey 是否到达最后一节判断,
-   * 时间估算可能落后于真实朗读,最后一节的 key 未必被记录到。
-   */
-  onEnd?: () => void;
-  /** 锁屏控件上显示的标题(如「约翰福音 第 3 章」);缺省时用站点名 */
-  mediaTitle?: string;
-  /** 锁屏控件上显示的副标题(如版本名);缺省留空 */
-  mediaSubtitle?: string;
-  /** 悬浮朗读卡上的「回到此处」链接 */
-  mediaHref?: string;
-  /**
-   * 静默模式:只作为 useHostedSpeech 的兜底实例存在(实际朗读由常驻会话接管),
-   * 不广播朗读会话、不在 items 变化时调用 speechSynthesis.cancel()(否则会误掐掉常驻朗读)。
-   */
-  silent?: boolean;
-}
-
-/**
- * 经文朗读(浏览器内置 TTS,无需联网)。
- *
- * 几个关键设计:
- * 1) 分批朗读:每 CHUNK_VERSES 节拼成一个 utterance,批末自动接下一批。
- *    既规避 Chromium「逐节朗读时每节首字被裁掉」的缺陷,又避免整章拼成
- *    超长 utterance(Chrome 对超长 utterance 有静默中断的已知问题)。
- * 2) 进度回传:实时维护「当前朗读到的节」(speakingKey)与「全局字符索引」
- *    (speakCharRef),页面据此实现逐节高亮 + 自动滚动 + 逐字高亮。
- * 3) 逐字高亮仅在语速 1.0x 时启用(wordSync):倍速下引擎的时间不再线性,
- *    逐字位置会明显漂移,此时只做整节(整行)高亮。
- * 4) 服务端 TTS 兜底:无 speechSynthesis 时(安卓微信 WebView 等)请求后端合成音频。
- *    这条链路**必须有超时**——历史上后端因微软 TTS 建连挂起而永不返回,
- *    前端就一直停在「合成中…」,所以这里加了 AbortController 硬超时。
- * 5) 浏览器直连兜底:服务端全部 TTS 源都不可用(云机房 IP 被风控/出境被丢包)时,
- *    改由**浏览器自己**请求同一免密钥接口——请求来自用户网络,通常能通。
- *    这是"无论如何都能听"的最后一道防线。
- */
-const CHUNK_VERSES = 4;
-
-/**
- * 逐节合成时的单节请求超时。按节请求文本很短,正常 <1s;
- * 给到 20s 既能容忍机房出境抖动,又不会让用户对着「合成中」干等太久。
- */
-const TTS_CHUNK_TIMEOUT_MS = 20000;
-
-/** 边读边取:当前节播放时向后预取几节(多了浪费流量,少了会有段间空档) */
-const TTS_PREFETCH_AHEAD = 3;
-
-/** 浏览器直连兜底的分段字数:URL 会把中文 3 倍编码,取小值避免超长 URL */
-const CLIENT_SEG_CHARS = 200;
-
-/**
- * 这些错误码说明「这台设备的语音引擎根本发不出声」,
- * 必须切到服务端合成;interrupted/canceled 是我们主动取消,属正常流程。
- */
-const FATAL_TTS_ERRORS = new Set([
-  'synthesis-failed',
-  'synthesis-unavailable',
-  'language-unavailable',
-  'voice-unavailable',
-  'audio-busy',
-  'audio-hardware',
-]);
-function isFatalTtsError(code?: string) {
-  return !!code && FATAL_TTS_ERRORS.has(code);
-}
+// 类型对外再导出:@/lib/useSpeech 的旧引用无需改动
+export type { SpeechItem, SpeechState, SpeechSegment, SpeechOptions } from './speechContract';
 
 export type SpeechApi = ReturnType<typeof useSpeech>;
 
