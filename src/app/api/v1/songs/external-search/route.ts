@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
-import { ok, withApi, HttpError } from '@/server/http';
+import { ok, withApi, HttpError, clientIp } from '@/server/http';
+import { rateLimitAsync } from '@/server/ratelimit';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -9,6 +10,12 @@ export const GET = withApi(async (req: NextRequest) => {
   const sp = new URL(req.url).searchParams;
   const keyword = (sp.get('q') || '').trim();
   if (!keyword) throw new HttpError(400, 'BAD_REQUEST', '请输入搜索关键词');
+
+  // 必须限流：每个请求都会向 Bing 发起一次真实网络调用，最多占用 15 秒连接。
+  // 没有这道闸门时，并发刷这个接口就能把出站连接池耗尽，进而拖垮整站。
+  // 上限按"正常用户手搜"给足余量，正常用远到不了。
+  const rl = await rateLimitAsync(`extsearch:${clientIp(req)}`, 20, 60_000);
+  if (!rl.ok) throw new HttpError(429, 'RATE_LIMITED', '搜索太频繁了，请稍后再试');
 
   // 构造更精准的站外查询：引号强制整词匹配 + 限定赞美诗/圣诗/歌词
   const query = encodeURIComponent(`"${keyword}" 赞美诗 圣诗 歌词`);

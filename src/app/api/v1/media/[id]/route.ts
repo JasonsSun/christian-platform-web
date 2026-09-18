@@ -4,6 +4,7 @@ import { ok, withApi, notFound, forbidden, conflict, clientIp } from '@/server/h
 import { requireUser, UserRow } from '@/server/auth';
 import { audit } from '@/server/services';
 import { publicUrlFor, kindLabel } from '@/server/media';
+import { rateLimitAsync } from '@/server/ratelimit';
 
 export const dynamic = 'force-dynamic';
 
@@ -69,14 +70,29 @@ export const GET = withApi(async (req: NextRequest, ctx: { params: { id: string 
   });
 });
 
-/** 播放计数 */
+/**
+ * 播放计数。
+ *
+ * 匿名可调用（未审核资源除外），且属于写入操作，因此必须防刷 ——
+ * 否则循环脚本能把任意资源的播放量刷到任意数字。两层保护与 /songs/[id] 一致：
+ * 同一 IP 对同一资源 30s 内只计一次；同一 IP 每分钟最多 60 次。
+ * 超限不报错，返回当前计数但不再自增。
+ */
 export const POST = withApi(async (req: NextRequest, ctx: { params: { id: string } }) => {
   const m = await loadMedia(ctx.params.id);
   if (!m) throw notFound('文件不存在');
   if (m.review_status !== 'approved') throw forbidden('该文件尚未通过审核');
+
+  const currentCount = Number(m.play_count || 0);
+  const ip = clientIp(req);
+  const perIp = await rateLimitAsync(`mplay:ip:${ip}`, 60, 60_000);
+  if (!perIp.ok) return ok({ id: m.id, playCount: currentCount, counted: false });
+
+  const perMedia = await rateLimitAsync(`mplay:media:${ip}:${m.id}`, 1, 30_000);
+  if (!perMedia.ok) return ok({ id: m.id, playCount: currentCount, counted: false });
+
   await exec(`UPDATE media_files SET play_count = play_count + 1 WHERE id = ?`, [m.id]);
-  const after = await one<any>(`SELECT play_count FROM media_files WHERE id = ?`, [m.id]);
-  return ok({ id: m.id, playCount: Number(after?.play_count || 0) });
+  return ok({ id: m.id, playCount: currentCount + 1, counted: true });
 });
 
 /** 软删除到回收站(作者或管理员);有业务引用时禁止删除 */
