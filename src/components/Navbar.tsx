@@ -241,8 +241,12 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
 
   return (
     <>
+    {/* 不透明实色深蓝：不依赖 backdrop-filter / 透明度 / 各主题变量，
+        任何页面背景（浅色 hero、纯白、暗色）与滚动态下都是深底白字，保证可读。 */}
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-gradient-to-r from-primary-950/92 via-primary-900/88 to-primary-950/92 backdrop-blur-xl border-b border-white/15 nav-glow-line`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-shadow duration-500 bg-primary-950 bg-gradient-to-r from-primary-950 via-primary-900 to-primary-950 border-b border-white/10 nav-glow-line ${
+        isScrolled ? 'shadow-[0_12px_32px_-12px_rgba(8,10,30,0.6)]' : ''
+      }`}
     >
       <div className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 md:h-20">
@@ -271,9 +275,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                   <Link key={link.href} href={link.href} className={linkCls(active)}>
                     {t(link.key)}
                     {active && (
-                      <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full transition-colors ${
-                        isScrolled ? 'bg-primary-500' : 'bg-gold-400'
-                      }`} />
+                      <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full bg-gold-400" />
                     )}
                   </Link>
                 );
@@ -298,7 +300,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
               </svg>
               <kbd className="hidden 2xl:inline-block text-[10px] px-1.5 py-0.5 rounded bg-white/15 text-white/80">⌘K</kbd>
             </button>
-            <PreferenceMenu tone="dark" />
+            <PreferenceMenu tone="light" />
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
