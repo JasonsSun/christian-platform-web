@@ -24,46 +24,52 @@ const navGroups = [
   {
     key: 'bibleStudy',
     labelKey: 'nav.group.bibleStudy',
+    icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
     items: [
-      { href: '/plans', key: 'nav.plans' },
-      { href: '/sermons', key: 'nav.sermons' },
+      { href: '/plans', key: 'nav.plans', descKey: 'nav.itemDesc.plans', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+      { href: '/sermons', key: 'nav.sermons', descKey: 'nav.itemDesc.sermons', icon: 'M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z' },
     ],
   },
   {
     key: 'worship',
     labelKey: 'nav.group.worship',
+    icon: 'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3',
     items: [
-      { href: '/songs', key: 'nav.songs' },
-      { href: '/media', key: 'nav.media' },
-      { href: '/live', key: 'nav.live' },
+      { href: '/songs', key: 'nav.songs', descKey: 'nav.itemDesc.songs', icon: 'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3' },
+      { href: '/media', key: 'nav.media', descKey: 'nav.itemDesc.media', icon: 'M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664zM21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+      { href: '/live', key: 'nav.live', descKey: 'nav.itemDesc.live', icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z' },
     ],
   },
   {
     key: 'community',
     labelKey: 'nav.group.community',
+    icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
     items: [
-      { href: '/topics', key: 'nav.topics' },
-      { href: '/activities', key: 'nav.activities' },
-      { href: '/calendar', key: 'nav.calendar' },
-      { href: '/prayers', key: 'nav.prayers' },
-      { href: '/groups', key: 'nav.groups' },
+      { href: '/topics', key: 'nav.topics', descKey: 'nav.itemDesc.topics', icon: 'M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z' },
+      { href: '/activities', key: 'nav.activities', descKey: 'nav.itemDesc.activities', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+      { href: '/calendar', key: 'nav.calendar', descKey: 'nav.itemDesc.calendar', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+      { href: '/prayers', key: 'nav.prayers', descKey: 'nav.itemDesc.prayers', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
+      { href: '/groups', key: 'nav.groups', descKey: 'nav.itemDesc.groups', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
     ],
   },
   {
     key: 'support',
     labelKey: 'nav.group.support',
+    icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
     items: [
-      { href: '/donate', key: 'nav.donate' },
+      { href: '/donate', key: 'nav.donate', descKey: 'nav.itemDesc.donate', icon: 'M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7' },
     ],
   },
 ];
 
-type NavItem = { href: string; key: string };
-type NavGroup = { key: string; labelKey: string; items: NavItem[] };
+type NavItem = { href: string; key: string; descKey: string; icon: string };
+type NavGroup = { key: string; labelKey: string; icon: string; items: NavItem[] };
 
 /**
  * 桌面端分类目录 mega menu。
  * 左侧分类列表，右侧当前分类子项；点击外部 / ESC / 路由变化自动关闭。
+ * 视觉：入场自顶部下滑淡入 + 页面遮罩压暗聚焦；子项卡片带图标/描述与逐项浮现；
+ * 分类悬停即切换，右侧网格随分类重新挂载触发交错入场。
  */
 function CatalogMenu({ groups, buttonClass, isActive }: { groups: NavGroup[]; buttonClass: string; isActive: (href: string) => boolean }) {
   const { t } = useI18n();
@@ -93,56 +99,114 @@ function CatalogMenu({ groups, buttonClass, isActive }: { groups: NavGroup[]; bu
   const activeGroup = groups.find((g) => g.key === activeKey) || groups[0];
 
   const portal = typeof document === 'undefined' ? null : createPortal(
-    <div
-      ref={panelRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label={t('nav.catalog')}
-      data-guard="nav-catalog"
-      className="fixed top-[64px] md:top-[80px] left-0 right-0 z-40 hidden xl:block"
-    >
-      <div className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-2xl shadow-card border border-ink-100 overflow-hidden flex">
-          <div className="w-56 shrink-0 border-r border-ink-100 bg-ink-50/50 py-2">
-            {groups.map((g) => (
-              <button
-                key={g.key}
-                type="button"
-                onMouseEnter={() => setActiveKey(g.key)}
-                onClick={() => setActiveKey(g.key)}
-                className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-colors border-l-4 whitespace-nowrap ${
-                  activeKey === g.key
-                    ? 'bg-white text-primary-600 border-primary-500'
-                    : 'text-ink-600 border-transparent hover:bg-white hover:text-primary-600'
-                }`}
-              >
-                {t(g.labelKey as any)}
-              </button>
-            ))}
-          </div>
-          <div className="flex-1 p-6 min-w-0">
-            {activeGroup && (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                {activeGroup.items.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setOpen(false)}
-                    className={`block px-4 py-3 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${
-                      isActive(item.href)
-                        ? 'bg-primary-100 text-primary-700'
-                        : 'text-ink-700 hover:bg-primary-50 hover:text-primary-700'
-                    }`}
-                  >
-                    {t(item.key as any)}
-                  </Link>
-                ))}
+    <>
+      {/* 遮罩：压暗并轻微模糊页面，把视线聚到目录上；导航 z-50 在其上，面板后渲染盖住遮罩。
+          在 panelRef 之外，点遮罩走「外部 mousedown 关闭」逻辑。 */}
+      <div className="fixed inset-0 z-40 bg-ink-950/25 backdrop-blur-[2px] animate-scrim-in" aria-hidden="true" />
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('nav.catalog')}
+        data-guard="nav-catalog"
+        className="fixed top-[64px] md:top-[80px] left-0 right-0 z-40 hidden xl:block"
+      >
+        <div className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="animate-menu-in origin-top bg-white rounded-b-2xl shadow-card-hover border border-t-0 border-ink-100 overflow-hidden">
+            <div className="flex">
+              <div className="w-60 shrink-0 border-r border-ink-100 bg-gradient-to-b from-ink-50/80 to-white py-3">
+                {groups.map((g) => {
+                  const active = activeKey === g.key;
+                  return (
+                    <button
+                      key={g.key}
+                      type="button"
+                      onMouseEnter={() => setActiveKey(g.key)}
+                      onClick={() => setActiveKey(g.key)}
+                      className={`group w-full flex items-center gap-3 text-left px-4 py-3 text-sm font-medium transition-all duration-200 border-l-[3px] ${
+                        active
+                          ? 'bg-white text-primary-700 border-primary-500 shadow-soft'
+                          : 'text-ink-600 border-transparent hover:bg-white/70 hover:text-primary-600'
+                      }`}
+                    >
+                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 ${
+                        active
+                          ? 'bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-md shadow-primary-500/30'
+                          : 'bg-primary-50 text-primary-500 group-hover:bg-primary-100'
+                      }`}>
+                        <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d={g.icon} />
+                        </svg>
+                      </span>
+                      <span className="flex-1 whitespace-nowrap">{t(g.labelKey as any)}</span>
+                      <svg
+                        className={`w-4 h-4 shrink-0 transition-all duration-200 ${
+                          active ? 'translate-x-0 opacity-100 text-primary-400' : '-translate-x-1 opacity-0'
+                        }`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  );
+                })}
               </div>
-            )}
+              <div className="flex-1 p-5 min-w-0 bg-white">
+                {activeGroup && (
+                  /* key 重新挂载：切换分类时子项重新播放交错入场 */
+                  <div key={activeGroup.key} className="menu-stagger grid grid-cols-2 lg:grid-cols-3 gap-3">
+                    {activeGroup.items.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setOpen(false)}
+                        className={`group/item flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft ${
+                          isActive(item.href)
+                            ? 'border-primary-200 bg-primary-50/70'
+                            : 'border-ink-100 bg-white hover:border-primary-200 hover:bg-primary-50/50'
+                        }`}
+                      >
+                        <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 ${
+                          isActive(item.href)
+                            ? 'bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-md shadow-primary-500/25'
+                            : 'bg-primary-50 text-primary-600 group-hover/item:bg-gradient-to-br group-hover/item:from-primary-500 group-hover/item:to-primary-700 group-hover/item:text-white'
+                        }`}>
+                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                          </svg>
+                        </span>
+                        <span className="min-w-0">
+                          <span className={`block text-sm font-semibold transition-colors ${
+                            isActive(item.href) ? 'text-primary-700' : 'text-ink-800 group-hover/item:text-primary-700'
+                          }`}>
+                            {t(item.key as any)}
+                          </span>
+                          <span className="block text-xs text-ink-500 mt-0.5 leading-relaxed">
+                            {t(item.descKey as any)}
+                          </span>
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* 底部提示条：一键唤起 ⌘K 全站搜索 */}
+            <button
+              type="button"
+              onClick={() => { setOpen(false); window.dispatchEvent(new Event(COMMAND_PALETTE_EVENT)); }}
+              className="group/footer w-full flex items-center justify-center gap-2 px-5 py-3 bg-ink-50/70 border-t border-ink-100 text-xs text-ink-500 hover:bg-primary-50 hover:text-primary-700 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span>{t('nav.catalogHint')}</span>
+              <kbd className="px-1.5 py-0.5 rounded bg-white border border-ink-200 text-[10px] shadow-sm group-hover/footer:border-primary-200 group-hover/footer:text-primary-600 transition-colors">⌘K</kbd>
+            </button>
           </div>
         </div>
       </div>
-    </div>,
+    </>,
     document.body
   );
 
@@ -154,11 +218,12 @@ function CatalogMenu({ groups, buttonClass, isActive }: { groups: NavGroup[]; bu
         onClick={() => setOpen((v) => !v)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className={`${buttonClass} inline-flex items-center gap-0.5 ${open ? 'bg-white/10' : ''}`}
+        className={`${buttonClass} inline-flex items-center gap-0.5 ${open ? 'bg-white/15 text-white' : ''}`}
       >
         {t('nav.catalog')}
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={open ? 'M5 15l7-7 7 7' : 'M19 9l-7 7-7-7'} />
+        {/* 单一箭头 + 旋转过渡，替代原先生硬的路径切换 */}
+        <svg className={`w-4 h-4 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
       {open && portal}

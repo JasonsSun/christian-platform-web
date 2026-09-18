@@ -226,10 +226,10 @@ html, body {
     pointer-events: none;
   }
 
-  .nav-glow-line {
-    position: relative;
-  }
-
+  /* 注意：这里绝不能写 position: relative。
+     导航本体是 fixed（本身就是定位上下文，::after 会锚定到导航底边）；
+     此前的 relative 会按源序覆盖 Tailwind 的 .fixed，把导航拽回文档流，
+     在导航下方露出 main 的 80px padding（白带缺陷）。 */
   .nav-glow-line::after {
     content: '';
     position: absolute;
@@ -239,6 +239,35 @@ html, body {
     height: 1px;
     background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.35) 50%, transparent 100%);
     opacity: 0.6;
+  }
+
+  /* 「全部功能」mega menu 入场：面板自顶部轻微下滑缩放淡入，遮罩单独淡入 */
+  .animate-menu-in {
+    animation: menuIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .animate-scrim-in {
+    animation: scrimIn 0.2s ease-out both;
+  }
+  @keyframes menuIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes scrimIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  /* mega menu 子项交错浮现：切换分类时网格重新挂载重放 */
+  .menu-stagger > * {
+    animation: itemIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .menu-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .menu-stagger > *:nth-child(2) { animation-delay: 35ms; }
+  .menu-stagger > *:nth-child(3) { animation-delay: 70ms; }
+  .menu-stagger > *:nth-child(4) { animation-delay: 105ms; }
+  .menu-stagger > *:nth-child(5) { animation-delay: 140ms; }
+  @keyframes itemIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
   .input-styled {
