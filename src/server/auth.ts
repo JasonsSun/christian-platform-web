@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import { one, q, exec, newId, ts } from './db';
-import { HttpError, unauthorized, forbidden } from './http';
+import { HttpError, unauthorized, forbidden, fail } from './http';
 
 const DEV_FALLBACK_SECRET = 'change-me-in-production-change-me-in-production';
 const COMPOSE_FALLBACK_SECRET = 'please-set-a-long-random-secret';
@@ -36,7 +36,7 @@ function resolveSecret(): string {
           '临时过渡可设 ALLOW_WEAK_JWT_SECRET=1 (不推荐)。'
       );
     }
-    throw new Error('JWT_SECRET 未正确配置，拒绝签发/校验令牌');
+    throw new HttpError(500, 'JWT_SECRET_MISSING', 'JWT_SECRET 未正确配置，拒绝签发/校验令牌');
   }
   return raw || DEV_FALLBACK_SECRET;
 }

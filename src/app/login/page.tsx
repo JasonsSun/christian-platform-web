@@ -186,7 +186,7 @@ function LoginInner() {
       </div>
 
       <div className="relative z-10 max-w-md w-full mx-4">
-        <div className="glass rounded-3xl p-8 md:p-10 shadow-card-hover">
+        <div className="bg-white rounded-3xl p-8 md:p-10 shadow-2xl shadow-primary-950/25 border border-white/70">
           <div className="text-center mb-8">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center mx-auto mb-4 shadow-glow">
               <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v18m9-9H3" /></svg>
@@ -224,8 +224,8 @@ function LoginInner() {
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm shadow-sm">
+                  <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   {error}
                 </div>
               )}
@@ -245,9 +245,9 @@ function LoginInner() {
           )}
 
           {/* 模式切换 */}
-          <div className="flex bg-ink-100 rounded-xl p-1 mb-6">
-            <button onClick={() => { setMode('login'); setError(''); }} className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'login' ? 'bg-white text-primary-700 shadow' : 'text-ink-500'}`}>登录</button>
-            <button onClick={() => { setMode('register'); setError(''); }} className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'register' ? 'bg-white text-primary-700 shadow' : 'text-ink-500'}`}>注册</button>
+          <div className="flex bg-ink-100/80 rounded-xl p-1 mb-6">
+            <button onClick={() => { setMode('login'); setError(''); }} className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'login' ? 'bg-white text-primary-700 shadow-sm' : 'text-ink-500 hover:text-ink-700'}`}>登录</button>
+            <button onClick={() => { setMode('register'); setError(''); }} className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'register' ? 'bg-white text-primary-700 shadow-sm' : 'text-ink-500 hover:text-ink-700'}`}>注册</button>
           </div>
 
           <form onSubmit={submit} className={`space-y-4 ${twoFaTicket ? 'hidden' : ''}`}>
@@ -293,8 +293,8 @@ function LoginInner() {
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm shadow-sm">
+                <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                 {error}
               </div>
             )}
@@ -329,9 +329,9 @@ function LoginInner() {
             {oauthProviders.length > 0 && (
               <>
                 <div className="flex items-center gap-3 my-1">
-                  <div className="h-px flex-1 bg-white/20" />
-                  <span className="text-xs text-white/60">或使用第三方账号</span>
-                  <div className="h-px flex-1 bg-white/20" />
+                  <div className="h-px flex-1 bg-ink-200" />
+                  <span className="text-xs text-ink-400">或使用第三方账号</span>
+                  <div className="h-px flex-1 bg-ink-200" />
                 </div>
                 <div className="grid grid-cols-1 gap-2">
                   {oauthProviders.map((p) => (
@@ -339,7 +339,7 @@ function LoginInner() {
                       key={p.key}
                       type="button"
                       onClick={() => startOAuth(p.key)}
-                      className="w-full py-2.5 rounded-xl border border-white/25 text-white/90 bg-white/5 hover:bg-white/10 transition-colors text-sm font-medium"
+                      className="w-full py-2.5 rounded-xl border border-ink-200 text-ink-700 bg-ink-50 hover:bg-ink-100 hover:border-ink-300 transition-colors text-sm font-medium"
                     >
                       {p.name} 登录
                     </button>

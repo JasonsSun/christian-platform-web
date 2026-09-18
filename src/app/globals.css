@@ -242,10 +242,10 @@ html, body {
   }
 
   .input-styled {
-    @apply w-full px-4 py-3 rounded-xl border-2 border-ink-200 bg-white/70 backdrop-blur-sm
+    @apply w-full px-4 py-3 rounded-xl border-2 border-ink-200 bg-white
            text-ink-900 placeholder:text-ink-400
            transition-all duration-300 ease-out
-           focus:outline-none focus:border-primary-500 focus:bg-white
+           focus:outline-none focus:border-primary-500
            focus:ring-4 focus:ring-primary-100
            hover:border-primary-300;
   }
@@ -644,6 +644,19 @@ html[data-a11y-reduce-motion="1"] *::after {
   outline: 3px solid #f59e0b !important;
   outline-offset: 2px !important;
   border-radius: 4px;
+}
+
+/* 输入框焦点：用主题色柔和光晕替代粗 outline，保持可访问性同时更精致 */
+.input-styled:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 4px rgba(79, 109, 245, 0.18) !important;
+  border-color: #4f6df5 !important;
+}
+
+/* 深色主题下输入框焦点 */
+[data-theme="dark"] .input-styled:focus-visible {
+  box-shadow: 0 0 0 4px rgba(99, 134, 255, 0.22) !important;
+  border-color: #6376ff !important;
 }
 
 /* 跳过导航：视觉隐藏，键盘聚焦时显现，直达主内容 */

@@ -233,26 +233,16 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
   const linkCls = (active: boolean) =>
     `relative whitespace-nowrap px-2 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
       active
-        ? isScrolled
-          ? 'text-primary-600'
-          : 'text-white bg-white/20'
-        : isScrolled
-          ? 'text-ink-600 hover:text-primary-600 hover:bg-primary-50'
-          : 'text-white/80 hover:text-white hover:bg-white/10'
+        ? 'text-white bg-white/20'
+        : 'text-white/80 hover:text-white hover:bg-white/10'
     }`;
 
-  const iconBtnCls = `p-2 rounded-lg transition-colors ${
-    isScrolled ? 'text-ink-600 hover:text-primary-600 hover:bg-primary-50' : 'text-white/85 hover:text-white hover:bg-white/10'
-  }`;
+  const iconBtnCls = `p-2 rounded-lg transition-colors text-white/85 hover:text-white hover:bg-white/10`;
 
   return (
     <>
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled
-          ? 'glass shadow-card nav-glow-line'
-          : 'bg-gradient-to-r from-primary-950/92 via-primary-900/88 to-primary-950/92 backdrop-blur-xl border-b border-white/15 nav-glow-line'
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 bg-gradient-to-r from-primary-950/92 via-primary-900/88 to-primary-950/92 backdrop-blur-xl border-b border-white/15 nav-glow-line`}
     >
       <div className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center h-16 md:h-20">
@@ -266,9 +256,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v18m9-9H3" />
               </svg>
             </div>
-            <span className={`font-display text-lg sm:text-xl font-bold transition-colors whitespace-nowrap ${
-              isScrolled ? 'text-primary-900' : 'text-white'
-            }`}>
+            <span className="font-display text-lg sm:text-xl font-bold text-white transition-colors whitespace-nowrap">
               <span className="hidden sm:inline">圣约社区</span>
               <span className="sm:hidden">圣约</span>
             </span>
@@ -303,20 +291,14 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
               onClick={() => window.dispatchEvent(new Event(COMMAND_PALETTE_EVENT))}
               title="全站搜索（⌘K / Ctrl+K）"
               aria-label="全站搜索"
-              className={`group flex items-center gap-2 rounded-xl px-2.5 py-1.5 mr-1 border transition-all duration-300 ${
-                isScrolled
-                  ? 'border-ink-200 text-ink-500 hover:text-primary-600 hover:border-primary-300 hover:bg-primary-50'
-                  : 'border-white/25 text-white/85 hover:text-white hover:bg-white/10 hover:border-white/40'
-              }`}
+              className="group flex items-center gap-2 rounded-xl px-2.5 py-1.5 mr-1 border border-white/25 text-white/85 hover:text-white hover:bg-white/10 hover:border-white/40 transition-all duration-300"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              <kbd className={`hidden 2xl:inline-block text-[10px] px-1.5 py-0.5 rounded ${
-                isScrolled ? 'bg-ink-100 text-ink-400' : 'bg-white/15 text-white/80'
-              }`}>⌘K</kbd>
+              <kbd className="hidden 2xl:inline-block text-[10px] px-1.5 py-0.5 rounded bg-white/15 text-white/80">⌘K</kbd>
             </button>
-            <PreferenceMenu tone="light" />
+            <PreferenceMenu tone="dark" />
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setShareOpen(true); }}
@@ -334,9 +316,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                 {isStaff && (
                   <Link
                     href="/admin"
-                    className={`whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium ${
-                      isScrolled ? 'text-ink-600 hover:text-primary-600 hover:bg-primary-50' : 'text-white/85 hover:text-white hover:bg-white/10'
-                    }`}
+                    className="whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium text-white/85 hover:text-white hover:bg-white/10"
                   >
                     {t('nav.admin')}
                   </Link>
@@ -364,7 +344,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                         {user.displayName.slice(0, 1)}
                       </div>
                     )}
-                    <span className={`hidden 2xl:inline max-w-[10rem] truncate text-sm font-medium ${isScrolled ? 'text-ink-700' : 'text-white'}`}>
+                    <span className="hidden 2xl:inline max-w-[10rem] truncate text-sm font-medium text-white">
                       {user.displayName}
                     </span>
                   </button>
@@ -400,16 +380,10 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
               </>
             ) : (
               <>
-                <Link href="/login" className={`whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
-                  isScrolled ? 'text-primary-600 hover:bg-primary-50' : 'text-white/90 hover:text-white hover:bg-white/10'
-                }`}>
+                <Link href="/login" className="whitespace-nowrap px-4 py-2 rounded-lg font-medium text-sm text-white/90 hover:text-white hover:bg-white/10 transition-all duration-300">
                   {t('nav.login')}
                 </Link>
-                <Link href="/login?mode=register" className={`whitespace-nowrap px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-300 ${
-                  isScrolled
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-500/25 hover:shadow-xl hover:shadow-primary-500/40 hover:-translate-y-0.5'
-                    : 'bg-white text-primary-700 hover:bg-primary-50 hover:-translate-y-0.5 shadow-lg'
-                }`}>
+                <Link href="/login?mode=register" className="whitespace-nowrap px-5 py-2 rounded-lg font-semibold text-sm bg-white text-primary-700 hover:bg-primary-50 hover:-translate-y-0.5 shadow-lg transition-all duration-300">
                   {t('nav.register')}
                 </Link>
               </>
@@ -420,9 +394,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
           <button
             type="button"
             onClick={() => window.dispatchEvent(new Event(COMMAND_PALETTE_EVENT))}
-            className={`xl:hidden ml-auto p-2 rounded-lg transition-colors ${
-              isScrolled ? 'text-ink-700 hover:bg-ink-100' : 'text-white hover:bg-white/10'
-            }`}
+            className="xl:hidden ml-auto p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
             aria-label="全站搜索"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -432,9 +404,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className={`xl:hidden p-2 rounded-lg transition-colors ${
-              isScrolled ? 'text-ink-700 hover:bg-ink-100' : 'text-white hover:bg-white/10'
-            }`}
+            className="xl:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
             aria-label={t('nav.toggleMenu')}
             aria-expanded={isMobileMenuOpen}
           >
