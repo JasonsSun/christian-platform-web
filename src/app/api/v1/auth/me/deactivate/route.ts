@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { exec, one } from '@/server/db';
+import { one, tx } from '@/server/db';
 import { ok, withApi, HttpError } from '@/server/http';
 import { requireUser, UserRow, checkPassword } from '@/server/auth';
 import { audit } from '@/server/services';
@@ -25,25 +25,28 @@ export const DELETE = withApi(async (req: NextRequest) => {
   if (!checkPassword(password, row.password_hash)) throw new HttpError(403, 'FORBIDDEN', '密码不正确');
 
   const ts = Date.now().toString(36);
-  await exec(
-    `UPDATE users SET
-       status='deleted',
-       display_name=CONCAT('已注销用户_', ?),
-       bio='',
-       city='',
-       church='',
-       email=CONCAT('deleted+', ?, '@deleted.local'),
-       username=CONCAT('deleted_', ?)
-     WHERE id=?`,
-    [ts, user.id, ts, user.id]
-  );
-
-  // 吊销全部会话
-  await exec(`UPDATE sessions SET revoked=1 WHERE user_id=?`, [user.id]);
-  // 撤下已发布内容（保留数据完整性，不物理删除）
-  await exec(`UPDATE contents SET status='removed' WHERE author_id=? AND status='published'`, [user.id]);
-  // 清空头像色（视觉匿名化）
-  await exec(`UPDATE users SET avatar_color='#9ca3af' WHERE id=?`, [user.id]);
+  // 注销是典型的"多步写"：匿名化 / 吊销会话 / 撤下内容 / 清头像必须同生共死。
+  // 否则中途失败会留下"已吊销会话但仍显示昵称"这类半注销态。
+  await tx(async (conn) => {
+    await conn.query(
+      `UPDATE users SET
+         status='deleted',
+         display_name=CONCAT('已注销用户_', ?),
+         bio='',
+         city='',
+         church='',
+         email=CONCAT('deleted+', ?, '@deleted.local'),
+         username=CONCAT('deleted_', ?)
+       WHERE id=?`,
+      [ts, user.id, ts, user.id]
+    );
+    // 吊销全部会话
+    await conn.query(`UPDATE sessions SET revoked=1 WHERE user_id=?`, [user.id]);
+    // 撤下已发布内容（保留数据完整性，不物理删除）
+    await conn.query(`UPDATE contents SET status='removed' WHERE author_id=? AND status='published'`, [user.id]);
+    // 清空头像色（视觉匿名化）
+    await conn.query(`UPDATE users SET avatar_color='#9ca3af' WHERE id=?`, [user.id]);
+  });
 
   await audit(user.id, 'ACCOUNT_DEACTIVATED', 'user', user.id, '用户注销了账号（软删除）', '');
 

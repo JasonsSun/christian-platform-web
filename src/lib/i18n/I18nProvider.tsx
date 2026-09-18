@@ -20,7 +20,7 @@ import {
   type Variant,
 } from './config';
 import { getDictionary } from './dict';
-import { convert } from './variant';
+import { convert, loadVariantDict, onVariantReady } from './variant';
 
 type Vars = Record<string, string | number>;
 
@@ -133,6 +133,15 @@ export function I18nProvider({
     },
     [locale, variant]
   );
+
+  // 只有切到繁体才载入简繁词典（6MB，按需加载），载入完成后重渲染一次让译文生效
+  const [, forceRender] = useState(0);
+  useEffect(() => {
+    if (variant !== 't') return;
+    const unsub = onVariantReady(() => forceRender((n) => n + 1));
+    void loadVariantDict();
+    return unsub;
+  }, [variant]);
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, variant, setVariant, convert: convertForVariant, t }}>

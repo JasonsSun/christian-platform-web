@@ -40,6 +40,23 @@ const nextConfig = {
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // HSTS：强制 HTTPS。
+          // 注意不要加 includeSubDomains —— 推流主机名走的是灰云（不经 CDN），
+          // 未必支持 HTTPS，一并纳入会让直播推流直接不可用。
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000',
+          },
+          // 关闭站点用不到的浏览器能力，缩小 XSS 等攻击面的影响。
+          // 直播用到摄像头/麦克风，故 camera/microphone 限同源，不直接关死。
+          {
+            key: 'Permissions-Policy',
+            value: 'geolocation=(self), camera=(self), microphone=(self), payment=(), usb=(), serial=()',
+          },
+          // 这里刻意不加 Content-Security-Policy 与 Cross-Origin-Opener-Policy：
+          // - 页面引用了 unpkg(leaflet)、OSM 瓦片、qrserver，且用户媒体可托管在任意 S3，
+          //   域白名单不可能写全，上了只会随机坏图；要做必须先把外部资源收敛。
+          // - COOP 会切断 window.opener，OAuth 第三方登录正是靠它回传令牌，一开就废。
         ],
       },
     ];
