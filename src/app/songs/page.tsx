@@ -6,7 +6,10 @@ import { useApi } from '@/lib/useApi';
 import { qs, apiGet } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import RecentPlays from '@/components/RecentPlays';
-import SubmitSongModal from '@/components/SubmitSongModal';
+import dynamic from 'next/dynamic';
+
+// 投稿弹窗点击才出现，按需加载
+const SubmitSongModal = dynamic(() => import('@/components/SubmitSongModal'), { ssr: false }) as unknown as typeof import('@/components/SubmitSongModal').default;
 import SongCard from '@/components/SongCard';
 import { IconMusicNote, IconSearch, IconMicrophone, IconStar, IconSparkles } from '@/components/icons';
 import type { SongItem } from '@/lib/types';

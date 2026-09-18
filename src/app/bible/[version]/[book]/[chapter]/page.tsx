@@ -9,8 +9,12 @@ import { useAuth } from '@/lib/auth';
 import { type SpeechItem } from '@/lib/useSpeech';
 import { useHostedSpeech } from '@/lib/speechHost';
 import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
-import ReadingAngel from '@/components/ReadingAngel';
-import ShareModal from '@/components/ShareModal';
+import dynamic from 'next/dynamic';
+
+// 两个都是「点击才出现」的重组件（朗读陪伴 480+ 行 / 分享弹窗 460+ 行），
+// 静态引入会让它们随读经页首屏一起下载；改为按需加载，首屏只留正文。
+const ReadingAngel = dynamic(() => import('@/components/ReadingAngel'), { ssr: false }) as unknown as typeof import('@/components/ReadingAngel').default;
+const ShareModal = dynamic(() => import('@/components/ShareModal'), { ssr: false }) as unknown as typeof import('@/components/ShareModal').default;
 import { useTheme } from '@/lib/theme';
 import { READING_PLANS } from '@/lib/readingPlans';
 

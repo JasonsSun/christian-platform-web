@@ -11,7 +11,10 @@ import { formatDateTime, countdown } from '@/lib/format';
 import type { ActivityItem } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
 import Portal from '@/components/Portal';
-import LocationMap from '@/components/LocationMap';
+import dynamic from 'next/dynamic';
+
+// 地图依赖 Leaflet(CDN) 且只在详情页可见时渲染，按需加载避免拖慢首屏
+const LocationMap = dynamic(() => import('@/components/LocationMap'), { ssr: false }) as unknown as typeof import('@/components/LocationMap').default;
 import { useI18n } from '@/lib/i18n/I18nProvider';
 
 interface Participant {

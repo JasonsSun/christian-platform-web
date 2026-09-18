@@ -20,7 +20,11 @@ import { cookies } from 'next/headers'
 import { DEFAULT_LOCALE, LOCALE_COOKIE, isLocale } from '@/lib/i18n/config'
 import ActivityTracker from '@/components/ActivityTracker'
 import Guards from '@/components/Guards'
-import CommandPalette from '@/components/CommandPalette'
+import dynamic from 'next/dynamic'
+
+// 命令面板只在 Ctrl/Cmd+K 唤起时才需要：拆成独立 chunk，不进全站首屏 JS。
+// layout 是 Server Component，故不能用 ssr:false（只允许在客户端组件里关 SSR）。
+const CommandPalette = dynamic(() => import('@/components/CommandPalette')) as unknown as typeof import('@/components/CommandPalette').default
 import ScrollProgress from '@/components/ScrollProgress'
 import type { Metadata } from 'next'
 

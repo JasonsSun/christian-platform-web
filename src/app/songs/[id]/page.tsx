@@ -12,8 +12,11 @@ import { formatDate } from '@/lib/format';
 import { audioTypeMeta, vocalListenTarget } from '@/lib/audioType';
 import { usePlayer } from '@/lib/player';
 import LyricsView from '@/components/LyricsView';
-import ChordSheet from '@/components/ChordSheet';
-import SubmitSongModal from '@/components/SubmitSongModal';
+import dynamic from 'next/dynamic';
+
+// 和弦谱与投稿弹窗都需交互后才出现，按需加载以缩小歌曲详情首屏
+const ChordSheet = dynamic(() => import('@/components/ChordSheet'), { ssr: false }) as unknown as typeof import('@/components/ChordSheet').default;
+const SubmitSongModal = dynamic(() => import('@/components/SubmitSongModal'), { ssr: false }) as unknown as typeof import('@/components/SubmitSongModal').default;
 import ShareButton from '@/components/ShareButton';
 import { IconMusicNote, IconPlay, IconPause, IconHeart, IconEye, IconArrowLeft, IconExternalLink, IconMicrophone, IconDocument, IconLink } from '@/components/icons';
 import type { SongItem } from '@/lib/types';

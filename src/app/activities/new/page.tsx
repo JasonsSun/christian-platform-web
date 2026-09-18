@@ -14,7 +14,10 @@ import { apiPost } from '@/lib/api';
 import { useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
-import LocationMap from '@/components/LocationMap';
+import dynamic from 'next/dynamic';
+
+// 地图组件依赖 Leaflet(CDN)，创建页只是选点时才用，按需加载
+const LocationMap = dynamic(() => import('@/components/LocationMap'), { ssr: false }) as unknown as typeof import('@/components/LocationMap').default;
 
 const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南京'];
 

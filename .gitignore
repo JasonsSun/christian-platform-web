@@ -25,7 +25,10 @@ prod.log
 
 # ===== 运行时上传数据（仅根级目录，避免误伤 src/app/media 等源码）=====
 /uploads/
-/data/
+# 静态种子数据（和合本经文）属源码，必须入库；其余运行时数据不入库。
+# 用 /data/* 而非 /data/：git 不会进入已排除的目录，写 /data/ 时下面的例外行无效。
+/data/*
+!/data/bible-verses.json
 /_deploy_env_backup/
 
 # 数据库备份产物
@@ -60,4 +63,3 @@ _shots-*/
 *.corrupt-*/
 .scanbuild/
 /_aud3/
-.next-verify/

@@ -15,7 +15,10 @@ import ShareButton from '@/components/ShareButton';
 import RichText from '@/components/RichText';
 import ArticleReader from '@/components/ArticleReader';
 import BackplayMedia from '@/components/BackplayMedia';
-import ReportModal from '@/components/ReportModal';
+import dynamic from 'next/dynamic';
+
+// 举报弹窗只在点击「举报」时才需要，按需加载
+const ReportModal = dynamic(() => import('@/components/ReportModal'), { ssr: false }) as unknown as typeof import('@/components/ReportModal').default;
 
 function Avatar({ user, size = 36 }: { user: Author; size?: number }) {
   return (

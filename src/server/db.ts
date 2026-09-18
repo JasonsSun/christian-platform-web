@@ -1,7 +1,6 @@
 import mysql, { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import fs from 'node:fs';
 import path from 'node:path';
-import { BIBLE_VERSES } from './bible-data';
 
 /** 数据库配置(可用 .env.local 覆盖) */
 export const DB_CONFIG = {
@@ -107,7 +106,23 @@ const MOCK_NOTIFICATIONS = [
   { id: 'n_003', type: 'activity', title: '活动提醒', body: '《主日崇拜》将于明天上午10点开始', link: '/activities/a_001', read: 1, created_at: '2024-06-09 18:00:00', user_id: 'u_001' },
 ];
 
-const MOCK_BIBLE_VERSES = BIBLE_VERSES;
+/**
+ * 和合本经文(31102 节,约 5.3MB)只在 MySQL 不可用、整站回退 mock 时才用到。
+ * 早先是 3.1 万行的 TS 字面量数组(bible-data.ts),常驻编译图与 server bundle:
+ * 拖慢 tsc 类型检查与 next build、显著抬高构建期内存。改为按需从
+ * data/bible-verses.json 读取 —— 真实 DB 模式下永不加载。
+ */
+let _mockVerses: any[] | null = null;
+function mockBibleVerses(): any[] {
+  if (_mockVerses) return _mockVerses;
+  try {
+    const p = path.join(process.cwd(), 'data', 'bible-verses.json');
+    _mockVerses = JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch {
+    _mockVerses = [];
+  }
+  return _mockVerses as any[];
+}
 
 const MOCK_SONGS = [
   { id: 's_001', title: '奇异恩典', author: '约翰·牛顿', category: '赞美', tags: '恩典,经典', lyrics: '奇异恩典 何等甘甜\n我罪已得赦免\n前我失丧 今被寻回\n瞎眼今得看见', audio_url: null, duration_sec: 263, play_count: 1250, created_at: '2024-01-01 00:00:00' },
@@ -209,7 +224,6 @@ const TABLES: Record<string, any[]> = {
   groups: MOCK_GROUPS,
   prayers: MOCK_PRAYERS,
   notifications: MOCK_NOTIFICATIONS,
-  bible_verses: MOCK_BIBLE_VERSES,
   songs: MOCK_SONGS,
   messages: MOCK_MESSAGES,
   friends: MOCK_FRIENDS,
@@ -233,6 +247,12 @@ const TABLES: Record<string, any[]> = {
   expenses: MOCK_EXPENSES,
 };
 
+/** 取 mock 表数据;bible_verses 体积大,仅在真正被查询时才从磁盘载入 */
+function rowsFor(name: string): any[] {
+  if (name === 'bible_verses') return mockBibleVerses();
+  return TABLES[name] || [];
+}
+
 /** 从 SQL 中提取表名 */
 function extractTable(sql: string): string {
   // FROM table / JOIN table / INTO table / UPDATE table
@@ -253,7 +273,7 @@ function extractTable(sql: string): string {
 /** 模拟 query：根据 SQL 返回 mock 数据 */
 function mockQuery(sql: string, params: any[] = []): [any, any] {
   const table = extractTable(sql);
-  const rows = TABLES[table] || [];
+  const rows = rowsFor(table);
 
   // GROUP BY 聚合查询（如 bible 路由的可用章节统计）
   if (/GROUP BY/i.test(sql)) {
@@ -449,6 +469,14 @@ async function ensureIndexes(pool: Pool): Promise<void> {
     ['group_members', 'idx_gm_group', 'group_id'],
     ['group_members', 'idx_gm_user', 'user_id'],
     ['messages', 'idx_m_created', 'created_at'],
+    // ——— 以下为列表排序/「我的」类查询补齐（schema 只有 content_id 侧索引）———
+    // content_likes 主键是 (content_id, user_id)，按 user_id 反查会全表扫
+    ['content_likes', 'idx_cl_user', 'user_id'],
+    ['comments', 'idx_cm_user', 'user_id'],
+    // 列表普遍 ORDER BY created_at，缺索引会走 filesort
+    ['media_files', 'idx_mf_created', 'created_at'],
+    ['sermons', 'idx_sermons_created', 'created_at'],
+    ['group_posts', 'idx_gp_created', 'created_at'],
   ];
   for (const [table, idx, cols] of needed) {
     try {

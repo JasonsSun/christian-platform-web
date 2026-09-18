@@ -10,6 +10,23 @@ type Entry = { v: unknown; exp: number };
 
 const store = new Map<string, Entry>();
 
+/**
+ * 条目上限。Map 本身无界：站点变大后缓存 key 的基数也在涨
+ * （经文章节 version×book×chapter 就有上千个组合），没有上限会缓慢吃满内存。
+ * 超限时按插入顺序淘汰最早的一批（Map 保持插入序，等价于简易 FIFO/LRU 折中）。
+ */
+const MAX_ENTRIES = 2000;
+
+function evictIfNeeded(): void {
+  if (store.size <= MAX_ENTRIES) return;
+  const drop = Math.ceil(MAX_ENTRIES * 0.1);
+  let n = 0;
+  for (const k of store.keys()) {
+    if (n++ >= drop) break;
+    store.delete(k);
+  }
+}
+
 export function cacheGet<T = any>(key: string): T | undefined {
   const e = store.get(key);
   if (!e) return undefined;
@@ -22,6 +39,12 @@ export function cacheGet<T = any>(key: string): T | undefined {
 
 export function cacheSet(key: string, value: unknown, ttlMs: number): void {
   store.set(key, { v: value, exp: Date.now() + ttlMs });
+  evictIfNeeded();
+}
+
+/** 当前缓存条目数（健康检查 / 排障用） */
+export function cacheSize(): number {
+  return store.size;
 }
 
 export function cacheDel(key: string): void {

@@ -63,7 +63,18 @@ const nextConfig = {
   },
   experimental: {
     // 原生/Node 侧依赖不参与打包
-    serverComponentsExternalPackages: ['mysql2', 'bcryptjs', 'ws'],
+    // nodemailer / web-push / node-edge-tts 只在 src/server/* 里用（纯服务端），
+    // 打进 server bundle 会显著拖慢构建并抬高产物体积，改为运行时 require。
+    serverComponentsExternalPackages: [
+      'mysql2',
+      'bcryptjs',
+      'ws',
+      'nodemailer',
+      'web-push',
+      'node-edge-tts',
+    ],
+    // heroicons 是典型 barrel 包，未拆包时会把上千个图标全量拉进编译图
+    optimizePackageImports: ['@heroicons/react'],
     // 启用服务端启动钩子(instrumentation.ts),用于初始化实时总线单例
     instrumentationHook: true,
   },
