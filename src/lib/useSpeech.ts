@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { splitBySentence, baiduTtsUrl } from './ttsSplit';
+import { computeGlobalRanges, buildText, buildChunks } from './speechUtils';
 import { useBackgroundPlay, useMediaBackplay } from './backplay';
 import { setSpeechSession, getSpeechSession } from './speechSession';
 import { useMaybePlayer } from './player';
@@ -101,14 +102,7 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
 
   // 由 items 预计算每节全局字符区间(与是否正在朗读无关)
   useEffect(() => {
-    const seg: Record<number, SpeechSegment> = {};
-    let raw = 0;
-    for (const it of items) {
-      const t = Array.from((it.text || '').trim());
-      seg[it.key] = { start: raw, end: raw + t.length };
-      raw += t.length;
-    }
-    setSegments(seg);
+    setSegments(computeGlobalRanges(items));
   }, [items]);
 
   // 时间估算所需上下文(中文 onboundary 多不触发,用节级时长推进兜底)
@@ -476,67 +470,9 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
   const speakRangeRef = useRef(speakRange);
   useEffect(() => { speakRangeRef.current = speakRange; }, [speakRange]);
 
-  // ---- 服务端 TTS 兜底(无 speechSynthesis 时使用) ----
-  // 拼出待合成文本,并返回每节在文本中的字符区间(用于播放进度高亮)
-  const buildText = useCallback((fromIndex: number) => {
-    const list = itemsRef.current;
-    const spans: { key: number; start: number; end: number }[] = [];
-    let buf = '';
-    const lead = (leadTextRef.current || '').trim();
-    if (lead) buf += lead + '。';
-    const start = Math.max(0, Math.min(fromIndex, list.length - 1));
-    for (let k = start; k < list.length; k++) {
-      const it = list[k];
-      if (buf && !buf.endsWith('。')) buf += '。';
-      let head = '';
-      if (announceKeyRef.current) head = formatKeyRef.current(it.key) + '，';
-      const text = (it.text || '').trim();
-      if (!Array.from(text).length) continue;
-      const s = Array.from(buf).length;
-      buf += head + text;
-      const e = Array.from(buf).length;
-      spans.push({ key: it.key, start: s, end: e });
-    }
-    return { text: buf, spans };
-  }, []);
+  // 服务端 TTS 兜底文本构建见 ./speechUtils 的 buildText / buildChunks(纯函数)
 
-  /**
-   * 逐节切分朗读文本(切分规则与 buildText 完全一致,保证字符区间/高亮对齐)。
-   *
-   * 服务端合成**按节请求**,而不是整章一次:
-   * - 一节通常几十到两百字,合成 <1s 就能出声;整章一次要等所有分段串行合成完,
-   *   实测首声要 7~8s(用户体感「慢」的根因);
-   * - 按节切分后「跳到某节」= 一次小请求,天然支持点哪节读哪节;
-   * - 顺便能精确预取下面几节,段间无空档。
-   */
-  const buildChunks = useCallback((fromIndex: number) => {
-    const list = itemsRef.current;
-    const chunks: { idx: number; key: number; text: string; start: number; end: number }[] = [];
-    // 结尾补句号,给合成引擎一个自然收束;高亮区间仍按纯文本算,不受影响
-    const stop = (s: string) => (/[。！？；：…」』）]$/.test(s) ? s : s + '。');
-    let buf = '';
-    let leadPrefix = '';
-    const lead = (leadTextRef.current || '').trim();
-    if (lead) {
-      buf += lead + '。';
-      leadPrefix = lead + '。';
-    }
-    const start = Math.max(0, Math.min(fromIndex, list.length - 1));
-    for (let k = start; k < list.length; k++) {
-      const it = list[k];
-      if (buf && !buf.endsWith('。')) buf += '。';
-      const head = announceKeyRef.current ? formatKeyRef.current(it.key) + '，' : '';
-      const text = (it.text || '').trim();
-      if (!Array.from(text).length) continue;
-      const s = Array.from(buf).length;
-      buf += head + text;
-      const e = Array.from(buf).length;
-      // 标题只在「从本章第 1 节开始读」时播报:中途点某节跳读再念一遍章节名会很吵
-      const withLead = chunks.length === 0 && k === 0 ? leadPrefix : '';
-      chunks.push({ idx: k, key: it.key, text: stop(withLead + head + text), start: s, end: e });
-    }
-    return chunks;
-  }, []);
+  // 服务端按节合成的「逐节切分」实现见 ./speechUtils 的 buildChunks(纯函数)
 
   /**
    * 本轮「逐节播放」的会话:各节已取到的 blob URL + 在飞请求的中断句柄。
@@ -604,7 +540,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
     (fromIndex: number) => {
       const list = itemsRef.current;
       if (!list.length) return;
-      const { text, spans } = buildText(fromIndex);
+      const { text, spans } = buildText(itemsRef.current, fromIndex, {
+        lead: leadTextRef.current || '',
+        announceKey: !!announceKeyRef.current,
+        formatKey: formatKeyRef.current,
+      });
       const rawSegs = splitBySentence(text, CLIENT_SEG_CHARS);
       if (!rawSegs.length) {
         setTtsLoading(false);
@@ -779,7 +719,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       const f = list.findIndex((it) => it.key === fromKey);
       if (f >= 0) i = f;
     }
-    const chunks = buildChunks(i);
+    const chunks = buildChunks(itemsRef.current, i, {
+      lead: leadTextRef.current || '',
+      announceKey: !!announceKeyRef.current,
+      formatKey: formatKeyRef.current,
+    });
     if (!chunks.length) return;
 
     setTtsError(false);
@@ -928,7 +872,11 @@ export function useSpeech(items: SpeechItem[], options: SpeechOptions | string =
       const f = list.findIndex((it) => it.key === fromKey);
       if (f >= 0) i = f;
     }
-    const chunks = buildChunks(i).slice(0, Math.max(1, Math.min(count, 12)));
+    const chunks = buildChunks(itemsRef.current, i, {
+      lead: leadTextRef.current || '',
+      announceKey: !!announceKeyRef.current,
+      formatKey: formatKeyRef.current,
+    }).slice(0, Math.max(1, Math.min(count, 12)));
     if (!chunks.length) return;
     void fetch('/api/v1/bible/tts', {
       method: 'POST',
