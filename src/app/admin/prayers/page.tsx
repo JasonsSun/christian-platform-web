@@ -102,7 +102,7 @@ export default function AdminPrayersPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>代祷墙管理</SectionTitle>
+      <SectionTitle as="h1">代祷墙管理</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">
         巡查并移除违规违法内容。默认按发布时间倒序，「长文」档用于优先排查广告与灌水。
       </p>
@@ -128,6 +128,7 @@ export default function AdminPrayersPage() {
         ))}
         <div className="ml-auto flex items-center gap-2">
           <input
+            aria-label="搜索代祷内容 / 发布人"
             value={kw}
             onChange={(e) => setKw(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { setQ(kw.trim()); setPage(1); } }}
@@ -153,14 +154,15 @@ export default function AdminPrayersPage() {
           <div className="glass rounded-2xl overflow-hidden shadow-soft">
             {items.length === 0 ? <Empty label={q ? `没有匹配「${q}」的代祷` : '暂无代祷'} /> : (
               <table className="w-full text-sm">
-                <thead className="bg-ink-50 text-ink-500">
+                <caption className="sr-only">代祷墙管理</caption>
+                <thead className="bg-ink-50 text-ink-600">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium">发布人</th>
-                    <th className="text-left px-4 py-3 font-medium">内容</th>
-                    <th className="text-center px-4 py-3 font-medium">阿们</th>
-                    <th className="text-center px-4 py-3 font-medium">状态</th>
-                    <th className="text-left px-4 py-3 font-medium whitespace-nowrap">时间</th>
-                    <th className="text-right px-4 py-3 font-medium">操作</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">发布人</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">内容</th>
+                    <th scope="col" className="text-center px-4 py-3 font-medium">阿们</th>
+                    <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium whitespace-nowrap">时间</th>
+                    <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -170,7 +172,7 @@ export default function AdminPrayersPage() {
                         <div className="flex items-center gap-2">
                           <span
                             className="inline-flex items-center justify-center w-7 h-7 rounded-full text-white text-xs font-semibold flex-shrink-0"
-                            style={{ backgroundColor: p.user.avatarColor || '#4f6df5' }}
+                            style={{ backgroundColor: p.user.avatarColor || '#3d52d9' }}
                           >
                             {(p.user.displayName || p.user.username || '?').slice(0, 1)}
                           </span>

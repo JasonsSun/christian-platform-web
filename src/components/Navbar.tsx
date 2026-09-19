@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import { useDialogFocus } from '@/lib/a11y';
 import { useApi } from '@/lib/useApi';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { useNotifications } from '@/lib/notifyStream';
@@ -79,7 +80,8 @@ function CatalogMenu({ groups, buttonClass, isActive }: { groups: NavGroup[]; bu
   const [open, setOpen] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
+  // aria-modal="true" 已经告诉读屏「背景不存在」，Tab 却照样走进背景页，这里让 DOM 焦点也留在面板内
+  const panelRef = useDialogFocus<HTMLDivElement>(open);
 
   useEffect(() => {
     if (!open) { setActiveKey(null); return; }
@@ -246,6 +248,8 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  // 头像挂了不会自动回落到字母头像，只会显示浏览器的破图图标
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
@@ -406,9 +410,9 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
 
                 <div className="relative" ref={boxRef}>
                   <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white/10 transition-colors">
-                    {user.avatarUrl ? (
+                    {user.avatarUrl && !avatarFailed ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={user.avatarUrl} alt={user.displayName} className="w-8 h-8 rounded-full object-cover shrink-0" />
+                      <img src={user.avatarUrl} alt={user.displayName} onError={() => setAvatarFailed(true)} className="w-8 h-8 rounded-full object-cover shrink-0"  decoding="async" loading="lazy" />
                     ) : (
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
                         style={{ background: user.avatarColor }}>
@@ -489,7 +493,10 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
           </button>
         </div>
 
-        <div className={`xl:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'max-h-[75vh] overflow-y-auto pb-4' : 'max-h-0'}`}>
+        {/* max-h-0 只是裁掉高度，链接仍在 Tab 序里：收起时必须同时移出焦点序列，
+            否则窄屏键盘用户会先穿过十几条看不见的菜单项才走到真正能看的地方。
+            用 invisible 而非直接不渲染，保留 max-h 的展开动画。 */}
+        <div className={`xl:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'visible max-h-[75vh] overflow-y-auto pb-4' : 'invisible max-h-0'}`}>
           {/* 用实色卡片而非 .glass：glass 带 backdrop-filter，叠在深色导航上会被冲淡成灰紫，
               浅色文字对比度不足（暗色主题下更明显）。实色卡片在任何主题/滚动态下都可读。 */}
           <div data-nav-mobile-menu="1" className="bg-white rounded-2xl p-4 space-y-2 shadow-card border border-ink-100">

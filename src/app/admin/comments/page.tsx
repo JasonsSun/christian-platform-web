@@ -65,6 +65,7 @@ export default function AdminCommentsPage() {
         onSubmit={(e) => { e.preventDefault(); setPage(1); setSearch(kw.trim()); }}
       >
         <input
+          aria-label="搜索评论内容 / 评论人 / 所属内容标题"
           value={kw}
           onChange={(e) => setKw(e.target.value)}
           placeholder="搜索评论内容 / 评论人 / 所属内容标题"
@@ -105,15 +106,15 @@ export default function AdminCommentsPage() {
               <div key={c.id} className="bg-white rounded-2xl p-4 border border-ink-100 shadow-soft">
                 <div className="flex items-start gap-3">
                   <input
+                    aria-label={`选择 ${c.author.displayName} 的评论`}
                     type="checkbox"
                     checked={selected.includes(c.id)}
                     onChange={() => setSelected((s) => (s.includes(c.id) ? s.filter((x) => x !== c.id) : [...s, c.id]))}
                     className="mt-1"
-                    aria-label="选择该评论"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500 mb-1.5">
-                      <Link href={`/users/${c.author.id}`} className="font-medium text-ink-700 hover:text-primary-600">
+                      <Link href={`/users/${c.author.id}`} className="font-medium text-ink-700 hover:text-primary-600 py-1.5 -my-1.5">
                         {c.author.displayName}
                       </Link>
                       <span>@{c.author.username}</span>

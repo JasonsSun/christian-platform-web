@@ -233,7 +233,7 @@ export default function DonatePayPage() {
   if (error && !state) {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <p className="text-ink-500 mb-4">{error}</p>
+        <p role="alert" className="text-ink-500 mb-4">{error}</p>
         <Link className="btn-primary" href="/donate">返回捐赠专区</Link>
       </div>
     );
@@ -262,7 +262,7 @@ export default function DonatePayPage() {
       </div>
 
       {error && (
-        <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        <div role="alert" className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
       {gateways && !gateways.onlineEnabled && (
@@ -280,7 +280,7 @@ export default function DonatePayPage() {
           </div>
           {qr ? (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={qr} alt="支付二维码" className="mx-auto w-[220px] h-[220px] rounded-2xl border border-ink-100" />
+            <img src={qr} alt="支付二维码" className="mx-auto w-[220px] h-[220px] rounded-2xl border border-ink-100"  decoding="async"  loading="eager" />
           ) : (
             <div className="mx-auto w-[220px] h-[220px] rounded-2xl border border-ink-100 flex items-center justify-center text-ink-400 text-sm">
               二维码生成中…
@@ -307,8 +307,8 @@ export default function DonatePayPage() {
       {/* 通道选择 */}
       {!result?.codeUrl && (
         <div className="bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100">
-          <label className="block text-sm font-medium text-ink-700 mb-3">选择支付方式</label>
-          <div className="space-y-3">
+          <label id="pay-gateway-label" className="block text-sm font-medium text-ink-700 mb-3">选择支付方式</label>
+          <div className="space-y-3" role="group" aria-labelledby="pay-gateway-label">
             {channels.map((c) => {
               const disabled = !c.enabled || paying;
               return (

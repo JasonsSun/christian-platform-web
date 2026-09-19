@@ -21,7 +21,7 @@ const FOLDER_CHIP: Record<string, string> = {
   primary: 'bg-primary-50 text-primary-700 border-primary-200',
   gold: 'bg-gold-50 text-gold-700 border-gold-200',
   emerald: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  rose: 'bg-rose-50 text-rose-600 border-rose-200',
+  rose: 'bg-rose-50 text-rose-700 border-rose-200',
   violet: 'bg-violet-50 text-violet-700 border-violet-200',
   sky: 'bg-sky-50 text-sky-700 border-sky-200',
 };
@@ -152,7 +152,7 @@ export function MyContentFavorites() {
               <button
                 onClick={() => remove(f)}
                 disabled={busy}
-                className="w-6 h-6 rounded-full text-ink-500 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-40"
+                className="w-6 h-6 rounded-full text-ink-500 hover:text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-40"
                 aria-label={`删除分类 ${f.name}`}
                 title="删除分类（其中收藏退回未分类）"
               >
@@ -171,6 +171,7 @@ export function MyContentFavorites() {
         {creating && (
           <div className="flex flex-wrap gap-2">
             <input
+              aria-label="新建分类名称"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => {
@@ -199,6 +200,7 @@ export function MyContentFavorites() {
           <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-ink-100">
             <span className="text-sm text-ink-600">已选 {sel.length} 项</span>
             <select
+              aria-label="移动到分类"
               value={moveTo}
               onChange={(e) => setMoveTo(e.target.value)}
               className="input-styled w-auto min-w-[140px] text-sm"
@@ -220,7 +222,7 @@ export function MyContentFavorites() {
           </div>
         )}
 
-        {err && <div className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">{err}</div>}
+        {err && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">{err}</div>}
       </div>
 
       {items.length === 0 ? (

@@ -91,7 +91,7 @@ export default function BlockedUsersPage() {
                 <Link href={`/users/${u.id}`} className="font-semibold text-ink-900 hover:text-primary-600 transition-colors">{u.displayName}</Link>
                 <p className="text-xs text-ink-400">@{u.username}{u.city ? ` · ${u.city}` : ''}</p>
               </div>
-              <button onClick={() => unblock(u.id)} className="text-sm text-rose-500 hover:underline flex-shrink-0">解除屏蔽</button>
+              <button onClick={() => unblock(u.id)} className="text-sm text-rose-600 hover:underline flex-shrink-0">解除屏蔽</button>
             </div>
           ))}
         </div>

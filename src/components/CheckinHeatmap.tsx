@@ -104,8 +104,13 @@ export default function CheckinHeatmap() {
                 return (
                   <div
                     key={di}
-                    title={c ? `${c.date}${c.active ? ' · 已打卡' : ''}` : ''}
-                    className={`w-2.5 h-2.5 rounded-sm ${c ? (c.active ? 'bg-gold-400' : 'bg-ink-100') : 'bg-transparent'}`}
+                    // 打卡与否原来只写在金色/灰色和鼠标 title 里：读屏与键盘既拿不到日期也分不出状态
+                    role={c ? 'img' : undefined}
+                    aria-label={c ? `${c.date} ${c.active ? '已打卡' : '未打卡'}` : undefined}
+                    title={c ? `${c.date} · ${c.active ? '已打卡' : '未打卡'}` : undefined}
+                    className={`w-2.5 h-2.5 rounded-sm ${
+                      c ? (c.active ? 'bg-gold-400 border border-gold-600' : 'bg-ink-100') : 'bg-transparent'
+                    }`}
                   />
                 );
               })}
@@ -119,7 +124,7 @@ export default function CheckinHeatmap() {
           <span
             key={b.label}
             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-              b.got ? 'bg-gradient-to-r from-gold-500 to-gold-400 text-ink-950 shadow-gold' : 'bg-ink-100 text-ink-400'
+              b.got ? 'bg-gradient-to-r from-gold-500 to-gold-400 text-ink-950 shadow-gold' : 'bg-ink-100 text-ink-600'
             }`}
           >
             {b.got ? '🏅' : '🔒'} {b.label}

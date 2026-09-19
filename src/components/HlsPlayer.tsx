@@ -286,6 +286,7 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
               {muted || volume === 0 ? '🔇' : '🔊'}
             </button>
             <input
+              aria-label="音量"
               type="range" min={0} max={1} step={0.05} value={muted ? 0 : volume}
               onChange={(e) => changeVolume(Number(e.target.value))}
               className="w-20 accent-rose-500"

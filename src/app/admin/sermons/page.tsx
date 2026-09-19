@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import Link from 'next/link';
 import { apiPatch, apiPost } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { AdminLayout, SectionTitle, Loading, Empty, ErrorBox, Badge } from '../_components';
 import Portal from '@/components/Portal';
@@ -116,13 +117,13 @@ function SermonManager() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <SectionTitle>讲道管理</SectionTitle>
+        <SectionTitle as="h1">讲道管理</SectionTitle>
         <button className="btn-primary text-sm" onClick={openCreate}>＋ 新建讲道</button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <input className="input-styled flex-1 min-w-[160px]" placeholder="搜索标题/讲员/经文" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select className="input-styled" value={seriesId} onChange={(e) => setSeriesId(e.target.value)}>
+        <input aria-label="搜索讲道标题 / 讲员 / 经文" className="input-styled flex-1 min-w-[160px]" placeholder="搜索标题/讲员/经文" value={q} onChange={(e) => setQ(e.target.value)} />
+        <select aria-label="按讲道系列筛选" className="input-styled" value={seriesId} onChange={(e) => setSeriesId(e.target.value)}>
           <option value="">全部系列</option>
           {(seriesData?.items || []).map((s) => (
             <option key={s.id} value={s.id}>{convert(s.title)}</option>
@@ -143,15 +144,16 @@ function SermonManager() {
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
           <table className="w-full text-sm">
-            <thead className="bg-ink-50 text-ink-500">
+            <caption className="sr-only">讲道管理</caption>
+            <thead className="bg-ink-50 text-ink-600">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">标题</th>
-                <th className="text-left px-4 py-3 font-medium">讲员</th>
-                <th className="text-left px-4 py-3 font-medium">系列</th>
-                <th className="text-center px-4 py-3 font-medium">媒体</th>
-                <th className="text-center px-4 py-3 font-medium">状态</th>
-                <th className="text-center px-4 py-3 font-medium">数据</th>
-                <th className="text-right px-4 py-3 font-medium">操作</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">标题</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">讲员</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">系列</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">媒体</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">数据</th>
+                <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -228,6 +230,13 @@ function SermonForm({
     cover: '',
   });
 
+  // 组件由父级条件渲染，挂载即代表已打开；保存中不关弹层，否则填好的讲道内容会白丢
+  useEscape(true, () => {
+    if (!busy) onClose();
+  });
+  const dlgRef = useDialogFocus(true);
+  const titleId = useId();
+
   function set<K extends keyof typeof f>(k: K, v: (typeof f)[K]) {
     setF((p) => ({ ...p, [k]: v }));
   }
@@ -267,10 +276,10 @@ function SermonForm({
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-[80] bg-black/50 flex items-start justify-center p-4 overflow-y-auto" onClick={onClose} data-guard="sermon-form">
+      <div ref={dlgRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="fixed inset-0 z-[80] bg-black/50 flex items-start justify-center p-4 overflow-y-auto" onClick={onClose} data-guard="sermon-form">
         <div className="glass rounded-2xl p-6 w-full max-w-2xl my-8" onClick={(e) => e.stopPropagation()}>
-          <h3 className="font-display text-xl font-bold text-ink-900 mb-4">{editing ? '编辑讲道' : '新建讲道'}</h3>
-          {msg ? <div className="mb-3 text-sm text-rose-600 bg-rose-50 rounded-xl px-3 py-2">{msg}</div> : null}
+          <h3 id={titleId} className="font-display text-xl font-bold text-ink-900 mb-4">{editing ? '编辑讲道' : '新建讲道'}</h3>
+          {msg ? <div className="mb-3 text-sm text-rose-700 bg-rose-50 rounded-xl px-3 py-2">{msg}</div> : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label className="sm:col-span-2 block">
               <span className="text-sm text-ink-600">标题 *</span>
@@ -365,7 +374,7 @@ function SeriesManager() {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <SectionTitle>讲道系列</SectionTitle>
+        <SectionTitle as="h1">讲道系列</SectionTitle>
         <button className="btn-primary text-sm" onClick={() => { setEditing(null); setShowForm(true); }}>＋ 新建系列</button>
       </div>
       {loading ? (
@@ -412,6 +421,13 @@ function SeriesForm({ editing, onClose, onDone }: { editing: SeriesItem | null; 
     status: (editing?.status || 'published') as 'published' | 'draft',
     cover: '',
   });
+  // 组件由父级条件渲染，挂载即代表已打开；保存中不关弹层，否则填好的系列内容会白丢
+  useEscape(true, () => {
+    if (!busy) onClose();
+  });
+  const dlgRef = useDialogFocus(true);
+  const titleId = useId();
+
   function set<K extends keyof typeof f>(k: K, v: (typeof f)[K]) {
     setF((p) => ({ ...p, [k]: v }));
   }
@@ -436,10 +452,10 @@ function SeriesForm({ editing, onClose, onDone }: { editing: SeriesItem | null; 
   }
   return (
     <Portal>
-      <div className="fixed inset-0 z-[80] bg-black/50 flex items-start justify-center p-4 overflow-y-auto" onClick={onClose} data-guard="series-form">
+      <div ref={dlgRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className="fixed inset-0 z-[80] bg-black/50 flex items-start justify-center p-4 overflow-y-auto" onClick={onClose} data-guard="series-form">
         <div className="glass rounded-2xl p-6 w-full max-w-lg my-8" onClick={(e) => e.stopPropagation()}>
-          <h3 className="font-display text-xl font-bold text-ink-900 mb-4">{editing ? '编辑系列' : '新建系列'}</h3>
-          {msg ? <div className="mb-3 text-sm text-rose-600 bg-rose-50 rounded-xl px-3 py-2">{msg}</div> : null}
+          <h3 id={titleId} className="font-display text-xl font-bold text-ink-900 mb-4">{editing ? '编辑系列' : '新建系列'}</h3>
+          {msg ? <div className="mb-3 text-sm text-rose-700 bg-rose-50 rounded-xl px-3 py-2">{msg}</div> : null}
           <div className="flex flex-col gap-3">
             <label className="block">
               <span className="text-sm text-ink-600">标题 *</span>

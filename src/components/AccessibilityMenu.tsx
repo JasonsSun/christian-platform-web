@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/I18nProvider';
-import { useA11y, useEscape, type FontScale } from '@/lib/a11y';
+import { useA11y, useDialogFocus, useEscape, type FontScale } from '@/lib/a11y';
 
 export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
   const { t } = useI18n();
@@ -19,6 +19,8 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
   }, []);
 
   useEscape(open, () => setOpen(false));
+  // 非模态下拉：不圈养 Tab（背景页本来就该可达），只要关闭后焦点回到触发按钮
+  const dlgRef = useDialogFocus<HTMLDivElement>(open, { trap: false, autofocus: false });
 
   const base =
     tone === 'light'
@@ -48,6 +50,7 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
       </button>
       {open && (
         <div
+          ref={dlgRef}
           className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-card border border-ink-100 p-4 z-50 text-ink-800"
           role="dialog"
           aria-label={t('pref.a11yPanel')}

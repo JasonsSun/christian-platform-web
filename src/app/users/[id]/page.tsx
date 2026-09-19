@@ -36,7 +36,7 @@ function ContentCard({ item }: { item: ContentItem }) {
         </div>
       ) : null}
       <div className="flex-1 min-w-0">
-        <h3 className="font-display font-bold text-lg text-ink-900 truncate">{item.title}</h3>
+        <h2 className="font-display font-bold text-lg text-ink-900 truncate">{item.title}</h2>
         <p className="text-sm text-ink-500 line-clamp-2 mt-1">{item.excerpt || item.body?.slice(0, 80)}</p>
         <div className="flex items-center gap-4 mt-3 text-sm text-ink-500">
           <span>{timeAgo(item.publishedAt || item.createdAt)}</span>
@@ -105,7 +105,7 @@ export default function UserProfilePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 资料卡 */}
         {error && (
-          <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl p-4 text-sm mb-6">加载失败：{error}</div>
+          <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm mb-6">加载失败：{error}</div>
         )}
 
         {loading && (
@@ -122,13 +122,13 @@ export default function UserProfilePage() {
               <div className="relative flex flex-col sm:flex-row sm:items-center gap-5">
                 <span
                   className="w-20 h-20 rounded-full flex items-center justify-center text-3xl font-bold text-white flex-shrink-0 shadow-lg"
-                  style={{ backgroundColor: data.avatarColor || '#4f6df5' }}
+                  style={{ backgroundColor: data.avatarColor || '#3d52d9' }}
                 >
                   {(data.displayName || data.username || '?').slice(0, 1)}
                 </span>
                 <div className="flex-1 min-w-0">
                   <h1 className="font-display text-2xl md:text-3xl font-bold">{data.displayName}</h1>
-                  <p className="text-white/70 text-sm mt-1">@{data.username}</p>
+                  <p className="text-white/90 text-sm mt-1">@{data.username}</p>
                   {(data.city || data.church) && (
                     <p className="text-white/80 text-sm mt-2 flex flex-wrap gap-x-4 gap-y-1">
                       {data.city && (
@@ -146,7 +146,7 @@ export default function UserProfilePage() {
                     </p>
                   )}
                   {data.bio && <p className="text-white/85 text-sm mt-3 leading-relaxed">{data.bio}</p>}
-                  <p className="text-white/50 text-xs mt-3">加入于 {formatDate(data.createdAt)}</p>
+                  <p className="text-white/85 text-xs mt-3">加入于 {formatDate(data.createdAt)}</p>
                 </div>
 
                 <div className="flex-shrink-0 flex items-center gap-2">
@@ -184,19 +184,19 @@ export default function UserProfilePage() {
               <div className="relative mt-6 grid grid-cols-4 gap-2 border-t border-white/15 pt-5">
                 <div className="text-center">
                   <div className="font-display text-xl md:text-2xl font-bold">{data.stats.contents}</div>
-                  <div className="text-white/60 text-xs mt-1">内容</div>
+                  <div className="text-white/85 text-xs mt-1">内容</div>
                 </div>
                 <div className="text-center">
                   <div className="font-display text-xl md:text-2xl font-bold">{data.stats.followers}</div>
-                  <div className="text-white/60 text-xs mt-1">粉丝</div>
+                  <div className="text-white/85 text-xs mt-1">粉丝</div>
                 </div>
                 <div className="text-center">
                   <div className="font-display text-xl md:text-2xl font-bold">{data.stats.following}</div>
-                  <div className="text-white/60 text-xs mt-1">关注</div>
+                  <div className="text-white/85 text-xs mt-1">关注</div>
                 </div>
                 <div className="text-center">
                   <div className="font-display text-xl md:text-2xl font-bold">{data.stats.activities}</div>
-                  <div className="text-white/60 text-xs mt-1">活动</div>
+                  <div className="text-white/85 text-xs mt-1">活动</div>
                 </div>
               </div>
             </section>
@@ -229,13 +229,13 @@ export default function UserProfilePage() {
               </button>
             </div>
 
-            {followAction.error && <p className="text-rose-500 text-sm mb-4">{followAction.error}</p>}
+            {followAction.error && <p className="text-rose-600 text-sm mb-4">{followAction.error}</p>}
 
             {tab === 'activities' ? (
               data.contents.length === 0 ? (
                 <div className="bg-white rounded-2xl p-12 shadow-soft border border-ink-100 text-center">
                   <div className="text-5xl mb-4">📝</div>
-                  <h3 className="font-display text-xl font-bold text-ink-900 mb-2">还没有发布的内容</h3>
+                  <h2 className="font-display text-xl font-bold text-ink-900 mb-2">还没有发布的内容</h2>
                   <p className="text-ink-500">TA 暂时没有公开的内容</p>
                 </div>
               ) : (

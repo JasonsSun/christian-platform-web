@@ -47,7 +47,7 @@ export function MyUploads() {
             <div className="w-20 h-20 rounded-xl bg-ink-100 flex items-center justify-center overflow-hidden flex-shrink-0">
               {m.kind === 'image' ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img loading="lazy" src={m.url} alt={m.title} className="w-full h-full object-cover" />
+                <img loading="lazy" src={m.url} alt={m.title} className="w-full h-full object-cover"  decoding="async" />
               ) : (
                 <span className="text-2xl">{m.kind === 'audio' ? '🎵' : m.kind === 'video' ? '🎬' : m.kind === 'score' ? '🎼' : '📄'}</span>
               )}
@@ -66,7 +66,7 @@ export function MyUploads() {
               <div className="flex items-center gap-3 mt-2 text-sm">
                 {m.reviewStatus === 'approved' ? <Link href="/media" className="text-primary-600 hover:underline">已在媒体库展示</Link> : null}
                 <a href={m.url} download={m.fileName} className="text-ink-500 hover:text-ink-700">下载</a>
-                <button onClick={() => remove(m.id)} disabled={busyId === m.id} className="text-rose-500 hover:underline disabled:opacity-50">删除</button>
+                <button onClick={() => remove(m.id)} disabled={busyId === m.id} className="text-rose-600 hover:underline disabled:opacity-50">删除</button>
               </div>
             </div>
           </div>

@@ -24,7 +24,7 @@ function DonationRow({ item, admin }: { item: DonationItem; admin: boolean }) {
     <div className="flex items-start gap-4 px-4 py-4 sm:px-5 border-b border-ink-100 last:border-0 hover:bg-ink-50/40 transition-colors">
       <div
         className={`w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white ${
-          isChurch ? 'bg-gradient-to-br from-gold-400 to-gold-600' : 'bg-gradient-to-br from-primary-400 to-primary-600'
+          isChurch ? 'bg-gradient-to-br from-gold-700 to-gold-800' : 'bg-gradient-to-br from-primary-600 to-primary-800'
         }`}
         aria-hidden
       >
@@ -149,7 +149,7 @@ export default function DonatePage() {
         <div className="glass rounded-2xl p-5 shadow-soft">
           <div className="flex items-center gap-2 text-sm text-ink-500">
             累计捐赠金额
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-ink-100 text-ink-500">
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-ink-100 text-ink-600">
               {admin ? '仅管理员可见' : '不对公众公开'}
             </span>
           </div>

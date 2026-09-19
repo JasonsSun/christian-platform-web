@@ -54,8 +54,8 @@ export default function AdminAuditPage() {
       </div>
 
       <div className="glass rounded-2xl p-4 mb-5 flex items-center gap-3 shadow-soft">
-        <label className="text-sm text-ink-500">操作类型</label>
-        <select className="input-styled w-56" value={action} onChange={(e) => onAction(e.target.value)}>
+        <label htmlFor="audit-action" className="text-sm text-ink-500">操作类型</label>
+        <select id="audit-action" className="input-styled w-56" value={action} onChange={(e) => onAction(e.target.value)}>
           <option value="">全部动作</option>
           {ACTIONS.map((a) => (
             <option key={a.value} value={a.value}>{a.label}</option>
@@ -74,15 +74,16 @@ export default function AdminAuditPage() {
           <div className="glass rounded-2xl overflow-hidden shadow-soft">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-ink-50 text-ink-500">
+                <caption className="sr-only">审计日志</caption>
+                <thead className="bg-ink-50 text-ink-600">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium">时间</th>
-                    <th className="text-left px-4 py-3 font-medium">操作人</th>
-                    <th className="text-left px-4 py-3 font-medium">动作</th>
-                    <th className="text-left px-4 py-3 font-medium">对象类型</th>
-                    <th className="text-left px-4 py-3 font-medium">对象 ID</th>
-                    <th className="text-left px-4 py-3 font-medium">详情</th>
-                    <th className="text-left px-4 py-3 font-medium">IP</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">时间</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">操作人</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">动作</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">对象类型</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">对象 ID</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">详情</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">IP</th>
                   </tr>
                 </thead>
                 <tbody>

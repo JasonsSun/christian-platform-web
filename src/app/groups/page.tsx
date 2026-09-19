@@ -143,17 +143,22 @@ export default function GroupsPage() {
             <div className="bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 mb-6 space-y-4">
               <h2 className="font-display text-xl font-bold text-ink-900">创建新团契</h2>
               {formError && (
-                <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3">
+                <div id="group-create-error" role="alert" className="rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3">
                   {formError}
                 </div>
               )}
               <input
+                name="name"
+                aria-label="团契名称"
+                aria-describedby={formError ? 'group-create-error' : undefined}
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="团契名称"
                 className="input-styled"
               />
               <textarea
+                name="description"
+                aria-label="团契简介"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="团契简介"
@@ -162,6 +167,8 @@ export default function GroupsPage() {
               />
               <div className="grid sm:grid-cols-2 gap-4">
                 <select
+                  name="category"
+                  aria-label="团契分类"
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="input-styled"
@@ -172,6 +179,8 @@ export default function GroupsPage() {
                   ))}
                 </select>
                 <input
+                  name="city"
+                  aria-label="所在城市"
                   value={form.city}
                   onChange={(e) => setForm({ ...form, city: e.target.value })}
                   placeholder="城市（如：北京）"
@@ -179,12 +188,13 @@ export default function GroupsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-ink-700 mb-2">封面 Emoji</label>
-                <div className="flex flex-wrap gap-2">
+                <label id="group-cover-label" className="block text-sm font-semibold text-ink-700 mb-2">封面 Emoji</label>
+                <div className="flex flex-wrap gap-2" role="group" aria-labelledby="group-cover-label">
                   {GROUP_EMOJIS.map((e) => (
                     <button
                       key={e}
                       onClick={() => setForm({ ...form, cover: e })}
+                      aria-pressed={form.cover === e}
                       className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all ${
                         form.cover === e
                           ? 'bg-primary-100 border-2 border-primary-500'
@@ -197,7 +207,7 @@ export default function GroupsPage() {
                 </div>
               </div>
               {createAction.error && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl p-3 text-sm">{createAction.error}</div>
+                <div role="alert" className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-3 text-sm">{createAction.error}</div>
               )}
               <div className="flex gap-3">
                 <button onClick={() => setShowForm(false)} className="btn-secondary flex-1">
@@ -213,11 +223,12 @@ export default function GroupsPage() {
           {/* 筛选栏 */}
           <div className="bg-white rounded-2xl p-4 border border-ink-100 shadow-soft mb-6 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex gap-1 bg-ink-50 rounded-xl p-1">
+              <div className="flex gap-1 bg-ink-50 rounded-xl p-1" role="group" aria-label="团契范围筛选">
                 {SCOPE_TABS.map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setScope(t.id as 'all' | 'mine')}
+                    aria-pressed={scope === t.id}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       scope === t.id
                         ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-500/25'
@@ -239,18 +250,20 @@ export default function GroupsPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
+                  name="q"
+                  aria-label="搜索团契名称或简介"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="搜索团契名称或简介…"
                   className="input-styled input-icon"
                 />
               </div>
-              <select className="input-styled" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <select className="input-styled" name="filterCategory" aria-label="按分类筛选" value={category} onChange={(e) => setCategory(e.target.value)}>
                 {CATEGORIES.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
               </select>
-              <select className="input-styled" value={city} onChange={(e) => setCity(e.target.value)}>
+              <select className="input-styled" name="filterCity" aria-label="按城市筛选" value={city} onChange={(e) => setCity(e.target.value)}>
                 <option value="">全部城市</option>
                 {CITIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -266,7 +279,7 @@ export default function GroupsPage() {
               ))}
             </div>
           )}
-          {error && <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl p-4 text-sm">{error}</div>}
+          {error && <div role="alert" className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm">{error}</div>}
           {!loading && !error && groups.length === 0 && (
             <div className="bg-white rounded-2xl p-10 text-center text-ink-400 border border-ink-100">
               {scope === 'mine' ? '你还没有加入任何团契' : '没有找到团契，点击右上角创建吧～'}
@@ -286,7 +299,7 @@ export default function GroupsPage() {
                       {g.cover || '👥'}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-display font-bold text-ink-900 truncate">{g.name}</h3>
+                      <h2 className="font-display font-bold text-ink-900 truncate">{g.name}</h2>
                       <p className="text-xs text-ink-400">{catLabel} · {g.city || '线上'}</p>
                     </div>
                   </Link>
@@ -300,7 +313,7 @@ export default function GroupsPage() {
                       {g.memberCount} 成员
                     </span>
                     {g.joined ? (
-                      <span className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600">
+                      <span className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
                         <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                         </svg>

@@ -55,7 +55,7 @@ export default function AdminSettingsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>系统设置</SectionTitle>
+      <SectionTitle as="h1">系统设置</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">上传、通知、搜索、维护模式等运行配置</p>
 
       {loading ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
@@ -70,14 +70,20 @@ export default function AdminSettingsPage() {
               <div className="space-y-3">
                 {items.filter((i) => i.group === g).map((it) => {
                   const isBool = it.value === 'true' || it.value === 'false';
+                  // 设置项 key 全局唯一，直接充当控件 id，避免在 map 里写重复的字面量 id
+                  const fieldId = `setting-${it.key}`;
                   return (
                     <div key={it.key} className="flex items-center gap-4">
                       <div className="w-56 flex-shrink-0">
-                        <div className="text-sm text-ink-700">{it.label || it.key}</div>
+                        <label htmlFor={isBool ? undefined : fieldId} className="block text-sm text-ink-700">{it.label || it.key}</label>
                         <div className="font-mono text-xs text-ink-400">{it.key}</div>
                       </div>
                       {isBool ? (
                         <button
+                          type="button"
+                          role="switch"
+                          aria-checked={draft[it.key] === 'true'}
+                          aria-label={it.label || it.key}
                           onClick={() => set(it.key, draft[it.key] === 'true' ? 'false' : 'true')}
                           className={`relative w-12 h-6 rounded-full transition ${draft[it.key] === 'true' ? 'bg-primary-600' : 'bg-ink-300'}`}
                         >
@@ -85,6 +91,8 @@ export default function AdminSettingsPage() {
                         </button>
                       ) : (
                         <input
+                          aria-label={it.label || it.key}
+                          id={fieldId}
                           className="input-styled flex-1"
                           value={draft[it.key] ?? ''}
                           onChange={(e) => set(it.key, e.target.value)}
@@ -102,7 +110,7 @@ export default function AdminSettingsPage() {
               {busy ? '保存中…' : '保存更改'}
             </button>
             {dirty ? <span className="text-sm text-gold-700">有未保存的更改</span> : null}
-            {msg ? <span className="text-sm text-primary-700">{msg}</span> : null}
+            {msg ? <span role="status" className="text-sm text-primary-700">{msg}</span> : null}
           </div>
         </div>
       )}

@@ -131,6 +131,7 @@ export default function UploadPage() {
           <button
             key={k.key}
             onClick={() => { setKind(k.key); setFile(null); setResult(null); setError(''); }}
+            aria-pressed={kind === k.key}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
               kind === k.key ? 'bg-primary-600 text-white shadow-card' : 'bg-ink-100 text-ink-600 hover:bg-ink-200'
             }`}
@@ -146,6 +147,17 @@ export default function UploadPage() {
           onDragLeave={() => setDragging(false)}
           onDrop={onDrop}
           onClick={() => inputRef.current?.click()}
+          // 真正的 input[type=file] 是 display:none，永远拿不到焦点，
+          // 所以键盘用户能落脚的只有这个区域本身
+          role="button"
+          tabIndex={0}
+          aria-label={`选择${active.label}文件`}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              inputRef.current?.click();
+            }
+          }}
           className={`cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition ${
             dragging ? 'border-primary-500 bg-primary-50' : 'border-ink-200 hover:border-primary-300 hover:bg-primary-50/40'
           }`}
@@ -174,20 +186,27 @@ export default function UploadPage() {
         </div>
 
         <div className="mt-5">
-          <label className="block text-sm font-medium text-ink-700 mb-1.5">标题（可选）</label>
-          <input className="input-styled w-full" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="例如：主日敬拜现场录音" />
+          <label htmlFor="upload-title" className="block text-sm font-medium text-ink-700 mb-1.5">标题（可选）</label>
+          <input id="upload-title" className="input-styled w-full" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="例如：主日敬拜现场录音" />
         </div>
 
         {busy ? (
           <div className="mt-5">
-            <div className="h-2 rounded-full bg-ink-100 overflow-hidden">
+            <div
+              className="h-2 rounded-full bg-ink-100 overflow-hidden"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progress)}
+              aria-label="上传进度"
+            >
               <div className="h-full bg-primary-600 transition-all" style={{ width: `${progress}%` }} />
             </div>
             <div className="text-xs text-ink-500 mt-1">上传中… {progress}%</div>
           </div>
         ) : null}
 
-        {error ? <div className="mt-4 text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-2">{error}</div> : null}
+        {error ? <div role="alert" className="mt-4 text-sm text-rose-700 bg-rose-50 rounded-xl px-4 py-2">{error}</div> : null}
 
         <div className="mt-5 flex items-center gap-3">
           <button onClick={submit} disabled={busy || !file} className="btn-primary disabled:opacity-50">

@@ -118,7 +118,7 @@ export default function AdminLivePage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>直播管理</SectionTitle>
+      <SectionTitle as="h1">直播管理</SectionTitle>
       <p className="text-sm text-ink-500 -mt-2 mb-5">审核直播间、强制关闭违规直播、取消预约。取消/过期不删除数据,只对外隐藏。<span className="text-ink-400">（审核员仅可审核,强制关闭与取消由管理员操作）</span></p>
 
       {/* 超管看完整管理统计;审核员仅看「待审核」数,不暴露总数/直播中/已关闭等管理视角 */}
@@ -160,6 +160,7 @@ export default function AdminLivePage() {
           <input
             type="number"
             min={1}
+            aria-label="清理超过多少小时的过期录像"
             className="input-styled w-24"
             value={cleanupHours}
             onChange={(e) => setCleanupHours(Math.max(1, Number(e.target.value) || 24))}
@@ -194,12 +195,12 @@ export default function AdminLivePage() {
                     主播 {r.owner?.displayName || '—'} · 峰值 {r.viewerPeak} · 当前 {r.viewerCount}
                     {r.scheduledAt ? ` · 约定 ${new Date(r.scheduledAt).toLocaleString('zh-CN')}` : ''}
                   </p>
-                  {r.cancelled && r.cancelReason ? <p className="text-xs text-rose-500 mt-1">取消原因:{r.cancelReason}</p> : null}
-                  {r.reviewStatus === 'rejected' && r.reviewNote ? <p className="text-xs text-rose-500 mt-1">驳回:{r.reviewNote}</p> : null}
+                  {r.cancelled && r.cancelReason ? <p className="text-xs text-rose-600 mt-1">取消原因:{r.cancelReason}</p> : null}
+                  {r.reviewStatus === 'rejected' && r.reviewNote ? <p className="text-xs text-rose-600 mt-1">驳回:{r.reviewNote}</p> : null}
                   {r.reviewStatus === 'pending' && r.reviewVideoId ? (
                     <p className="text-xs text-ink-500 mt-1">
                       审核视频:
-                      <Link href={`/media/${r.reviewVideoId}`} target="_blank" className="text-primary-600 hover:underline ml-1">
+                      <Link href={`/media/${r.reviewVideoId}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:underline ml-1">
                         查看现场视频 →
                       </Link>
                     </p>
@@ -207,7 +208,7 @@ export default function AdminLivePage() {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Link href={`/live/${r.id}`} className="btn-ghost">查看</Link>
+                  <Link href={`/live/${r.id}`} className="btn-ghost" aria-label={`查看直播间「${r.title}」`}>查看</Link>
                   {canReview(r) && (
                     <>
                       <button className="btn-primary" disabled={busy} onClick={() => reviewAsk(r, true)}>通过</button>

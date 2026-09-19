@@ -43,7 +43,7 @@ function Avatar({ m, size = 32 }: { m: Member; size?: number }) {
     <span
       className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
       style={{
-        backgroundColor: m.avatarColor || '#4f6df5',
+        backgroundColor: m.avatarColor || '#3d52d9',
         width: size,
         height: size,
         fontSize: size * 0.42,

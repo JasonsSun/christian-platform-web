@@ -159,12 +159,15 @@ function ConfirmInner() {
 
         {inputSpec && (
           <div className="mb-6">
-            <label className="block text-sm font-medium text-ink-700 mb-1.5">
+            {/* htmlFor 关联下面那个控件：只写 aria-label 的话，这行可见文字点不动、也不会被读成名字 */}
+            <label htmlFor="confirm-field" className="block text-sm font-medium text-ink-700 mb-1.5">
               {inputSpec.label}
-              {inputSpec.required && <span className="text-rose-500 ml-1">*</span>}
+              {inputSpec.required && <span className="text-rose-600 ml-1" aria-hidden="true">*</span>}
             </label>
             {inputSpec.multiline ? (
               <textarea
+                id="confirm-field"
+                aria-required={inputSpec.required || undefined}
                 className="input-styled min-h-[100px]"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
@@ -172,6 +175,8 @@ function ConfirmInner() {
               />
             ) : (
               <input
+                id="confirm-field"
+                aria-required={inputSpec.required || undefined}
                 className="input-styled"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
@@ -182,7 +187,7 @@ function ConfirmInner() {
         )}
 
         {err && (
-          <div className="mb-5 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3">{err}</div>
+          <div className="mb-5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3">{err}</div>
         )}
 
         <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import { useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import Portal from '@/components/Portal';
-import { useEscape } from '@/lib/a11y';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
 
 const REASONS = [
   { value: 'spam', label: '垃圾广告' },
@@ -42,6 +42,8 @@ export default function ReportModal({ open, onClose, contentId, onSubmitted }: P
   const [detail, setDetail] = useState('');
 
   useEscape(open, onClose);
+  const dlgRef = useDialogFocus(open);
+  const titleId = useId();
 
   if (!open) return null;
 
@@ -66,9 +68,11 @@ export default function ReportModal({ open, onClose, contentId, onSubmitted }: P
   return (
     <Portal>
       <div
+        ref={dlgRef}
         data-guard="report-modal"
         role="dialog"
         aria-modal="true"
+        aria-labelledby={titleId}
         className="fixed inset-0 z-[70] flex items-center justify-center p-4"
       >
         <div
@@ -93,7 +97,7 @@ export default function ReportModal({ open, onClose, contentId, onSubmitted }: P
 
           <div className="flex items-center gap-2 mb-1">
             <span className="text-lg" aria-hidden="true">🚩</span>
-            <h2 className="font-display text-lg font-bold text-ink-900">举报内容</h2>
+            <h2 id={titleId} className="font-display text-lg font-bold text-ink-900">举报内容</h2>
           </div>
           <p className="text-sm text-ink-500 mb-5">我们会尽快核实处理，感谢你维护社区秩序</p>
 
@@ -112,23 +116,24 @@ export default function ReportModal({ open, onClose, contentId, onSubmitted }: P
           ) : (
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-ink-500 mb-1">举报原因</label>
-                <select value={reason} onChange={(e) => setReason(e.target.value)} className="input-styled">
+                <label htmlFor="report-reason" className="block text-xs font-semibold text-ink-500 mb-1">举报原因</label>
+                <select id="report-reason" value={reason} onChange={(e) => setReason(e.target.value)} className="input-styled">
                   {REASONS.map((r) => (
                     <option key={r.value} value={r.value}>{r.label}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-ink-500 mb-1">补充说明（选填）</label>
+                <label htmlFor="report-detail" className="block text-xs font-semibold text-ink-500 mb-1">补充说明（选填）</label>
                 <textarea
+                  id="report-detail"
                   value={detail}
                   onChange={(e) => setDetail(e.target.value)}
                   className="input-styled min-h-[80px]"
                   placeholder="请描述具体问题…"
                 />
               </div>
-              {action.error && <p className="text-xs text-rose-500">{action.error}</p>}
+              {action.error && <p className="text-xs text-rose-600">{action.error}</p>}
               <div className="flex gap-2 pt-1">
                 <button type="button" onClick={onClose} className="btn-secondary btn-sm flex-1 text-sm">取消</button>
                 <button

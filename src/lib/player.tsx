@@ -3,8 +3,10 @@
 import {
   createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, ReactNode,
   type PointerEvent as ReactPointerEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import { saveProgress, clearProgress, resumableAt, touchRecent } from '@/lib/watchHistory';
+import { scrollBehavior } from '@/lib/motion';
 import { useBackgroundPlay, useMediaBackplay } from '@/lib/backplay';
 import { stopSpeechSessionIfAny } from '@/lib/speechSession';
 import SpeechMiniCard from '@/components/SpeechMiniCard';
@@ -471,7 +473,8 @@ function PlayerBar() {
     if (!openList || !listRef.current) return;
     const el = listRef.current.querySelector<HTMLElement>('[data-active="1"]');
     if (el && typeof el.scrollIntoView === 'function') {
-      el.scrollIntoView({ block: 'nearest' });
+      // 没写 behavior 时会继承 html{scroll-behavior:smooth}，等于强制平滑；显式交给 motion helper
+      el.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
     }
   }, [openList, p.index]);
 
@@ -489,6 +492,21 @@ function PlayerBar() {
     const sec = ratio * dur;
     setDraft(sec);
     return sec;
+  }
+
+  // 进度条此前只有 mouse/touch 一条路径，键盘完全无法定位到某一刻
+  function seekByKeyboard(e: ReactKeyboardEvent<HTMLDivElement>) {
+    if (dur <= 0) return;
+    const target =
+      e.key === 'ArrowRight' || e.key === 'ArrowUp' ? shown + 5
+      : e.key === 'ArrowLeft' || e.key === 'ArrowDown' ? shown - 5
+      : e.key === 'Home' ? 0
+      : e.key === 'End' ? dur
+      : null;
+    if (target === null) return;
+    e.preventDefault();
+    setDragging(false);
+    p.seek(Math.max(0, Math.min(dur, target)));
   }
 
   // 底部导航高度(移动端 h-16 = 4rem)
@@ -557,6 +575,14 @@ function PlayerBar() {
         <div
           ref={barRef}
           data-seekbar="1"
+          role="slider"
+          tabIndex={0}
+          aria-label="播放进度"
+          aria-valuemin={0}
+          aria-valuemax={Math.round(dur)}
+          aria-valuenow={Math.round(shown)}
+          aria-valuetext={`${formatTime(shown)} / ${formatTime(dur)}`}
+          onKeyDown={seekByKeyboard}
           className="absolute top-0 left-0 right-0 h-1 bg-ink-100 cursor-pointer"
           onMouseDown={(e) => { setDragging(true); seekFromEvent(e.clientX); }}
           onMouseMove={(e) => { if (dragging) seekFromEvent(e.clientX); }}
@@ -594,15 +620,16 @@ function PlayerBar() {
 
           {/* 控制 */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button onClick={p.prev} title="上一首" className="w-8 h-8 rounded-full text-ink-600 hover:bg-ink-100 flex items-center justify-center text-sm">⏮</button>
+            <button onClick={p.prev} title="上一首" aria-label="上一首" className="w-8 h-8 rounded-full text-ink-600 hover:bg-ink-100 flex items-center justify-center text-sm">⏮</button>
             <button
               onClick={p.toggle}
               title={p.playing ? '暂停' : '播放'}
+              aria-label={p.playing ? '暂停播放' : '开始播放'}
               className="w-10 h-10 rounded-full bg-primary-600 text-white shadow-card hover:bg-primary-700 flex items-center justify-center"
             >
               {p.playing ? '❚❚' : '▶'}
             </button>
-            <button onClick={p.next} title="下一首" className="w-8 h-8 rounded-full text-ink-600 hover:bg-ink-100 flex items-center justify-center text-sm">⏭</button>
+            <button onClick={p.next} title="下一首" aria-label="下一首" className="w-8 h-8 rounded-full text-ink-600 hover:bg-ink-100 flex items-center justify-center text-sm">⏭</button>
           </div>
         </div>
 
@@ -619,28 +646,30 @@ function PlayerBar() {
             {PLAY_MODE_META[p.mode].icon}
           </button>
 
-          <button onClick={p.toggleMute} className="w-8 h-8 rounded-full text-ink-500 hover:bg-ink-100 flex items-center justify-center" title="静音">
+          <button onClick={p.toggleMute} className="w-8 h-8 rounded-full text-ink-500 hover:bg-ink-100 flex items-center justify-center" title="静音" aria-label={p.muted || p.volume === 0 ? '取消静音' : '静音'}>
             {p.muted || p.volume === 0 ? '🔇' : '🔊'}
           </button>
           <input
+            aria-label="音量"
             type="range" min={0} max={1} step={0.01} value={p.muted ? 0 : p.volume}
             onChange={(e) => p.setVolume(Number(e.target.value))}
             className="w-16 accent-primary-600"
-            aria-label="音量"
           />
 
           <div className="flex-1" />
 
           <button
             onClick={() => setOpenList((v) => !v)}
+            aria-expanded={openList}
             className={`w-8 h-8 rounded-full flex items-center justify-center ${
               openList ? 'bg-primary-50 text-primary-700' : 'text-ink-500 hover:bg-ink-100'
             }`}
             title="播放列表"
+            aria-label={openList ? '收起播放列表' : '展开播放列表'}
           >
             ☰
           </button>
-          <button onClick={p.stop} className="w-8 h-8 rounded-full text-ink-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center" title="关闭">
+          <button onClick={p.stop} className="w-8 h-8 rounded-full text-ink-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center" title="关闭" aria-label="关闭播放器">
             ✕
           </button>
         </div>

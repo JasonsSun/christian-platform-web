@@ -70,7 +70,7 @@ export default function AdminDashboard() {
                     <span className={`w-2 h-2 rounded-full ${STATUS_COLORS[s.status] || 'bg-primary-500'}`} />
                     {contentStatusLabel(s.status)}
                   </div>
-                  <div className="flex-1 h-3 rounded-full bg-ink-100 overflow-hidden">
+                  <div className="flex-1 h-3 rounded-full bg-ink-100 overflow-hidden" aria-hidden>
                     <div
                       className={`h-full ${STATUS_COLORS[s.status] || 'bg-primary-500'}`}
                       style={{ width: `${(s.c / maxStatus) * 100}%` }}

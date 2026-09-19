@@ -139,6 +139,9 @@ export default function AdminNotificationsPage() {
             <div className="flex items-center gap-4 sm:col-span-2">
               <button
                 type="button"
+                role="switch"
+                aria-checked={f.enabled}
+                aria-label="启用该模板"
                 onClick={() => onChange({ ...f, enabled: !f.enabled })}
                 className={`relative w-12 h-6 rounded-full transition ${f.enabled ? 'bg-primary-600' : 'bg-ink-300'}`}
               >
@@ -164,7 +167,7 @@ export default function AdminNotificationsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>通知中心</SectionTitle>
+      <SectionTitle as="h1">通知中心</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">通知模板、渠道与收发统计</p>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
@@ -174,7 +177,7 @@ export default function AdminNotificationsPage() {
       </div>
 
       {(msg || err) && (
-        <div className={`mb-4 rounded-xl px-4 py-2.5 text-sm ${err ? 'bg-rose-50 text-rose-700' : 'bg-primary-50 text-primary-700'}`}>
+        <div role={err ? 'alert' : 'status'} className={`mb-4 rounded-xl px-4 py-2.5 text-sm ${err ? 'bg-rose-50 text-rose-700' : 'bg-primary-50 text-primary-700'}`}>
           {err || msg}
         </div>
       )}
@@ -192,13 +195,14 @@ export default function AdminNotificationsPage() {
               </button>
             </div>
             <table className="w-full text-sm">
-              <thead className="bg-ink-50 text-ink-500">
+              <caption className="sr-only">通知模板</caption>
+              <thead className="bg-ink-50 text-ink-600">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium">编码</th>
-                  <th className="text-left px-4 py-3 font-medium">渠道</th>
-                  <th className="text-left px-4 py-3 font-medium">标题模板</th>
-                  <th className="text-center px-4 py-3 font-medium">状态</th>
-                  <th className="text-right px-4 py-3 font-medium">操作</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">编码</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">渠道</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">标题模板</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
+                  <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -316,13 +320,14 @@ export default function AdminNotificationsPage() {
             <div className="px-4 py-3 font-medium text-ink-700 border-b border-ink-100">最近通知</div>
             {(data?.recent || []).length === 0 ? <Empty label="暂无通知" /> : (
               <table className="w-full text-sm">
-                <thead className="bg-ink-50 text-ink-500">
+                <caption className="sr-only">最近通知</caption>
+                <thead className="bg-ink-50 text-ink-600">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium">接收人</th>
-                    <th className="text-left px-4 py-3 font-medium">类型</th>
-                    <th className="text-left px-4 py-3 font-medium">标题</th>
-                    <th className="text-left px-4 py-3 font-medium">时间</th>
-                    <th className="text-center px-4 py-3 font-medium">状态</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">接收人</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">类型</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">标题</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">时间</th>
+                    <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
                   </tr>
                 </thead>
                 <tbody>

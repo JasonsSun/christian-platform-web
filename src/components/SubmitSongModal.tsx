@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { apiForm } from '@/lib/api';
 import Portal from '@/components/Portal';
-import { useEscape } from '@/lib/a11y';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
 
 /**
  * 投稿赞美诗歌弹窗：可只填歌词、可附带音频文件、也可只给一个"这首在哪儿能听到
@@ -40,6 +40,8 @@ export default function SubmitSongModal({
 
   // 组件由父级条件渲染，挂载即代表已打开
   useEscape(true, onClose);
+  const dlgRef = useDialogFocus(true);
+  const titleId = useId();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -83,65 +85,68 @@ export default function SubmitSongModal({
   return (
     <Portal>
     <div
+      ref={dlgRef}
       data-guard="submit-song-modal"
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
       onClick={onClose}
     >
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 pt-6 pb-4 border-b border-ink-100 flex items-center justify-between">
-          <h3 className="font-display text-xl font-bold text-ink-900">投稿赞美诗歌</h3>
-          <button onClick={onClose} className="text-ink-400 hover:text-ink-600 text-2xl leading-none">&times;</button>
+          <h3 id={titleId} className="font-display text-xl font-bold text-ink-900">投稿赞美诗歌</h3>
+          <button onClick={onClose} aria-label="关闭" className="text-ink-400 hover:text-ink-600 text-2xl leading-none">&times;</button>
         </div>
         <form onSubmit={submit} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-ink-700 mb-1">标题 *</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="如：奇异恩典" className="input-styled w-full" />
+            <label htmlFor="ss-title" className="block text-sm font-medium text-ink-700 mb-1">标题<span aria-hidden="true"> *</span><span className="sr-only">（必填）</span></label>
+            <input id="ss-title" required value={title} onChange={(e) => setTitle(e.target.value)} placeholder="如：奇异恩典" className="input-styled w-full" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1">作者</label>
-              <input value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="如：约翰·牛顿" className="input-styled w-full" />
+              <label htmlFor="ss-author" className="block text-sm font-medium text-ink-700 mb-1">作者</label>
+              <input id="ss-author" value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="如：约翰·牛顿" className="input-styled w-full" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1">分类</label>
-              <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="赞美 / 灵修 / 圣诗" className="input-styled w-full" />
+              <label htmlFor="ss-category" className="block text-sm font-medium text-ink-700 mb-1">分类</label>
+              <input id="ss-category" value={category} onChange={(e) => setCategory(e.target.value)} placeholder="赞美 / 灵修 / 圣诗" className="input-styled w-full" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink-700 mb-1">标签（逗号分隔）</label>
-            <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="如：经典,恩典,救恩" className="input-styled w-full" />
+            <label htmlFor="ss-tags" className="block text-sm font-medium text-ink-700 mb-1">标签（逗号分隔）</label>
+            <input id="ss-tags" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="如：经典,恩典,救恩" className="input-styled w-full" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-ink-700 mb-1">歌词 *</label>
-            <textarea value={lyrics} onChange={(e) => setLyrics(e.target.value)} rows={6} placeholder="粘贴或输入歌词…" className="input-styled w-full" />
+            <label htmlFor="ss-lyrics" className="block text-sm font-medium text-ink-700 mb-1">歌词<span aria-hidden="true"> *</span><span className="sr-only">（必填）</span></label>
+            <textarea id="ss-lyrics" required value={lyrics} onChange={(e) => setLyrics(e.target.value)} rows={6} placeholder="粘贴或输入歌词…" className="input-styled w-full" />
           </div>
           {/* 手机上三列会把「原调」挤到 100px 出头，占位文字都放不下，故竖排。 */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-ink-700 mb-1">和弦谱（可选）</label>
-              <textarea value={chords} onChange={(e) => setChords(e.target.value)} rows={4}
+              <label htmlFor="ss-chords" className="block text-sm font-medium text-ink-700 mb-1">和弦谱（可选）</label>
+              <textarea id="ss-chords" value={chords} onChange={(e) => setChords(e.target.value)} rows={4}
                 placeholder={'用 [和弦] 标记，例如：\n[C]Amazing [G]grace how [Am]sweet the [F]sound'}
                 className="input-styled w-full font-mono text-sm" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1">原调</label>
-              <input value={originalKey} onChange={(e) => setOriginalKey(e.target.value)} maxLength={8}
+              <label htmlFor="ss-key" className="block text-sm font-medium text-ink-700 mb-1">原调</label>
+              <input id="ss-key" value={originalKey} onChange={(e) => setOriginalKey(e.target.value)} maxLength={8}
                 placeholder="如 C / G / Am" className="input-styled w-full" />
             </div>
           </div>
           <p className="-mt-1 text-xs text-ink-400">有和弦谱时，诗歌详情页会以和弦谱形式展示，并支持一键移调。</p>
           <div>
-            <label className="block text-sm font-medium text-ink-700 mb-1">音频文件（可选，mp3/wav/m4a，≤30MB）</label>
-            <input type="file" accept="audio/*" onChange={(e) => setAudio(e.target.files?.[0] || null)} className="text-sm text-ink-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-full file:border-0 file:bg-gold-100 file:text-gold-700 file:text-sm file:font-medium" />
+            <label htmlFor="ss-audio" className="block text-sm font-medium text-ink-700 mb-1">音频文件（可选，mp3/wav/m4a，≤30MB）</label>
+            <input id="ss-audio" type="file" accept="audio/*" onChange={(e) => setAudio(e.target.files?.[0] || null)} className="text-sm text-ink-500 file:mr-3 file:px-3 file:py-1.5 file:rounded-full file:border-0 file:bg-gold-100 file:text-gold-700 file:text-sm file:font-medium" />
             {audio && <p className="text-xs text-ink-400 mt-1">{audio.name} ({Math.round(audio.size / 1024 / 1024 * 10) / 10}MB)</p>}
           </div>
 
           {audio && (
             <div className="rounded-2xl bg-gold-50 border border-gold-200 p-4 space-y-3">              <div>
-                <label className="block text-sm font-medium text-ink-700 mb-1.5">这段音频是 *</label>
-                <div className="flex gap-2">
+                {/* 这里不是一个控件而是两个互斥按钮，没有可 htmlFor 的目标，改用 group + labelledby 报出题干 */}
+                <label id="ss-audio-kind" className="block text-sm font-medium text-ink-700 mb-1.5">这段音频是<span aria-hidden="true"> *</span><span className="sr-only">（必填）</span></label>
+                <div className="flex gap-2" role="group" aria-labelledby="ss-audio-kind">
                   {([
                     { id: 'vocal', label: '🎤 真人演唱' },
                     { id: 'instrumental', label: '🎹 纯伴奏' },
@@ -165,8 +170,10 @@ export default function SubmitSongModal({
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-ink-700 mb-1">演唱者与授权说明 *</label>
+                <label htmlFor="ss-credit" className="block text-sm font-medium text-ink-700 mb-1">演唱者与授权说明<span aria-hidden="true"> *</span><span className="sr-only">（必填）</span></label>
                 <input
+                  id="ss-credit"
+                  required
                   value={credit}
                   onChange={(e) => setCredit(e.target.value)}
                   placeholder="如：演唱：光盐诗班 / 已获教会授权发布"
@@ -182,11 +189,12 @@ export default function SubmitSongModal({
           {/* 没有音频也能帮上忙:登记一个外部人声版的收听入口 */}
           <div className="rounded-2xl bg-ui-rail border border-ui-border p-4 space-y-3">
             <div>
-              <label className="block text-sm font-medium text-ink-700 mb-1">
+              <label id="ss-listen" className="block text-sm font-medium text-ink-700 mb-1">
                 也可以只登记：这首歌的人声版在哪儿能听到？
               </label>
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2" role="group" aria-labelledby="ss-listen">
                 <input
+                  aria-label="人声版来源"
                   value={listenSource}
                   onChange={(e) => setListenSource(e.target.value)}
                   placeholder="来源，如 B站"
@@ -194,6 +202,9 @@ export default function SubmitSongModal({
                   className="input-styled w-full sm:w-32 shrink-0"
                 />
                 <input
+                  aria-label="人声版试听链接"
+                  type="url"
+                  inputMode="url"
                   value={listenUrl}
                   onChange={(e) => setListenUrl(e.target.value)}
                   placeholder="https:// 页面链接"
@@ -209,7 +220,7 @@ export default function SubmitSongModal({
           </div>
 
           {msg && (
-            <p className={`text-sm rounded-xl px-3 py-2 ${msg.ok ? 'bg-green-50 text-green-700' : 'bg-rose-50 text-rose-600'}`}>{msg.text}</p>
+            <p role="status" className={`text-sm rounded-xl px-3 py-2 ${msg.ok ? 'bg-green-50 text-green-700' : 'bg-rose-50 text-rose-700'}`}>{msg.text}</p>
           )}
           <button type="submit" disabled={submitting} className="btn-primary w-full py-3">
             {submitting ? '提交中…' : '提交投稿'}

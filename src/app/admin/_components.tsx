@@ -130,7 +130,7 @@ const NAV_GROUPS: {
   ] },
   { group: '运营', items: [
     { href: '/admin/donations', label: '捐赠管理', adminOnly: true },
-    { href: '/admin/expenses', label: '支出公示', adminOnly: true },
+    { href: '/admin/expenses', label: '支出公示管理', adminOnly: true },
     { href: '/admin/feedback', label: '平台建议', module: 'feedback' },
   ] },
   { group: '系统', items: [
@@ -163,8 +163,8 @@ export function AdminNav() {
   })).filter((g) => g.items.length > 0);
 
   return (
-    <aside className="w-52 flex-shrink-0">
-      <div className="glass rounded-2xl p-4 sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
+    <aside className="w-full lg:w-52 flex-shrink-0">
+      <div className="glass rounded-2xl p-3 lg:p-4 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
         <div className="font-display text-lg font-bold text-ink-900 mb-4 px-2">管理后台</div>
         {user ? (
           <div className="px-2 mb-3 space-y-1.5">
@@ -178,17 +178,22 @@ export function AdminNav() {
               <StaffBadges role={user.role} scopes={scopes} compact />
             </div>
             {!isAdmin && user.role === 'moderator' && scopes.length === 0 ? (
-              <div className="text-[11px] text-amber-600">尚未分配任何模块，请联系管理员</div>
+              <div className="text-[11px] text-amber-700">尚未分配任何模块，请联系管理员</div>
             ) : null}
           </div>
         ) : null}
-        <nav className="flex flex-col gap-4">
+        {/* 窄屏把分组侧栏压成一条横向滚动的入口带：w-52 侧栏在 390px 下要吃掉 1/3 宽度，
+            正文只剩 150px，后台 25/37 个页面的按钮和表格因此被挤成 2~6 行。 */}
+        <nav
+          aria-label="后台导航"
+          className="flex gap-3 overflow-x-auto pb-1 lg:flex-col lg:gap-4 lg:overflow-visible lg:pb-0"
+        >
           {groups.map((g) => (
-            <div key={g.group}>
-              <div className="px-2 mb-1 text-[11px] font-semibold uppercase tracking-wider text-ink-400">
+            <div key={g.group} className="shrink-0 lg:shrink lg:w-full">
+              <div className="hidden lg:block px-2 mb-1 text-[11px] font-semibold uppercase tracking-wider text-ink-400">
                 {g.group}
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex gap-1.5 lg:flex-col lg:gap-1">
                 {g.items.map((item) => {
                   const active =
                     item.href === '/admin'
@@ -198,7 +203,7 @@ export function AdminNav() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                      className={`whitespace-nowrap shrink-0 lg:shrink rounded-xl px-3 py-2 text-sm font-medium transition ${
                         active
                           ? 'bg-primary-600 text-white shadow-card'
                           : 'text-ink-600 hover:bg-primary-50 hover:text-primary-700'
@@ -220,9 +225,9 @@ export function AdminNav() {
 export function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex gap-6 items-start">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-start">
         <AdminNav />
-        <div className="flex-1 min-w-0">{children}</div>
+        <div className="admin-scope flex-1 w-full min-w-0">{children}</div>
       </div>
     </div>
   );
@@ -317,8 +322,16 @@ export function ErrorBox({ message, onRetry }: { message?: string; onRetry?: () 
   );
 }
 
-export function SectionTitle({ children }: { children: ReactNode }) {
-  return <h2 className="font-display text-xl font-bold text-ink-900 mb-4">{children}</h2>;
+// 页面自己的标题要传 as="h1"（后台每页的第一个标题就是页面标题，读屏靠它定位），
+// 页面内的分区标题保持默认 h2，否则一份文档里会出现多个 h1。
+export function SectionTitle({
+  children,
+  as: Tag = 'h2',
+}: {
+  children: ReactNode;
+  as?: 'h1' | 'h2';
+}) {
+  return <Tag className="font-display text-xl font-bold text-ink-900 mb-4">{children}</Tag>;
 }
 
 export type { ReviewTask };

@@ -80,7 +80,7 @@ export default function ArticleReader({ title, body }: { title: string; body: st
         <button
           type="button"
           onClick={speech.stop}
-          className="px-3 py-2 rounded-xl text-xs text-ink-500 border border-ink-200 hover:border-rose-200 hover:text-rose-500"
+          className="px-3 py-2 rounded-xl text-xs text-ink-500 border border-ink-200 hover:border-rose-200 hover:text-rose-600"
         >
           停止
         </button>
@@ -114,7 +114,7 @@ export default function ArticleReader({ title, body }: { title: string; body: st
       )}
 
       {speech.ttsError && !speech.clientReady && (
-        <span className="text-xs text-rose-500">⚠ 语音合成暂不可用，请稍后重试</span>
+        <span className="text-xs text-rose-600">⚠ 语音合成暂不可用，请稍后重试</span>
       )}
     </div>
   );

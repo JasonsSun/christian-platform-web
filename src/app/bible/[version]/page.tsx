@@ -73,9 +73,9 @@ export default function VersionBooks() {
             <section key={sec.key} className="mb-12">
               <div className="flex items-center gap-4 mb-6">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ${
-                  sec.key === 'old' ? 'bg-gradient-to-br from-primary-500 to-primary-700 shadow-primary-500/30' : 'bg-gradient-to-br from-gold-500 to-gold-600 shadow-gold-500/30'
+                  sec.key === 'old' ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-primary-500/30' : 'bg-gradient-to-br from-gold-500 to-gold-600 text-ink-950 shadow-gold-500/30'
                 }`}>
-                  <span className="text-white font-bold">{sec.key === 'old' ? '旧' : '新'}</span>
+                  <span className="font-bold">{sec.key === 'old' ? '旧' : '新'}</span>
                 </div>
                 <div>
                   <h2 className="font-display text-xl md:text-3xl font-bold text-ink-900">{sec.title}</h2>
@@ -104,7 +104,7 @@ export default function VersionBooks() {
                               开始阅读
                             </Link>
                           ) : (
-                            <span className="text-xs px-3 py-2 rounded-full bg-ink-100 text-ink-400">暂无数据</span>
+                            <span className="text-xs px-3 py-2 rounded-full bg-ink-100 text-ink-600">暂无数据</span>
                           )}
                         </div>
 

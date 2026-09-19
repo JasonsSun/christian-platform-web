@@ -115,8 +115,8 @@ export default function DonateNewPage() {
       <form onSubmit={submit} className="bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 space-y-6">
         {/* 捐赠名义 */}
         <div>
-          <label className="block text-sm font-medium text-ink-700 mb-2">捐赠名义</label>
-          <div className="grid grid-cols-2 gap-3">
+          <label id="donor-type-label" className="block text-sm font-medium text-ink-700 mb-2">捐赠名义</label>
+          <div className="grid grid-cols-2 gap-3" role="group" aria-labelledby="donor-type-label">
             {(
               [
                 { value: 'personal', title: '个人名义', desc: '展示为「某某 捐赠 ****元」' },
@@ -129,6 +129,7 @@ export default function DonateNewPage() {
                   key={opt.value}
                   type="button"
                   onClick={() => setDonorType(opt.value)}
+                  aria-pressed={active}
                   className={`text-left rounded-2xl border p-4 transition ${
                     active
                       ? 'border-primary-500 bg-primary-50 shadow-soft'
@@ -146,8 +147,11 @@ export default function DonateNewPage() {
         {/* 展示名 / 教会名 */}
         {donorType === 'personal' ? (
           <div>
-            <label className="block text-sm font-medium text-ink-700 mb-1.5">展示名称</label>
+            <label htmlFor="donate-display-name" className="block text-sm font-medium text-ink-700 mb-1.5">展示名称</label>
             <input
+              id="donate-display-name"
+              name="displayName"
+              autoComplete="nickname"
               className="input-styled"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
@@ -158,8 +162,11 @@ export default function DonateNewPage() {
           </div>
         ) : (
           <div>
-            <label className="block text-sm font-medium text-ink-700 mb-1.5">教会名称</label>
+            <label htmlFor="donate-church-name" className="block text-sm font-medium text-ink-700 mb-1.5">教会名称</label>
             <input
+              id="donate-church-name"
+              name="churchName"
+              autoComplete="organization"
               className="input-styled"
               value={churchName}
               onChange={(e) => setChurchName(e.target.value)}
@@ -172,13 +179,15 @@ export default function DonateNewPage() {
 
         {/* 金额 */}
         <div>
-          <label className="block text-sm font-medium text-ink-700 mb-1.5">捐赠金额（元）</label>
-          <div className="flex flex-wrap gap-2 mb-3">
+          {/* 预设金额是一组按钮、没有可 for 的控件，用 aria-labelledby 借用同一个标题 */}
+          <label id="donate-amount-label" htmlFor="donate-amount" className="block text-sm font-medium text-ink-700 mb-1.5">捐赠金额（元）</label>
+          <div className="flex flex-wrap gap-2 mb-3" role="group" aria-labelledby="donate-amount-label">
             {PRESET_AMOUNTS.map((v) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => setAmount(String(v))}
+                aria-pressed={amount === String(v)}
                 className={`px-3 py-1.5 rounded-xl text-sm border transition ${
                   amount === String(v)
                     ? 'border-gold-500 bg-gold-50 text-gold-800'
@@ -190,9 +199,13 @@ export default function DonateNewPage() {
             ))}
           </div>
           <input
+            id="donate-amount"
+            name="amount"
             type="number"
             min={1}
             step={1}
+            inputMode="decimal"
+            aria-required="true"
             className="input-styled"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
@@ -205,8 +218,10 @@ export default function DonateNewPage() {
 
         {/* 留言 */}
         <div>
-          <label className="block text-sm font-medium text-ink-700 mb-1.5">留言 / 祝福（选填）</label>
+          <label htmlFor="donate-message" className="block text-sm font-medium text-ink-700 mb-1.5">留言 / 祝福（选填）</label>
           <textarea
+            id="donate-message"
+            name="message"
             className="input-styled min-h-[90px]"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -220,6 +235,7 @@ export default function DonateNewPage() {
         <label className="flex items-start gap-3 cursor-pointer select-none">
           <input
             type="checkbox"
+            name="anonymous"
             className="mt-0.5 w-4 h-4 accent-primary-600"
             checked={anonymous}
             onChange={(e) => setAnonymous(e.target.checked)}

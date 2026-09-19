@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useId } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiGet, apiPatch, apiPost, apiDelete, apiForm, qs } from '@/lib/api';
@@ -8,7 +8,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useConfirmNav } from '@/lib/confirm';
 import Portal from '@/components/Portal';
-import { useEscape } from '@/lib/a11y';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { useNotice } from '@/lib/notice';
 import { formatDate, formatSize, MEDIA_REVIEW_LABEL } from '@/lib/format';
 import QuotaCard, { type QuotaData } from '@/components/QuotaCard';
@@ -43,7 +43,7 @@ const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南
 function Avatar({ name, color, size = 80, avatarUrl }: { name: string; color: string; size?: number; avatarUrl?: string }) {
   if (avatarUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={avatarUrl} alt={name} className="rounded-full object-cover flex-shrink-0" style={{ width: size, height: size }} />;
+    return <img src={avatarUrl} alt={name} className="rounded-full object-cover flex-shrink-0" style={{ width: size, height: size }}  decoding="async"  loading="eager" />;
   }
   return (
     <div
@@ -125,7 +125,7 @@ export default function MePage() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="absolute inset-0 rounded-full bg-black/60 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute inset-0 rounded-full bg-black/60 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity"
             >
               {uploading ? '上传中…' : '更换头像'}
             </button>
@@ -410,12 +410,12 @@ function EditForm({ form, setForm, onCancel, onDone }: {
 
   return (
     <form onSubmit={save} className="w-full space-y-3 text-left">
-      <input className="input-styled" placeholder="昵称" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
-      <input className="input-styled" placeholder="城市" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} list="cities" />
-      <input className="input-styled" placeholder="教会" value={form.church} onChange={(e) => setForm({ ...form, church: e.target.value })} />
-      <textarea className="input-styled min-h-[80px]" placeholder="个人简介" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
+      <input className="input-styled" aria-label="昵称" placeholder="昵称" value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} />
+      <input className="input-styled" aria-label="城市" placeholder="城市" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} list="cities" />
+      <input className="input-styled" aria-label="教会" placeholder="教会" value={form.church} onChange={(e) => setForm({ ...form, church: e.target.value })} />
+      <textarea className="input-styled min-h-[80px]" aria-label="个人简介" placeholder="个人简介" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
       <datalist id="cities">{CITIES.map((c) => <option key={c} value={c} />)}</datalist>
-      {error && <p className="text-sm text-rose-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-rose-600">{error}</p>}
       <div className="flex gap-3">
         <button type="button" onClick={onCancel} className="btn-secondary flex-1">取消</button>
         <button type="submit" disabled={pending} className="btn-primary flex-1 disabled:opacity-70">{pending ? '保存中…' : '保存'}</button>
@@ -432,7 +432,10 @@ function PasswordModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
   const [error, setError] = useState('');
   const { run, pending } = useAction();
   const notice = useNotice();
+  // 组件由父级条件渲染，挂载即代表已打开
   useEscape(true, onClose);
+  const dlgRef = useDialogFocus(true);
+  const titleId = useId();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -450,20 +453,23 @@ function PasswordModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
 
   return (
     <Portal>
-    <div data-guard="pwd-modal" role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }} onClick={onClose}>
+    <div ref={dlgRef} data-guard="pwd-modal" role="dialog" aria-modal="true" aria-labelledby={titleId} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }} onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-display text-xl font-bold text-ink-900 mb-1">修改密码</h3>
+        <h3 id={titleId} className="font-display text-xl font-bold text-ink-900 mb-1">修改密码</h3>
         <p className="text-sm text-ink-500 mb-5">修改成功后需重新登录，其他设备将全部退出</p>
         <form onSubmit={submit} className="space-y-3">
           <input
+            aria-label="当前密码"
             className="input-styled" type="password" placeholder="当前密码" value={oldPassword}
             onChange={(e) => setOldPassword(e.target.value)} autoComplete="current-password" required
           />
           <input
+            aria-label="新密码"
             className="input-styled" type="password" placeholder="新密码（至少 6 位）" value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)} autoComplete="new-password" required
           />
           <input
+            aria-label="确认新密码"
             className="input-styled" type="password" placeholder="再次输入新密码" value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" required
           />
@@ -485,7 +491,10 @@ function DeleteAccountModal({ onClose, onDone }: { onClose: () => void; onDone: 
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState('');
   const { run, pending } = useAction();
+  // 组件由父级条件渲染，挂载即代表已打开
   useEscape(true, onClose);
+  const dlgRef = useDialogFocus(true);
+  const titleId = useId();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -501,9 +510,9 @@ function DeleteAccountModal({ onClose, onDone }: { onClose: () => void; onDone: 
 
   return (
     <Portal>
-    <div data-guard="delete-account-modal" role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.55)' }} onClick={onClose}>
+    <div ref={dlgRef} data-guard="delete-account-modal" role="dialog" aria-modal="true" aria-labelledby={titleId} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.55)' }} onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-display text-xl font-bold text-rose-700 mb-1">注销账号</h3>
+        <h3 id={titleId} className="font-display text-xl font-bold text-rose-700 mb-1">注销账号</h3>
         <p className="text-sm text-ink-500 mb-4">此操作不可恢复，请谨慎操作</p>
         <ul className="text-sm text-ink-600 space-y-1.5 mb-4 pl-5 list-disc">
           <li>账号将立即退出登录，且无法再登录</li>
@@ -521,6 +530,7 @@ function DeleteAccountModal({ onClose, onDone }: { onClose: () => void; onDone: 
             <span>我已了解注销的后果，确认注销本账号</span>
           </label>
           <input
+            aria-label="输入当前密码确认"
             className="input-styled" type="password" placeholder="输入当前密码确认" value={password}
             onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required
           />

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { LOCALES, type Variant } from '@/lib/i18n/config';
-import { useA11y, type FontScale, type Contrast } from '@/lib/a11y';
+import { useA11y, useDialogFocus, useEscape, type FontScale, type Contrast } from '@/lib/a11y';
 import { useTheme, type Theme } from '@/lib/theme';
 
 /**
@@ -85,6 +85,10 @@ export default function PreferenceMenu({
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  // 下拉面板不是模态框（没有遮罩，Tab 该继续走页面），只需要 Esc 关闭 + 关闭后焦点还给触发按钮
+  const popup = open && !inline;
+  useEscape(popup, () => setOpen(false));
+  const dlgRef = useDialogFocus<HTMLDivElement>(popup, { trap: false, autofocus: false });
 
   const langOptions = LOCALES.map((l) => ({ value: l, label: t('lang.' + l) }));
   const variantOptions = (['s', 't'] as Variant[]).map((v) => ({
@@ -116,6 +120,7 @@ export default function PreferenceMenu({
 
   const panel = (
     <div
+      ref={dlgRef}
       className={`${
         inline ? 'mt-2 w-full' : 'absolute right-0 mt-2 w-72'
       } bg-ui-surface rounded-2xl shadow-card border border-ui-border p-4 space-y-3 z-50 text-ui-text`}

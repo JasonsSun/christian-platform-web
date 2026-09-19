@@ -125,7 +125,7 @@ export default function AdminBiblePage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>圣经管理</SectionTitle>
+      <SectionTitle as="h1">圣经管理</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">
         核对译本收录完整度 · 按卷查阅经文 · 修订录入错误
       </p>
@@ -180,12 +180,13 @@ export default function AdminBiblePage() {
               <span className="ml-2 text-xs text-ink-400 font-normal">点击切换下方书卷与经文</span>
             </div>
             <table className="w-full text-sm">
-              <thead className="bg-ink-50 text-ink-500">
+              <caption className="sr-only">圣经管理</caption>
+              <thead className="bg-ink-50 text-ink-600">
                 <tr>
-                  <th className="text-left px-4 py-3 font-medium">版本</th>
-                  <th className="text-center px-4 py-3 font-medium">书卷</th>
-                  <th className="text-center px-4 py-3 font-medium">章节</th>
-                  <th className="text-center px-4 py-3 font-medium">经文</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">版本</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">书卷</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">章节</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">经文</th>
                 </tr>
               </thead>
               <tbody>
@@ -194,11 +195,18 @@ export default function AdminBiblePage() {
                   return (
                     <tr
                       key={v.version}
-                      onClick={() => { setVersion(v.version); setChapter(1); }}
-                      className={`border-t border-ink-100 cursor-pointer transition ${on ? 'bg-primary-50' : 'hover:bg-ink-50'}`}
+                      className={`border-t border-ink-100 transition ${on ? 'bg-primary-50' : 'hover:bg-ink-50'}`}
                     >
                       <td className="px-4 py-3">
-                        <Badge tone={on ? 'primary' : 'gray'}>{v.version.toUpperCase()}</Badge>
+                        {/* 切换入口必须是真按钮：整行的 onClick 键盘拿不到（且会被按钮冒泡重复触发） */}
+                        <button
+                          type="button"
+                          onClick={() => { setVersion(v.version); setChapter(1); }}
+                          aria-pressed={on}
+                          className="cursor-pointer"
+                        >
+                          <Badge tone={on ? 'primary' : 'gray'}>{v.version.toUpperCase()}</Badge>
+                        </button>
                       </td>
                       <td className="px-4 py-3 text-center">{v.bookCount}</td>
                       <td className="px-4 py-3 text-center">{v.chapterCount}</td>
@@ -221,6 +229,7 @@ export default function AdminBiblePage() {
                   </span>
                 </div>
                 <input
+                  aria-label="在当前译本中搜索书卷"
                   value={bookQuery}
                   onChange={(e) => setBookQuery(e.target.value)}
                   placeholder="搜索书卷…"
@@ -266,6 +275,7 @@ export default function AdminBiblePage() {
             <div className="glass rounded-2xl overflow-hidden shadow-soft">
               <div className="px-4 py-3 border-b border-ink-100 flex flex-wrap items-center gap-2">
                 <select
+                  aria-label="选择圣经译本"
                   value={version}
                   onChange={(e) => { setVersion(e.target.value); setChapter(1); }}
                   className={SELECT_CLS}
@@ -275,6 +285,7 @@ export default function AdminBiblePage() {
                   ))}
                 </select>
                 <select
+                  aria-label="选择书卷"
                   value={bookId}
                   onChange={(e) => { setBookId(e.target.value); setChapter(1); }}
                   className={SELECT_CLS}
@@ -282,6 +293,7 @@ export default function AdminBiblePage() {
                   {books.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
                 <select
+                  aria-label="选择章数"
                   value={chapter}
                   onChange={(e) => setChapter(Number(e.target.value))}
                   className={SELECT_CLS}
@@ -304,6 +316,7 @@ export default function AdminBiblePage() {
                   <Link
                     href={`/bible/${version}/${bookId}/${chapter}`}
                     target="_blank"
+                    rel="noopener noreferrer"
                     className="btn-secondary btn-sm px-3 text-sm"
                   >前台查看 ↗</Link>
                 </div>
@@ -337,6 +350,7 @@ export default function AdminBiblePage() {
                             {isEditing ? (
                               <div className="flex-1">
                                 <textarea
+                                  aria-label={`修订 ${ch.data.book.name} 第 ${ch.data.chapter} 章 第 ${v.verse} 节经文`}
                                   value={editing.text}
                                   onChange={(e) => setEditing({ verse: v.verse, text: e.target.value })}
                                   rows={3}
@@ -360,7 +374,7 @@ export default function AdminBiblePage() {
                                 {canEdit ? (
                                   <button
                                     onClick={() => { action.setError(null); setEditing({ verse: v.verse, text: v.text }); }}
-                                    className="opacity-0 group-hover:opacity-100 text-xs text-primary-600 hover:underline flex-shrink-0 pt-1"
+                                    className="opacity-0 max-md:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 text-xs text-primary-600 hover:underline flex-shrink-0 pt-1 px-2.5 -mx-2.5"
                                   >修订</button>
                                 ) : null}
                               </>

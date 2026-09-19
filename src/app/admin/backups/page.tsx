@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { apiDelete, apiGet, apiPost, apiPatch } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { AdminLayout, Loading, ErrorBox, Empty, Badge } from '../_components';
 import Portal from '@/components/Portal';
 
@@ -31,6 +32,19 @@ export default function AdminBackupsPage() {
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [confirmRestore, setConfirmRestore] = useState<string | null>(null);
   const [restoreInfo, setRestoreInfo] = useState<{ inserted: number } | null>(null);
+
+  // Esc 与焦点管理：判据同遮罩点击，请求进行中不许关；这些 hook 必须在下面的
+  // 权限/加载早返回之前调用，否则早返回那一轮少掉的 hook 会让 React 直接报错。
+  useEscape(!!confirmDel, () => {
+    if (!delAction.pending) setConfirmDel(null);
+  });
+  const delRef = useDialogFocus(!!confirmDel);
+  const delTitleId = useId();
+  useEscape(!!confirmRestore, () => {
+    if (!restoreAction.pending) setConfirmRestore(null);
+  });
+  const restoreRef = useDialogFocus(!!confirmRestore);
+  const restoreTitleId = useId();
 
   if (user && user.role !== 'moderator' && user.role !== 'admin') {
     return <AdminLayout><Empty label="无权限访问" /></AdminLayout>;
@@ -117,6 +131,7 @@ export default function AdminBackupsPage() {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <a
                       href={`/api/v1/admin/backups/${encodeURIComponent(f.name)}`}
+                      aria-label={`下载备份 ${f.name}`}
                       className="text-xs px-3 py-2 rounded-lg border border-ink-200 text-ink-600 hover:bg-ink-50 transition"
                     >
                       下载
@@ -150,9 +165,9 @@ export default function AdminBackupsPage() {
       {/* 删除确认 */}
       {confirmDel && (
         <Portal>
-          <div data-guard="backup-delete" role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }}>
+          <div ref={delRef} data-guard="backup-delete" role="dialog" aria-modal="true" aria-labelledby={delTitleId} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }}>
             <div className="bg-white rounded-2xl shadow-card-hover max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-              <h3 className="font-display text-lg font-bold text-ink-900 mb-2">删除备份</h3>
+              <h3 id={delTitleId} className="font-display text-lg font-bold text-ink-900 mb-2">删除备份</h3>
               <p className="text-sm text-ink-500 mb-4">
                 确定删除备份文件 <span className="font-mono text-ink-800">{confirmDel}</span> 吗？此操作不可恢复。
               </p>
@@ -171,9 +186,9 @@ export default function AdminBackupsPage() {
       {/* 恢复确认 */}
       {confirmRestore && (
         <Portal>
-          <div data-guard="backup-restore" role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }}>
+          <div ref={restoreRef} data-guard="backup-restore" role="dialog" aria-modal="true" aria-labelledby={restoreTitleId} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }}>
             <div className="bg-white rounded-2xl shadow-card-hover max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
-              <h3 className="font-display text-lg font-bold text-ink-900 mb-2">恢复备份</h3>
+              <h3 id={restoreTitleId} className="font-display text-lg font-bold text-ink-900 mb-2">恢复备份</h3>
               <p className="text-sm text-ink-500 mb-4">
                 将 <span className="font-mono text-ink-800">{confirmRestore}</span> 的数据回灌到数据库。采用 INSERT IGNORE，<span className="text-gold-700 font-semibold">只补充缺失数据，不会覆盖现有记录</span>。建议恢复前先做一次新备份。
               </p>

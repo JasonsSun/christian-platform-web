@@ -281,7 +281,14 @@ export function MediaUploader({
                     <span className="text-xs text-ink-400 flex-shrink-0">{formatSize(item.size)}</span>
                   </div>
                   {item.status === 'uploading' || item.status === 'pending' ? (
-                    <div className="mt-2">
+                    <div
+                      className="mt-2"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={item.progress}
+                      aria-label={`${item.name} 上传进度`}
+                    >
                       <div className="h-1.5 rounded-full bg-ink-100 overflow-hidden">
                         <div
                           className="h-full bg-gradient-to-r from-primary-600 to-primary-400 transition-all duration-200"
@@ -302,6 +309,7 @@ export function MediaUploader({
                         <Link
                           href={item.result.url}
                           target="_blank"
+                          rel="noopener noreferrer"
                           className="text-primary-600 hover:text-primary-700 ml-1 underline"
                         >
                           查看
@@ -327,7 +335,7 @@ export function MediaUploader({
                   ) : null}
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="text-ink-400 hover:text-rose-500 text-sm w-6 h-6 flex items-center justify-center rounded-lg hover:bg-ink-100 transition-colors"
+                    className="text-ink-400 hover:text-rose-600 text-sm w-6 h-6 flex items-center justify-center rounded-lg hover:bg-ink-100 transition-colors"
                     aria-label="移除"
                   >
                     ✕

@@ -99,7 +99,7 @@ export function LiveGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
                 {step === i && (
                   <div className="mt-2.5 pl-9 text-sm space-y-1.5">
                     <p className="text-ink-600">{s.desc}</p>
-                    <p className="text-xs text-amber-600">⚠️ {s.note}</p>
+                    <p className="text-xs text-amber-700">⚠️ {s.note}</p>
                   </div>
                 )}
               </button>

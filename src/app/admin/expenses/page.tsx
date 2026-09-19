@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { formatDateTime } from '@/lib/format';
+import { scrollBehavior } from '@/lib/motion';
 import { AdminLayout, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
 import type { AdminExpense, AdminExpenseResult } from '@/lib/types';
 
@@ -90,7 +91,7 @@ export default function AdminExpensesPage() {
     setFPeriod(e.period);
     setFStatus(e.status);
     setShowForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
   }
 
   async function submitForm() {
@@ -154,7 +155,7 @@ export default function AdminExpensesPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Link href="/donate/transparency" className="btn-secondary" target="_blank">查看公示页</Link>
+          <Link href="/donate/transparency" className="btn-secondary" target="_blank" rel="noopener noreferrer">查看公示页</Link>
           <button
             className="btn-primary"
             onClick={() => { if (!showForm) resetForm(); setShowForm(!showForm); }}
@@ -192,9 +193,12 @@ export default function AdminExpensesPage() {
               </select>
             </label>
             <label className="block">
-              <span className="text-sm text-ink-600 font-medium">支出事项 *</span>
+              <span className="text-sm text-ink-600 font-medium">
+                支出事项 <span aria-hidden="true">*</span><span className="sr-only">（必填）</span>
+              </span>
               <input
                 className="input-styled mt-1"
+                aria-required="true"
                 placeholder="如：10月服务器续费"
                 value={fTitle}
                 maxLength={120}
@@ -202,22 +206,28 @@ export default function AdminExpensesPage() {
               />
             </label>
             <label className="block">
-              <span className="text-sm text-ink-600 font-medium">金额（元）*</span>
+              <span className="text-sm text-ink-600 font-medium">
+                金额（元）<span aria-hidden="true">*</span><span className="sr-only">（必填）</span>
+              </span>
               <input
                 className="input-styled mt-1"
                 type="number"
                 min="0.01"
                 step="0.01"
+                inputMode="decimal"
+                aria-required="true"
                 placeholder="如 199.00"
                 value={fAmount}
                 onChange={(e) => setFAmount(e.target.value)}
               />
             </label>
+            {/* 归属月份落库格式固定为 YYYY-MM（POST/PUT 均按 /^\d{4}-\d{2}$/ 校验），留空即回落到本月 */}
             <label className="block">
               <span className="text-sm text-ink-600 font-medium">归属月份</span>
               <input
                 className="input-styled mt-1"
-                placeholder="YYYY-MM，留空默认本月"
+                type="month"
+                aria-label="归属月份，留空默认本月"
                 value={fPeriod}
                 onChange={(e) => setFPeriod(e.target.value)}
               />
@@ -299,15 +309,16 @@ export default function AdminExpensesPage() {
           <div className="glass rounded-2xl overflow-hidden shadow-soft">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-ink-50 text-ink-500">
+                <caption className="sr-only">支出公示管理</caption>
+                <thead className="bg-ink-50 text-ink-600">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium">归属月份</th>
-                    <th className="text-left px-4 py-3 font-medium">分类</th>
-                    <th className="text-left px-4 py-3 font-medium">支出事项</th>
-                    <th className="text-right px-4 py-3 font-medium">金额</th>
-                    <th className="text-left px-4 py-3 font-medium">状态</th>
-                    <th className="text-left px-4 py-3 font-medium">录入时间</th>
-                    <th className="text-left px-4 py-3 font-medium">操作</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">归属月份</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">分类</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">支出事项</th>
+                    <th scope="col" className="text-right px-4 py-3 font-medium">金额</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">状态</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">录入时间</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">操作</th>
                   </tr>
                 </thead>
                 <tbody>

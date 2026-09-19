@@ -97,7 +97,7 @@ export default function LocationMap({
   if (failed) {
     return (
       <div
-        className="rounded-2xl border border-ink-100 bg-ink-50 flex items-center justify-center text-center text-sm text-ink-400 px-4"
+        className="rounded-2xl border border-ink-100 bg-ink-50 flex items-center justify-center text-center text-sm text-ink-600 px-4"
         style={{ height }}
       >
         地图组件加载失败，请检查网络后刷新

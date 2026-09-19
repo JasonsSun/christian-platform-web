@@ -17,7 +17,7 @@ function Avatar({ user, size = 36 }: { user: Author; size?: number }) {
   return (
     <span
       className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
-      style={{ backgroundColor: user.avatarColor || '#4f6df5', width: size, height: size, fontSize: size * 0.4 }}
+      style={{ backgroundColor: user.avatarColor || '#3d52d9', width: size, height: size, fontSize: size * 0.4 }}
     >
       {(user.displayName || user.username || '?').slice(0, 1)}
     </span>
@@ -33,7 +33,7 @@ const TYPE_TABS = [
 
 const TYPE_BADGE: Record<string, { label: string; cls: string }> = {
   testimony: { label: '见证', cls: 'bg-gold-50 text-gold-700 border-gold-200' },
-  prayer: { label: '代祷', cls: 'bg-rose-50 text-rose-600 border-rose-200' },
+  prayer: { label: '代祷', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
   article: { label: '分享', cls: 'bg-primary-50 text-primary-700 border-primary-200' },
   devotion: { label: '灵修', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   media: { label: '媒体', cls: 'bg-violet-50 text-violet-700 border-violet-200' },
@@ -202,6 +202,7 @@ export default function CommunityPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   <input
+                    aria-label="搜索社区内容"
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="搜索文章、见证、代祷、分享…"
@@ -224,7 +225,7 @@ export default function CommunityPage() {
               </div>
 
               {error && (
-                <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl p-4 text-sm">{error}</div>
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm">{error}</div>
               )}
 
               {loading && (
@@ -274,9 +275,9 @@ export default function CommunityPage() {
                               <span className="text-xs text-ink-400">#{item.tags[0]}</span>
                             )}
                           </div>
-                          <h3 className="font-display font-bold text-lg text-ink-900 truncate group-hover:text-primary-700 transition-colors">
+                          <h2 className="font-display font-bold text-lg text-ink-900 truncate group-hover:text-primary-700 transition-colors">
                             {item.title}
-                          </h3>
+                          </h2>
                           <p className="text-sm text-ink-500 line-clamp-2 mt-1 leading-relaxed">
                             {item.excerpt || item.body?.slice(0, 80)}
                           </p>
@@ -293,7 +294,7 @@ export default function CommunityPage() {
                             aria-pressed={item.liked}
                             aria-label={`点赞，当前 ${item.likeCount} 赞`}
                             className={`flex items-center gap-1 py-1.5 -my-1.5 px-2 -mx-2 transition-all ${
-                              item.liked ? 'text-rose-500 scale-105' : 'text-ink-500 hover:text-rose-500'
+                              item.liked ? 'text-rose-600 scale-105' : 'text-ink-500 hover:text-rose-600'
                             }`}
                           >
                             <svg className="w-4 h-4" fill={item.liked ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
@@ -343,6 +344,7 @@ export default function CommunityPage() {
 
                 <div className="flex gap-2 mb-4">
                   <input
+                    aria-label="代祷事项内容"
                     value={prayerBody}
                     onChange={(e) => setPrayerBody(e.target.value)}
                     placeholder="写下你的代祷事项…"
@@ -353,7 +355,7 @@ export default function CommunityPage() {
                     发布
                   </button>
                 </div>
-                {prayerAction.error && <p className="text-rose-500 text-xs mb-2">{prayerAction.error}</p>}
+                {prayerAction.error && <p className="text-rose-600 text-xs mb-2">{prayerAction.error}</p>}
 
                 {prayersLoading && (
                   <div className="space-y-3">
@@ -428,7 +430,7 @@ export default function CommunityPage() {
                         {g.cover || '👥'}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-ink-900 truncate">{g.name}</h3>
+                        <h2 className="font-semibold text-ink-900 truncate">{g.name}</h2>
                         <p className="text-xs text-ink-500">{g.memberCount} 成员 · {g.city || '线上'}</p>
                       </div>
                       <svg className="w-4 h-4 text-ink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -443,7 +445,7 @@ export default function CommunityPage() {
               {/* 发布 CTA */}
               <div className="bg-gradient-to-br from-primary-600 to-primary-800 rounded-3xl p-6 text-white relative overflow-hidden shadow-card-hover">
                 <div className="absolute -top-6 -right-6 w-24 h-24 bg-gold-400/20 rounded-full blur-2xl" />
-                <h3 className="font-display text-xl font-bold mb-2 relative">分享你的故事</h3>
+                <h2 className="font-display text-xl font-bold mb-2 relative">分享你的故事</h2>
                 <p className="text-white/80 text-sm mb-4 relative">发布文章、见证或代祷，与弟兄姊妹同行。</p>
                 <Link href="/community/create" className="relative block w-full py-3 rounded-xl bg-white text-primary-700 font-semibold text-center hover:bg-primary-50 transition-colors">
                   立即发布

@@ -126,3 +126,79 @@ export function useEscape(active: boolean, onClose: () => void) {
     return () => window.removeEventListener('keydown', onKey);
   }, [active]);
 }
+
+const FOCUSABLE =
+  'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+const isReachable = (el: HTMLElement) =>
+  !el.hidden && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+
+/**
+ * 弹层焦点管理：打开时把焦点移进弹层，Tab 在内部循环，关闭后还给原来的触发按钮。
+ *
+ * 站里 14 处 role="dialog" + aria-modal="true" 此前一处都没做这件事：
+ * aria-modal 告诉读屏"背景不存在"，而 Tab 照样走进背景页，键盘用户既看不见弹层
+ * 也回不来。返回的 ref 挂到弹层根节点上即可，active=false 时完全不挂监听。
+ *
+ * 非模态的下拉面板（没有遮罩、Tab 本来就该继续走页面）传 trap:false / autofocus:false，
+ * 只借用它「关闭后把焦点还给触发按钮」这一段。
+ */
+export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
+  active: boolean,
+  opts: { trap?: boolean; autofocus?: boolean } = {},
+) {
+  const { trap = true, autofocus = true } = opts;
+  const ref = useRef<T | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    const opener = document.activeElement as HTMLElement | null;
+    let node: T | null = null;
+    let raf = 0;
+    let watching = true;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab' || !node) return;
+      const items = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(isReachable);
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const now = document.activeElement;
+      if (e.shiftKey && (now === first || now === node || !node.contains(now))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (now === last || !node.contains(now))) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    // Portal 首帧渲染 null、挂载后的下一个 commit 才把浮层搬进 body，
+    // 所以这里要等 ref 真正拿到节点，否则监听器挂在一个不存在的节点上（既不自动聚焦也拦不住 Tab）。
+    let tries = 0;
+    const attach = () => {
+      if (!watching) return;
+      node = ref.current;
+      if (!node) {
+        if (++tries > 30) return;
+        raf = requestAnimationFrame(attach);
+        return;
+      }
+      // 捕获阶段：抢在页面自己的空格/方向键全局监听之前拿到 Tab
+      if (trap) document.addEventListener('keydown', onKey, true);
+      if (autofocus) {
+        const first = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(isReachable)[0];
+        (first || node).focus({ preventScroll: true });
+      }
+    };
+    attach();
+
+    return () => {
+      watching = false;
+      cancelAnimationFrame(raf);
+      document.removeEventListener('keydown', onKey, true);
+      if (opener && isReachable(opener)) opener.focus({ preventScroll: true });
+    };
+  }, [active, trap, autofocus]);
+  return ref;
+}
+

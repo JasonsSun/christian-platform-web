@@ -153,21 +153,19 @@ function NotificationToast({
         <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center text-lg flex-shrink-0">
           🔔
         </div>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pr-4">
           <p className="font-semibold text-ink-900 text-sm truncate">{n.title}</p>
           <p className="text-xs text-ink-500 mt-0.5 line-clamp-2">{n.body}</p>
         </div>
-        <span
-          role="button"
-          tabIndex={-1}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClose();
-          }}
-          className="text-ink-500 hover:text-ink-700 text-xs flex-shrink-0"
-        >
-          ✕
-        </span>
+      </button>
+      {/* 关闭键必须与整块可点按钮平级：嵌进 <button> 既是非法 HTML，tabIndex=-1 也让键盘彻底够不到 */}
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="关闭提醒"
+        className="absolute top-2 right-1.5 w-7 h-7 grid place-items-center rounded-full text-ink-500 hover:text-ink-700 hover:bg-ink-100/70"
+      >
+        ✕
       </button>
     </div>
   );

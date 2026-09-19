@@ -88,12 +88,12 @@ export default function AdminReportsPage() {
       <p className="text-ink-500 text-sm mb-6">处理用户提交的内容举报，维护社区秩序</p>
 
       {/* status tabs */}
-      <div className="flex gap-2 mb-6 border-b border-ink-200">
+      <div className="flex flex-wrap gap-2 mb-6 border-b border-ink-200">
         {STATUS_TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setStatus(t.key)}
-            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
               status === t.key ? 'border-primary-500 text-primary-700' : 'border-transparent text-ink-500 hover:text-ink-700'
             }`}
           >
@@ -104,7 +104,7 @@ export default function AdminReportsPage() {
 
       {loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
       {error && (
-        <div className="py-10 text-center rounded-2xl bg-rose-50 text-rose-700">
+        <div role="alert" className="py-10 text-center rounded-2xl bg-rose-50 text-rose-700">
           <div>{error}</div>
           <button className="btn-secondary mt-3" onClick={reload}>重试</button>
         </div>
@@ -191,12 +191,13 @@ function ReportCard({ report, onChanged }: { report: ReportItem; onChanged: () =
             <div className="w-full rounded-xl bg-rose-50 border border-rose-200 p-3 space-y-2">
               <p className="text-sm font-semibold text-rose-700">确认成立该举报？内容将被下架，此操作不可撤销。</p>
               <input
+                aria-label="举报成立下架原因"
                 value={upholdReason}
                 onChange={(e) => setUpholdReason(e.target.value)}
                 placeholder="处理原因（选填）"
                 className="input-styled"
               />
-              {action.error && <p className="text-xs text-rose-600">{action.error}</p>}
+              {action.error && <p role="alert" className="text-xs text-rose-600">{action.error}</p>}
               <div className="flex gap-2">
                 <button onClick={() => setConfirmUpheld(false)} className="btn-secondary flex-1 text-sm">取消</button>
                 <button

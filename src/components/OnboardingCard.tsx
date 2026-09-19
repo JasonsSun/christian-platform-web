@@ -39,13 +39,20 @@ export default function OnboardingCard() {
         <div className="rounded-2xl border border-primary-100 bg-white shadow-soft p-5 md:p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <h3 className="font-display font-bold text-ink-900 text-lg">新朋友，从这里开始</h3>
+              <h2 className="font-display font-bold text-ink-900 text-lg">新朋友，从这里开始</h2>
               <p className="text-sm text-ink-500 mt-1">完成 {data.total} 个起步任务，快速融入社区（{data.doneCount}/{data.total}）</p>
             </div>
             <button onClick={dismiss} className="text-xs text-ink-400 hover:text-ink-600 whitespace-nowrap">不再显示 ✕</button>
           </div>
 
-          <div className="mt-4 h-2 rounded-full bg-ink-100 overflow-hidden">
+          <div
+            className="mt-4 h-2 rounded-full bg-ink-100 overflow-hidden"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(pct)}
+            aria-label="新手任务完成进度"
+          >
             <div className="h-full bg-primary-600 transition-all" style={{ width: `${pct}%` }} />
           </div>
 
@@ -60,7 +67,7 @@ export default function OnboardingCard() {
                 }`}
               >
                 <span className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${
-                  s.done ? 'bg-emerald-700 text-white' : 'bg-ink-100 text-ink-400'
+                  s.done ? 'bg-emerald-700 text-white' : 'bg-ink-100 text-ink-600'
                 }`}>
                   {s.done ? '✓' : ''}
                 </span>

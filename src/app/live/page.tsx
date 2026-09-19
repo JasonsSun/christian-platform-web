@@ -94,9 +94,11 @@ export default function LiveListPage() {
               审核通过后系统会发通知,点通知直达开播页,开播页内已有开播指南引导。 */}
           {!isStaff && (
             <div className="mb-5">
-              <label className="block text-sm font-semibold text-ink-700 mb-2">
-                现场视频审核材料 <span className="text-rose-500">*</span>
-              </label>
+              {/* 下面是 MediaUploader（一组控件），指不到单个 input，所以是说明文字而非 label */}
+              <p className="block text-sm font-semibold text-ink-700 mb-2">
+                现场视频审核材料 <span className="text-rose-600" aria-hidden="true">*</span>
+                <span className="sr-only">（必填）</span>
+              </p>
               <p className="text-xs text-ink-400 mb-3 leading-relaxed">
                 普通用户开播前需先通过审核。请上传一段<b>现场短视频</b>（手机拍几秒当前现场即可），
                 证明你现在可以进行现场直播。审核通过后系统会发通知，点通知即可进入开播页。
@@ -129,10 +131,14 @@ export default function LiveListPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="live-title" className="block text-sm font-semibold text-ink-700 mb-2">
-                直播标题 <span className="text-rose-500">*</span>
+                直播标题 <span className="text-rose-600" aria-hidden="true">*</span>
+                <span className="sr-only">（必填）</span>
               </label>
               <input
                 id="live-title"
+                name="title"
+                // 不是原生 form 提交（点按钮走 createRoom 自行校验），required 不生效，用 aria-required 表达必填
+                aria-required="true"
                 className="input-styled"
                 placeholder="例如：主日崇拜直播"
                 value={title}
@@ -147,6 +153,7 @@ export default function LiveListPage() {
               </label>
               <textarea
                 id="live-desc"
+                name="description"
                 className="input-styled min-h-[88px] resize-y"
                 placeholder="简单介绍本场直播的主题、讲员或流程…"
                 value={desc}
@@ -160,6 +167,7 @@ export default function LiveListPage() {
               </label>
               <input
                 id="live-scheduled"
+                name="scheduledAt"
                 type="datetime-local"
                 className="input-styled"
                 value={scheduledAt}
@@ -170,6 +178,7 @@ export default function LiveListPage() {
             <label className="flex items-start gap-3 rounded-xl px-3.5 py-3 bg-ink-50/70 border border-ink-100 text-sm cursor-pointer select-none transition-colors hover:bg-ink-100/70">
               <input
                 type="checkbox"
+                name="recordEnabled"
                 checked={recordEnabled}
                 onChange={(e) => setRecordEnabled(e.target.checked)}
                 className="w-4 h-4 mt-0.5 shrink-0 rounded border-ink-300 text-primary-600 focus:ring-primary-500"
@@ -202,12 +211,12 @@ export default function LiveListPage() {
         </div>
       )}
 
-      <div className="flex gap-2 mt-5 flex-wrap">
-        <button className={`px-3 py-1.5 rounded-full text-sm ${tab === 'live' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('live')}>正在直播</button>
-        <button className={`px-3 py-1.5 rounded-full text-sm ${tab === 'all' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('all')}>全部预告</button>
-        <button className={`px-3 py-1.5 rounded-full text-sm ${tab === 'recordings' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('recordings')}>直播回放</button>
+      <div className="flex gap-2 mt-5 flex-wrap" role="group" aria-label="直播列表筛选">
+        <button aria-pressed={tab === 'live'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'live' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('live')}>正在直播</button>
+        <button aria-pressed={tab === 'all'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'all' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('all')}>全部预告</button>
+        <button aria-pressed={tab === 'recordings'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'recordings' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('recordings')}>直播回放</button>
         {user && (
-          <button className={`px-3 py-1.5 rounded-full text-sm ${tab === 'reminded' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('reminded')}>我的预约</button>
+          <button aria-pressed={tab === 'reminded'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'reminded' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('reminded')}>我的预约</button>
         )}
       </div>
 
@@ -275,7 +284,7 @@ export default function LiveListPage() {
                     <p className="text-xs text-ink-400 mt-1">取消原因:{r.cancelReason}</p>
                   ) : null}
                   {isOwner && r.reviewStatus === 'pending' && !r.cancelled ? (
-                    <p className="text-xs text-amber-600 mt-1">⏳ 等待管理员审核，通过后即可开播</p>
+                    <p className="text-xs text-amber-700 mt-1">⏳ 等待管理员审核，通过后即可开播</p>
                   ) : null}
                   {isOwner && r.reviewStatus === 'rejected' && !r.cancelled ? (
                     <p className="text-xs text-rose-600 mt-1">✕ 审核未通过{r.reviewNote ? `:${r.reviewNote}` : ''}</p>

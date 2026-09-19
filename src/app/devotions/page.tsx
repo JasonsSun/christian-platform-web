@@ -154,7 +154,7 @@ export default function DevotionsPage() {
   const authed = !!user;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-gold-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-gold-50">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         {/* 头部 */}
         <div className="flex items-center justify-between gap-3 mb-6">
@@ -236,6 +236,8 @@ export default function DevotionsPage() {
 
                 <div className="space-y-3">
                   <input
+                    name="title"
+                    aria-label="灵修标题"
                     value={draft.title}
                     onChange={(e) => setDraft({ ...draft, title: e.target.value })}
                     placeholder="标题（可留空）"
@@ -243,6 +245,8 @@ export default function DevotionsPage() {
                     className="w-full px-4 py-2.5 rounded-xl bg-white border border-ink-200 text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
                   />
                   <input
+                    name="ref"
+                    aria-label="关联经文"
                     value={draft.ref}
                     onChange={(e) => setDraft({ ...draft, ref: e.target.value })}
                     placeholder="关联经文，如「诗篇 23:1-6」（可留空）"
@@ -250,13 +254,14 @@ export default function DevotionsPage() {
                     className="w-full px-4 py-2.5 rounded-xl bg-white border border-ink-200 text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
                   />
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs text-ink-400">心情</span>
+                  <div className="flex flex-wrap items-center gap-2" role="group" aria-labelledby="devotion-mood-label">
+                    <span id="devotion-mood-label" className="text-xs text-ink-400">心情</span>
                     {moods.map((m) => (
                       <button
                         key={m}
                         type="button"
                         onClick={() => setDraft({ ...draft, mood: draft.mood === m ? '' : m })}
+                        aria-pressed={draft.mood === m}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
                           draft.mood === m
                             ? 'bg-gradient-to-r from-primary-500 to-primary-700 text-white border-transparent'
@@ -269,6 +274,8 @@ export default function DevotionsPage() {
                   </div>
 
                   <textarea
+                    name="body"
+                    aria-label="灵修内容"
                     value={draft.body}
                     onChange={(e) => setDraft({ ...draft, body: e.target.value })}
                     placeholder="今天神藉着经文对我说了什么？我如何回应？"
@@ -305,9 +312,10 @@ export default function DevotionsPage() {
 
             {/* 筛选 */}
             {(data?.months?.length ?? 0) > 0 && (
-              <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="flex flex-wrap items-center gap-2 mb-4" role="group" aria-label="按月份筛选">
                 <button
                   onClick={() => setMonth('')}
+                  aria-pressed={!month}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
                     !month ? 'bg-ink-800 text-white border-transparent' : 'bg-white text-ink-600 border-ink-200 hover:border-ink-400'
                   }`}
@@ -318,6 +326,7 @@ export default function DevotionsPage() {
                   <button
                     key={m.month}
                     onClick={() => setMonth(month === m.month ? '' : m.month)}
+                    aria-pressed={month === m.month}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
                       month === m.month ? 'bg-ink-800 text-white border-transparent' : 'bg-white text-ink-600 border-ink-200 hover:border-ink-400'
                     }`}
@@ -331,6 +340,8 @@ export default function DevotionsPage() {
 
             <div className="mb-6">
               <input
+                name="q"
+                aria-label="搜索标题、内容或经文"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="搜索标题、内容或经文…"
@@ -340,7 +351,7 @@ export default function DevotionsPage() {
 
             {/* 列表 */}
             {error ? (
-              <p className="text-rose-600 text-sm">{error}</p>
+              <p role="alert" className="text-rose-600 text-sm">{error}</p>
             ) : loading ? (
               <div className="space-y-3">
                 {[0, 1, 2].map((i) => (
@@ -390,7 +401,7 @@ export default function DevotionsPage() {
                               <button
                                 onClick={() => askDelete(it)}
                                 title="删除"
-                                className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-ink-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                                className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-ink-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                               >
                                 ×
                               </button>
@@ -414,6 +425,6 @@ export default function DevotionsPage() {
           </>
         )}
       </div>
-    </main>
+    </div>
   );
 }

@@ -128,7 +128,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-20">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
             <div className="text-white animate-slide-up text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-tech mb-6 max-w-full shadow-[0_0_20px_rgba(79,109,245,0.15)]">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-on-dark mb-6 max-w-full shadow-[0_0_20px_rgba(79,109,245,0.15)]">
                 <span className="w-2 h-2 rounded-full bg-gold-400 animate-pulse shrink-0 shadow-gold" />
                 <div className="relative overflow-hidden marquee-mask w-48 sm:w-60">
                   <div className="marquee-track text-sm font-medium">
@@ -147,16 +147,16 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
               <p className="text-base md:text-lg text-white/80 mb-3 md:mb-4 leading-relaxed font-serif italic">
                 {t('home.heroQuote')}
               </p>
-              <p className="text-white/60 mb-6 md:mb-10 text-sm md:text-base">{t('home.heroQuoteRef')}</p>
+              <p className="text-white/70 mb-6 md:mb-10 text-sm md:text-base">{t('home.heroQuoteRef')}</p>
 
               <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center lg:justify-start">
                 <Link href="/bible" className="btn-gold btn-shimmer text-base w-full sm:w-auto shadow-glow-gold">{t('home.startReading')}</Link>
                 {user ? (
-                  <Link href="/community/create" className="btn-secondary bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 w-full sm:w-auto glass-tech">
+                  <Link href="/community/create" className="btn-secondary bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 w-full sm:w-auto glass-on-dark">
                     {t('home.publishContent')}
                   </Link>
                 ) : (
-                  <Link href="/login" className="btn-secondary bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 w-full sm:w-auto glass-tech">
+                  <Link href="/login" className="btn-secondary bg-white/10 border-white/30 text-white hover:bg-white/20 hover:border-white/50 w-full sm:w-auto glass-on-dark">
                     {t('home.joinCommunity')}
                   </Link>
                 )}
@@ -251,19 +251,19 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-2xl p-5 md:p-6 shadow-soft border border-ink-100">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-display font-bold text-ink-900 flex items-center gap-2">
+              <h2 className="font-display font-bold text-ink-900 flex items-center gap-2">
                 <svg className="w-5 h-5 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 {t('home.recentSearch')}
-              </h3>
+              </h2>
               {recents.length > 0 && (
                 <button
                   onClick={() => {
                     try { localStorage.removeItem(RECENT_SEARCH_KEY); } catch { /* ignore */ }
                     setRecents([]);
                   }}
-                    className="text-xs text-ink-400 hover:text-rose-500 transition-colors"
+                    className="text-xs text-ink-400 hover:text-rose-600 transition-colors"
                   >
                     {t('home.clear')}
                   </button>
@@ -350,7 +350,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
           <div className="space-y-6">
             <div className="bg-white rounded-2xl p-5 shadow-soft">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display font-bold text-ink-900">{t('home.recentEvents')}</h3>
+                <h2 className="font-display font-bold text-ink-900">{t('home.recentEvents')}</h2>
                 <Link href="/activities" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 text-sm hover:underline">{t('home.allEvents')}</Link>
               </div>
               <div className="space-y-3">
@@ -371,7 +371,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
 
             <div className="bg-white rounded-2xl p-5 shadow-soft">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display font-bold text-ink-900">{t('home.hotSongs')}</h3>
+                <h2 className="font-display font-bold text-ink-900">{t('home.hotSongs')}</h2>
                 <Link href="/songs" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 text-sm hover:underline">{t('home.allSongs')}</Link>
               </div>
               <div className="space-y-3">
@@ -389,7 +389,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
 
             <div className="bg-white rounded-2xl p-5 shadow-soft">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display font-bold text-ink-900">{t('home.prayerWall')}</h3>
+                <h2 className="font-display font-bold text-ink-900">{t('home.prayerWall')}</h2>
                 <Link href="/prayers" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 text-sm hover:underline">{t('home.goPray')}</Link>
               </div>
               <div className="space-y-3">
@@ -468,7 +468,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
                     <Link href={`/media/${m.id}`} className="block relative bg-black" style={{ height: 176 }}>
                       {m.posterUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img loading="lazy" src={m.posterUrl} alt={m.title} className="w-full h-full object-cover opacity-90" />
+                        <img loading="lazy" src={m.posterUrl} alt={m.title} className="w-full h-full object-cover opacity-90"  decoding="async" />
                       ) : null}
                       <span className="absolute inset-0 flex items-center justify-center">
                         <span className="w-14 h-14 rounded-full bg-black/60 text-white flex items-center justify-center text-xl backdrop-blur-sm">▶</span>
@@ -487,7 +487,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
                         id: m.id, title: m.title, artist: m.owner || '圣约社区', url: m.url,
                         poster: m.posterUrl, durationSec: m.durationSec,
                       })}
-                      className="w-full relative bg-gradient-to-br from-primary-500 to-primary-800 flex flex-col items-center justify-center gap-2 group"
+                      className="w-full relative bg-gradient-to-br from-primary-600 to-primary-800 flex flex-col items-center justify-center gap-2 group"
                       style={{ height: 176 }}
                     >
                       <span className="w-14 h-14 rounded-full bg-ui-surface text-primary-700 flex items-center justify-center text-xl shadow-card group-hover:scale-110 transition">
@@ -546,11 +546,13 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
       {/* CTA */}
       <section className="py-16 md:py-24">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 rounded-3xl overflow-hidden shadow-card-hover">
-            <div className="absolute -top-20 -right-20 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
+          <div className="relative bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800 rounded-3xl overflow-hidden shadow-card-hover">
+            {/* 右上角这团 white/10 的雾把带子最亮的一档又提亮了 10%：text-white/85 压在
+                primary-600 上本来是 4.94，压在这团雾上只剩 4.11。雾减到 /5、副文案提到 /90。 */}
+            <div className="absolute -top-20 -right-20 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
             <div className="relative px-8 py-14 md:px-16 text-center">
               <h2 className="font-display text-3xl md:text-4xl font-bold text-white mb-4">{t('home.ctaTitle')}</h2>
-              <p className="text-white/85 mb-8">{t('home.ctaSub')}</p>
+              <p className="text-white/90 mb-8">{t('home.ctaSub')}</p>
               <Link href={user ? '/me' : '/login?mode=register'} className="btn-gold text-base px-8 py-4">
                 {user ? t('home.ctaBtnLoggedIn') : t('home.ctaBtnGuest')}
               </Link>

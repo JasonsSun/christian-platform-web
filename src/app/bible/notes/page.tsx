@@ -96,7 +96,7 @@ export default function BibleNotesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-gold-50">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-gold-50">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-10">
         <div className="flex items-center justify-between mb-6 gap-3">
           <div className="min-w-0">
@@ -133,7 +133,8 @@ export default function BibleNotesPage() {
             <span className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-lg flex-shrink-0">📖</span>
             <div className="min-w-0">
               <p className="font-display text-sm font-bold">灵修日记</p>
-              <p className="text-[11px] text-white/85 truncate">把读经的领受写下来，回看神一路的带领</p>
+              {/* 半透明白落在 primary-500 那端实测只有 4.08，11px 小字过不了 AA */}
+              <p className="text-[11px] text-white truncate">把读经的领受写下来，回看神一路的带领</p>
             </div>
           </div>
           <span className="flex-shrink-0 text-sm font-semibold text-white/90 group-hover:translate-x-0.5 transition-transform">›</span>
@@ -196,7 +197,7 @@ export default function BibleNotesPage() {
                           onClick={() => del(it.id)}
                           disabled={deletingId === it.id}
                           title="删除这条高亮 / 笔记"
-                          className="flex-shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg text-ink-500 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                          className="flex-shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg text-ink-500 hover:text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
                         >
                           {deletingId === it.id ? (
                             <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -216,6 +217,6 @@ export default function BibleNotesPage() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }

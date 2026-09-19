@@ -132,13 +132,18 @@ export default function AdminRolesPage() {
             key={m.key}
             type="button"
             title={m.desc}
+            aria-pressed={on}
             disabled={disabled}
             onClick={() => toggle(id, m.key, cur)}
             className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition disabled:opacity-60"
             style={{
               backgroundColor: on ? `${m.color}1f` : 'transparent',
-              borderColor: on ? `${m.color}88` : '#e5e7eb',
-              color: on ? m.color : '#6b7280',
+              // 模块主色只做底色和描边：它本身是 500 档，压在自己的 12% 浅底上只有
+              // 1.93~3.67:1（媒体 🎬 那枚实测 1.93），当 12px 文字根本读不动。
+              // 文字交给主题正文色，选中态靠色块+描边表达，另有 aria-pressed。
+              // 原先写死的 #e5e7eb 描边在深色主题下等于没有边框。
+              borderColor: on ? `${m.color}88` : 'var(--ui-border)',
+              color: 'var(--ui-text)',
             }}
           >
             <span aria-hidden>{m.icon}</span>
@@ -151,7 +156,7 @@ export default function AdminRolesPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>权限中心</SectionTitle>
+      <SectionTitle as="h1">权限中心</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">
         权限等级：管理员 &gt; 模块审核员 &gt; 普通成员。管理员拥有全部模块与系统治理权；
         审核员的能力严格等于这里分配的模块，一人可兼任多个模块。
@@ -202,7 +207,7 @@ export default function AdminRolesPage() {
               取消全部模块即撤销其审核员身份。
             </div>
 
-            {msg ? <div className="mb-3 text-sm text-primary-700">{msg}</div> : null}
+            {msg ? <div role="status" className="mb-3 text-sm text-primary-700">{msg}</div> : null}
 
             {modRows.length === 0 && pending.length === 0 ? (
               <div className="text-sm text-ink-400">还没有模块审核员，可在下方添加。</div>
@@ -277,9 +282,10 @@ export default function AdminRolesPage() {
 
             {/* 搜索添加 */}
             <div className="mt-5 pt-4 border-t border-ink-100">
-              <div className="text-sm text-ink-600 mb-2">添加审核员</div>
+              <label htmlFor="role-member-search" className="block text-sm text-ink-600 mb-2">添加审核员</label>
               <div className="flex gap-2 mb-3">
                 <input
+                  id="role-member-search"
                   className="input-styled flex-1 text-sm"
                   placeholder="按用户名搜索成员"
                   value={q}
@@ -311,11 +317,12 @@ export default function AdminRolesPage() {
             <div className="px-4 py-3 font-medium text-ink-700 border-b border-ink-100">权限矩阵</div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-ink-50 text-ink-500">
+                <caption className="sr-only">权限矩阵</caption>
+                <thead className="bg-ink-50 text-ink-600">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium sticky left-0 bg-ink-50">权限</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium sticky left-0 bg-ink-50">权限</th>
                     {roles.map((r) => (
-                      <th key={r.key} className="text-center px-4 py-3 font-medium whitespace-nowrap">{r.label}</th>
+                      <th scope="col" key={r.key} className="text-center px-4 py-3 font-medium whitespace-nowrap">{r.label}</th>
                     ))}
                   </tr>
                 </thead>

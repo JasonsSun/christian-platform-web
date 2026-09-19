@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { apiDelete, apiGet, apiPost, apiPatch } from '@/lib/api';
@@ -8,7 +8,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { formatDateTime, countdown } from '@/lib/format';
-import { useEscape } from '@/lib/a11y';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
 import type { ActivityItem } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
 import Portal from '@/components/Portal';
@@ -75,6 +75,11 @@ export default function ActivityDetailPage() {
       setCancelOpen(false);
     }
   });
+  // 焦点管理要写在下面的 loading/!data 早返回之前，否则 hook 数量会随渲染变化
+  const cancelRef = useDialogFocus(cancelOpen);
+  const cancelTitleId = useId();
+  const qrRef = useDialogFocus(qrOpen);
+  const qrTitleId = useId();
 
   async function locateByAddress() {
     const q = geoQuery.trim() || `${a.city} ${a.location}`.trim();
@@ -243,7 +248,7 @@ export default function ActivityDetailPage() {
           <span className="text-xl leading-none">🚫</span>
           <div>
             <p className="font-semibold text-rose-700 text-sm">此活动已取消</p>
-            <p className="text-xs text-rose-600/90 mt-1">
+            <p className="text-xs text-rose-700 mt-1">
               活动组织者或平台管理员已取消该活动，参与人已收到通知，无需前往。
             </p>
           </div>
@@ -322,6 +327,7 @@ export default function ActivityDetailPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <input
+                    aria-label="活动地点地址"
                     value={geoQuery}
                     onChange={(e) => setGeoQuery(e.target.value)}
                     placeholder={`地址，如 ${a.city} ${a.location}`}
@@ -466,7 +472,14 @@ export default function ActivityDetailPage() {
                 <span className="text-ink-500">报名进度</span>
                 <span className="font-semibold text-primary-600">{a.confirmedCount}/{a.capacity}</span>
               </div>
-              <div className="h-2.5 rounded-full bg-ink-100 overflow-hidden">
+              <div
+                className="h-2.5 rounded-full bg-ink-100 overflow-hidden"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(percent)}
+                aria-label="报名进度"
+              >
                 <div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-400" style={{ width: `${percent}%` }} />
               </div>
               {a.waitlistCount > 0 && <p className="text-xs text-gold-600 mt-2">另有 {a.waitlistCount} 人候补</p>}
@@ -482,7 +495,7 @@ export default function ActivityDetailPage() {
               // 创建人默认就是第一参与人，无需报名；创建后即自动写入报名记录
               <div className="rounded-xl bg-primary-50 border border-primary-100 px-4 py-3 text-center">
                 <p className="text-sm font-semibold text-primary-700">你是本活动创建人</p>
-                <p className="text-xs text-primary-600/80 mt-1">已自动加入参与者，无需报名</p>
+                <p className="text-xs text-primary-700 mt-1">已自动加入参与者，无需报名</p>
               </div>
             ) : a.registered ? (
               <button onClick={handleCancel} disabled={busy || pending} className="btn-secondary w-full disabled:opacity-70">
@@ -552,15 +565,17 @@ export default function ActivityDetailPage() {
       {cancelOpen && (
         <Portal>
           <div
+            ref={cancelRef}
             data-guard="activity-cancel-modal"
             role="dialog"
             aria-modal="true"
+            aria-labelledby={cancelTitleId}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: 'rgba(17,24,39,0.45)' }}
             onClick={() => !busy && setCancelOpen(false)}
           >
             <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-              <h3 className="font-display text-xl font-bold text-ink-900 mb-1">取消活动</h3>
+              <h3 id={cancelTitleId} className="font-display text-xl font-bold text-ink-900 mb-1">取消活动</h3>
               <p className="text-sm text-ink-500 mb-3">
                 确定要取消「{a.title}」吗？取消后活动将标记为已取消，
                 <span className="text-rose-700 font-semibold">
@@ -568,8 +583,9 @@ export default function ActivityDetailPage() {
                 </span>
                 ，无需他们同意。
               </p>
-              <label className="block text-xs text-ink-500 mb-1.5">取消原因（选填，会一并发给参与人）</label>
+              <label htmlFor="cancel-reason-input" className="block text-xs text-ink-500 mb-1.5">取消原因（选填，会一并发给参与人）</label>
               <textarea
+                id="cancel-reason-input"
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 rows={3}
@@ -605,9 +621,11 @@ export default function ActivityDetailPage() {
       {qrOpen && (
         <Portal>
           <div
+            ref={qrRef}
             data-guard="activity-qr-modal"
             role="dialog"
             aria-modal="true"
+            aria-labelledby={qrTitleId}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: 'rgba(17,24,39,0.45)' }}
             onClick={() => !qrAction.pending && setQrOpen(false)}
@@ -616,12 +634,12 @@ export default function ActivityDetailPage() {
               className="bg-white rounded-2xl shadow-card-hover max-w-sm w-full p-6 text-center"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="font-display text-lg font-bold text-ink-900 mb-3">签到二维码</h3>
+              <h3 id={qrTitleId} className="font-display text-lg font-bold text-ink-900 mb-3">签到二维码</h3>
               {qrData ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={qrData} alt="签到二维码" className="mx-auto w-60 h-60 rounded-xl" />
+                <img src={qrData} alt="签到二维码" className="mx-auto w-60 h-60 rounded-xl"  decoding="async"  loading="eager" />
               ) : (
-                <div className="mx-auto w-60 h-60 rounded-xl bg-ink-100 flex items-center justify-center text-ink-400 text-sm">
+                <div className="mx-auto w-60 h-60 rounded-xl bg-ink-100 flex items-center justify-center text-ink-600 text-sm">
                   生成中…
                 </div>
               )}

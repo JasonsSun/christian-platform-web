@@ -105,7 +105,7 @@ export default function AdminContentsPage() {
     <AdminLayout>
       <div className="flex items-start justify-between gap-4 mb-1">
         <h1 className="font-display text-2xl font-bold text-ink-900">内容管理</h1>
-        <Link href="/admin/reviews" className="text-sm text-primary-600 hover:underline flex-shrink-0">
+        <Link href="/admin/reviews" className="text-sm text-primary-600 hover:underline flex-shrink-0 py-3 -my-3">
           去审核队列 →
         </Link>
       </div>
@@ -119,7 +119,7 @@ export default function AdminContentsPage() {
           <button
             key={t.key}
             onClick={() => { setStatus(t.key); setPage(1); setSelected([]); }}
-            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
               status === t.key ? 'border-primary-500 text-primary-700' : 'border-transparent text-ink-500 hover:text-ink-700'
             }`}
           >
@@ -138,6 +138,7 @@ export default function AdminContentsPage() {
           onSubmit={(e) => { e.preventDefault(); setPage(1); setSearch(kw.trim()); }}
         >
           <input
+            aria-label="搜索标题 / 正文 / 标签 / 作者"
             value={kw}
             onChange={(e) => setKw(e.target.value)}
             placeholder="搜索标题 / 正文 / 标签 / 作者"
@@ -152,6 +153,7 @@ export default function AdminContentsPage() {
         </form>
         <select
           value={type}
+          aria-label="按内容类型筛选"
           onChange={(e) => { setType(e.target.value); setPage(1); setSelected([]); }}
           className="input-styled w-32"
         >
@@ -171,7 +173,7 @@ export default function AdminContentsPage() {
           <button onClick={() => doBulk('pending_review')} disabled={bulk.pending} className="btn-secondary text-xs disabled:opacity-70">退回待审</button>
           <button onClick={() => setPendingDelete(selected)} disabled={bulk.pending} className="btn-secondary text-xs text-rose-600 border-rose-200 disabled:opacity-70">删除</button>
           <button onClick={() => setSelected([])} className="text-xs text-ink-500 ml-auto">取消选择</button>
-          {bulk.error && <p className="w-full text-xs text-rose-600">{bulk.error}</p>}
+          {bulk.error && <p role="alert" className="w-full text-xs text-rose-600">{bulk.error}</p>}
         </div>
       )}
 
@@ -182,42 +184,47 @@ export default function AdminContentsPage() {
       {!loading && !error && items.length > 0 && (
         <>
           <div className="bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-ink-50 text-ink-500 text-xs">
-                <tr>
-                  <th className="w-10 px-3 py-2.5">
+            {/* 窄屏下让表格横向滚动，而不是把 8 列压成 14px 宽的竖排（探针实测 390px 下
+                作者列 14px、标题列 28px，一个名字换 3~6 行）。min-w 按固定列宽合计 648px
+                再加标题的 180px 取的，和 /admin/users 同一套写法。 */}
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[860px] text-sm">
+              <caption className="sr-only">内容管理</caption>
+              <thead className="bg-ink-50 text-ink-600 text-xs">
+                <tr className="whitespace-nowrap">
+                  <th scope="col" className="w-10 px-3 py-2.5">
                     <input
+                      aria-label="全选本页内容"
                       type="checkbox"
                       checked={allChecked}
                       onChange={() => setSelected(allChecked ? [] : items.map((i) => i.id))}
-                      aria-label="全选本页"
                     />
                   </th>
-                  <th className="text-left px-3 py-2.5 font-medium">标题</th>
-                  <th className="text-left px-3 py-2.5 font-medium w-24">作者</th>
-                  <th className="text-left px-3 py-2.5 font-medium w-20">类型</th>
-                  <th className="text-left px-3 py-2.5 font-medium w-24">状态</th>
-                  <th className="text-right px-3 py-2.5 font-medium w-28">数据</th>
-                  <th className="text-left px-3 py-2.5 font-medium w-24">时间</th>
-                  <th className="text-right px-3 py-2.5 font-medium w-32">操作</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-medium">标题</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-medium w-24">作者</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-medium w-20">类型</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-medium w-24">状态</th>
+                  <th scope="col" className="text-right px-3 py-2.5 font-medium w-28">数据</th>
+                  <th scope="col" className="text-left px-3 py-2.5 font-medium w-24">时间</th>
+                  <th scope="col" className="text-right px-3 py-2.5 font-medium w-32">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((c) => (
                   <tr key={c.id} className="border-t border-ink-100 hover:bg-ink-50/60">
                     <td className="px-3 py-3">
-                      <input type="checkbox" checked={selected.includes(c.id)} onChange={() => toggle(c.id)} aria-label={`选择 ${c.title}`} />
+                      <input aria-label={`选择内容「${c.title}」`} type="checkbox" checked={selected.includes(c.id)} onChange={() => toggle(c.id)} />
                     </td>
                     <td className="px-3 py-3">
-                      <Link href={`/contents/${c.id}`} className="font-medium text-ink-800 hover:text-primary-600 line-clamp-1">
+                      <Link href={`/contents/${c.id}`} className="font-medium text-ink-800 hover:text-primary-600 line-clamp-1 py-3 -my-3">
                         {c.title}
                       </Link>
                       <div className="flex flex-wrap items-center gap-1.5 mt-1">
                         {c.tags.split(/[,，]/).filter(Boolean).slice(0, 3).map((t) => (
-                          <span key={t} className="px-1.5 py-0.5 rounded bg-ink-100 text-ink-500 text-[11px]">{t}</span>
+                          <span key={t} className="px-1.5 py-0.5 rounded bg-ink-100 text-ink-600 text-[11px]">{t}</span>
                         ))}
                         {c.openReports > 0 && (
-                          <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-600 text-[11px] font-medium">
+                          <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 text-[11px] font-medium">
                             {c.openReports} 条未处理举报
                           </span>
                         )}
@@ -251,6 +258,7 @@ export default function AdminContentsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* 分页 */}
@@ -273,7 +281,7 @@ export default function AdminContentsPage() {
               将删除 <span className="font-semibold text-rose-600">{pendingDelete.length}</span> 篇内容，其下的评论、点赞与收藏会一并清除。
               此操作不可撤销，建议优先使用「下架」。
             </p>
-            {bulk.error && <p className="text-xs text-rose-600 mb-3">{bulk.error}</p>}
+            {bulk.error && <p role="alert" className="text-xs text-rose-600 mb-3">{bulk.error}</p>}
             <div className="flex gap-3">
               <button onClick={() => setPendingDelete([])} className="flex-1 py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm">取消</button>
               <button

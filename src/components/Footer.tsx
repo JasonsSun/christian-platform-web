@@ -54,10 +54,10 @@ export default function Footer() {
 
           {/* 功能 */}
           <div>
-            <h3 className="font-semibold text-lg mb-6 flex items-center gap-2">
+            <h2 className="font-semibold text-lg mb-6 flex items-center gap-2">
               <span className="w-1 h-6 bg-gradient-to-b from-primary-400 to-gold-400 rounded-full" />
               {t('footer.coreFeatures')}
-            </h3>
+            </h2>
             <ul className="space-y-3">
               {[
                 { key: 'footer.features.bible', href: '/bible' },
@@ -90,14 +90,14 @@ export default function Footer() {
 
           {/* 社区 */}
           <div>
-            <h3 className="font-semibold text-lg mb-6 flex items-center gap-2">
+            <h2 className="font-semibold text-lg mb-6 flex items-center gap-2">
               <span className="w-1 h-6 bg-gradient-to-b from-primary-400 to-gold-400 rounded-full" />
               {t('footer.community')}
-            </h3>
+            </h2>
             <ul className="space-y-3">
               {[
                 { tkey: 'footer.communityList.testimony', href: '/community' },
-                { tkey: 'footer.communityList.prayer', href: '/community' },
+                { tkey: 'footer.communityList.prayer', href: '/prayers' },
                 { tkey: 'footer.communityList.notify', href: '/notifications' },
                 { tkey: 'footer.communityList.message', href: '/messages' },
               ].filter((item) => !isOff(item.href)).map((item) => (
@@ -116,10 +116,10 @@ export default function Footer() {
 
           {/* 联系我们 */}
           <div>
-            <h3 className="font-semibold text-lg mb-6 flex items-center gap-2">
+            <h2 className="font-semibold text-lg mb-6 flex items-center gap-2">
               <span className="w-1 h-6 bg-gradient-to-b from-primary-400 to-gold-400 rounded-full" />
               {t('footer.contact')}
-            </h3>
+            </h2>
             <ul className="space-y-4">
               <li className="flex items-start gap-3 text-ink-400">
                 <svg className="w-5 h-5 text-primary-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -151,10 +151,11 @@ export default function Footer() {
           <p className="text-ink-500 text-sm">
             {t('footer.copyright')}
           </p>
-          <div className="flex gap-6 text-sm">
-            <Link href="#" className="text-ink-500 hover:text-white transition-colors py-2">{t('footer.privacy')}</Link>
-            <Link href="#" className="text-ink-500 hover:text-white transition-colors py-2">{t('footer.terms')}</Link>
-            <Link href="#" className="text-ink-500 hover:text-white transition-colors py-2">{t('footer.help')}</Link>
+          {/* 隐私/条款/帮助尚无落地页：保留文案但不做假链接，避免 Tab 落在无处可去的锚点上 */}
+          <div className="flex gap-6 text-sm text-ink-500">
+            <span>{t('footer.privacy')}</span>
+            <span>{t('footer.terms')}</span>
+            <span>{t('footer.help')}</span>
           </div>
         </div>
       </div>

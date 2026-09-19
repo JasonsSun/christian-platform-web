@@ -101,14 +101,14 @@ export default function AdminQuotasPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>成长与配额</SectionTitle>
+      <SectionTitle as="h1">成长与配额</SectionTitle>
       <p className="text-sm text-ink-500 -mt-2 mb-6">
         按「在线时长 / 使用次数 / 内容贡献 / 违规」计算信任分并自动分级，等级越高可上传的视频越长、文件越大、每日次数越多。
       </p>
 
       {loading ? <Loading /> : null}
       {error ? <ErrorBox message={error} onRetry={reload} /> : null}
-      {msg ? <div className="mb-4 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-2 text-sm text-emerald-700">{msg}</div> : null}
+      {msg ? <div role="status" className="mb-4 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-2 text-sm text-emerald-700">{msg}</div> : null}
 
       {data ? (
         <>
@@ -121,7 +121,7 @@ export default function AdminQuotasPage() {
 
           {/* 等级分布 */}
           <div className="glass rounded-2xl p-5 mb-6">
-            <h3 className="font-semibold text-ink-900 mb-3">等级分布</h3>
+            <h2 className="font-semibold text-ink-900 mb-3">等级分布</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {data.stats.byLevel.map((b: any) => (
                 <div key={b.level} className="rounded-2xl border border-ink-100 bg-ui-surface px-4 py-3">
@@ -141,7 +141,7 @@ export default function AdminQuotasPage() {
           {/* 配额策略：每个等级一张卡，字段带标签，不再横向滚动 */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-ink-900">配额策略（各成长等级上限）</h3>
+              <h2 className="font-semibold text-ink-900">配额策略（各成长等级上限）</h2>
               {!isAdmin ? <span className="text-xs text-ink-400">仅管理员可修改</span> : null}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -171,38 +171,39 @@ export default function AdminQuotasPage() {
                       </button>
                     </div>
 
+                    {/* 非管理员用 readOnly 而非 disabled：disabled 控件不可聚焦，读屏用户根本念不到上限数值 */}
                     <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
                       <Field label="视频大小 (MB)">
-                        <input className="input-styled input-sm w-full text-sm" value={d.maxVideoMb ?? p.maxVideoMb}
-                          onChange={(e) => setDraft(p.level, 'maxVideoMb', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
+                        <input aria-label={`L${p.level} ${p.name} 视频大小上限（MB）`} className="input-styled input-sm w-full text-sm" value={d.maxVideoMb ?? p.maxVideoMb}
+                          onChange={(e) => setDraft(p.level, 'maxVideoMb', e.target.value)} readOnly={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="视频时长" hint={fmtDur(Number(d.maxVideoSeconds ?? p.maxVideoSeconds))}>
-                        <input className="input-styled input-sm w-full text-sm" value={d.maxVideoSeconds ?? p.maxVideoSeconds}
-                          onChange={(e) => setDraft(p.level, 'maxVideoSeconds', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
+                        <input aria-label={`L${p.level} ${p.name} 视频时长上限（秒）`} className="input-styled input-sm w-full text-sm" value={d.maxVideoSeconds ?? p.maxVideoSeconds}
+                          onChange={(e) => setDraft(p.level, 'maxVideoSeconds', e.target.value)} readOnly={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="音乐大小 (MB)">
-                        <input className="input-styled input-sm w-full text-sm" value={d.maxAudioMb ?? p.maxAudioMb}
-                          onChange={(e) => setDraft(p.level, 'maxAudioMb', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
+                        <input aria-label={`L${p.level} ${p.name} 音乐大小上限（MB）`} className="input-styled input-sm w-full text-sm" value={d.maxAudioMb ?? p.maxAudioMb}
+                          onChange={(e) => setDraft(p.level, 'maxAudioMb', e.target.value)} readOnly={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="音乐时长" hint={fmtDur(Number(d.maxAudioSeconds ?? p.maxAudioSeconds))}>
-                        <input className="input-styled input-sm w-full text-sm" value={d.maxAudioSeconds ?? p.maxAudioSeconds}
-                          onChange={(e) => setDraft(p.level, 'maxAudioSeconds', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
+                        <input aria-label={`L${p.level} ${p.name} 音乐时长上限（秒）`} className="input-styled input-sm w-full text-sm" value={d.maxAudioSeconds ?? p.maxAudioSeconds}
+                          onChange={(e) => setDraft(p.level, 'maxAudioSeconds', e.target.value)} readOnly={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="图片大小 (MB)">
-                        <input className="input-styled input-sm w-full text-sm" value={d.maxImageMb ?? p.maxImageMb}
-                          onChange={(e) => setDraft(p.level, 'maxImageMb', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
+                        <input aria-label={`L${p.level} ${p.name} 图片大小上限（MB）`} className="input-styled input-sm w-full text-sm" value={d.maxImageMb ?? p.maxImageMb}
+                          onChange={(e) => setDraft(p.level, 'maxImageMb', e.target.value)} readOnly={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="资料大小 (MB)">
-                        <input className="input-styled input-sm w-full text-sm" value={d.maxDocMb ?? p.maxDocMb}
-                          onChange={(e) => setDraft(p.level, 'maxDocMb', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
+                        <input aria-label={`L${p.level} ${p.name} 资料大小上限（MB）`} className="input-styled input-sm w-full text-sm" value={d.maxDocMb ?? p.maxDocMb}
+                          onChange={(e) => setDraft(p.level, 'maxDocMb', e.target.value)} readOnly={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="每日上传 (次)">
-                        <input className="input-styled input-sm w-full text-sm" value={d.dailyUploads ?? p.dailyUploads}
-                          onChange={(e) => setDraft(p.level, 'dailyUploads', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
+                        <input aria-label={`L${p.level} ${p.name} 每日上传次数上限（次）`} className="input-styled input-sm w-full text-sm" value={d.dailyUploads ?? p.dailyUploads}
+                          onChange={(e) => setDraft(p.level, 'dailyUploads', e.target.value)} readOnly={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="总存储 (MB)">
-                        <input className="input-styled input-sm w-full text-sm" value={d.totalMb ?? Math.round(p.totalBytes / 1048576)}
-                          onChange={(e) => setDraft(p.level, 'totalMb', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
+                        <input aria-label={`L${p.level} ${p.name} 总存储上限（MB）`} className="input-styled input-sm w-full text-sm" value={d.totalMb ?? Math.round(p.totalBytes / 1048576)}
+                          onChange={(e) => setDraft(p.level, 'totalMb', e.target.value)} readOnly={!isAdmin} inputMode="numeric" />
                       </Field>
                     </div>
 
@@ -216,9 +217,9 @@ export default function AdminQuotasPage() {
           {/* 用户画像 */}
           <div className="glass rounded-2xl p-5">
             <div className="flex flex-wrap items-center gap-3 mb-4">
-              <h3 className="font-semibold text-ink-900">
+              <h2 className="font-semibold text-ink-900">
                 用户画像 <span className="text-sm font-normal text-ink-400">共 {data.total} 人</span>
-              </h3>
+              </h2>
               <div className="flex flex-wrap items-center gap-2 ml-auto">
                 <div className="relative">
                   <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -226,13 +227,14 @@ export default function AdminQuotasPage() {
                   </svg>
                   <input
                     className="input-styled input-sm input-icon w-56 pr-3 text-sm"
+                    aria-label="搜索用户名 / 昵称 / 邮箱"
                     placeholder="搜索用户名 / 昵称 / 邮箱"
                     value={kwInput}
                     onChange={(e) => setKwInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { setKw(kwInput); setPage(1); } }}
                   />
                 </div>
-                <select className="input-styled input-sm w-auto text-sm" value={level} onChange={(e) => { setLevel(e.target.value); setPage(1); }}>
+                <select className="input-styled input-sm w-auto text-sm" aria-label="按成长等级筛选" value={level} onChange={(e) => { setLevel(e.target.value); setPage(1); }}>
                   <option value="">全部等级</option>
                   {data.policies.map((p) => <option key={p.level} value={p.level}>L{p.level} {p.name}</option>)}
                 </select>
@@ -245,19 +247,20 @@ export default function AdminQuotasPage() {
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[1000px]">
+                <caption className="sr-only">用户画像</caption>
                 <thead>
                   <tr className="text-left text-ink-500 text-xs border-b border-ink-100">
-                    <th className="py-2.5 pr-3">用户</th>
-                    <th className="py-2.5 pr-3">等级</th>
-                    <th className="py-2.5 pr-3">信任分</th>
-                    <th className="py-2.5 pr-3">在线时长</th>
-                    <th className="py-2.5 pr-3">使用次数</th>
-                    <th className="py-2.5 pr-3">活跃天</th>
-                    <th className="py-2.5 pr-3">内容(通过)</th>
-                    <th className="py-2.5 pr-3">媒体(通过/驳回)</th>
-                    <th className="py-2.5 pr-3">存储</th>
-                    <th className="py-2.5 pr-3">违规</th>
-                    <th className="py-2.5 pr-3" />
+                    <th scope="col" className="py-2.5 pr-3">用户</th>
+                    <th scope="col" className="py-2.5 pr-3">等级</th>
+                    <th scope="col" className="py-2.5 pr-3">信任分</th>
+                    <th scope="col" className="py-2.5 pr-3">在线时长</th>
+                    <th scope="col" className="py-2.5 pr-3">使用次数</th>
+                    <th scope="col" className="py-2.5 pr-3">活跃天</th>
+                    <th scope="col" className="py-2.5 pr-3">内容(通过)</th>
+                    <th scope="col" className="py-2.5 pr-3">媒体(通过/驳回)</th>
+                    <th scope="col" className="py-2.5 pr-3">存储</th>
+                    <th scope="col" className="py-2.5 pr-3">违规</th>
+                    <th scope="col" className="py-2.5 pr-3" />
                   </tr>
                 </thead>
                 <tbody>

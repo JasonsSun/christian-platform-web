@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import { scrollBehavior } from '@/lib/motion';
 
 export interface LyricLine {
   /** 起始秒;无时间轴时为 -1 */
@@ -93,7 +94,7 @@ export default function LyricsView({
     const el = activeRef.current;
     if (!box || !el) return;
     const top = el.offsetTop - box.clientHeight / 2 + el.clientHeight / 2;
-    box.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    box.scrollTo({ top: Math.max(0, top), behavior: scrollBehavior() });
   }, [activeIdx]);
 
   const dark = variant === 'dark';

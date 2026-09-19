@@ -119,7 +119,7 @@ export default function AdminMediaPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>媒体中心</SectionTitle>
+      <SectionTitle as="h1">媒体中心</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">上传审核、文件、转码任务、失败任务与回收站</p>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
@@ -131,24 +131,24 @@ export default function AdminMediaPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <input className="input-styled flex-1 min-w-[160px]" placeholder="搜索标题 / 文件名" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select className="input-styled" value={reviewStatus} onChange={(e) => setReviewStatus(e.target.value)}>
+        <input className="input-styled flex-1 min-w-[160px]" aria-label="搜索标题 / 文件名" placeholder="搜索标题 / 文件名" value={q} onChange={(e) => setQ(e.target.value)} />
+        <select className="input-styled" aria-label="按审核状态筛选" value={reviewStatus} onChange={(e) => setReviewStatus(e.target.value)}>
           <option value="">全部审核状态</option>
           <option value="pending">待审核</option>
           <option value="approved">已通过</option>
           <option value="rejected">已驳回</option>
         </select>
-        <select className="input-styled" value={kind} onChange={(e) => setKind(e.target.value)}>
+        <select className="input-styled" aria-label="按媒体类型筛选" value={kind} onChange={(e) => setKind(e.target.value)}>
           <option value="">全部类型</option>
           {Object.entries(KIND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-        <select className="input-styled" value={status} onChange={(e) => setStatus(e.target.value)}>
+        <select className="input-styled" aria-label="按处理状态筛选" value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">全部状态</option>
           {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
         </select>
       </div>
 
-      {msg ? <div className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
+      {msg ? <div role="status" className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
 
       {loading ? (
         <Loading />
@@ -159,15 +159,16 @@ export default function AdminMediaPage() {
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
           <table className="w-full text-sm">
-            <thead className="bg-ink-50 text-ink-500">
+            <caption className="sr-only">媒体中心</caption>
+            <thead className="bg-ink-50 text-ink-600">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">文件</th>
-                <th className="text-left px-4 py-3 font-medium">类型</th>
-                <th className="text-right px-4 py-3 font-medium">大小</th>
-                <th className="text-center px-4 py-3 font-medium">任务</th>
-                <th className="text-center px-4 py-3 font-medium">处理</th>
-                <th className="text-center px-4 py-3 font-medium">审核</th>
-                <th className="text-right px-4 py-3 font-medium">操作</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">文件</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">类型</th>
+                <th scope="col" className="text-right px-4 py-3 font-medium">大小</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">任务</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">处理</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">审核</th>
+                <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -187,7 +188,7 @@ export default function AdminMediaPage() {
                   <td className="px-4 py-3 text-center">
                     <Badge tone={REVIEW_MAP[m.reviewStatus]?.tone || 'gray'}>{REVIEW_MAP[m.reviewStatus]?.label || m.reviewStatus}</Badge>
                     {m.reviewStatus === 'rejected' && m.reviewReason ? (
-                      <div className="text-[11px] text-rose-500 mt-1 line-clamp-1 max-w-[160px]" title={m.reviewReason}>{m.reviewReason}</div>
+                      <div className="text-[11px] text-rose-600 mt-1 line-clamp-1 max-w-[160px]" title={m.reviewReason}>{m.reviewReason}</div>
                     ) : null}
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -201,12 +202,12 @@ export default function AdminMediaPage() {
                     </button>
                     {m.reviewStatus === 'pending' ? (
                       <>
-                        <button disabled={busy === m.id} onClick={() => review(m.id, 'approve')} className="text-emerald-600 hover:underline disabled:opacity-50 mr-2">通过</button>
+                        <button disabled={busy === m.id} onClick={() => review(m.id, 'approve')} className="text-emerald-700 hover:underline disabled:opacity-50 mr-2">通过</button>
                         <button disabled={busy === m.id} onClick={() => review(m.id, 'reject')} className="text-rose-600 hover:underline disabled:opacity-50 mr-2">驳回</button>
                       </>
                     ) : null}
                     {m.status === 'trashed' ? (
-                      <button disabled={busy === m.id} onClick={() => act(m.id, 'restore')} className="text-emerald-600 hover:underline disabled:opacity-50">恢复</button>
+                      <button disabled={busy === m.id} onClick={() => act(m.id, 'restore')} className="text-emerald-700 hover:underline disabled:opacity-50">恢复</button>
                     ) : (
                       <button disabled={busy === m.id} onClick={() => act(m.id, 'trash')} className="text-ink-500 hover:underline disabled:opacity-50">删除</button>
                     )}

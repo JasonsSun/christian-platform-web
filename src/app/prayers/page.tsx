@@ -24,7 +24,7 @@ function Avatar({ user, size = 40 }: { user: Author; size?: number }) {
     <span
       className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
       style={{
-        backgroundColor: user.avatarColor || '#4f6df5',
+        backgroundColor: user.avatarColor || '#3d52d9',
         width: size,
         height: size,
         fontSize: size * 0.4,
@@ -137,7 +137,7 @@ export default function PrayersPage() {
   );
 
   return (
-    <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* 页头 */}
       <div className="mb-6">
         <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink-900">代祷墙</h1>
@@ -150,6 +150,9 @@ export default function PrayersPage() {
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-soft border border-ink-100 mb-6">
         <div className="flex gap-2">
           <input
+            name="body"
+            aria-label="代祷事项"
+            aria-describedby={postAction.error ? 'prayer-post-error' : undefined}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && submit()}
@@ -165,17 +168,18 @@ export default function PrayersPage() {
             {postAction.pending ? '发布中…' : '发布'}
           </button>
         </div>
-        {postAction.error && <p className="text-rose-500 text-xs mt-2">{postAction.error}</p>}
+        {postAction.error && <p id="prayer-post-error" role="alert" className="text-rose-600 text-xs mt-2">{postAction.error}</p>}
         <p className="text-xs text-ink-400 mt-2">代祷内容公开可见，请勿填写敏感个人信息。</p>
       </div>
 
       {/* 筛选 */}
-      <div className="flex flex-wrap gap-2 mb-5">
+      <div className="flex flex-wrap gap-2 mb-5" role="group" aria-label="代祷筛选">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => { setTab(t.key); setPage(1); }}
             disabled={t.key === 'mine' && !user}
+            aria-pressed={tab === t.key}
             className={`px-4 py-1.5 rounded-full text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
               tab === t.key
                 ? 'bg-primary-600 text-white'
@@ -255,7 +259,7 @@ export default function PrayersPage() {
                       className={`ml-auto flex items-center gap-1 text-xs transition-colors ${
                         p.user.id === user?.id
                           ? 'text-ink-400 hover:text-rose-600'
-                          : 'text-rose-500 hover:text-rose-700 font-medium'
+                          : 'text-rose-600 hover:text-rose-700 font-medium'
                       }`}
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -288,6 +292,6 @@ export default function PrayersPage() {
           </button>
         </div>
       )}
-    </main>
+    </div>
   );
 }

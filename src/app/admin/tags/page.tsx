@@ -59,11 +59,11 @@ export default function AdminTagsPage() {
 
       <div className="flex flex-wrap gap-2 mb-4 max-w-xl">
         <form className="flex gap-2 flex-1 min-w-[220px]" onSubmit={(e) => { e.preventDefault(); setSearch(kw.trim()); }}>
-          <input value={kw} onChange={(e) => setKw(e.target.value)} placeholder="搜索标签" className="input-styled flex-1" />
+          <input aria-label="搜索标签名称" value={kw} onChange={(e) => setKw(e.target.value)} placeholder="搜索标签" className="input-styled flex-1" />
           <button type="submit" className="btn-secondary text-sm">搜索</button>
           {search && <button type="button" onClick={() => { setKw(''); setSearch(''); }} className="btn-secondary text-sm">清空</button>}
         </form>
-        <select value={sort} onChange={(e) => setSort(e.target.value as 'count' | 'name')} className="input-styled w-32">
+        <select aria-label="标签排序方式" value={sort} onChange={(e) => setSort(e.target.value as 'count' | 'name')} className="input-styled w-32">
           <option value="count">按使用量</option>
           <option value="name">按名称</option>
         </select>
@@ -91,6 +91,7 @@ export default function AdminTagsPage() {
                 {op === 'rename' ? '将' : '将'} <span className="font-semibold">{selected.join('、')}</span> {op === 'merge' ? '合并为' : '重命名为'}
               </span>
               <input
+                aria-label={op === 'merge' ? '合并后的目标标签名' : '重命名后的目标标签名'}
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
                 placeholder="目标标签名"
@@ -102,7 +103,7 @@ export default function AdminTagsPage() {
           {op === 'rename' && selected.length > 1 && (
             <p className="text-xs text-gold-700 mt-1.5">重命名只应选择一个标签，多个请用「合并为一个」。</p>
           )}
-          {act.error && <p className="text-xs text-rose-600 mt-2">{act.error}</p>}
+          {act.error && <p role="alert" className="text-xs text-rose-600 mt-2">{act.error}</p>}
           <div className="flex gap-2 mt-3">
             <button onClick={() => { setOp(null); setTarget(''); }} className="btn-secondary text-xs">取消</button>
             <button
@@ -131,7 +132,7 @@ export default function AdminTagsPage() {
                   key={t.name}
                   onClick={() => toggle(t.name)}
                   title={`${t.name}：${t.total} 篇内容（${t.published} 篇已发布）`}
-                  className={`px-3 py-1.5 rounded-full border transition-colors ${
+                  className={`px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors ${
                     on ? 'bg-primary-600 text-white border-primary-600' : 'bg-ink-50 text-ink-700 border-ink-200 hover:border-primary-300'
                   }`}
                   style={{ fontSize: `${w}px` }}

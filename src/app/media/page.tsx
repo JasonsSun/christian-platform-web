@@ -95,6 +95,7 @@ export default function MediaPage() {
           </button>
         ))}
         <input
+          aria-label="搜索媒体标题或文件名"
           className="input-styled flex-1 min-w-[160px]"
           placeholder="搜索标题 / 文件名"
           value={q}

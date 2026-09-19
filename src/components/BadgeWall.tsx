@@ -176,7 +176,14 @@ export default function BadgeWall({
                     </div>
                   ) : (
                     <div className="mt-3">
-                      <div className="h-1.5 rounded-full bg-ink-200 overflow-hidden">
+                      <div
+                        className="h-1.5 rounded-full bg-ink-200 overflow-hidden"
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={Math.round(b.percent)}
+                        aria-label={`${b.name} 解锁进度`}
+                      >
                         <div
                           className={`h-full bg-gradient-to-r ${st.bar} transition-all duration-500`}
                           style={{ width: `${b.percent}%` }}

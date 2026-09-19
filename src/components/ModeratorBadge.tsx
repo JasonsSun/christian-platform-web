@@ -32,10 +32,12 @@ function Chip({
       title={title}
       className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium leading-5 whitespace-nowrap"
       style={{
-        // 8 位 hex：末两位是透明度，形成"浅底 + 主色文字/描边"的柔和角标
-        backgroundColor: `${color}1f`,
-        borderColor: `${color}55`,
-        color,
+        // 主色只负责底色与描边（模块识别靠色块 + 图标 + 文字三样），文字交给主题正文色。
+        // 原来 color 直接当 11px 文字压在自己的 12% 底上，实测最差 1.68~3.72:1，
+        // 后台 33 个页面全中；把主色往正文色混也救不回来（最亮的 #84cc16 只能到 3.69:1）。
+        backgroundColor: `${color}26`,
+        borderColor: `${color}66`,
+        color: 'var(--ui-text)',
       }}
     >
       <span aria-hidden>{icon}</span>
@@ -100,7 +102,7 @@ export function StaffBadges({
         <ModuleBadge key={k} module={k} compact={compact} />
       ))}
       {rest > 0 ? (
-        <span className="inline-flex items-center rounded-full border border-ink-200 bg-ink-50 px-2 py-0.5 text-[11px] font-medium leading-5 text-ink-500">
+        <span className="inline-flex items-center rounded-full border border-ink-200 bg-ink-50 px-2 py-0.5 text-[11px] font-medium leading-5 text-ink-600">
           +{rest}
         </span>
       ) : null}

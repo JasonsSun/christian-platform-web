@@ -30,6 +30,11 @@ const CATEGORIES = [
 ];
 
 const COVERS = ['📅', '🙏', '📖', '🎶', '🌿', '✨', '🕊️', '❤️'];
+// 按钮的名字只有 emoji，读屏念出来是「日历」「双手合十」这种噪音，也听不出当前选中的是哪一个
+const COVER_NAME: Record<string, string> = {
+  '📅': '日历', '🙏': '祷告', '📖': '圣经', '🎶': '诗歌',
+  '🌿': '新芽', '✨': '星光', '🕊️': '和平鸽', '❤️': '爱心',
+};
 
 export default function NewActivityPage() {
   const router = useRouter();
@@ -127,7 +132,13 @@ export default function NewActivityPage() {
   }
 
   if (loading) {
-    return <div className="max-w-3xl mx-auto px-4 py-24 text-center text-ink-400">加载中…</div>;
+    // 外层沿用正文同一个 root：React 会复用这一个 DOM 节点，若从 max-w-3xl 直接换成整屏宽，
+    // 节点会整体左移 400 多像素，鉴权一落地就是一次 0.24 的 CLS
+    return (
+      <div className="min-h-screen">
+        <div className="max-w-3xl mx-auto px-4 py-24 text-center text-ink-400">加载中…</div>
+      </div>
+    );
   }
 
   return (
@@ -155,14 +166,16 @@ export default function NewActivityPage() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <form onSubmit={submit} className="bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 space-y-5">
             {(localError || error) && (
-              <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3">
+              <div role="alert" className="rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3">
                 {localError || error}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-1.5">活动标题</label>
+              <label htmlFor="activity-title" className="block text-sm font-semibold text-ink-700 mb-1.5">活动标题</label>
               <input
+                id="activity-title"
+                name="title"
                 className="input-styled"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -171,8 +184,10 @@ export default function NewActivityPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-1.5">活动介绍</label>
+              <label htmlFor="activity-description" className="block text-sm font-semibold text-ink-700 mb-1.5">活动介绍</label>
               <textarea
+                id="activity-description"
+                name="description"
                 className="input-styled min-h-[110px]"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -182,8 +197,10 @@ export default function NewActivityPage() {
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-ink-700 mb-1.5">分类</label>
+                <label htmlFor="activity-category" className="block text-sm font-semibold text-ink-700 mb-1.5">分类</label>
                 <select
+                  id="activity-category"
+                  name="category"
                   className="input-styled"
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -196,8 +213,10 @@ export default function NewActivityPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-ink-700 mb-1.5">城市</label>
+                <label htmlFor="activity-city" className="block text-sm font-semibold text-ink-700 mb-1.5">城市</label>
                 <select
+                  id="activity-city"
+                  name="city"
                   className="input-styled"
                   value={form.city}
                   onChange={(e) => setForm({ ...form, city: e.target.value })}
@@ -213,8 +232,11 @@ export default function NewActivityPage() {
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-ink-700 mb-1.5">地点</label>
+                <label htmlFor="activity-location" className="block text-sm font-semibold text-ink-700 mb-1.5">地点</label>
                 <input
+                  id="activity-location"
+                  name="location"
+                  autoComplete="street-address"
                   className="input-styled"
                   value={form.location}
                   onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -222,10 +244,13 @@ export default function NewActivityPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-ink-700 mb-1.5">人数上限</label>
+                <label htmlFor="activity-capacity" className="block text-sm font-semibold text-ink-700 mb-1.5">人数上限</label>
                 <input
+                  id="activity-capacity"
+                  name="capacity"
                   type="number"
                   min={1}
+                  inputMode="numeric"
                   className="input-styled"
                   value={form.capacity}
                   onChange={(e) => setForm({ ...form, capacity: e.target.value })}
@@ -234,8 +259,10 @@ export default function NewActivityPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-1.5">开始时间</label>
+              <label htmlFor="activity-start-at" className="block text-sm font-semibold text-ink-700 mb-1.5">开始时间</label>
               <input
+                id="activity-start-at"
+                name="startAt"
                 type="datetime-local"
                 className="input-styled"
                 value={form.startAt}
@@ -243,8 +270,8 @@ export default function NewActivityPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-1.5">地点坐标（选填）</label>
+            <div role="group" aria-labelledby="activity-geo-label">
+              <label id="activity-geo-label" className="block text-sm font-semibold text-ink-700 mb-1.5">地点坐标（选填）</label>
               <div className="flex items-center gap-2 mb-2">
                 <button
                   type="button"
@@ -280,13 +307,16 @@ export default function NewActivityPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-2">封面</label>
-              <div className="flex flex-wrap gap-2">
+              <label id="activity-cover-label" className="block text-sm font-semibold text-ink-700 mb-2">封面</label>
+              <div className="flex flex-wrap gap-2" role="group" aria-labelledby="activity-cover-label">
                 {COVERS.map((c) => (
                   <button
                     type="button"
                     key={c}
                     onClick={() => setForm({ ...form, cover: c })}
+                    aria-label={`封面图案 ${COVER_NAME[c] || c}`}
+                    title={`封面图案 ${COVER_NAME[c] || c}`}
+                    aria-pressed={form.cover === c}
                     className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all ${
                       form.cover === c ? 'bg-primary-100 ring-2 ring-primary-500' : 'bg-ink-50 hover:bg-ink-100'
                     }`}

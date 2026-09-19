@@ -80,6 +80,7 @@ function ReviewCard({
           <textarea
             className="input-styled w-full"
             rows={2}
+            aria-label="驳回原因"
             placeholder="驳回原因（选填，将通知作者）"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -167,7 +168,7 @@ export default function AdminReviewsPage() {
         <button className="btn-secondary" onClick={reload}>刷新</button>
       </div>
 
-      <div className="flex gap-2 mb-5">
+      <div className="flex gap-2 flex-wrap mb-5">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -182,7 +183,7 @@ export default function AdminReviewsPage() {
       </div>
 
       {notice ? (
-        <div className="mb-4 rounded-xl bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{notice}</div>
+        <div role="status" className="mb-4 rounded-xl bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{notice}</div>
       ) : null}
 
       {loading ? (

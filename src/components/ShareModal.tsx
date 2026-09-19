@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Portal from '@/components/Portal';
-import { useEscape } from '@/lib/a11y';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
 
 /** 生成分享卡片图所需数据（经文/诗歌/金句） */
 export type ShareCard = {
@@ -73,7 +73,7 @@ const SANS = '"PingFang SC","Microsoft YaHei",sans-serif';
  * canvas 导出的结果。
  * 注意：必须用 Blob + objectURL,不能直接用 toDataURL 的 dataURL——
  * 1080×1440 的 PNG dataURL 有 2MB 以上,iOS / 微信内置浏览器会直接**不渲染**
- * (表现为卡片区域一片空白),且 dataURL 过长时 <img> 根本不会触发 load。
+ * (表现为卡片区域一片空白),且 dataURL 过长时 <img decoding="async" loading="lazy"> 根本不会触发 load。
  */
 type CardImage = { url: string; ext: 'jpg' | 'png'; revoke: () => void };
 
@@ -288,6 +288,8 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
   }, [open]);
 
   useEscape(open, onClose);
+  const dlgRef = useDialogFocus(open);
+  const titleId = useId();
 
   if (!open) return null;
 
@@ -326,10 +328,12 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
   return (
     <Portal>
     <div
+      ref={dlgRef}
       data-guard="share-modal"
       className="fixed inset-0 z-[70] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
     >
       {/* 遮罩:仅在点击遮罩自身时关闭 */}
       <div
@@ -355,7 +359,7 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
 
         <div className="flex items-center gap-2 mb-1">
           <span className="text-lg" aria-hidden="true">📤</span>
-          <h2 className="font-display text-lg font-bold text-ink-900">推荐给朋友</h2>
+          <h2 id={titleId} className="font-display text-lg font-bold text-ink-900">推荐给朋友</h2>
         </div>
         <p className="text-sm text-ink-500 mb-4">选择一种方式，把圣约社区分享给主内肢体</p>
 
@@ -389,7 +393,7 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
                   className="w-full h-auto"
                   decoding="async"
                   onError={() => setCardFailed(true)}
-                />
+                 loading="lazy" />
               ) : (
                 <div className="text-ink-400 text-sm py-12 px-4 text-center">
                   {cardBusy ? '卡片生成中…' : cardFailed ? '卡片生成失败，可改用「二维码」或「链接」分享' : '暂无卡片'}
@@ -420,7 +424,7 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
             <div className="bg-white rounded-2xl p-3 shadow-soft border border-ink-100">
               {qr ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={qr} alt="分享二维码" className="w-44 h-44" width={176} height={176} decoding="async" />
+                <img src={qr} alt="分享二维码" className="w-44 h-44" width={176} height={176} decoding="async"  loading="lazy" />
               ) : (
                 <div className="w-44 h-44 flex items-center justify-center text-ink-500 text-sm">生成中…</div>
               )}

@@ -87,7 +87,7 @@ export default function MediaDetailPage() {
   if (error || !data) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-20 text-center">
-        <div className="text-rose-600 mb-3">{error || '未找到该文件'}</div>
+        <div role="alert" className="text-rose-600 mb-3">{error || '未找到该文件'}</div>
         <Link href="/media" className="btn-secondary">返回媒体库</Link>
       </div>
     );
@@ -190,8 +190,11 @@ export default function MediaDetailPage() {
           </div>
         ) : d.kind === 'image' ? (
           <div className="bg-ink-100 flex items-center justify-center p-4">
+            {/* 首屏预览图:缺宽高时加载完成前容器塌陷、下方信息区会被顶下去(CLS)。
+                接口不返回像素尺寸,先按 16:9 占位,图片解出真实比例后浏览器会自动改用真实比例。
+                同理去掉 loading="lazy",首屏图片不该延迟加载。 */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img loading="lazy" decoding="async" src={d.url} alt={d.title} className="max-h-[70vh] w-auto object-contain rounded-2xl" />
+            <img decoding="async" width={1280} height={720} src={d.url} alt={d.title} className="max-h-[70vh] w-auto object-contain rounded-2xl"  loading="eager" />
           </div>
         ) : d.extension === 'pdf' ? (
           <iframe src={d.url} className="w-full aspect-[3/4] md:aspect-[16/10] bg-white" title={d.title} />

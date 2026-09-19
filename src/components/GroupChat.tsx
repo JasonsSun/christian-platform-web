@@ -5,6 +5,7 @@ import { apiGet, apiPost, apiDelete } from '@/lib/api';
 import { useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
+import { scrollBehavior } from '@/lib/motion';
 
 interface ChatUser {
   id: string;
@@ -23,7 +24,7 @@ function MsgAvatar({ user, size = 32 }: { user: ChatUser; size?: number }) {
   return (
     <span
       className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
-      style={{ backgroundColor: user.avatarColor || '#4f6df5', width: size, height: size, fontSize: size * 0.4 }}
+      style={{ backgroundColor: user.avatarColor || '#3d52d9', width: size, height: size, fontSize: size * 0.4 }}
     >
       {(user.displayName || user.username || '?').slice(0, 1)}
     </span>
@@ -139,7 +140,7 @@ export default function GroupChat({
   }, [isMember, wsReady, load]);
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    endRef.current?.scrollIntoView({ behavior: scrollBehavior() });
   }, [messages]);
 
   const send = useCallback(async () => {
@@ -196,7 +197,7 @@ export default function GroupChat({
                   {(mine || isOwner) && (
                     <button
                       onClick={() => remove(m.id)}
-                      className="text-[10px] text-ink-500 hover:text-rose-500 transition"
+                      className="text-[10px] text-ink-500 hover:text-rose-600 transition"
                       title="删除"
                     >
                       删除
@@ -218,6 +219,7 @@ export default function GroupChat({
       </div>
       <div className="flex gap-2 mt-3">
         <input
+          aria-label="群聊消息"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="说点什么…"

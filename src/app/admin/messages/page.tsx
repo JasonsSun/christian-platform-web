@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApi } from '@/lib/useApi';
 import { apiGet, apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { scrollBehavior } from '@/lib/motion';
 import { AdminLayout, SectionTitle, Loading, ErrorBox, Empty } from '../_components';
 import { StaffBadges } from '@/components/ModeratorBadge';
 
@@ -80,7 +81,7 @@ export default function AdminMessagesPage() {
   }, [peerId, load]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: 'end' });
+    bottomRef.current?.scrollIntoView({ block: 'end', behavior: scrollBehavior() });
   }, [thread?.items?.length]);
 
   const send = async () => {
@@ -104,7 +105,7 @@ export default function AdminMessagesPage() {
   const Avatar = ({ p }: { p: Peer }) => (
     <div
       className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0"
-      style={{ backgroundColor: p.avatarColor || '#4f6df5' }}
+      style={{ backgroundColor: p.avatarColor || '#3d52d9' }}
     >
       {(p.displayName || '?').slice(0, 1)}
     </div>
@@ -112,7 +113,7 @@ export default function AdminMessagesPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>管理消息</SectionTitle>
+      <SectionTitle as="h1">管理消息</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">
         管理员与审核员之间的内部沟通渠道。普通成员既不显示入口，也无法访问此接口。
       </p>
@@ -222,6 +223,7 @@ export default function AdminMessagesPage() {
                 <div className="border-t border-ink-100 p-3 flex gap-2">
                   <input
                     className="input-styled flex-1 text-sm"
+                    aria-label="输入消息"
                     placeholder="输入消息…"
                     value={text}
                     onChange={(e) => setText(e.target.value)}

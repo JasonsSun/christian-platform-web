@@ -106,11 +106,18 @@ export default function PlansPage() {
                         <span aria-hidden>{p.emoji}</span>
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-semibold text-ink-900">{p.title}</h3>
+                        <h2 className="font-semibold text-ink-900">{p.title}</h2>
                         <p className="text-xs text-ink-400 line-clamp-2 mt-0.5">{p.subtitle}</p>
                       </div>
                     </div>
-                    <div className="h-2 rounded-full bg-ink-100 overflow-hidden mb-2">
+                    <div
+                      className="h-2 rounded-full bg-ink-100 overflow-hidden mb-2"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={Math.round(p.percent)}
+                      aria-label="计划完成进度"
+                    >
                       <div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-600" style={{ width: `${p.percent}%` }} />
                     </div>
                     <div className="flex items-center justify-between text-xs text-ink-400">
@@ -148,7 +155,14 @@ export default function PlansPage() {
                   <div className="text-xs text-ink-400">{detail.doneDays}/{detail.plan.days} 天</div>
                 </div>
               </div>
-              <div className="h-2.5 rounded-full bg-ink-100 overflow-hidden">
+              <div
+                className="h-2.5 rounded-full bg-ink-100 overflow-hidden"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(pct)}
+                aria-label="计划完成进度"
+              >
                 <div className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-600 transition-all" style={{ width: `${pct}%` }} />
               </div>
               {user && !detail.enrolled && (
@@ -177,7 +191,7 @@ export default function PlansPage() {
                   }`}
                 >
                   <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
-                    d.done ? 'bg-emerald-700 text-white' : 'bg-ink-50 text-ink-500'
+                    d.done ? 'bg-emerald-700 text-white' : 'bg-ink-50 text-ink-600'
                   }`}>
                     {d.done ? '✓' : d.day}
                   </span>

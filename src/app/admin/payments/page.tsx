@@ -87,7 +87,7 @@ export default function AdminPaymentsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>支付配置</SectionTitle>
+      <SectionTitle as="h1">支付配置</SectionTitle>
       <p className="-mt-3 mb-4 text-sm text-ink-500">
         商户密钥加密存储于数据库，<span className="text-ink-700">优先于 .env</span>；保存后即时生效，无需重启服务。
       </p>
@@ -119,10 +119,12 @@ export default function AdminPaymentsPage() {
                   {fields.filter((f) => f.group === g).map((f) => {
                     const val = draft[f.key] ?? '';
                     const willClear = val === CLEAR;
+                    // 配置项 key 唯一，用作控件 id / name：密钥框有真实标签且密码管理器可识别
+                    const fieldId = `pay-${f.key}`;
                     return (
                       <div key={f.key}>
                         <div className="mb-1 flex items-center gap-2">
-                          <span className="text-sm text-ink-700">{f.label}</span>
+                          <label htmlFor={fieldId} className="text-sm text-ink-700">{f.label}</label>
                           {f.set ? <Badge tone="green">已配置</Badge> : <Badge tone="gray">未配置</Badge>}
                           {willClear ? <Badge tone="red">将清空</Badge> : null}
                           {f.secret && f.set && !willClear && val === '' ? (
@@ -131,6 +133,8 @@ export default function AdminPaymentsPage() {
                         </div>
                         <div className="flex items-center gap-2">
                           <input
+                            id={fieldId}
+                            name={f.key}
                             className="input-styled flex-1 font-mono text-sm"
                             type={f.secret && !reveal[f.key] ? 'password' : 'text'}
                             value={willClear ? '' : val}
@@ -174,7 +178,7 @@ export default function AdminPaymentsPage() {
               {busy ? '保存中…' : '保存更改'}
             </button>
             {dirty ? <span className="text-sm text-gold-700">有未保存的更改</span> : null}
-            {msg ? <span className="text-sm text-primary-700">{msg}</span> : null}
+            {msg ? <span role="status" className="text-sm text-primary-700">{msg}</span> : null}
           </div>
         </div>
       )}

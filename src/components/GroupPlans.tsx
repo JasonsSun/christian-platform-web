@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import { apiGet, apiPost } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
-import { useEscape } from '@/lib/a11y';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { READING_PLANS } from '@/lib/readingPlans';
 import Portal from '@/components/Portal';
 
@@ -72,6 +72,8 @@ export default function GroupPlans({
   useEscape(!!progressOpen, () => {
     if (!progressAction.pending) setProgressOpen(null);
   });
+  const progressRef = useDialogFocus(!!progressOpen);
+  const progressTitleId = useId();
 
   const refresh = useCallback(
     (next: GroupPlanItem[]) =>
@@ -159,6 +161,7 @@ export default function GroupPlans({
           {isOwner && adding && (
             <div className="rounded-2xl bg-ink-50/60 border border-ink-100 p-4 mb-4 space-y-3">
               <select
+                aria-label="选择读经计划"
                 value={pickPlanId}
                 onChange={(e) => setPickPlanId(e.target.value)}
                 className="input-styled"
@@ -171,8 +174,9 @@ export default function GroupPlans({
                 ))}
               </select>
               <div className="flex items-center gap-2 flex-wrap">
-                <label className="text-sm text-ink-500">开始日期</label>
+                <label htmlFor="group-plan-start-date" className="text-sm text-ink-500">开始日期</label>
                 <input
+                  id="group-plan-start-date"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
@@ -186,12 +190,12 @@ export default function GroupPlans({
                   {addAction.pending ? '添加中…' : '确定添加'}
                 </button>
               </div>
-              {addAction.error && <p className="text-rose-500 text-sm">{addAction.error}</p>}
+              {addAction.error && <p className="text-rose-600 text-sm">{addAction.error}</p>}
             </div>
           )}
 
           {loading && <p className="text-sm text-ink-400">加载中…</p>}
-          {error && <p className="text-sm text-rose-500">共读计划加载失败</p>}
+          {error && <p className="text-sm text-rose-600">共读计划加载失败</p>}
 
           {!loading && items.length === 0 && (
             <p className="text-center py-6 text-ink-400 text-sm">
@@ -282,9 +286,11 @@ export default function GroupPlans({
       {progressOpen && (
         <Portal>
           <div
+            ref={progressRef}
             data-guard="group-plan-progress-modal"
             role="dialog"
             aria-modal="true"
+            aria-labelledby={progressTitleId}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: 'rgba(17,24,39,0.45)' }}
             onClick={() => !progressAction.pending && setProgressOpen(null)}
@@ -294,7 +300,7 @@ export default function GroupPlans({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-display text-lg font-bold text-ink-900">
+                <h3 id={progressTitleId} className="font-display text-lg font-bold text-ink-900">
                   {progressPlan?.emoji} {progressPlan?.title} · 进度榜
                 </h3>
                 <button
@@ -316,7 +322,7 @@ export default function GroupPlans({
                         <span
                           className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
                           style={{
-                            backgroundColor: m.avatarColor || '#4f6df5',
+                            backgroundColor: m.avatarColor || '#3d52d9',
                             width: 32,
                             height: 32,
                             fontSize: 13,
@@ -330,7 +336,7 @@ export default function GroupPlans({
                               {m.displayName}
                             </span>
                             <span
-                              className={`text-xs ${m.behind > 0 ? 'text-rose-500' : 'text-emerald-600'}`}
+                              className={`text-xs ${m.behind > 0 ? 'text-rose-600' : 'text-emerald-600'}`}
                             >
                               {m.behind > 0
                                 ? `落后 ${m.behind} 天`
@@ -357,7 +363,7 @@ export default function GroupPlans({
                 <p className="text-sm text-ink-400 py-6 text-center">加载中…</p>
               )}
               {progressAction.error && (
-                <p className="text-rose-500 text-xs mt-2">{progressAction.error}</p>
+                <p className="text-rose-600 text-xs mt-2">{progressAction.error}</p>
               )}
             </div>
           </div>

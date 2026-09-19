@@ -212,6 +212,7 @@ export default function BibleHome() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
+              aria-label="搜索经文关键词"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="搜索经文关键词，如「爱」「恩典」「平安」..."
@@ -224,7 +225,7 @@ export default function BibleHome() {
                   setSearchQ('');
                   setInput('');
                 }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-500 transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-600 transition-colors"
                 aria-label="清除搜索"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -255,22 +256,22 @@ export default function BibleHome() {
             <div className="absolute -top-16 -right-16 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
             <div className="absolute -bottom-20 -left-10 w-72 h-72 bg-primary-400/15 rounded-full blur-3xl" />
             <div className="relative px-6 py-7 md:px-10 md:py-9 flex flex-col md:flex-row md:items-center gap-5">
-              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-                <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-14 h-14 rounded-2xl bg-ink-950/10 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+                <svg className="w-7 h-7 text-ink-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="px-3 py-1 rounded-full bg-white/25 text-white text-xs font-semibold backdrop-blur-sm">每日经文</span>
-                  <span className="text-white/80 text-xs">今日灵修 · 自动更新</span>
+                  <span className="px-3 py-1 rounded-full bg-ink-950/10 text-ink-950 text-xs font-semibold backdrop-blur-sm">每日经文</span>
+                  <span className="text-ink-950/90 text-xs">今日灵修 · 自动更新</span>
                 </div>
                 {homeData?.verse ? (
                   <>
-                    <p className="font-serif text-lg md:text-xl text-white leading-relaxed mb-2">“{homeData.verse.text}”</p>
+                    <p className="font-serif text-lg md:text-xl text-ink-950 leading-relaxed mb-2">“{homeData.verse.text}”</p>
                     <Link
                       href={`/bible/cuv/${homeData.verse.bookId}/${homeData.verse.chapter}`}
-                      className="text-sm text-white/90 font-medium hover:text-white hover:underline inline-flex items-center gap-1"
+                      className="text-sm text-ink-950 font-medium hover:underline inline-flex items-center gap-1"
                     >
                       —— {homeData.verse.bookName} {homeData.verse.chapter}:{homeData.verse.verse}
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
@@ -278,27 +279,27 @@ export default function BibleHome() {
                     <div className="flex flex-wrap items-center gap-2 mt-3">
                       <button
                         onClick={() => (todaySpeech.state === 'playing' ? todaySpeech.stop() : todaySpeech.start())}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-medium hover:bg-white/25 transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-ink-950/10 text-ink-950 text-sm font-medium hover:bg-ink-950/15 transition-colors"
                       >
                         {todaySpeech.state === 'playing' ? '⏸ 停止' : '🔊 朗读'}
                       </button>
                       <button
                         onClick={checkInToday}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-medium hover:bg-white/25 transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-ink-950/10 text-ink-950 text-sm font-medium hover:bg-ink-950/15 transition-colors"
                       >
                         ✅ 打卡
                       </button>
                       <button
                         onClick={shareVerseImage}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 text-white text-sm font-medium hover:bg-white/25 transition-colors"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-ink-950/10 text-ink-950 text-sm font-medium hover:bg-ink-950/15 transition-colors"
                       >
                         🖼️ 分享图
                       </button>
                     </div>
-                    {checkinMsg && <p className="text-white/85 text-xs mt-2">{checkinMsg}</p>}
+                    {checkinMsg && <p className="text-ink-950/90 text-xs mt-2">{checkinMsg}</p>}
                   </>
                 ) : (
-                  <p className="text-white/80">今日经文加载中…</p>
+                  <p className="text-ink-950/90">今日经文加载中…</p>
                 )}
               </div>
             </div>
@@ -311,11 +312,11 @@ export default function BibleHome() {
           <div className="glass rounded-2xl p-5 shadow-card border border-white/40">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-gold-500 to-gold-600 flex items-center justify-center shadow-gold-500/30">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 text-ink-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </span>
-              <h3 className="font-display text-lg font-bold text-ink-900">今日读经</h3>
+              <h2 className="font-display text-lg font-bold text-ink-900">今日读经</h2>
             </div>
 
             {!loggedIn ? (
@@ -358,7 +359,7 @@ export default function BibleHome() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </span>
-              <h3 className="font-display text-lg font-bold text-ink-900">最近读经</h3>
+              <h2 className="font-display text-lg font-bold text-ink-900">最近读经</h2>
             </div>
 
             {!loggedIn ? (
@@ -393,11 +394,11 @@ export default function BibleHome() {
           <div className="glass rounded-2xl p-5 shadow-card border border-white/40">
             <div className="flex items-center gap-2 mb-4">
               <span className="w-9 h-9 rounded-xl bg-gradient-to-br from-gold-500 to-amber-600 flex items-center justify-center shadow-gold-500/30">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 text-ink-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
                 </svg>
               </span>
-              <h3 className="font-display text-lg font-bold text-ink-900">我的书签</h3>
+              <h2 className="font-display text-lg font-bold text-ink-900">我的书签</h2>
             </div>
 
             {!loggedIn ? (
@@ -433,7 +434,7 @@ export default function BibleHome() {
                       onClick={() => deleteBookmark(it.id)}
                       disabled={deletingId === it.id}
                       title="删除这条书签/笔记"
-                      className="flex-shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg text-ink-500 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                      className="flex-shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg text-ink-500 hover:text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-50"
                     >
                       {deletingId === it.id ? (
                         <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3a9 9 0 109 9" /></svg>
@@ -486,13 +487,15 @@ export default function BibleHome() {
                 }}
                 className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
                   active
-                    ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-500/30'
+                    ? 'bg-gradient-to-r from-primary-700 to-primary-600 text-white shadow-lg shadow-primary-500/30'
                     : 'bg-white text-ink-600 hover:bg-ink-50 border border-ink-200 hover:border-primary-300'
                 }`}
                 title={v.fullName}
               >
                 {v.name}
-                <span className={`ml-1.5 text-xs ${active ? 'text-white/70' : 'text-ink-400'}`}>{v.language}</span>
+                {/* 译本名后面的语言标注：白 70% 压在原本 600→500 的渐变上实测 3.12（三主题同一个数，
+                    说明这条渐变不参与换色）。带子整体压深一档、标注提到 90%，两端都过 4.9。 */}
+                <span className={`ml-1.5 text-xs ${active ? 'text-white/90' : 'text-ink-400'}`}>{v.language}</span>
               </button>
             );
           })}
@@ -507,6 +510,7 @@ export default function BibleHome() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
+              aria-label="快速定位书卷"
               value={bookFilter}
               onChange={(e) => setBookFilter(e.target.value)}
               placeholder="快速定位书卷，如「诗篇」「太」「john」..."
@@ -516,7 +520,7 @@ export default function BibleHome() {
               <button
                 type="button"
                 onClick={() => setBookFilter('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-500 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-ink-100 hover:bg-ink-200 flex items-center justify-center text-ink-600 transition-colors"
                 aria-label="清除书卷筛选"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -573,7 +577,7 @@ export default function BibleHome() {
         ) : sections.every((s) => s.groups.length === 0) ? (
           <div className="bg-white rounded-2xl p-12 shadow-soft border border-ink-100 text-center">
             <div className="text-5xl mb-4">📖</div>
-            <h3 className="font-display text-xl font-bold text-ink-900 mb-2">没有找到匹配的书卷</h3>
+            <h2 className="font-display text-xl font-bold text-ink-900 mb-2">没有找到匹配的书卷</h2>
             <p className="text-ink-500">试试更换关键词，或<button onClick={() => setBookFilter('')} className="text-primary-600 hover:underline font-medium">清除筛选</button></p>
           </div>
         ) : (
@@ -581,9 +585,9 @@ export default function BibleHome() {
             <section key={sec.key} className="mb-12">
               <div className="flex items-center gap-4 mb-6">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 ${
-                  sec.key === 'old' ? 'bg-gradient-to-br from-primary-500 to-primary-700 shadow-primary-500/30' : 'bg-gradient-to-br from-gold-500 to-gold-600 shadow-gold-500/30'
+                  sec.key === 'old' ? 'bg-gradient-to-br from-primary-600 to-primary-700 text-white shadow-primary-500/30' : 'bg-gradient-to-br from-gold-500 to-gold-600 text-ink-950 shadow-gold-500/30'
                 }`}>
-                  <span className="text-white font-bold">{sec.key === 'old' ? '旧' : '新'}</span>
+                  <span className="font-bold">{sec.key === 'old' ? '旧' : '新'}</span>
                 </div>
                 <div>
                   <h2 className="font-display text-xl md:text-3xl font-bold text-ink-900">{sec.title}</h2>
@@ -593,7 +597,7 @@ export default function BibleHome() {
 
               {sec.groups.map((g) => (
                 <div key={g.category} className="mb-8">
-                  <h3 className="text-sm font-semibold text-primary-700 mb-3">{g.category}</h3>
+                  <h2 className="text-sm font-semibold text-primary-700 mb-3">{g.category}</h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     {g.books.map((b) => (
                       <Link
@@ -607,9 +611,9 @@ export default function BibleHome() {
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-ink-400">{b.chapters} 章</span>
                           {b.readable ? (
-                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-medium">可读</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">可读</span>
                           ) : (
-                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-ink-100 text-ink-400">暂无</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-ink-100 text-ink-600">暂无</span>
                           )}
                         </div>
                       </Link>

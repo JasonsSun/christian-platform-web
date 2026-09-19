@@ -71,24 +71,25 @@ export default function SermonsPage() {
       {/* 筛选条 */}
       <div className="flex flex-wrap gap-2 mb-6">
         <input
+          aria-label="搜索讲道"
           className="input-styled flex-1 min-w-[180px]"
           placeholder="搜索标题 / 讲员 / 经文"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        <select className="input-styled" value={seriesId} onChange={(e) => setSeriesId(e.target.value)}>
+        <select aria-label="讲道系列筛选" className="input-styled" value={seriesId} onChange={(e) => setSeriesId(e.target.value)}>
           <option value="">全部系列</option>
           {(seriesData?.items || []).map((s) => (
             <option key={s.id} value={s.id}>{convert(s.title)}</option>
           ))}
         </select>
-        <select className="input-styled" value={speaker} onChange={(e) => setSpeaker(e.target.value)}>
+        <select aria-label="讲员筛选" className="input-styled" value={speaker} onChange={(e) => setSpeaker(e.target.value)}>
           <option value="">全部讲员</option>
           {speakers.map((sp) => (
             <option key={sp} value={sp}>{convert(sp)}</option>
           ))}
         </select>
-        <select className="input-styled" value={sort} onChange={(e) => setSort(e.target.value)}>
+        <select aria-label="讲道排序" className="input-styled" value={sort} onChange={(e) => setSort(e.target.value)}>
           <option value="new">最近讲道</option>
           <option value="old">最早讲道</option>
           <option value="hot">最受欢迎</option>
@@ -112,7 +113,7 @@ export default function SermonsPage() {
               <div className="aspect-video bg-gradient-to-br from-primary-600 to-primary-800 relative flex items-center justify-center">
                 {s.cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={s.cover} alt="" className="w-full h-full object-cover" />
+                  <img src={s.cover} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-white/80 text-5xl">🎙️</span>
                 )}

@@ -158,7 +158,7 @@ export default function TransparencyPage() {
                         <span className="text-ink-400 ml-1.5 text-xs">{pct}%</span>
                       </span>
                     </div>
-                    <div className="h-2.5 rounded-full bg-ink-100 overflow-hidden">
+                    <div className="h-2.5 rounded-full bg-ink-100 overflow-hidden" aria-hidden>
                       <div
                         className={`h-full rounded-full ${CATEGORY_COLOR[c.category] || 'bg-ink-400'}`}
                         style={{ width: `${Math.max(2, (c.amountCents / maxCat) * 100)}%` }}
@@ -182,13 +182,14 @@ export default function TransparencyPage() {
             <div className="bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-ink-50 text-ink-500">
+                  <caption className="sr-only">支出明细</caption>
+                  <thead className="bg-ink-50 text-ink-600">
                     <tr>
-                      <th className="text-left px-4 py-3 font-medium">归属月份</th>
-                      <th className="text-left px-4 py-3 font-medium">分类</th>
-                      <th className="text-left px-4 py-3 font-medium">支出事项</th>
-                      <th className="text-left px-4 py-3 font-medium">说明</th>
-                      <th className="text-right px-4 py-3 font-medium">金额</th>
+                      <th scope="col" className="text-left px-4 py-3 font-medium">归属月份</th>
+                      <th scope="col" className="text-left px-4 py-3 font-medium">分类</th>
+                      <th scope="col" className="text-left px-4 py-3 font-medium">支出事项</th>
+                      <th scope="col" className="text-left px-4 py-3 font-medium">说明</th>
+                      <th scope="col" className="text-right px-4 py-3 font-medium">金额</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -196,11 +197,8 @@ export default function TransparencyPage() {
                       <tr key={e.id} className="border-t border-ink-100 hover:bg-ink-50/50 align-top">
                         <td className="px-4 py-3 text-ink-500 whitespace-nowrap font-medium">{e.period}</td>
                         <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium text-white ${
-                              CATEGORY_COLOR[e.category] || 'bg-ink-400'
-                            }`}
-                          >
+                          <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-ink-200 bg-ink-50 px-2 py-0.5 text-xs font-medium text-ink-700">
+                            <span aria-hidden className={`w-2 h-2 flex-shrink-0 rounded-full ${CATEGORY_COLOR[e.category] || 'bg-ink-400'}`} />
                             {e.categoryLabel}
                           </span>
                         </td>

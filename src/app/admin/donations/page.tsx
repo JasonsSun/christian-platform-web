@@ -122,6 +122,7 @@ export default function AdminDonationsPage() {
         </div>
         <input
           className="input-styled flex-1 min-w-[200px]"
+          aria-label="搜索展示名 / 教会名 / 留言 / 用户名"
           placeholder="搜索展示名 / 教会名 / 留言 / 用户名"
           value={q}
           onChange={(e) => { setQ(e.target.value); setPage(1); }}
@@ -139,15 +140,16 @@ export default function AdminDonationsPage() {
           <div className="glass rounded-2xl overflow-hidden shadow-soft">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-ink-50 text-ink-500">
+                <caption className="sr-only">捐赠管理</caption>
+                <thead className="bg-ink-50 text-ink-600">
                   <tr>
-                    <th className="text-left px-4 py-3 font-medium">捐赠人（名录名）</th>
-                    <th className="text-left px-4 py-3 font-medium">名义</th>
-                    <th className="text-right px-4 py-3 font-medium">真实金额</th>
-                    <th className="text-left px-4 py-3 font-medium">留言</th>
-                    <th className="text-left px-4 py-3 font-medium">状态</th>
-                    <th className="text-left px-4 py-3 font-medium">提交时间</th>
-                    <th className="text-left px-4 py-3 font-medium">操作</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">捐赠人（名录名）</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">名义</th>
+                    <th scope="col" className="text-right px-4 py-3 font-medium">真实金额</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">留言</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">状态</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">提交时间</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -174,7 +176,7 @@ export default function AdminDonationsPage() {
                       </td>
                       <td className="px-4 py-3 max-w-[220px]">
                         <div className="text-ink-600 break-words">{d.message || '-'}</div>
-                        {d.note ? <div className="text-xs text-rose-500 mt-1">备注：{d.note}</div> : null}
+                        {d.note ? <div className="text-xs text-rose-600 mt-1">备注：{d.note}</div> : null}
                       </td>
                       <td className="px-4 py-3">
                         <StatusTag status={d.status} />

@@ -95,13 +95,14 @@ export default function FeedbackPage() {
       </p>
 
       <div className="glass rounded-3xl p-6 shadow-card mb-8">
-        <label className="block text-xs font-semibold text-ink-500 mb-2">建议类型</label>
-        <div className="flex flex-wrap gap-2 mb-5">
+        <label id="feedback-category-label" className="block text-xs font-semibold text-ink-500 mb-2">建议类型</label>
+        <div className="flex flex-wrap gap-2 mb-5" role="group" aria-labelledby="feedback-category-label">
           {CATEGORIES.map((c) => (
             <button
               key={c.value}
               type="button"
               onClick={() => setCategory(c.value)}
+              aria-pressed={category === c.value}
               className={`px-3.5 py-2 rounded-xl text-sm font-medium border transition-colors ${
                 category === c.value
                   ? 'border-primary-500 bg-primary-50 text-primary-700'
@@ -114,10 +115,12 @@ export default function FeedbackPage() {
           ))}
         </div>
 
-        <label className="block text-xs font-semibold text-ink-500 mb-2">
+        <label htmlFor="feedback-content" className="block text-xs font-semibold text-ink-500 mb-2">
           具体内容 <span className="text-ink-400 font-normal">（5–1000 字）</span>
         </label>
         <textarea
+          id="feedback-content"
+          name="content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           maxLength={1000}
@@ -126,10 +129,12 @@ export default function FeedbackPage() {
         />
         <div className="text-right text-xs text-ink-400 mt-1">{content.length}/1000</div>
 
-        <label className="block text-xs font-semibold text-ink-500 mb-2 mt-4">
+        <label htmlFor="feedback-contact" className="block text-xs font-semibold text-ink-500 mb-2 mt-4">
           联系方式 <span className="text-ink-400 font-normal">（选填，便于我们回访）</span>
         </label>
         <input
+          id="feedback-contact"
+          name="contact"
           value={contact}
           onChange={(e) => setContact(e.target.value)}
           maxLength={120}
@@ -137,7 +142,7 @@ export default function FeedbackPage() {
           placeholder="微信号 / 邮箱，可留空"
         />
 
-        {action.error && <p className="text-sm text-rose-500 mt-3">{action.error}</p>}
+        {action.error && <p role="alert" className="text-sm text-rose-600 mt-3">{action.error}</p>}
 
         <button
           type="button"

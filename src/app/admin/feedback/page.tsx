@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { apiPatch, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
@@ -101,7 +101,7 @@ export default function AdminFeedbackPage() {
           <button
             key={t.key}
             onClick={() => setStatus(t.key)}
-            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
               status === t.key ? 'border-primary-500 text-primary-700' : 'border-transparent text-ink-500 hover:text-ink-700'
             }`}
           >
@@ -112,7 +112,7 @@ export default function AdminFeedbackPage() {
 
       {loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
       {error && (
-        <div className="py-10 text-center rounded-2xl bg-rose-50 text-rose-700">
+        <div role="alert" className="py-10 text-center rounded-2xl bg-rose-50 text-rose-700">
           <div>{error}</div>
           <button className="btn-secondary mt-3" onClick={reload}>重试</button>
         </div>
@@ -140,6 +140,8 @@ function FeedbackCard({ item, onChanged }: { item: FeedbackItem; onChanged: () =
   const [status, setStatus] = useState(item.status);
   const [reply, setReply] = useState(item.adminReply || '');
   const [saved, setSaved] = useState(false);
+  // 每张反馈卡都在 map 里渲染，id 必须逐实例唯一
+  const uid = useId();
 
   async function save() {
     const res = await action.run(() =>
@@ -187,8 +189,9 @@ function FeedbackCard({ item, onChanged }: { item: FeedbackItem; onChanged: () =
 
       <div className="mt-4 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <label className="text-xs font-semibold text-ink-500">状态</label>
+          <label htmlFor={`${uid}-status`} className="text-xs font-semibold text-ink-500">状态</label>
           <select
+            id={`${uid}-status`}
             value={status}
             onChange={(e) => { setStatus(e.target.value); setSaved(false); }}
             className="input-styled !w-auto text-sm"
@@ -199,12 +202,13 @@ function FeedbackCard({ item, onChanged }: { item: FeedbackItem; onChanged: () =
           </select>
         </div>
         <textarea
+          aria-label="回复反馈提交人"
           value={reply}
           onChange={(e) => { setReply(e.target.value); setSaved(false); }}
           className="input-styled min-h-[72px]"
           placeholder="回复内容（选填，提交人会在站内收到通知）"
         />
-        {action.error && <p className="text-xs text-rose-600">{action.error}</p>}
+        {action.error && <p role="alert" className="text-xs text-rose-600">{action.error}</p>}
         <div className="flex items-center gap-3">
           <button
             onClick={save}
@@ -213,7 +217,7 @@ function FeedbackCard({ item, onChanged }: { item: FeedbackItem; onChanged: () =
           >
             {action.pending ? '保存中…' : '保存'}
           </button>
-          {saved && <span className="text-xs text-emerald-600">已保存 ✓</span>}
+          {saved && <span role="status" className="text-xs text-emerald-600">已保存 ✓</span>}
           {item.handledAt && <span className="text-xs text-ink-400 ml-auto">最近处理：{timeAgo(item.handledAt)}</span>}
         </div>
       </div>

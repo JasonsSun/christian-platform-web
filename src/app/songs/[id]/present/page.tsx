@@ -34,6 +34,8 @@ export default function SongPresentPage() {
   // 键盘翻页 + 全屏
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // 收起后的控制栏已移出 Tab 序，键盘进来时先把它唤回来（与 onMouseMove 一致）
+      setShowUI(true);
       if (e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') {
         e.preventDefault();
         go(idx + 1);
@@ -88,8 +90,11 @@ export default function SongPresentPage() {
     >
       {/* 控制栏 */}
       <div
-        className={`fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 transition-opacity duration-300 ${
-          showUI ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        // 只 opacity-0 会把「退出投屏 / 全屏」留在 Tab 序里，成为看不见的焦点陷阱；
+        // 叠一层 invisible 才真正移出焦点序列。transition-all 让 visibility 跟着
+        // 淡出入（离散属性在 0~1 之间取 visible），收起过程仍然看得见淡出。
+        className={`fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4 transition-all duration-300 ${
+          showUI ? 'visible opacity-100' : 'invisible opacity-0 pointer-events-none'
         }`}
       >
         <Link href={`/songs/${id}`} className="text-white/70 hover:text-white text-sm">

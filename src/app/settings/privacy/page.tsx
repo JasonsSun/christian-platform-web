@@ -90,7 +90,7 @@ export default function PrivacySettingsPage() {
             >
               <div className="w-11 h-11 rounded-xl bg-ink-100 flex items-center justify-center text-xl flex-shrink-0">{o.icon}</div>
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-ink-900">{o.label}</h3>
+                <h2 className="font-semibold text-ink-900">{o.label}</h2>
                 <p className="text-sm text-ink-500 mt-0.5">{o.desc}</p>
               </div>
               <span
@@ -106,7 +106,7 @@ export default function PrivacySettingsPage() {
       </section>
 
       <section className="mt-6 bg-white rounded-2xl border border-ink-100 shadow-soft p-5">
-        <h3 className="font-semibold text-ink-900 mb-1">屏蔽管理</h3>
+        <h2 className="font-semibold text-ink-900 mb-1">屏蔽管理</h2>
         <p className="text-sm text-ink-500 mb-4">
           在任意用户主页点击「屏蔽」即可将其加入黑名单。被屏蔽者无法给你发私信，也不会出现在你的关注流与公开推荐中。
         </p>

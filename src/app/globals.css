@@ -18,7 +18,11 @@
   --ui-hover: #eef1fb;
   --ui-border: #e9ecf5;
   --ui-text: #2d3350;
-  --ui-muted: #6b73a0;
+  /* 和下面 [data-theme="light"] .text-ink-500 同一件事：#6b73a0 压白卡只有 4.25:1，
+     而这组变量全站是「次要文字 / 时间戳」，正是最需要读清的小字。对齐到 6.1 的同一档。
+     像素级探针又压了一档：这两档字压在 bg-primary-50 染出来的浅蓝面板上只有 4.58，
+     跟正文小字混在一起；跟着 .text-ink-500 一起挪到 #4c5480（同底 5.41）。 */
+  --ui-muted: #4c5480;
   --ui-accent: #3d52d9;
   --ui-accent-soft: rgba(79, 109, 245, 0.09);
 }
@@ -38,8 +42,11 @@
   --ui-hover: #ece1c8;
   --ui-border: #e6d8bd;
   --ui-text: #4a3f2f;
-  --ui-muted: #85744f;
-  --ui-accent: #86692f;
+  /* 羊皮纸上的次要文字：#85744f 压在主卡上实测 4.16（/upload 的「单个 ≤ 4000MB」
+     这类 11px 限制说明），压到 #74653f 回到 5.22。强调色同理，#86692f 只有 4.53，
+     和 .text-primary-600 收进同一档 #7d6127（5.16），链接和正文不再两套深浅。 */
+  --ui-muted: #74653f;
+  --ui-accent: #7d6127;
   --ui-accent-soft: rgba(184, 134, 11, 0.12);
 }
 
@@ -145,7 +152,11 @@ html, body {
   }
 
   .bg-animated-gradient {
-    background: linear-gradient(-45deg, #1e2664, #3d52d9, #4f6df5, #6b8eff);
+    /* 四档都要留足白字的余量：这条带子是 400% 位移的动画渐变，四个色标都会扫到文字底下，
+       原来最亮的一档 #6b8eff 上 text-white/70 只有 2.24:1、/60 2.02（首页首屏、三种主题全中，
+       旧的祖先链探针遇到渐变直接跳过，从没量到过）。收到 primary-950→800 后最暗 16.98、
+       最亮一档也有 5.83（/70）与 4.73（/60），整段动画都在 4.5 以上。 */
+    background: linear-gradient(-45deg, #131842, #1e2664, #252d6b, #2b3891);
     background-size: 400% 400%;
     animation: gradient 15s ease infinite;
   }
@@ -176,7 +187,10 @@ html, body {
   }
 
   .card-tech {
-    background: rgba(255, 255, 255, 0.78);
+    /* 0.78 的白玻璃让底下的页面渐变整个透上来：首页/日程/话题里的淡面板实测平均到
+       rgb(207,211,240) 这种偏紫的底色，压在其上的 ink-500/primary-600 掉到 4.17~4.43。
+       提到 0.92 保留磨砂（blur + saturate 不动），底色回到近白，文字重新过线。 */
+    background: rgba(255, 255, 255, 0.92);
     backdrop-filter: blur(24px) saturate(160%);
     -webkit-backdrop-filter: blur(24px) saturate(160%);
     border: 1px solid rgba(255, 255, 255, 0.65);
@@ -190,6 +204,18 @@ html, body {
   }
 
   .glass-tech {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  /* 恒深底上的玻璃片（首页/日程/话题 hero 里的跑马灯徽标、次要按钮）。
+     和 .glass-tech 同一套观感，但不参与主题重映射：羊皮纸把 .glass-tech 翻成近实色米板
+     （那是给移动端底部导航、命令面板这类压在正文上的面板用的），hero 上的 text-white/90
+     压上去实测只有 2.34:1 —— 底带在三种主题下都是深藏青，片子的取值就该跟着底带固定。 */
+  .glass-on-dark {
     background: rgba(255, 255, 255, 0.12);
     backdrop-filter: blur(24px) saturate(180%);
     -webkit-backdrop-filter: blur(24px) saturate(180%);
@@ -367,14 +393,17 @@ html, body {
     color: #2d3350;
   }
 
+  /* 白字压 primary-500 只有 4.34（14px 起就要 4.5），而渐变右端正好落在按钮文字下面 ——
+     按 idle 600→500 写时，只要标签偏右就掉线。整档压深一级：白字 8.26 / 6.16。
+     悬停相应改成更深的一档，配合原有的抬升 + 阴影，反馈仍在。 */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
            font-semibold text-white
-           bg-gradient-to-r from-primary-600 to-primary-500
+           bg-gradient-to-r from-primary-700 to-primary-600
            shadow-lg shadow-primary-500/25
            transition-all duration-300 ease-out
            hover:shadow-xl hover:shadow-primary-500/40
-           hover:from-primary-700 hover:to-primary-600
+           hover:from-primary-800 hover:to-primary-700
            hover:-translate-y-0.5
            active:translate-y-0;
   }
@@ -433,6 +462,26 @@ html, body {
   .divider-gradient {
     height: 1px;
     background: linear-gradient(90deg, transparent, #c2d4ff, transparent);
+  }
+
+  /* 按钮标签宁可撑开容器也不断成两行：390px 下后台工具条被 flex 压缩时，
+     "刷新" 会排成 75x79、"+ 新增模板" 排成 65x112 的一竖条，读不出是按钮。 */
+  .btn-primary, .btn-secondary, .btn-gold, .btn-danger, .btn-ghost {
+    white-space: nowrap;
+  }
+
+  /* 后台正文在窄屏整体横向滚动：表格列数是固定的，压进 150px 会把每格挤成一列一个字。
+     宽屏必须还原成真正的 table，否则 display:block 让 w-full 失效、表头跟着滚走。 */
+  .admin-scope table {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  @media (min-width: 1024px) {
+    .admin-scope table {
+      display: table;
+      overflow: visible;
+    }
   }
 
   /* 紧凑档：后台筛选条、配额数字表单这类密集排布用的。
@@ -633,23 +682,9 @@ article.font-serif {
   letter-spacing: 0.01em;
 }
 
-/* 暗色模式支持 */
-[data-theme="dark"] .bg-stone-50 {
-  background-color: #0f172a;
-}
-[data-theme="dark"] .bg-white {
-  background-color: #1e293b;
-  border-color: #334155;
-}
-[data-theme="dark"] .text-stone-800 {
-  color: #f1f5f9;
-}
-[data-theme="dark"] .text-stone-500 {
-  color: #94a3b8;
-}
-[data-theme="dark"] .border-stone-200 {
-  border-color: #334155;
-}
+/* 「暗色模式支持」这五条早期写在这里的兜底已删：本文件后面（.bg-white / .text-stone-*
+   等）各自有带 !important 的同名规则且都晚于此，这里写死的 .bg-white #1e293b 从来没
+   生效过，留着只会让人改错地方。 */
 
 /* ===== 读经主题（仅作用于读经页，不影响全局导航）=====
    通过外层 .read-page 上的 data-read-theme 切换，覆盖本页用到的工具类颜色 */
@@ -657,55 +692,81 @@ article.font-serif {
   background: #f6f7fb;
   transition: background-color 0.3s ease;
 }
-.read-page[data-read-theme="dark"] {
+html .read-page[data-read-theme="dark"] {
   background: #0e1116 !important;
 }
-.read-page[data-read-theme="sepia"] {
+html .read-page[data-read-theme="sepia"] {
   background: #f3ead6 !important;
 }
 
 /* —— 夜间 —— */
-.read-page[data-read-theme="dark"] .bg-white { background-color: #171b22 !important; }
-.read-page[data-read-theme="dark"] .bg-ink-100 { background-color: #1c2029 !important; }
-.read-page[data-read-theme="dark"] .bg-primary-50\/80 { background-color: rgba(99,134,255,0.10) !important; }
-.read-page[data-read-theme="dark"] .bg-primary-50\/70 { background-color: rgba(99,134,255,0.12) !important; }
-.read-page[data-read-theme="dark"] .border-ink-200 { border-color: #2a2f3a !important; }
-.read-page[data-read-theme="dark"] .border-ink-100 { border-color: #222732 !important; }
-.read-page[data-read-theme="dark"] .border-primary-100 { border-color: rgba(99,134,255,0.30) !important; }
-.read-page[data-read-theme="dark"] .border-primary-400 { border-color: rgba(99,134,255,0.45) !important; }
-.read-page[data-read-theme="dark"] .text-ink-900 { color: #f1efe9 !important; }
-.read-page[data-read-theme="dark"] .text-ink-800 { color: #dcdbd4 !important; }
-.read-page[data-read-theme="dark"] .text-ink-700 { color: #c9cdd6 !important; }
-.read-page[data-read-theme="dark"] .text-ink-600 { color: #aeb4c2 !important; }
-.read-page[data-read-theme="dark"] .text-ink-500 { color: #9aa0ad !important; }
-.read-page[data-read-theme="dark"] .text-ink-400 { color: #8b91a0 !important; }
-.read-page[data-read-theme="dark"] .text-ink-300 { color: #6b7280 !important; }
-.read-page[data-read-theme="dark"] .text-primary-600 { color: #aab8ff !important; }
-.read-page[data-read-theme="dark"] .text-primary-700 { color: #b9c4ff !important; }
-.read-page[data-read-theme="dark"] .read-verse:hover { background: rgba(255,255,255,0.04) !important; }
+html .read-page[data-read-theme="dark"] .bg-white { background-color: #171b22 !important; }
+html .read-page[data-read-theme="dark"] .bg-ink-100 { background-color: #1c2029 !important; }
+html .read-page[data-read-theme="dark"] .bg-primary-50\/80 { background-color: rgba(99,134,255,0.10) !important; }
+html .read-page[data-read-theme="dark"] .bg-primary-50\/70 { background-color: rgba(99,134,255,0.12) !important; }
+html .read-page[data-read-theme="dark"] .border-ink-200 { border-color: #2a2f3a !important; }
+html .read-page[data-read-theme="dark"] .border-ink-100 { border-color: #222732 !important; }
+html .read-page[data-read-theme="dark"] .border-primary-100 { border-color: rgba(99,134,255,0.30) !important; }
+html .read-page[data-read-theme="dark"] .border-primary-400 { border-color: rgba(99,134,255,0.45) !important; }
+html .read-page[data-read-theme="dark"] .text-ink-900 { color: #f1efe9 !important; }
+html .read-page[data-read-theme="dark"] .text-ink-800 { color: #dcdbd4 !important; }
+html .read-page[data-read-theme="dark"] .text-ink-700 { color: #c9cdd6 !important; }
+html .read-page[data-read-theme="dark"] .text-ink-600 { color: #aeb4c2 !important; }
+html .read-page[data-read-theme="dark"] .text-ink-500 { color: #9aa0ad !important; }
+html .read-page[data-read-theme="dark"] .text-ink-400 { color: #8b91a0 !important; }
+html .read-page[data-read-theme="dark"] .text-ink-300 { color: #6b7280 !important; }
+html .read-page[data-read-theme="dark"] .text-primary-600 { color: #aab8ff !important; }
+html .read-page[data-read-theme="dark"] .text-primary-700 { color: #b9c4ff !important; }
+html .read-page[data-read-theme="dark"] .read-verse:hover { background: rgba(255,255,255,0.04) !important; }
 
 /* —— 护眼（羊皮纸） —— */
-.read-page[data-read-theme="sepia"] .bg-white { background-color: #fbf4e6 !important; }
-.read-page[data-read-theme="sepia"] .bg-ink-100 { background-color: #ece1c8 !important; }
-.read-page[data-read-theme="sepia"] .bg-primary-50\/80 { background-color: rgba(184,134,11,0.10) !important; }
-.read-page[data-read-theme="sepia"] .bg-primary-50\/70 { background-color: rgba(184,134,11,0.12) !important; }
-.read-page[data-read-theme="sepia"] .border-ink-200 { border-color: #e6d8bd !important; }
-.read-page[data-read-theme="sepia"] .border-ink-100 { border-color: #e0d1b3 !important; }
-.read-page[data-read-theme="sepia"] .border-primary-100 { border-color: rgba(184,134,11,0.30) !important; }
-.read-page[data-read-theme="sepia"] .border-primary-400 { border-color: rgba(184,134,11,0.45) !important; }
+html .read-page[data-read-theme="sepia"] .bg-white { background-color: #fbf4e6 !important; }
+html .read-page[data-read-theme="sepia"] .bg-ink-100 { background-color: #ece1c8 !important; }
+html .read-page[data-read-theme="sepia"] .bg-primary-50\/80 { background-color: rgba(184,134,11,0.10) !important; }
+html .read-page[data-read-theme="sepia"] .bg-primary-50\/70 { background-color: rgba(184,134,11,0.12) !important; }
+html .read-page[data-read-theme="sepia"] .border-ink-200 { border-color: #e6d8bd !important; }
+html .read-page[data-read-theme="sepia"] .border-ink-100 { border-color: #e0d1b3 !important; }
+html .read-page[data-read-theme="sepia"] .border-primary-100 { border-color: rgba(184,134,11,0.30) !important; }
+html .read-page[data-read-theme="sepia"] .border-primary-400 { border-color: rgba(184,134,11,0.45) !important; }
 /* 羊皮纸墨阶：原先 900 比 800 还浅（阶序反了），且整档偏亮，12~14px 的次要文字
    （text-ink-400/500）落在卡片上只有 3.5:1，读起来发灰。整档压深一级，
    让 500/600 都站上 4.5，400 也抬到 4.4 附近（羊皮纸底最深只能到这儿，再深就不是护眼色了）。 */
-.read-page[data-read-theme="sepia"] .text-ink-900 { color: #3a3020 !important; }
-.read-page[data-read-theme="sepia"] .text-ink-800 { color: #483c27 !important; }
-.read-page[data-read-theme="sepia"] .text-ink-700 { color: #564830 !important; }
-.read-page[data-read-theme="sepia"] .text-ink-600 { color: #635335 !important; }
-.read-page[data-read-theme="sepia"] .text-ink-500 { color: #6f5f42 !important; }
-.read-page[data-read-theme="sepia"] .text-ink-400 { color: #75643f !important; }
-.read-page[data-read-theme="sepia"] .text-ink-300 { color: #94805f !important; }
-.read-page[data-read-theme="sepia"] .text-primary-600 { color: #7d6127 !important; }
-.read-page[data-read-theme="sepia"] .text-primary-700 { color: #6f5421 !important; }
-.read-page[data-read-theme="sepia"] .read-verse:hover { background: rgba(184,134,11,0.06) !important; }
+html .read-page[data-read-theme="sepia"] .text-ink-900 { color: #3a3020 !important; }
+html .read-page[data-read-theme="sepia"] .text-ink-800 { color: #483c27 !important; }
+html .read-page[data-read-theme="sepia"] .text-ink-700 { color: #564830 !important; }
+html .read-page[data-read-theme="sepia"] .text-ink-600 { color: #635335 !important; }
+html .read-page[data-read-theme="sepia"] .text-ink-500 { color: #6f5f42 !important; }
+html .read-page[data-read-theme="sepia"] .text-ink-400 { color: #75643f !important; }
+html .read-page[data-read-theme="sepia"] .text-ink-300 { color: #94805f !important; }
+html .read-page[data-read-theme="sepia"] .text-primary-600 { color: #7d6127 !important; }
+html .read-page[data-read-theme="sepia"] .text-primary-700 { color: #6f5421 !important; }
+html .read-page[data-read-theme="sepia"] .read-verse:hover { background: rgba(184,134,11,0.06) !important; }
+
+/* —— 纸白读经页与全站主题互相独立，这里补第三个方向 ——
+   上面两块管「读经页自己换色」，但全站主题的规则照样会漏进纸面：站点深色把
+   .text-ink-900 反成 #f1efe9，压在白纸上实测 1.07，.text-rose-700 → #fda4af 压在 rose-50 面板上 1.55。
+   用户路径很常见：在读经页选过「纸白」，之后把全站切成深色。
+   纸面固定是白的，所以字只能是深墨，与全站主题无关；这一档取值等同浅色站点那套按纸面校过的值。
+   html 前缀把特异度抬到 (0,2,1)，稳压 [data-theme=…] .tok 的 (0,2,0)，不靠书写顺序赌。 */
+html .read-page[data-read-theme="light"] .text-ink-900 { color: #1f2339 !important; }
+html .read-page[data-read-theme="light"] .text-ink-800 { color: #2d3350 !important; }
+html .read-page[data-read-theme="light"] .text-ink-700 { color: #3a4165 !important; }
+html .read-page[data-read-theme="light"] .text-ink-600 { color: #4a5280 !important; }
+html .read-page[data-read-theme="light"] .text-ink-500 { color: #565f8c !important; }
+html .read-page[data-read-theme="light"] .text-ink-400 { color: #626a95 !important; }
+html .read-page[data-read-theme="light"] .text-ink-300 { color: #6b73a0 !important; }
+html .read-page[data-read-theme="light"] .text-primary-600 { color: #3d52d9 !important; }
+html .read-page[data-read-theme="light"] .text-primary-700 { color: #3242b0 !important; }
+html .read-page[data-read-theme="light"] .text-rose-600 { color: #e11d48 !important; }
+html .read-page[data-read-theme="light"] .text-rose-700 { color: #be123c !important; }
+html .read-page[data-read-theme="light"] .text-amber-500 { color: #b45309 !important; }
+html .read-page[data-read-theme="light"] .text-amber-700 { color: #b45309 !important; }
+html .read-page[data-read-theme="light"] .text-gold-600 { color: #d97706 !important; }
+html .read-page[data-read-theme="light"] .text-emerald-700 { color: #047857 !important; }
+html .read-page[data-read-theme="light"] .bg-white { background-color: #ffffff !important; }
+html .read-page[data-read-theme="light"] .bg-ink-100 { background-color: #eef0f7 !important; }
+html .read-page[data-read-theme="light"] .border-ink-200 { border-color: #dde1ee !important; }
+html .read-page[data-read-theme="light"] .border-ink-100 { border-color: #eef0f7 !important; }
 
 /* 读经顶部进度条 */
 .read-progress {
@@ -771,10 +832,12 @@ article.font-serif {
   border: 1px solid rgba(184, 134, 11, 0.18);
 }
 /* 护眼下玻璃层原本只有 .glass 被覆盖，.glass-tech / .card-tech 仍是白色半透明，
-   叠在羊皮纸底上等于没有面板（移动端底部导航栏最明显） */
+   叠在羊皮纸底上等于没有面板（移动端底部导航栏最明显）。
+   0.86 仍然让底下的冷色渐变透上来（实测面板平均到 rgb(221,217,223) 的灰紫，
+   上面的 ink-500 掉到 4.44），提到 0.94 才既暖又过线。 */
 [data-theme="sepia"] .glass-tech,
 [data-theme="sepia"] .card-tech {
-  background: rgba(251, 244, 230, 0.86);
+  background: rgba(251, 244, 230, 0.94);
   border-color: rgba(184, 134, 11, 0.20);
 }
 
@@ -815,6 +878,17 @@ article.font-serif {
 [data-theme="dark"] .text-rose-700,
 [data-theme="dark"] .text-rose-800 { color: #fda4af !important; }
 [data-theme="dark"] .bg-rose-50 { background-color: rgba(244, 63, 94, 0.10) !important; }
+/* .btn-ghost 自带 bg-ink-100/70，带斜杠的类名不会被 [data-theme="dark"] .bg-ink-100 命中，
+   深色主题下成了「浅灰底 + 浅灰字」——后台直播页的「查看」实测 1.05:1，等于隐形。 */
+[data-theme="dark"] .btn-ghost {
+  background-color: #1c2029 !important;
+  border-color: #2a2f3a !important;
+  color: #aeb4c2 !important;
+}
+[data-theme="dark"] .btn-ghost:hover {
+  background-color: #262c37 !important;
+  color: #f1f2f6 !important;
+}
 [data-theme="dark"] .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.10) !important; }
 [data-theme="dark"] .border-rose-200 { border-color: rgba(244, 63, 94, 0.30) !important; }
 [data-theme="dark"] .border-emerald-200 { border-color: rgba(16, 185, 129, 0.30) !important; }
@@ -889,6 +963,70 @@ article.font-serif {
 [data-theme="dark"] .hover\:bg-gold-100:hover,
 [data-theme="dark"] .hover\:bg-amber-100:hover { background-color: rgba(245, 158, 11, 0.12) !important; }
 [data-theme="dark"] input.focus\:bg-white:focus { background-color: #1c2029 !important; }
+
+/* —— 悬停态文字色（hover:text-primary-600、group-hover:text-ink-700 …，共 177 处）——
+   上面的兜底写的都是 .text-x 精确选择器，而 Tailwind 的变体类名是 .hover\:text-x /
+   .group-hover\:text-x —— 不是同一个类，所以静态文字压亮了、鼠标一划过去又掉回深蓝深灰。
+   实测深色卡片上 hover:text-primary-700 只有 2.09:1、hover:text-ink-700 1.75:1，
+   比不悬停时还看不清，「可点」的反馈反成了「消失」。这里把每个色族的悬停色对齐到它自己的深色映射。
+   注意 ink-950 / gold-* 不在此列：那几处落在金底上（bg-gold-500、from-gold-400），
+   深字压金底才是对的，压亮反而糊掉。 */
+[data-theme="dark"] .hover\:text-primary-500:hover,
+[data-theme="dark"] .hover\:text-primary-600:hover,
+[data-theme="dark"] .group:hover .group-hover\:text-primary-500,
+[data-theme="dark"] .group:hover .group-hover\:text-primary-600 { color: #aab8ff !important; }
+[data-theme="dark"] .hover\:text-primary-700:hover,
+[data-theme="dark"] .hover\:text-primary-800:hover,
+[data-theme="dark"] .group:hover .group-hover\:text-primary-700 { color: #b9c4ff !important; }
+[data-theme="dark"] .hover\:text-rose-600:hover,
+[data-theme="dark"] .hover\:text-rose-700:hover { color: #fb7185 !important; }
+[data-theme="dark"] .hover\:text-gold-800:hover,
+[data-theme="dark"] .group:hover .group-hover\:text-amber-900 { color: #fcd34d !important; }
+/* 悬停到金/琥珀的中深档（gold-600 #d97706、amber-500 #f59e0b）压在深底上只有 3.2~3.9:1，
+   和上面 gold-800 → #fcd34d 是同一个毛病：静态兜底把文字压亮了，不带 !important 的
+   Tailwind hover 工具类挤不过它，悬停等于没反应。共 11 处（诗歌卡标题、分类计数、
+   社区/祷告/搜索/经文的悬停行）。 */
+[data-theme="dark"] .hover\:text-gold-600:hover,
+[data-theme="dark"] .hover\:text-amber-500:hover,
+[data-theme="dark"] .group:hover .group-hover\:text-gold-600 { color: #fbbf24 !important; }
+/* 悬停到纯白（页脚 12 条链接、导航、各页返回链接、卡片图标块）：同理补一档。
+   这些目标全部落在恒深底上（页脚色带、hero、深底卡片），纯白不会糊。 */
+[data-theme="dark"] .hover\:text-white:hover,
+[data-theme="dark"] .group:hover .group-hover\:text-white { color: #ffffff !important; }
+[data-theme="dark"] .hover\:text-ink-600:hover { color: #aeb4c2 !important; }
+[data-theme="dark"] .hover\:text-ink-700:hover { color: #c9cdd6 !important; }
+[data-theme="dark"] .hover\:text-ink-800:hover { color: #dcdbd4 !important; }
+/* 上面那条注释的反面例外：`text-gold-700 hover:text-ink-950`（金底动作键、封面图标块）
+   悬停时翻成金底近墨字，本来是对的，但 .text-gold-700 的压亮兜底同为 !important，
+   把不带 !important 的 Tailwind hover 工具类挤掉了 —— #fcd34d 压在 #fbbf24 上只有 1.16:1，
+   悬停等于文字消失。用更高特异性的 hover 选择器把 ink-950 还回去：
+   共 5 处，悬停底全落在金档（gold-400/500/600），近墨字对应 10.76 / 8.36 / 5.64。 */
+[data-theme="dark"] .hover\:text-ink-950:hover,
+[data-theme="dark"] .group:hover .group-hover\:text-ink-950 { color: #131625 !important; }
+/* 同类的 group-hover 底色：图标块和节号圆片悬停时翻成浅底，压住已经压亮的字。 */
+[data-theme="dark"] .group:hover .group-hover\:bg-primary-100 { background-color: rgba(99, 134, 255, 0.18) !important; }
+[data-theme="dark"] .group:hover .group-hover\:bg-amber-100 { background-color: rgba(245, 158, 11, 0.16) !important; }
+/* 语义色的淡悬停底（rose / emerald，共 23 处）：同上，浅底会压住压亮的字，
+   只在这两套里补，实心按钮（bg-rose-700、bg-primary-700）本来就是深底白字，不用动。 */
+[data-theme="dark"] .hover\:bg-rose-50:hover { background-color: rgba(244, 63, 94, 0.10) !important; }
+[data-theme="dark"] .hover\:bg-rose-100:hover { background-color: rgba(244, 63, 94, 0.16) !important; }
+[data-theme="dark"] .hover\:bg-emerald-100:hover { background-color: rgba(16, 185, 129, 0.16) !important; }
+/* 悬停描边（共 97 处）：静态边被压成了 rgba(99,134,255,.30) 一档，悬停边却仍是
+   Tailwind 原色 —— ink 系压成深灰，在卡片上等于「悬停没反应」；primary 系则是纯白蓝，
+   闪一下很刺。两边都收进同一族，只是比静态亮一档。 */
+[data-theme="dark"] .hover\:border-ink-200:hover { border-color: #39404f !important; }
+[data-theme="dark"] .hover\:border-ink-300:hover { border-color: #4a5268 !important; }
+[data-theme="dark"] .hover\:border-ink-400:hover { border-color: #5b6480 !important; }
+[data-theme="dark"] .hover\:border-primary-200:hover,
+[data-theme="dark"] .hover\:border-primary-300:hover { border-color: rgba(99, 134, 255, 0.55) !important; }
+[data-theme="dark"] .hover\:border-primary-400:hover { border-color: rgba(99, 134, 255, 0.70) !important; }
+[data-theme="dark"] .hover\:border-gold-200:hover,
+[data-theme="dark"] .hover\:border-gold-300:hover,
+[data-theme="dark"] .hover\:border-gold-400:hover,
+[data-theme="dark"] .hover\:border-amber-200:hover { border-color: rgba(245, 158, 11, 0.45) !important; }
+[data-theme="dark"] .hover\:border-rose-200:hover,
+[data-theme="dark"] .hover\:border-rose-300:hover,
+[data-theme="dark"] .hover\:border-rose-400:hover { border-color: rgba(244, 63, 94, 0.45) !important; }
 
 /* —— 文字 —— */
 [data-theme="dark"] .text-ink-900 { color: #f1efe9 !important; }
@@ -994,31 +1132,108 @@ article.font-serif {
 [data-theme="sepia"] .bg-primary-50 { background-color: rgba(184, 134, 11, 0.10) !important; }
 [data-theme="sepia"] .bg-primary-100 { background-color: rgba(184, 134, 11, 0.16) !important; }
 /* 与 .read-page 那份保持同一档墨阶，理由见上；另外补上原先没人管的 ink-300
-   （话题卡里 18 处「·」分隔符，原样落在羊皮纸上是 1.47:1 的冷灰，等于看不见）。 */
+   （话题卡里 18 处「·」分隔符，原样落在羊皮纸上是 1.47:1 的冷灰，等于看不见）。
+   400~700 这一整段再压深一级：像素级实测原值压在羊皮纸的染色面板上只有
+   3.62（ink-500 在卡片底）/ 3.79（ink-400 在列表行）/ 4.35（ink-600 在 bg-ink-50 胶囊），
+   全是 12~14px 的小字。新 ladder 在实测出现过的六种纸上底里最差 4.65。
+   代价是暖褐区间里四档挤得更近，但换来的是全站小字都过 4.5。 */
 [data-theme="sepia"] .text-ink-900 { color: #3a3020 !important; }
 [data-theme="sepia"] .text-ink-800 { color: #483c27 !important; }
-[data-theme="sepia"] .text-ink-700 { color: #564830 !important; }
-[data-theme="sepia"] .text-ink-600 { color: #635335 !important; }
-[data-theme="sepia"] .text-ink-500 { color: #6f5f42 !important; }
-[data-theme="sepia"] .text-ink-400 { color: #75643f !important; }
-[data-theme="sepia"] .text-ink-300 { color: #94805f !important; }
+[data-theme="sepia"] .text-ink-700 { color: #50432c !important; }
+[data-theme="sepia"] .text-ink-600 { color: #564830 !important; }
+[data-theme="sepia"] .text-ink-500 { color: #5a4c34 !important; }
+[data-theme="sepia"] .text-ink-400 { color: #5d4f37 !important; }
+[data-theme="sepia"] .text-ink-300 { color: #6c5c40 !important; }
 /* 羊皮纸上的蓝色链接（原先 #9a7b3f / #86692f 实测 3.53 / 4.53）比正文还浅，
-   小字号根本读不动。压深到同一暖褐区间的 5.16 / 6.28。 */
-[data-theme="sepia"] .text-primary-600 { color: #7d6127 !important; }
-[data-theme="sepia"] .text-primary-700 { color: #6f5421 !important; }
+   小字号根本读不动。压深到同一暖褐区间的 5.16 / 6.28。
+   再压一档的理由是像素级实测：这两档字压在被 bg-primary-50 染色过的淡金面板上
+   （社区页「分享」徽章、「全部 →」链接）只有 4.13 / 4.39，小字号要到 4.5。 */
+[data-theme="sepia"] .text-primary-600 { color: #6b5220 !important; }
+[data-theme="sepia"] .text-primary-700 { color: #5d451b !important; }
+/* 语义色的静态档。羊皮纸刻意保留「红=危险、金=金额」的色相，但 600/700 这几档是按白卡
+   调的，压到暖纸上就掉到线下：rose-600 在浅红面板上实测 3.72~4.40（后台「驳回」「解散」
+   「删除」这一批动作按钮全中），gold/amber-700 在金色面板上 3.97~4.43（配额数字、
+   「待审核」「下架」）。只压明度、不动色相，读起来仍然是红和金。 */
+[data-theme="sepia"] .text-rose-600 { color: #be123c !important; }
+/* amber-700 挪到下面「徽章色族」那一批一起压深，这里只留 gold-700。 */
+[data-theme="sepia"] .text-gold-700 { color: #8a5a12 !important; }
 /* 徽章墙的中性 chip 写的是 slate（只有暗色补过）：羊皮纸底上会露出一块冷灰，
    跟整页的暖调对不上。收进墨阶，顺带把对比从 8.40 的冷灰换成同档的暖灰。 */
 [data-theme="sepia"] .bg-slate-200 { background-color: #ece1c8 !important; }
 [data-theme="sepia"] .text-slate-700 { color: #5c4c35 !important; }
+/* 徽章色族在羊皮纸下原先一件都没管（深色补了三套，浅色这次也补了）：
+   冷蓝 / 冷绿的 -100 实心底直接压在暖纸上，既露出一块冷色，文字又只有 4.35
+   （实测「L1 慕道友」sky 胶囊 12px：#0369a1 on rgb(206,223,235)）。
+   底色收进同色相的暖褐透明度，文字压到 -800 级，色相语义（蓝=普通、绿=通过、红=驳回、金=金额）保留。 */
+[data-theme="sepia"] .bg-sky-100 { background-color: rgba(2, 132, 199, 0.14) !important; }
+[data-theme="sepia"] .bg-emerald-100 { background-color: rgba(5, 150, 105, 0.14) !important; }
+[data-theme="sepia"] .bg-green-50 { background-color: rgba(22, 101, 52, 0.10) !important; }
+[data-theme="sepia"] .bg-rose-100 { background-color: rgba(190, 18, 60, 0.12) !important; }
+[data-theme="sepia"] .bg-red-50 { background-color: rgba(185, 28, 28, 0.10) !important; }
+[data-theme="sepia"] .bg-purple-100 { background-color: rgba(107, 33, 168, 0.12) !important; }
+[data-theme="sepia"] .bg-violet-50 { background-color: rgba(107, 33, 168, 0.09) !important; }
+[data-theme="sepia"] .bg-amber-100 { background-color: rgba(180, 83, 9, 0.14) !important; }
+[data-theme="sepia"] .text-sky-700 { color: #075985 !important; }
+[data-theme="sepia"] .text-emerald-700 { color: #065f46 !important; }
+[data-theme="sepia"] .text-green-700 { color: #166534 !important; }
+[data-theme="sepia"] .text-rose-700 { color: #9f1239 !important; }
+[data-theme="sepia"] .text-red-700 { color: #b91c1c !important; }
+[data-theme="sepia"] .text-amber-700 { color: #92400e !important; }
+[data-theme="sepia"] .text-purple-700,
+[data-theme="sepia"] .text-violet-700 { color: #6b21a8 !important; }
 [data-theme="sepia"] .border-ink-200 { border-color: #e6d8bd !important; }
 [data-theme="sepia"] .border-ink-100 { border-color: #e0d1b3 !important; }
 [data-theme="sepia"] .border-primary-100 { border-color: rgba(184, 134, 11, 0.30) !important; }
 [data-theme="sepia"] .divide-ink-200 > * + * { border-color: #e6d8bd !important; }
 [data-theme="sepia"] .input-styled { background-color: #fbf4e6 !important; color: #4a3f2f !important; border-color: #e6d8bd !important; }
-/* 羊皮纸上的蓝色链接（primary-600/700 实测 3.53 / 4.53）比正文还浅，小字号根本读不动。
-   压深到同一暖褐区间的 5.32 / 6.28，仍是「可点的深色」，不再和正文糊成一片。 */
-[data-theme="sepia"] .text-primary-600 { color: #7d6127 !important; }
-[data-theme="sepia"] .text-primary-700 { color: #6f5421 !important; }
+/* 透明度写法的淡面板（bg-primary-50/70、bg-ink-100/60 …，共 35 处）：精确选择器 .bg-primary-50
+   已经收进暖褐，带斜杠的变体是另一个类名，漏在外面 —— 暖纸上因此仍横着一块冷蓝/冷灰面板。
+   和上面 ink-200/300 那次是同一类窟窿，收进同一档暖砂。 */
+[data-theme="sepia"] [class*="bg-primary-50/"] { background-color: rgba(184, 134, 11, 0.09) !important; }
+[data-theme="sepia"] [class*="bg-ink-100/"] { background-color: rgba(184, 134, 11, 0.11) !important; }
+[data-theme="sepia"] [class*="border-ink-100/"] { border-color: #e0d1b3 !important; }
+[data-theme="sepia"] [class*="border-ink-200/"] { border-color: #e6d8bd !important; }
+/* 悬停态文字（hover:text-* / group-hover:text-*，共 177 处）：变体类名不会命中上面的 .text-x
+   精确兜底，于是羊皮纸上静态是暖褐、一悬停跳回冷蓝。金/琥珀系悬停色压暖纸实测只有
+   1.96~2.91:1（amber-500、gold-600），rose-600 4.29 也差在小字号上，一并收进暖墨阶。 */
+[data-theme="sepia"] .hover\:text-primary-500:hover,
+[data-theme="sepia"] .hover\:text-primary-600:hover,
+[data-theme="sepia"] .group:hover .group-hover\:text-primary-500,
+[data-theme="sepia"] .group:hover .group-hover\:text-primary-600 { color: #6b5220 !important; }
+[data-theme="sepia"] .hover\:text-primary-700:hover,
+[data-theme="sepia"] .hover\:text-primary-800:hover,
+[data-theme="sepia"] .group:hover .group-hover\:text-primary-700 { color: #5d451b !important; }
+[data-theme="sepia"] .hover\:text-rose-600:hover,
+[data-theme="sepia"] .hover\:text-rose-700:hover { color: #a11338 !important; }
+[data-theme="sepia"] .hover\:text-gold-600:hover,
+[data-theme="sepia"] .hover\:text-amber-500:hover,
+[data-theme="sepia"] .group:hover .group-hover\:text-gold-600 { color: #8a5a12 !important; }
+/* 经文页的节号圆片（text-amber-700 group-hover:text-amber-900）：静态色被压色兜底接管，
+   悬停那一档却是另一个类名，等于悬停没反应。深色侧已有 #fcd34d 的对应规则，羊皮纸侧漏了。 */
+[data-theme="sepia"] .hover\:text-amber-900:hover,
+[data-theme="sepia"] .group:hover .group-hover\:text-amber-900 { color: #78350f !important; }
+[data-theme="sepia"] .hover\:text-ink-600:hover { color: #564830 !important; }
+[data-theme="sepia"] .hover\:text-ink-700:hover { color: #50432c !important; }
+[data-theme="sepia"] .hover\:text-ink-800:hover { color: #483c27 !important; }
+/* 和深色同一处反向例外：上面把 .text-gold-700 静态字压成 #8a5a12，它同为 !important，
+   会盖掉 hover:text-ink-950，于是近墨字换成深金压在金底上：#fbbf24 3.54、#f59e0b 2.75、
+   #d97706 1.86，越亮的悬停底越糊。这些悬停底本来就是实心金，只认近墨字。 */
+[data-theme="sepia"] .hover\:text-ink-950:hover,
+[data-theme="sepia"] .group:hover .group-hover\:text-ink-950 { color: #131625 !important; }
+/* 悬停底色（hover:bg-ink-50/100、hover:bg-primary-50 …，共 157 处）：羊皮纸把静态淡面板
+   收进了暖砂，悬停变体却是另一个类名，于是「鼠标一碰就泛一层冷蓝灰」—— 列表 / 卡片 /
+   后台表格逐行划过时最明显。对齐到各自那一档暖色。rose / emerald 的淡悬停底是语义色，按上文约定不动。 */
+[data-theme="sepia"] .hover\:bg-ink-50:hover { background-color: #f5ecd8 !important; }
+[data-theme="sepia"] .hover\:bg-ink-100:hover { background-color: #ece1c8 !important; }
+[data-theme="sepia"] .hover\:bg-ink-200:hover { background-color: #e6d9bf !important; }
+[data-theme="sepia"] .hover\:bg-primary-50:hover { background-color: rgba(184, 134, 11, 0.10) !important; }
+[data-theme="sepia"] .hover\:bg-primary-100:hover { background-color: rgba(184, 134, 11, 0.16) !important; }
+[data-theme="sepia"] .hover\:border-ink-200:hover { border-color: #e6d8bd !important; }
+[data-theme="sepia"] .hover\:border-ink-300:hover { border-color: #d8c8a8 !important; }
+[data-theme="sepia"] .hover\:border-ink-400:hover { border-color: #c9b78f !important; }
+[data-theme="sepia"] .hover\:border-primary-200:hover,
+[data-theme="sepia"] .hover\:border-primary-300:hover,
+[data-theme="sepia"] .hover\:border-primary-400:hover { border-color: rgba(184, 134, 11, 0.45) !important; }
 
 /* —— 浅色主题里唯一的对比度窟窿 ——
    两套暗色都各自重排过墨阶，浅色却直接用 tailwind.config 里的原色，而 ink 这组是从
@@ -1026,8 +1241,43 @@ article.font-serif {
    4.25:1，都够不着正文小字的 4.5。这两个 token 全站是「次要文字/时间戳/占位提示」，
    恰恰是人最需要看清的那批小字。只动 .text-，不碰 bg-ink-400（活动状态点）和
    border-ink-400（悬停描边），它们要的是色块层级，不是可读性。 */
-[data-theme="light"] .text-ink-400 { color: #626a95 !important; }
-[data-theme="light"] .text-ink-500 { color: #565f8c !important; }
+[data-theme="light"] .text-ink-400 { color: #535b88 !important; }
+[data-theme="light"] .text-ink-500 { color: #4c5480 !important; }
+/* 浅色主题下的悬停文字：同一类窟窿，只是这次只有浅色中招 —— 探针实测
+   歌曲卡在白卡上悬停后标题变 gold-600 #d97706，3.20:1；rose-600 压在 hover:bg-rose-50
+   的浅红底上 4.28:1，都在小字号 4.5 线下。深色 / 羊皮纸各自有兜底，反而是默认那套漏了。 */
+[data-theme="light"] .hover\:text-gold-600:hover,
+[data-theme="light"] .group:hover .group-hover\:text-gold-600 { color: #b45309 !important; }
+[data-theme="light"] .hover\:text-rose-600:hover { color: #be123c !important; }
+/* 浅色主题里 rose-600 是唯一还差一点的正文级语义色：#e11d48 压白卡 4.70 过线，
+   但「登出其它设备」「移除」这类按钮躺在 bg-ink-100 / bg-rose-50 的浅面板上只有
+   4.39。和悬停档统一到 rose-700，再把 rose-700 的悬停让给 rose-800，阶梯不断。 */
+[data-theme="light"] .text-rose-600 { color: #be123c !important; }
+[data-theme="light"] .hover\:text-rose-700:hover { color: #9f1239 !important; }
+/* 徽章色族（bg-X-100 + text-X-700，配额等级 / 审核状态 / 角色标签都用它）：
+   -100 底是按纯白算的，探针实测这些胶囊落在染色面板（bg-primary-50、卡片阴影层）上
+   会一起变暗 —— sky 实测底 rgb(206,223,235) 时 4.35，emerald 同底 4.04，amber 3.84，
+   全是 12px font-semibold。按最暗那一档把文字换成 -800 级：白底上仍保留原色相，
+   染色底上回到 5.4~5.7。solid bg-X-600 配的是 text-white，不受这批规则影响。 */
+[data-theme="light"] .text-sky-700 { color: #075985 !important; }
+[data-theme="light"] .text-emerald-700 { color: #065f46 !important; }
+[data-theme="light"] .text-green-700 { color: #166534 !important; }
+[data-theme="light"] .text-rose-700 { color: #9f1239 !important; }
+[data-theme="light"] .text-red-700 { color: #b91c1c !important; }
+[data-theme="light"] .text-amber-700 { color: #92400e !important; }
+[data-theme="light"] .text-purple-700,
+[data-theme="light"] .text-violet-700 { color: #6b21a8 !important; }
+
+/* —— 朗读逐字高亮（.verse-char.read / .active）——
+   这两档颜色写在经文章 <style jsx> 里，绕开了整套 [data-theme] 兜底：
+   read 的 #b45309 在深色正文底上只有 3.44，比周围正文（14.10）暗四倍，
+   「已经读过的字」在深色下反而成了最看不清的字；active 的 #d97706 压白卡 3.48、
+   压暖纸 3.35，浅色/羊皮纸同样在线下。三套主题各给一档，
+   保持「已读 < 正读」的亮度阶梯（正读另有加粗+放大+光晕三重强调）。 */
+[data-theme="dark"] .verse-char.read { color: #d8a83c !important; }
+[data-theme="dark"] .verse-char.active { color: #fbbf24 !important; }
+[data-theme="light"] .verse-char.active { color: #92400e !important; }
+[data-theme="sepia"] .verse-char.active { color: #92400e !important; }
 
 /* —— 装饰性浅色彩带（gradient wash）——
    from-primary-50 / to-gold-50 这类淡底渐变写的是 background-image，
@@ -1135,6 +1385,22 @@ article.font-serif {
 }
 
 /* ======================================================================
+   恒深色带子：页脚
+   <footer> 自己是 from-ink-950 via-ink-900 to-primary-950 + text-white，这三档没有任何主题
+   动过，所以三种主题下它都是同一条深底带子。上面那些按「纸面」算的 ink-* 兜底压进来就成了
+   黑字压黑底：羊皮纸 .text-ink-400 → #6d5c39 实测 2.40、浅色 → #626a95 实测 2.34，
+   页脚 12 条链接 + 版权行 + 三行联系方式每一页都中招（probe-pixcontrast 量出来的）。
+   页脚只用到 ink-400 / ink-500 两档，逐档还给深底上达标的浅墨（6.21 / 4.90），
+   并把被兜底吃掉的 hover:text-white 反馈还回去。
+   ====================================================================== */
+[data-theme="light"] footer .text-ink-400,
+[data-theme="sepia"] footer .text-ink-400 { color: #9ba3c4 !important; }
+[data-theme="light"] footer .text-ink-500,
+[data-theme="sepia"] footer .text-ink-500 { color: #8b91a0 !important; }
+[data-theme="light"] footer .hover\:text-white:hover,
+[data-theme="sepia"] footer .hover\:text-white:hover { color: #ffffff !important; }
+
+/* ======================================================================
    无障碍（Accessibility）：字体缩放 / 高对比 / 减少动效 / 键盘可达
    这些偏好由 <html data-a11y-*> 控制，AccessibilityProvider 在首屏前
    通过内联脚本写入，避免刷新闪动。
@@ -1191,11 +1457,13 @@ html[data-a11y-reduce-motion="1"] *::after {
   }
 }
 
-/* 键盘焦点可见：所有可聚焦元素显示清晰描边（鼠标点击不触发） */
+/* 键盘焦点可见：所有可聚焦元素显示清晰描边（鼠标点击不触发）。
+   这里刻意不写 border-radius：本规则不在任何 @layer 里，写了就会在聚焦瞬间
+   把 rounded-full 的胶囊按钮、rounded-2xl 的卡片统一压成 4px 直角。
+   outline 本来就跟随元素自身的圆角绘制。 */
 :focus-visible {
   outline: 3px solid #f59e0b !important;
   outline-offset: 2px !important;
-  border-radius: 4px;
 }
 
 /* 输入框焦点：用主题色柔和光晕替代粗 outline，保持可访问性同时更精致 */
@@ -1209,6 +1477,13 @@ html[data-a11y-reduce-motion="1"] *::after {
 [data-theme="dark"] .input-styled:focus-visible {
   box-shadow: 0 0 0 4px rgba(99, 134, 255, 0.22) !important;
   border-color: #6376ff !important;
+}
+
+/* 羊皮纸主题下输入框焦点：亮 #4f6df5 落在实测纸色 rgb(220,212,196) 上只有 2.95，
+   跟自己那圈光晕相邻时更低到 2.45，过不了 1.4.11 的 3:1；压深后 4.20 / 3.17。 */
+[data-theme="sepia"] .input-styled:focus-visible {
+  box-shadow: 0 0 0 4px rgba(64, 86, 201, 0.22) !important;
+  border-color: #4056c9 !important;
 }
 
 /* 跳过导航：视觉隐藏，键盘聚焦时显现，直达主内容 */

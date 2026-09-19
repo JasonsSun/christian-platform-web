@@ -25,7 +25,7 @@ export default function SpeechMiniCard({ raised = false }: { raised?: boolean })
       style={{ bottom }}
     >
       <div className="flex items-center gap-3 px-3 py-2.5">
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white flex-shrink-0">
+        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white flex-shrink-0">
           {s.state === 'loading' ? (
             <span className="animate-pulse text-xs">合成中</span>
           ) : s.state === 'playing' ? (
@@ -50,7 +50,7 @@ export default function SpeechMiniCard({ raised = false }: { raised?: boolean })
                   : '已暂停'}
             </span>
             {!s.backplayable && s.state !== 'loading' ? (
-              <span className="shrink-0 text-[10px] px-1 rounded bg-amber-50 text-amber-600" title="本机语音在息屏后会被系统挂起;开启后台播放后改用在线语音即可息屏续听">
+              <span className="shrink-0 text-[10px] px-1 rounded bg-amber-50 text-amber-700" title="本机语音在息屏后会被系统挂起;开启后台播放后改用在线语音即可息屏续听">
                 息屏暂停
               </span>
             ) : null}

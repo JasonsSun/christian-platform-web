@@ -48,7 +48,7 @@ export default function FeedPage() {
               <div className="flex items-center gap-2 mb-1">
                 <span
                   className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0"
-                  style={{ background: it.data.user?.avatarColor || '#4f6df5' }}
+                  style={{ background: it.data.user?.avatarColor || '#3d52d9' }}
                 >
                   {(it.data.user?.displayName || '?').slice(0, 1)}
                 </span>

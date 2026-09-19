@@ -121,7 +121,8 @@ export default function TopicsPage() {
           <div className="absolute bottom-0 left-10 w-64 h-64 bg-gold-400/15 rounded-full blur-3xl animate-float-slow" />
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-tech text-white/90 text-xs font-medium mb-3">
+          {/* 同日历页：白 12% 的磨砂片把 hero 带子提到 rgb(71,100,255)，白字只剩 4.07，换深色底片。 */}
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ink-950/30 border border-white/20 text-white/90 text-xs font-medium mb-3">
             <span className="w-1.5 h-1.5 rounded-full bg-gold-400 animate-pulse" />
             全站话题聚合
           </span>
@@ -165,6 +166,7 @@ export default function TopicsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
+                aria-label="搜索话题"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="搜索话题，如：信心、祷告、家庭…"
@@ -201,7 +203,7 @@ export default function TopicsPage() {
           </div>
 
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl p-4 text-sm mb-5">{error}</div>
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm mb-5">{error}</div>
           )}
 
           {loading && (
@@ -239,11 +241,13 @@ export default function TopicsPage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((t, i) => (
-              <Link
-                key={t.name}
-                href={topicHref(t.name)}
-                className="card-tech rounded-2xl p-5 group relative overflow-hidden"
-              >
+              <div key={t.name} className="card-tech rounded-2xl p-5 group relative overflow-hidden">
+                {/* 整卡跳转用铺满式链接，关注按钮才能合法地留在卡内（<a> 里不能套交互元素） */}
+                <Link
+                  href={topicHref(t.name)}
+                  aria-label={`查看话题 ${t.name}`}
+                  className="absolute inset-0"
+                />
                 {/* 排名前三的话题打上金标 */}
                 {sort === 'hot' && i < 3 && (
                   <span className="absolute top-0 right-0 px-2.5 py-1 rounded-bl-xl text-[11px] font-semibold bg-gradient-to-r from-gold-400 to-gold-600 text-ink-950">
@@ -267,14 +271,15 @@ export default function TopicsPage() {
                 </div>
 
                 {/* 热度条 */}
-                <div className="h-1.5 rounded-full bg-ink-100 overflow-hidden">
+                <div className="h-1.5 rounded-full bg-ink-100 overflow-hidden" aria-hidden>
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-primary-500 via-primary-400 to-gold-400 transition-all duration-500"
                     style={{ width: `${t.heatPct}%` }}
                   />
                 </div>
 
-                <div className="mt-2.5 flex items-center justify-between text-[11px] text-ink-400">
+                {/* 11px 的元信息行：ink-400 在浅灰卡片上实测 4.23~4.31，小字号要 4.5，提到 ink-600（6.06）。 */}
+                <div className="mt-2.5 flex items-center justify-between text-[11px] text-ink-600">
                   <span>热度 {t.heat}</span>
                   <div className="flex items-center gap-2">
                     {t.lastAt ? <span>{timeAgo(t.lastAt)}活跃</span> : null}
@@ -292,7 +297,7 @@ export default function TopicsPage() {
                     </button>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
 

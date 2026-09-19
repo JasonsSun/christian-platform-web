@@ -123,6 +123,8 @@ function SearchInner() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* 页面顶部只有搜索框，没有可见标题；读屏需要一个稳定的 h1 来定位这一页 */}
+      <h1 className="sr-only">全站搜索{q ? `：${q}` : ''}</h1>
       {/* 搜索框 */}
       <form
         onSubmit={(e) => {
@@ -136,6 +138,9 @@ function SearchInner() {
             <svg className="w-6 h-6 text-ink-400 ml-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input
               value={input}
+              name="q"
+              // 放大镜是装饰图标、没有可见文字标签，placeholder 不会被读屏当作名称
+              aria-label="搜索全站内容"
               onChange={(e) => setInput(e.target.value)}
               placeholder="搜索经文、诗歌、活动、团契或弟兄姊妹..."
               className="flex-1 py-3.5 bg-transparent text-ink-900 placeholder:text-ink-400 text-base focus:outline-none"
@@ -162,10 +167,10 @@ function SearchInner() {
           {history.length > 0 && (
             <div className="bg-white rounded-2xl p-6 shadow-soft border border-ink-100">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-display text-lg font-bold text-ink-900 flex items-center gap-2">
+                <h2 className="font-display text-lg font-bold text-ink-900 flex items-center gap-2">
                   <span>🕐</span>搜索历史
-                </h3>
-                <button onClick={handleClearHistory} className="text-sm text-ink-400 hover:text-rose-500 transition-colors">
+                </h2>
+                <button onClick={handleClearHistory} className="text-sm text-ink-400 hover:text-rose-600 transition-colors">
                   清空
                 </button>
               </div>
@@ -185,9 +190,9 @@ function SearchInner() {
           )}
 
           <div className="bg-white rounded-2xl p-6 shadow-soft border border-ink-100">
-            <h3 className="font-display text-lg font-bold text-ink-900 flex items-center gap-2 mb-4">
+            <h2 className="font-display text-lg font-bold text-ink-900 flex items-center gap-2 mb-4">
               <span>🔥</span>热门搜索
-            </h3>
+            </h2>
             <div className="flex flex-wrap gap-2">
               {HOT_SEARCHES.map((h, i) => (
                 <button
@@ -214,7 +219,7 @@ function SearchInner() {
         </div>
       )}
 
-      {q && error && <p className="text-rose-600 text-sm mb-6">搜索失败：{error}</p>}
+      {q && error && <p role="alert" className="text-rose-600 text-sm mb-6">搜索失败：{error}</p>}
 
       {q && loading && (
         <div className="space-y-10">

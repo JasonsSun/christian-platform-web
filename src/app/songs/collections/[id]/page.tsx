@@ -103,7 +103,7 @@ export default function SongCollectionDetailPage() {
           </div>
         ) : items.length === 0 ? (
           <div className="bg-white rounded-2xl p-10 shadow-soft border border-ink-100 text-center">
-            <h3 className="font-display text-xl font-bold text-ink-900 mb-2">这个歌单暂时是空的</h3>
+            <h2 className="font-display text-xl font-bold text-ink-900 mb-2">这个歌单暂时是空的</h2>
             <p className="text-ink-500 mb-6">可能是诗歌标签调整了，换个歌单听听看。</p>
             <Link href="/songs/collections" className="btn-primary inline-block px-6 py-2.5 text-sm">
               换一个歌单

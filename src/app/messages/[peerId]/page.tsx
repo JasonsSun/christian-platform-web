@@ -7,6 +7,7 @@ import { apiPost, apiPatch, apiDelete, apiForm } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
+import { scrollBehavior } from '@/lib/motion';
 import type { MessageItem } from '@/lib/types';
 
 interface Thread {
@@ -49,7 +50,7 @@ export default function MessageThreadPage() {
   }, [user, peerId, reload]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: scrollBehavior() });
   }, [data?.items?.length]);
 
   async function send(e: React.FormEvent) {
@@ -164,13 +165,21 @@ export default function MessageThreadPage() {
                   ) : (
                     <>
                       {m.attachment ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={m.attachment}
-                          alt="图片消息"
-                          className="max-w-full max-h-64 rounded-lg object-cover cursor-pointer"
-                          onClick={() => window.open(m.attachment, '_blank', 'noopener,noreferrer')}
-                        />
+                        // 打开原图得是真链接：onClick+window.open 键盘既走不到也看不见网址，
+                        // 外面的固定比例盒子顺便挡住图片加载完成时的跳动
+                        <a
+                          href={m.attachment}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block w-full max-w-[16rem] aspect-[4/3] overflow-hidden rounded-lg bg-ink-100"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={m.attachment}
+                            alt="图片消息"
+                            className="h-full w-full object-cover"
+                           decoding="async" loading="lazy" />
+                        </a>
                       ) : null}
                       {m.body ? <div className={m.attachment ? 'mt-1.5' : ''}>{m.body}</div> : null}
                     </>
@@ -208,7 +217,7 @@ export default function MessageThreadPage() {
                         </button>
                       </>
                     ) : (
-                      <span className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+                      <span className="opacity-0 max-md:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 focus-within:opacity-100 transition-opacity flex items-center gap-2">
                         {mine && m.canRecall ? (
                           <button
                             type="button"
@@ -233,8 +242,8 @@ export default function MessageThreadPage() {
             </div>
           );
         })}
-        {sendError && <p className="text-center text-rose-500 text-sm">{sendError}</p>}
-        {opError && <p className="text-center text-rose-500 text-sm">{opError}</p>}
+        {sendError && <p className="text-center text-rose-600 text-sm">{sendError}</p>}
+        {opError && <p className="text-center text-rose-600 text-sm">{opError}</p>}
       </div>
 
       <form onSubmit={send} className="flex gap-2 pt-3 border-t border-ink-200">
@@ -258,6 +267,7 @@ export default function MessageThreadPage() {
           {uploading ? '上传中…' : '图片'}
         </button>
         <input
+          aria-label="输入私信内容"
           className="input-styled flex-1"
           placeholder="输入消息…"
           value={text}

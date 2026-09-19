@@ -101,13 +101,13 @@ export default function NotificationsPage() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 min-w-0 whitespace-nowrap px-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t.key
                 ? 'bg-white text-primary-700 shadow-sm'
                 : 'text-ink-500 hover:text-ink-700'
             }`}
           >
-            <span className="mr-1">{t.icon}</span>
+            <span className="mr-0.5">{t.icon}</span>
             {t.label}
           </button>
         ))}
@@ -146,7 +146,7 @@ export default function NotificationsPage() {
       {!loading && !error && items.length === 0 && (
         <div className="text-center py-16 bg-white rounded-2xl border border-ink-100 shadow-soft">
           <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">🔔</div>
-          <h3 className="font-display text-lg font-bold text-ink-900 mb-1">还没有通知</h3>
+          <h2 className="font-display text-lg font-bold text-ink-900 mb-1">还没有通知</h2>
           <p className="text-ink-500">有新的动态会在这里提醒你</p>
         </div>
       )}
@@ -176,7 +176,7 @@ export default function NotificationsPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className={`font-semibold truncate ${n.read ? 'text-ink-700' : 'text-ink-900'}`}>{n.title}</h3>
+                  <h2 className={`font-semibold truncate ${n.read ? 'text-ink-700' : 'text-ink-900'}`}>{n.title}</h2>
                   {!n.read && <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0" />}
                 </div>
                 <p className="text-sm text-ink-500 mt-0.5 line-clamp-2">{n.body}</p>

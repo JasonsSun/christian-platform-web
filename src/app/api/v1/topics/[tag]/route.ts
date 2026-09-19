@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { q } from '@/server/db';
 import { ok, withApi, HttpError } from '@/server/http';
+import { whiteSafeColor } from '@/server/mappers';
 import { currentUser, UserRow } from '@/server/auth';
 import { isFollowing, followerCount } from '@/server/topicFollows';
 
@@ -93,7 +94,10 @@ export const GET = withApi(async (req: NextRequest, ctx: { params: { tag: string
       const cur = authorMap.get(aid) || {
         id: aid,
         name: String(r.display_name || r.username || '匿名'),
-        color: String(r.avatar_color || '#4f6df5'),
+        // 这里漏了白字安全化：库里存的是原始头像色（含 #84cc16 这类亮档），
+        // 话题页拿它当 28px 圆片的底色并压白字，实测白字最低只有 1.9:1。
+        // 其余出口都走 whiteSafeColor()，本接口是最后一个例外。
+        color: whiteSafeColor(r.avatar_color || '#4f6df5'),
         count: 0,
       };
       cur.count += 1;

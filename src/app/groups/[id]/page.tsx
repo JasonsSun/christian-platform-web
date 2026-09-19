@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useId } from 'react';
 import { apiPost, apiDelete, apiPatch } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
-import { useEscape } from '@/lib/a11y';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { timeAgo } from '@/lib/format';
 import type { Author, GroupItem } from '@/lib/types';
 import RichText from '@/components/RichText';
@@ -43,7 +43,7 @@ function Avatar({ user, size = 40 }: { user: Author; size?: number }) {
   return (
     <span
       className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
-      style={{ backgroundColor: user.avatarColor || '#4f6df5', width: size, height: size, fontSize: size * 0.4 }}
+      style={{ backgroundColor: user.avatarColor || '#3d52d9', width: size, height: size, fontSize: size * 0.4 }}
     >
       {(user.displayName || user.username || '?').slice(0, 1)}
     </span>
@@ -137,6 +137,11 @@ export default function GroupDetailPage() {
       setAnnouncementOpen(false);
     }
   });
+  // 焦点管理要写在下面的 loading/!data 早返回之前，否则 hook 数量会随渲染变化
+  const ownerExitRef = useDialogFocus(ownerExitOpen);
+  const ownerExitTitleId = useId();
+  const announcementRef = useDialogFocus(announcementOpen);
+  const announcementTitleId = useId();
 
   const confirmSoloDissolve = useCallback(async () => {
     if (!data) return;
@@ -312,13 +317,14 @@ export default function GroupDetailPage() {
             <div className="bg-white rounded-3xl p-5 md:p-6 shadow-soft border border-ink-100">
               <h2 className="font-display text-xl font-bold text-ink-900 mb-4">团契动态</h2>
               {postError && (
-                <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3 mb-4">
+                <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3 mb-4">
                   {postError}
                 </div>
               )}
               {isMember ? (
                 <div className="flex gap-2 mb-5">
                   <input
+                    aria-label="分享团契近况"
                     value={postBody}
                     onChange={(e) => setPostBody(e.target.value)}
                     placeholder="分享团契里的近况…"
@@ -332,7 +338,7 @@ export default function GroupDetailPage() {
               ) : (
                 <p className="text-sm text-ink-400 mb-5">加入团契后即可发布动态</p>
               )}
-              {postAction.error && <p className="text-rose-500 text-sm mb-3">{postAction.error}</p>}
+              {postAction.error && <p className="text-rose-600 text-sm mb-3">{postAction.error}</p>}
 
               {data.posts.length === 0 && (
                 <p className="text-center py-6 text-ink-400 text-sm">还没有动态，来发布第一条吧～</p>
@@ -393,23 +399,26 @@ export default function GroupDetailPage() {
       {ownerExitOpen && (
         <Portal>
           <div
+            ref={ownerExitRef}
             data-guard="owner-exit-modal"
             role="dialog"
             aria-modal="true"
+            aria-labelledby={ownerExitTitleId}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: 'rgba(17,24,39,0.45)' }}
             onClick={() => !exitAction.pending && setOwnerExitOpen(false)}
           >
             <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+              {/* 两种文案互斥渲染，不会同时出现，故共用一个标题 id */}
               {soloExitOpen ? (
                 <>
-                  <h3 className="font-display text-xl font-bold text-ink-900 mb-1">退出并解散团契</h3>
+                  <h3 id={ownerExitTitleId} className="font-display text-xl font-bold text-ink-900 mb-1">退出并解散团契</h3>
                   <p className="text-sm text-ink-500 mb-4">
                     「{data.name}」目前只有你一人。退出后
                     <span className="text-rose-700 font-semibold">团契将会被解散</span>
                     ，团契信息与动态一并删除，且不可恢复。
                   </p>
-                  <p className="text-xs text-ink-400 mb-4 rounded-xl bg-ink-50 border border-ink-100 px-4 py-3">
+                  <p className="text-xs text-ink-600 mb-4 rounded-xl bg-ink-50 border border-ink-100 px-4 py-3">
                     如果还想继续这个团契，可以留在这里等人加入，或先邀请成员后再退出。
                   </p>
                   <div className="flex gap-3">
@@ -434,7 +443,7 @@ export default function GroupDetailPage() {
                 </>
               ) : (
                 <>
-                  <h3 className="font-display text-xl font-bold text-ink-900 mb-1">退出团契</h3>
+                  <h3 id={ownerExitTitleId} className="font-display text-xl font-bold text-ink-900 mb-1">退出团契</h3>
                   <p className="text-sm text-ink-500 mb-4">
                     你是「{data.name}」的团长。团长退出前需要先决定这个团契的归属：
                   </p>
@@ -485,19 +494,22 @@ export default function GroupDetailPage() {
       {announcementOpen && (
         <Portal>
           <div
+            ref={announcementRef}
             data-guard="announcement-modal"
             role="dialog"
             aria-modal="true"
+            aria-labelledby={announcementTitleId}
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: 'rgba(17,24,39,0.45)' }}
             onClick={() => !announcementSaving && setAnnouncementOpen(false)}
           >
             <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-              <h3 className="font-display text-xl font-bold text-ink-900 mb-1">群公告</h3>
+              <h3 id={announcementTitleId} className="font-display text-xl font-bold text-ink-900 mb-1">群公告</h3>
               <p className="text-sm text-ink-500 mb-4">
                 发布后将在团契顶部展示给所有成员。留空并保存即可清除公告。
               </p>
               <textarea
+                aria-label="群公告"
                 value={announcementDraft}
                 onChange={(e) => setAnnouncementDraft(e.target.value)}
                 maxLength={1000}

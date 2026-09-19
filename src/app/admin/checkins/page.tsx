@@ -92,15 +92,18 @@ export default function AdminCheckinsPage() {
 
       {!loading && !error && items.length > 0 && (
         <div className="bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden">
-          <table className="w-full text-sm">
+          {/* 窄屏下横向滚动，而不是把 760px 的列宽压成竖排（探针实测） */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-sm">
+            <caption className="sr-only">活动签到报表</caption>
             <thead>
-              <tr className="bg-ink-50 text-ink-500 text-left">
-                <th className="px-4 py-3 font-medium">活动</th>
-                <th className="px-4 py-3 font-medium">城市</th>
-                <th className="px-4 py-3 font-medium">时间</th>
-                <th className="px-4 py-3 font-medium text-center">报名</th>
-                <th className="px-4 py-3 font-medium text-center">签到</th>
-                <th className="px-4 py-3 font-medium text-center">签到率</th>
+              <tr className="whitespace-nowrap bg-ink-50 text-ink-600 text-left">
+                <th scope="col" className="px-4 py-3 font-medium">活动</th>
+                <th scope="col" className="px-4 py-3 font-medium">城市</th>
+                <th scope="col" className="px-4 py-3 font-medium">时间</th>
+                <th scope="col" className="px-4 py-3 font-medium text-center">报名</th>
+                <th scope="col" className="px-4 py-3 font-medium text-center">签到</th>
+                <th scope="col" className="px-4 py-3 font-medium text-center">签到率</th>
               </tr>
             </thead>
             <tbody>
@@ -109,15 +112,18 @@ export default function AdminCheckinsPage() {
                 const open = openId === a.id;
                 return (
                   <Fragment key={a.id}>
-                    <tr
-                      onClick={() => toggle(a.id)}
-                      className="border-t border-ink-100 cursor-pointer hover:bg-primary-50/40"
-                    >
+                    <tr className="border-t border-ink-100 hover:bg-primary-50/40">
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-ink-400 transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
-                          <span className="font-medium text-ink-900">{a.title}</span>
-                        </div>
+                        {/* 展开名单靠行上的 onClick 键盘根本触发不了，改成单元格里一个真按钮 */}
+                        <button
+                          type="button"
+                          onClick={() => toggle(a.id)}
+                          aria-expanded={open}
+                          className="flex items-center gap-2 text-left font-medium text-ink-900"
+                        >
+                          <span aria-hidden="true" className={`text-ink-400 transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
+                          {a.title}
+                        </button>
                       </td>
                       <td className="px-4 py-3 text-ink-600">{a.city || '—'}</td>
                       <td className="px-4 py-3 text-ink-600">{timeAgo(a.startAt)}</td>
@@ -162,6 +168,7 @@ export default function AdminCheckinsPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </AdminLayout>

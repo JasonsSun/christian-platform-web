@@ -21,7 +21,8 @@ const WHITE_SAFE_LUM = 0.1833; // 1.05 / (L + 0.05) >= 4.5
 
 export function whiteSafeColor(raw: unknown): string {
   const hex = /^#?([0-9a-fA-F]{6})$/.exec(String(raw ?? '').trim())?.[1];
-  if (!hex) return '#4f6df5';
+  // 兜底色也得守同一条线：原先写 #4f6df5，白字压上去 4.34，恰好差在这函数要保证的 4.5 以下。
+  if (!hex) return '#3d52d9';
   const rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
   let out = rgb;
   for (let k = 1; k > 0.04 && 0.2126 * srgb(out[0]) + 0.7152 * srgb(out[1]) + 0.0722 * srgb(out[2]) > WHITE_SAFE_LUM; k -= 0.01) {

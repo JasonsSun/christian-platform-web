@@ -30,7 +30,7 @@ export default function GlobalError({
           页面加载时遇到了错误，请稍后重试。
         </p>
         {process.env.NODE_ENV === 'development' && error?.message && (
-          <p className="text-xs text-rose-500 font-mono bg-rose-50 rounded-lg px-3 py-2 mb-6 text-left max-w-md mx-auto break-all">
+          <p className="text-xs text-rose-700 font-mono bg-rose-50 rounded-lg px-3 py-2 mb-6 text-left max-w-md mx-auto break-all">
             {error.message}
           </p>
         )}

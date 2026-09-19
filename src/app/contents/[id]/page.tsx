@@ -24,7 +24,7 @@ function Avatar({ user, size = 36 }: { user: Author; size?: number }) {
   return (
     <span
       className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
-      style={{ backgroundColor: user.avatarColor || '#4f6df5', width: size, height: size, fontSize: size * 0.4 }}
+      style={{ backgroundColor: user.avatarColor || '#3d52d9', width: size, height: size, fontSize: size * 0.4 }}
     >
       {(user.displayName || user.username || '?').slice(0, 1)}
     </span>
@@ -272,7 +272,7 @@ export default function ContentDetailPage() {
               <button
                 onClick={handleLike}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                  data.liked ? 'bg-rose-50 text-rose-500 border border-rose-200' : 'bg-ink-50 text-ink-600 border border-ink-200 hover:border-rose-200'
+                  data.liked ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-ink-50 text-ink-600 border border-ink-200 hover:border-rose-200'
                 }`}
               >
                 <svg className="w-5 h-5" fill={data.liked ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
@@ -283,7 +283,7 @@ export default function ContentDetailPage() {
               <button
                 onClick={handleFavorite}
                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                  fav ? 'bg-amber-50 text-amber-600 border border-amber-200' : 'bg-ink-50 text-ink-600 border border-ink-200 hover:border-amber-200'
+                  fav ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-ink-50 text-ink-600 border border-ink-200 hover:border-amber-200'
                 }`}
               >
                 <svg className="w-5 h-5" fill={fav ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
@@ -305,7 +305,7 @@ export default function ContentDetailPage() {
                   {canManage() && (
                     <button
                       onClick={askDeleteContent}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-rose-50 text-rose-600 border border-rose-200 hover:border-rose-300"
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-rose-50 text-rose-700 border border-rose-200 hover:border-rose-300"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     删除
@@ -378,8 +378,8 @@ export default function ContentDetailPage() {
               {commentImage ? (
                 <div className="mb-2 inline-flex items-center gap-2 rounded-xl border border-ink-200 p-2">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={commentImage} alt="评论附图" className="h-16 w-16 object-cover rounded-lg" />
-                  <button type="button" onClick={() => setCommentImage('')} className="text-xs text-rose-500 hover:underline">
+                  <img src={commentImage} alt="评论附图" className="h-16 w-16 object-cover rounded-lg"  decoding="async" loading="lazy" />
+                  <button type="button" onClick={() => setCommentImage('')} className="text-xs text-rose-600 hover:underline">
                     移除
                   </button>
                 </div>
@@ -387,6 +387,7 @@ export default function ContentDetailPage() {
 
               <div className="flex gap-2">
                 <input
+                  aria-label="评论内容"
                   value={commentBody}
                   onChange={(e) => setCommentBody(e.target.value)}
                   placeholder={user ? '写下你的评论…（支持 @用户名 提及、#话题、附图）' : '登录后可发表评论'}
@@ -421,7 +422,7 @@ export default function ContentDetailPage() {
                 </button>
               </div>
             </div>
-            {commentAction.error && <p className="text-rose-500 text-sm mb-3">{commentAction.error}</p>}
+            {commentAction.error && <p className="text-rose-600 text-sm mb-3">{commentAction.error}</p>}
 
             {commentsLoading && <div className="text-center py-4 text-ink-400">加载评论中…</div>}
             {!commentsLoading && comments.length === 0 && (
@@ -440,20 +441,27 @@ export default function ContentDetailPage() {
                           onClick={() => askDeleteComment(c)}
                           title="删除评论"
                           aria-label="删除评论"
-                          className="ml-auto flex-shrink-0 text-xs text-ink-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg px-2.5 py-1.5 -mr-1 transition md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                          className="ml-auto flex-shrink-0 text-xs text-ink-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg px-2.5 py-1.5 -mr-1 transition md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                         >
                           删除
                         </button>
                       )}
                     </div>
                     {c.attachment ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={c.attachment}
-                        alt="评论附图"
-                        className="mt-1 max-h-56 max-w-full rounded-xl border border-ink-100 cursor-pointer"
-                        onClick={() => window.open(c.attachment, '_blank', 'noopener,noreferrer')}
-                      />
+                      // 看原图得是真链接：img 上的 onClick 既不在 Tab 序里，也读不出目标地址
+                      <a
+                        href={c.attachment}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 block w-fit max-w-full"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={c.attachment}
+                          alt="评论附图"
+                          className="max-h-56 max-w-full rounded-xl border border-ink-100"
+                         decoding="async" loading="lazy" />
+                      </a>
                     ) : null}
                     {c.body ? (
                       <RichText text={c.body} className="block text-ink-700 text-sm mt-1 leading-relaxed whitespace-pre-wrap break-words" />

@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import Link from 'next/link';
 import { apiGet, apiPatch, apiDelete, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
 import Portal from '@/components/Portal';
 import { formatDate } from '@/lib/format';
 import {
@@ -43,6 +44,14 @@ export default function AdminUsersPage() {
   const [resetPwdFor, setResetPwdFor] = useState<AdminUser | null>(null);
   const [resetPwdResult, setResetPwdResult] = useState('');
   const resetAction = useAction();
+
+  // 弹层 Esc / 焦点管理同样要放在早返回之前；生成新密码期间不许关，
+  // 否则密码只显示一次却没人看到，只能再重置一次。
+  useEscape(!!resetPwdFor, () => {
+    if (!resetAction.pending) setResetPwdFor(null);
+  });
+  const resetPwdRef = useDialogFocus(!!resetPwdFor);
+  const resetPwdTitleId = useId();
 
   if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
   if (user === null)
@@ -147,11 +156,12 @@ export default function AdminUsersPage() {
       <div className="glass rounded-2xl p-4 mb-5 flex flex-wrap gap-3 items-center shadow-soft">
         <input
           className="input-styled flex-1 min-w-[200px]"
+          aria-label="搜索用户名 / 邮箱 / 昵称"
           placeholder="搜索用户名 / 邮箱 / 昵称"
           value={q}
           onChange={(e) => onSearch(e.target.value)}
         />
-        <select className="input-styled w-40" value={role} onChange={(e) => onRoleFilter(e.target.value)}>
+        <select className="input-styled w-40" aria-label="按角色筛选" value={role} onChange={(e) => onRoleFilter(e.target.value)}>
           <option value="">全部角色</option>
           <option value="member">普通成员</option>
           <option value="moderator">审核员</option>
@@ -173,17 +183,18 @@ export default function AdminUsersPage() {
           <div className="glass rounded-2xl overflow-hidden shadow-soft">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1120px] text-sm">
-                <thead className="bg-ink-50 text-ink-500">
+                <caption className="sr-only">用户管理</caption>
+                <thead className="bg-ink-50 text-ink-600">
                   <tr className="whitespace-nowrap">
-                    <th className="text-left px-4 py-3 font-medium">用户名</th>
-                    <th className="text-left px-4 py-3 font-medium">邮箱</th>
-                    <th className="text-left px-4 py-3 font-medium">昵称</th>
-                    <th className="text-left px-4 py-3 font-medium">角色</th>
-                    <th className="text-left px-4 py-3 font-medium">状态</th>
-                    <th className="text-left px-4 py-3 font-medium">城市</th>
-                    <th className="text-left px-4 py-3 font-medium">内容数</th>
-                    <th className="text-left px-4 py-3 font-medium">注册时间</th>
-                    <th className="text-left px-4 py-3 font-medium">操作</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">用户名</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">邮箱</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">昵称</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">角色</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">状态</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">城市</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">内容数</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">注册时间</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -287,9 +298,9 @@ export default function AdminUsersPage() {
       {/* 重置密码结果弹层 */}
       {resetPwdFor && (
         <Portal>
-        <div data-guard="reset-pwd-modal" role="dialog" aria-modal="true" className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }}>
+        <div ref={resetPwdRef} data-guard="reset-pwd-modal" role="dialog" aria-modal="true" aria-labelledby={resetPwdTitleId} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }}>
           <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6">
-            <h3 className="font-display text-xl font-bold text-ink-900 mb-1">重置密码</h3>
+            <h3 id={resetPwdTitleId} className="font-display text-xl font-bold text-ink-900 mb-1">重置密码</h3>
             {resetPwdResult ? (
               <>
                 <p className="text-sm text-ink-500 mb-3">

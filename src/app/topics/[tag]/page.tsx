@@ -29,7 +29,7 @@ interface TopicOverview {
 
 const TYPE_BADGE: Record<string, { label: string; cls: string }> = {
   testimony: { label: '见证', cls: 'bg-gold-50 text-gold-700 border-gold-200' },
-  prayer: { label: '代祷', cls: 'bg-rose-50 text-rose-600 border-rose-200' },
+  prayer: { label: '代祷', cls: 'bg-rose-50 text-rose-700 border-rose-200' },
   article: { label: '分享', cls: 'bg-primary-50 text-primary-700 border-primary-200' },
   devotion: { label: '灵修', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
   media: { label: '媒体', cls: 'bg-violet-50 text-violet-700 border-violet-200' },
@@ -262,7 +262,7 @@ export default function TopicDetailPage() {
                           <span
                             className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
                             style={{
-                              backgroundColor: item.author?.avatarColor || '#4f6df5',
+                              backgroundColor: item.author?.avatarColor || '#3d52d9',
                               width: 26,
                               height: 26,
                               fontSize: 11,
@@ -343,7 +343,7 @@ export default function TopicDetailPage() {
                                 {t.count} 篇 · {pct}%
                               </span>
                             </div>
-                            <div className="h-1.5 rounded-full bg-ink-100 overflow-hidden">
+                            <div className="h-1.5 rounded-full bg-ink-100 overflow-hidden" aria-hidden>
                               <div
                                 className="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-400"
                                 style={{ width: `${Math.max(3, pct)}%` }}
@@ -368,7 +368,7 @@ export default function TopicDetailPage() {
                         >
                           <span
                             className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
-                            style={{ backgroundColor: a.color || '#4f6df5', width: 28, height: 28, fontSize: 12 }}
+                            style={{ backgroundColor: a.color || '#3d52d9', width: 28, height: 28, fontSize: 12 }}
                           >
                             {(a.name || '?').slice(0, 1)}
                           </span>

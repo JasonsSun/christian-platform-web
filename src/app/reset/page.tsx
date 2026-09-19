@@ -80,7 +80,7 @@ function ResetInner() {
             <div className="text-center text-ink-400 py-6">正在校验链接…</div>
           ) : !valid ? (
             <div className="text-center">
-              <div className="rounded-2xl bg-rose-50 border border-rose-200 px-5 py-4 text-left mb-6">
+              <div role="alert" className="rounded-2xl bg-rose-50 border border-rose-200 px-5 py-4 text-left mb-6">
                 <p className="text-rose-800 font-semibold mb-1">链接无效或已过期</p>
                 <p className="text-rose-700 text-sm">
                   重置链接仅能使用一次，且 30 分钟内有效。请重新申请一封邮件。
@@ -96,14 +96,17 @@ function ResetInner() {
           ) : (
             <form onSubmit={submit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-ink-700 mb-1.5">新密码</label>
+                <label htmlFor="reset-password" className="block text-sm font-medium text-ink-700 mb-1.5">新密码</label>
                 <div className="relative">
                   <input
+                    id="reset-password"
+                    name="new-password"
                     className="input-styled input-field"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="至少 6 位"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="new-password"
                     required
                   />
                   <button
@@ -117,19 +120,25 @@ function ResetInner() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-ink-700 mb-1.5">确认新密码</label>
+                <label htmlFor="reset-confirm" className="block text-sm font-medium text-ink-700 mb-1.5">确认新密码</label>
                 <input
+                  id="reset-confirm"
+                  name="confirm-password"
                   className="input-styled input-field"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="再输入一次"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
+                  autoComplete="new-password"
                   required
                 />
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+                <div
+                  role="alert"
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm"
+                >
                   <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>

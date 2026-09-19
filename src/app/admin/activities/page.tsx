@@ -72,7 +72,7 @@ export default function AdminActivitiesPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>活动管理</SectionTitle>
+      <SectionTitle as="h1">活动管理</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">
         审核、上下架活动，查看报名与签到情况。取消活动会通知全部参与人（创建人本人也可自行取消）。
       </p>
@@ -87,6 +87,7 @@ export default function AdminActivitiesPage() {
       <div className="flex flex-wrap gap-2 mb-4">
         <input
           className="input-styled flex-1 min-w-[180px]"
+          aria-label="搜索活动标题 / 城市 / 地点"
           placeholder="搜索活动标题 / 城市 / 地点"
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -104,7 +105,7 @@ export default function AdminActivitiesPage() {
         ))}
       </div>
 
-      {msg ? <div className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
+      {msg ? <div role="status" className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
 
       {loading ? (
         <Loading />
@@ -115,15 +116,16 @@ export default function AdminActivitiesPage() {
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
           <table className="w-full text-sm">
-            <thead className="bg-ink-50 text-ink-500">
+            <caption className="sr-only">活动管理</caption>
+            <thead className="bg-ink-50 text-ink-600">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">活动</th>
-                <th className="text-left px-4 py-3 font-medium">城市/地点</th>
-                <th className="text-left px-4 py-3 font-medium">开始时间</th>
-                <th className="text-center px-4 py-3 font-medium">报名</th>
-                <th className="text-center px-4 py-3 font-medium">签到</th>
-                <th className="text-center px-4 py-3 font-medium">状态</th>
-                <th className="text-right px-4 py-3 font-medium">操作</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">活动</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">城市/地点</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">开始时间</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">报名</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">签到</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
+                <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -152,7 +154,7 @@ export default function AdminActivitiesPage() {
                       <button
                         disabled={busy === a.id}
                         onClick={() => changeStatus(a.id, 'published')}
-                        className="text-emerald-600 hover:underline disabled:opacity-50"
+                        className="text-emerald-700 hover:underline disabled:opacity-50"
                       >
                         恢复上线
                       </button>
@@ -170,7 +172,7 @@ export default function AdminActivitiesPage() {
                           <button
                             disabled={busy === a.id}
                             onClick={() => changeStatus(a.id, 'published')}
-                            className="text-emerald-600 hover:underline disabled:opacity-50"
+                            className="text-emerald-700 hover:underline disabled:opacity-50"
                           >
                             上线
                           </button>

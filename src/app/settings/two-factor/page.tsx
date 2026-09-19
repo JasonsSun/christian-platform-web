@@ -133,7 +133,7 @@ export default function TwoFactorPage() {
       </div>
 
       {err && (
-        <div className="mb-4 px-4 py-3 rounded-xl text-sm bg-rose-50 border border-rose-200 text-rose-700">{err}</div>
+        <div role="alert" className="mb-4 px-4 py-3 rounded-xl text-sm bg-rose-50 border border-rose-200 text-rose-700">{err}</div>
       )}
 
       {loading ? (
@@ -163,7 +163,7 @@ export default function TwoFactorPage() {
           <h2 className="font-semibold text-ink-900 mb-4">1. 用验证器 App 扫描二维码</h2>
           <div className="flex flex-col items-center gap-3 mb-5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrUrl(otpauth)} alt="2FA 二维码" width={180} height={180} className="rounded-xl border border-ink-100" />
+            <img src={qrUrl(otpauth)} alt="2FA 二维码" width={180} height={180} className="rounded-xl border border-ink-100"  decoding="async"  loading="eager" />
             <p className="text-xs text-ink-400 text-center">
               支持 Google Authenticator、1Password、微信等任意标准 TOTP 应用
             </p>
@@ -174,14 +174,18 @@ export default function TwoFactorPage() {
             <code className="block px-3 py-2 rounded-lg bg-ink-50 text-center font-mono text-sm break-all">{secret}</code>
           </div>
 
-          <h2 className="font-semibold text-ink-900 mb-3">2. 输入 App 上的 6 位动态码</h2>
+          <h2 id="tfa-code-label" className="font-semibold text-ink-900 mb-3">2. 输入 App 上的 6 位动态码</h2>
           <div className="flex gap-3">
             <input
+              id="tfa-code"
+              name="code"
+              aria-labelledby="tfa-code-label"
               className="input-styled flex-1 text-center text-lg tracking-[0.3em] font-mono"
               placeholder="000000"
               value={code}
               maxLength={6}
               inputMode="numeric"
+              autoComplete="one-time-code"
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
             />
             <button onClick={confirm} disabled={busy || code.length !== 6} className="btn-primary px-6 disabled:opacity-60">
@@ -197,7 +201,7 @@ export default function TwoFactorPage() {
           <div className="flex items-center gap-3 mb-4">
             <span
               className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
-                status?.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-ink-100 text-ink-400'
+                status?.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-ink-100 text-ink-600'
               }`}
             >
               {status?.enabled ? '✓' : '!'}
@@ -222,11 +226,16 @@ export default function TwoFactorPage() {
                 </div>
               )}
               <div className="flex gap-3">
+                <label htmlFor="tfa-regen-code" className="sr-only">当前动态码</label>
                 <input
+                  id="tfa-regen-code"
+                  name="code"
                   className="input-styled flex-1 text-center font-mono"
                   placeholder="当前动态码"
                   value={code}
                   maxLength={6}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
                 />
                 <button onClick={regenRecovery} disabled={busy || code.length !== 6} className="px-4 py-2 rounded-xl border border-ink-200 text-ink-700 hover:border-primary-300 disabled:opacity-60">
@@ -240,12 +249,16 @@ export default function TwoFactorPage() {
                 </button>
               ) : (
                 <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
-                  <p className="text-sm text-rose-800 mb-2">输入当前动态码或恢复码以确认关闭：</p>
+                  <p id="tfa-disable-code-label" className="text-sm text-rose-800 mb-2">输入当前动态码或恢复码以确认关闭：</p>
                   <div className="flex gap-2">
                     <input
+                      id="tfa-disable-code"
+                      name="disableCode"
+                      aria-labelledby="tfa-disable-code-label"
                       className="input-styled flex-1"
                       placeholder="动态码或恢复码"
                       value={disableCode}
+                      autoComplete="one-time-code"
                       onChange={(e) => setDisableCode(e.target.value)}
                     />
                     <button onClick={doDisable} disabled={busy || !disableCode.trim()} className="px-4 py-2 rounded-xl bg-rose-600 text-white text-sm disabled:opacity-60">

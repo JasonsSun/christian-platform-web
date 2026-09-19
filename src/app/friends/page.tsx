@@ -94,7 +94,7 @@ function RequestRow({
             className={`px-4 py-2 text-sm rounded-xl select-none border ${
               r.status === 'accepted'
                 ? 'bg-primary-50 text-primary-700 border-primary-100'
-                : 'bg-ink-100 text-ink-500 border-ink-200'
+                : 'bg-ink-100 text-ink-600 border-ink-200'
             }`}
           >
             {label}
@@ -241,7 +241,7 @@ export default function FriendsPage() {
           <button
             key={t.k}
             onClick={() => setTab(t.k)}
-            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
               tab === t.k ? 'border-primary-500 text-primary-700' : 'border-transparent text-ink-500 hover:text-ink-700'
             }`}
           >
@@ -255,8 +255,8 @@ export default function FriendsPage() {
         <>
           <div className="glass rounded-2xl p-4 shadow-card mb-6 space-y-3">
             <div className="flex flex-col sm:flex-row gap-3">
-              <input className="input-styled flex-1" placeholder="搜索昵称 / 用户名 / 教会" value={q} onChange={(e) => setQ(e.target.value)} />
-              <select className="input-styled sm:w-40" value={city} onChange={(e) => setCity(e.target.value)}>
+              <input className="input-styled flex-1" aria-label="搜索用户" placeholder="搜索昵称 / 用户名 / 教会" value={q} onChange={(e) => setQ(e.target.value)} />
+              <select className="input-styled sm:w-40" aria-label="用户城市筛选" value={city} onChange={(e) => setCity(e.target.value)}>
                 <option value="">全部城市</option>
                 {CITIES.map((c) => (<option key={c} value={c}>{c}</option>))}
               </select>
@@ -272,7 +272,7 @@ export default function FriendsPage() {
             <div className="text-center py-12"><p className="text-rose-600 mb-3">{disc.error}</p><button onClick={disc.reload} className="btn-secondary">重试</button></div>
           )}
           {!disc.loading && !disc.error && (disc.data?.items?.length ?? 0) === 0 && (
-            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">🔍</div><p className="text-ink-500">没有找到符合条件的用户</p></div>
+            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">🔍</div><p className="text-ink-600">没有找到符合条件的用户</p></div>
           )}
           {!disc.loading && !disc.error && (disc.data?.items?.length ?? 0) > 0 && (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -319,7 +319,7 @@ export default function FriendsPage() {
           {friends.loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
           {friends.error && <div className="text-center py-12"><p className="text-rose-600 mb-3">{friends.error}</p><button onClick={friends.reload} className="btn-secondary">重试</button></div>}
           {!friends.loading && !friends.error && (friends.data?.items?.length ?? 0) === 0 && (
-            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">🤝</div><p className="text-ink-500">还没有好友,去「发现」里加好友吧</p></div>
+            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">🤝</div><p className="text-ink-600">还没有好友,去「发现」里加好友吧</p></div>
           )}
           {!friends.loading && !friends.error && (friends.data?.items?.length ?? 0) > 0 && (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -350,7 +350,7 @@ export default function FriendsPage() {
           {requests.loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
           {requests.error && <div className="text-center py-12"><p className="text-rose-600 mb-3">{requests.error}</p><button onClick={requests.reload} className="btn-secondary">重试</button></div>}
           {!requests.loading && !requests.error && (requests.data?.items?.length ?? 0) === 0 && (
-            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">📭</div><p className="text-ink-500">暂无新的好友申请</p></div>
+            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">📭</div><p className="text-ink-600">暂无新的好友申请</p></div>
           )}
           {!requests.loading && !requests.error && (requests.data?.items?.length ?? 0) > 0 && (
             <>

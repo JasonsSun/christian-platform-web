@@ -175,9 +175,9 @@ export default function NotificationSettingsPage() {
               <div className="w-11 h-11 rounded-xl bg-ink-100 flex items-center justify-center text-xl flex-shrink-0">{c.icon}</div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-ink-900">{c.label}</h3>
+                  <h2 className="font-semibold text-ink-900">{c.label}</h2>
                   {unavailable && (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-ink-100 text-ink-500">未配置</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-ink-100 text-ink-600">未配置</span>
                   )}
                 </div>
                 <p className="text-sm text-ink-500 mt-0.5">{c.desc}</p>
@@ -185,6 +185,9 @@ export default function NotificationSettingsPage() {
               <button
                 disabled={pending || c.key === 'inapp'}
                 onClick={() => save({ [c.key]: !on } as Partial<Prefs>)}
+                aria-label={c.label}
+                // 开关只有圆点位移这一处视觉差异，读屏要靠 aria-pressed 才知道当前是开还是关
+                aria-pressed={on}
                 className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 disabled:opacity-60 ${
                   on ? 'bg-primary-500' : 'bg-ink-200'
                 }`}
@@ -203,12 +206,14 @@ export default function NotificationSettingsPage() {
       <section className="mt-6 bg-white rounded-2xl border border-ink-100 shadow-soft p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-ink-900">免打扰时段</h3>
+            <h2 className="font-semibold text-ink-900">免打扰时段</h2>
             <p className="text-sm text-ink-500 mt-0.5">该时段内只累积站内通知，外发投递顺延</p>
           </div>
           <button
             disabled={pending}
             onClick={() => save({ quietEnabled: !prefs?.quietEnabled })}
+            aria-label="免打扰时段"
+            aria-pressed={!!prefs?.quietEnabled}
             className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 ${prefs?.quietEnabled ? 'bg-primary-500' : 'bg-ink-200'}`}
           >
             <span className={`block w-5 h-5 rounded-full bg-white transition-transform mx-1 ${prefs?.quietEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -217,14 +222,24 @@ export default function NotificationSettingsPage() {
 
         {prefs?.quietEnabled && (
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-ink-100">
+            <label className="sr-only" htmlFor="quiet-from">
+              免打扰开始时间
+            </label>
             <input
+              id="quiet-from"
+              name="quietFrom"
               type="time" value={prefs.quietFrom}
               onChange={(e) => setPrefs({ ...prefs, quietFrom: e.target.value })}
               onBlur={() => save({ quietFrom: prefs.quietFrom })}
               className="rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900"
             />
             <span className="text-ink-400">至</span>
+            <label className="sr-only" htmlFor="quiet-to">
+              免打扰结束时间
+            </label>
             <input
+              id="quiet-to"
+              name="quietTo"
               type="time" value={prefs.quietTo}
               onChange={(e) => setPrefs({ ...prefs, quietTo: e.target.value })}
               onBlur={() => save({ quietTo: prefs.quietTo })}
@@ -234,14 +249,15 @@ export default function NotificationSettingsPage() {
         )}
 
         <div className="mt-4 pt-4 border-t border-ink-100">
-          <h3 className="font-semibold text-ink-900 mb-2">外发频率</h3>
-          <div className="flex gap-1 bg-ink-100/60 rounded-xl p-1">
+          <h2 id="digest-label" className="font-semibold text-ink-900 mb-2">外发频率</h2>
+          <div className="flex gap-1 bg-ink-100/60 rounded-xl p-1" role="group" aria-labelledby="digest-label">
             {([['realtime', '实时'], ['daily', '每日汇总'], ['off', '仅站内']] as [Digest, string][]).map(([k, label]) => (
               <button
                 key={k}
                 disabled={pending}
                 onClick={() => save({ digest: k })}
-                className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                aria-pressed={prefs?.digest === k}
+                className={`flex-1 min-w-0 whitespace-nowrap px-2 py-2 rounded-lg text-sm font-medium transition-all ${
                   prefs?.digest === k ? 'bg-white text-primary-700 shadow-sm' : 'text-ink-500 hover:text-ink-700'
                 }`}
               >
@@ -255,7 +271,7 @@ export default function NotificationSettingsPage() {
       {/* 微信绑定 */}
       <section className="mt-6 bg-white rounded-2xl border border-ink-100 shadow-soft p-5">
         <div className="flex items-center gap-2 mb-1">
-          <h3 className="font-semibold text-ink-900">微信绑定</h3>
+          <h2 className="font-semibold text-ink-900">微信绑定</h2>
           {!bind?.wechatEnabled && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">演示模式</span>
           )}

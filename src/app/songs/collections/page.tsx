@@ -22,7 +22,7 @@ export default function SongCollectionsPage() {
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-gold-700 via-gold-600 to-gold-800" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gold-800 via-gold-700 to-gold-900" />
         <div className="absolute inset-0 overflow-hidden">
           {[
             { top: '20%', left: '12%', size: 44, delay: '0s', duration: '6s' },
@@ -39,12 +39,12 @@ export default function SongCollectionsPage() {
           ))}
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-10 md:pt-14 md:pb-12 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 mb-5">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-ink-950/20 backdrop-blur-sm border border-white/20 mb-5">
             <span className="text-lg">🎵</span>
             <span className="text-white font-medium">{cards.length} 个主题歌单</span>
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-4">主题歌单</h1>
-          <p className="text-base sm:text-lg text-white/85 max-w-2xl mx-auto font-serif italic">
+          <p className="text-base sm:text-lg text-white/95 max-w-2xl mx-auto font-serif italic">
             按你如今的处境找歌——安静灵修、软弱安慰、口唱心和、节期记念。
           </p>
         </div>
@@ -95,7 +95,7 @@ export default function SongCollectionsPage() {
 
                 <div className="mt-4 flex items-center gap-2 flex-wrap">
                   {items.slice(0, 3).map((s) => (
-                    <span key={s.id} className="text-xs text-ink-500 bg-ink-50 px-2 py-1 rounded-full truncate max-w-[9rem]">
+                    <span key={s.id} className="text-xs text-ink-600 bg-ink-50 px-2 py-1 rounded-full truncate max-w-[9rem]">
                       {s.title}
                     </span>
                   ))}

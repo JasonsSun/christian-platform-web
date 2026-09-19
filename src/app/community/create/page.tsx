@@ -17,6 +17,9 @@ const CONTENT_TYPES = [
 ];
 
 const COVER_EMOJIS = ['📖', '✨', '🙏', '🌿', '❤️', '🌟', '☀️', '🌈', '🔥', '💡', '🌸', '🕊️'];
+// 运行时探针（probe-axnames）实测这 12 个按钮的可访问名称只剩一个 emoji 字符，
+// 读屏念出的是「图形」或干脆不出声。给每个配一个中文名字，视觉不变。
+const COVER_NAMES = ['经书', '闪光', '祷告', '橄榄枝', '爱心', '星星', '太阳', '彩虹', '火焰', '灵感', '花朵', '鸽子'];
 
 export default function CreateContentPage() {
   const router = useRouter();
@@ -145,29 +148,30 @@ export default function CreateContentPage() {
               <div className="text-center text-ink-400 py-6">正在载入原文…</div>
             )}
             {editError && (
-              <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3">{editError}</div>
+              <div role="alert" className="rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3">{editError}</div>
             )}
             {/* 表单内联错误提示（不使用弹框） */}
             {formError && (
-              <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm px-4 py-3">
+              <div role="alert" className="rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3">
                 {formError}
               </div>
             )}
             {/* 类型选择 */}
             <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-2">内容类型</label>
-              <div className="flex gap-2">
+              <label id="content-type-label" className="block text-sm font-semibold text-ink-700 mb-2">内容类型</label>
+              <div className="flex gap-2" role="group" aria-labelledby="content-type-label">
                 {CONTENT_TYPES.map((t) => (
                   <button
                     key={t.id}
                     onClick={() => setContentType(t.id as any)}
-                    className={`flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                    aria-pressed={contentType === t.id}
+                    className={`flex-1 min-w-0 whitespace-nowrap px-2 py-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
                       contentType === t.id
                         ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/25'
                         : 'bg-white text-ink-600 border border-ink-200 hover:border-primary-300'
                     }`}
                   >
-                    <span>{t.icon}</span>
+                    <span aria-hidden="true">{t.icon}</span>
                     {t.label}
                   </button>
                 ))}
@@ -176,8 +180,10 @@ export default function CreateContentPage() {
 
             {/* 标题 */}
             <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-2">标题</label>
+              <label htmlFor="content-title" className="block text-sm font-semibold text-ink-700 mb-2">标题</label>
               <input
+                id="content-title"
+                name="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="给你的内容起个标题…"
@@ -187,8 +193,10 @@ export default function CreateContentPage() {
 
             {/* 正文 */}
             <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-2">正文</label>
+              <label htmlFor="content-body" className="block text-sm font-semibold text-ink-700 mb-2">正文</label>
               <textarea
+                id="content-body"
+                name="body"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder="在这里写下你的内容…"
@@ -199,8 +207,10 @@ export default function CreateContentPage() {
 
             {/* 标签 */}
             <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-2">标签（逗号分隔）</label>
+              <label htmlFor="content-tags" className="block text-sm font-semibold text-ink-700 mb-2">标签（逗号分隔）</label>
               <input
+                id="content-tags"
+                name="tags"
                 value={tagsInput}
                 onChange={(e) => setTagsInput(e.target.value)}
                 placeholder="例如：信心, 祷告, 恩典"
@@ -210,12 +220,14 @@ export default function CreateContentPage() {
 
             {/* 封面 emoji */}
             <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-2">封面 Emoji</label>
-              <div className="flex flex-wrap gap-2">
-                {COVER_EMOJIS.map((e) => (
+              <label id="content-cover-label" className="block text-sm font-semibold text-ink-700 mb-2">封面 Emoji</label>
+              <div className="flex flex-wrap gap-2" role="group" aria-labelledby="content-cover-label">
+                {COVER_EMOJIS.map((e, i) => (
                   <button
                     key={e}
                     onClick={() => setCover(e)}
+                    aria-pressed={cover === e}
+                    aria-label={`封面表情：${COVER_NAMES[i] ?? e}`}
                     className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all ${
                       cover === e
                         ? 'bg-primary-100 border-2 border-primary-500'
@@ -231,7 +243,7 @@ export default function CreateContentPage() {
             {/* 附带媒体（编辑模式不更改附件） */}
             {!editId && (
             <div>
-              <label className="block text-sm font-semibold text-ink-700 mb-2">
+              <label id="content-media-label" className="block text-sm font-semibold text-ink-700 mb-2">
                 附带媒体（可选）
                 <span className="ml-2 font-normal text-xs text-ink-400">从「我的上传」选择图片/视频/音乐/资料</span>
               </label>
@@ -240,20 +252,21 @@ export default function CreateContentPage() {
                   还没有可用的文件，<Link href="/upload" className="text-primary-600 hover:underline">去上传</Link>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2" role="group" aria-labelledby="content-media-label">
                   {myMedia.map((m) => {
                     const on = mediaIds.includes(m.id);
                     return (
                       <button
                         key={m.id}
                         onClick={() => toggleMedia(m.id)}
+                        aria-pressed={on}
                         className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition ${
                           on ? 'bg-primary-50 border-primary-400 text-primary-700' : 'bg-ink-50 border-transparent text-ink-600 hover:border-primary-200'
                         }`}
                       >
                         <span>{m.kind === 'image' ? '🖼️' : m.kind === 'audio' ? '🎵' : m.kind === 'video' ? '🎬' : m.kind === 'score' ? '🎼' : '📄'}</span>
                         <span className="max-w-[140px] truncate">{m.title}</span>
-                        {on ? <span className="text-primary-600">✓</span> : null}
+                        {on ? <span className="text-primary-600" aria-hidden="true">✓</span> : null}
                       </button>
                     );
                   })}
@@ -263,7 +276,7 @@ export default function CreateContentPage() {
             )}
 
             {action.error && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl p-3 text-sm">{action.error}</div>
+              <div role="alert" className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-3 text-sm">{action.error}</div>
             )}
 
             <div className="divider-gradient" />

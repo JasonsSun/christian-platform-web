@@ -62,7 +62,7 @@ export function MyContents() {
             <Link href={`/community/create?edit=${c.id}`} className="text-sm text-ink-500 hover:text-primary-600">
               编辑
             </Link>
-            <button onClick={() => remove(c)} className="text-sm text-rose-500 hover:text-rose-600 hover:underline">
+            <button onClick={() => remove(c)} className="text-sm text-rose-600 hover:text-rose-600 hover:underline">
               删除
             </button>
           </div>

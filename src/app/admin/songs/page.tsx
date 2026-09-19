@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useState } from 'react';
+import { Fragment, useId, useState } from 'react';
 import { useApi } from '@/lib/useApi';
 import { apiPatch, apiPost } from '@/lib/api';
 import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
@@ -47,6 +47,8 @@ export default function AdminSongsPage() {
     created: number; skipped: number; errors: number; detail: { created: string[]; skipped: string[]; errors: { line: number; title: string; reason: string }[] };
   } | null>(null);
   const [batchErr, setBatchErr] = useState('');
+  // 同一时刻只展开一个内联编辑器，但它在 items.map() 里渲染，用 useId 保证 id 不重复
+  const editorUid = useId();
   const { data, loading, error, reload } = useApi<{
     items: AdminSong[]; total: number;
     byCategory: { category: string; c: number }[];
@@ -160,7 +162,7 @@ export default function AdminSongsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>赞美诗管理</SectionTitle>
+      <SectionTitle as="h1">赞美诗管理</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">诗歌、歌词、曲谱、音频与播放/收藏统计</p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -171,12 +173,13 @@ export default function AdminSongsPage() {
       </div>
 
       {tip && (
-        <p className="mb-4 text-sm rounded-xl px-3 py-2 bg-primary-50 text-primary-700">{tip}</p>
+        <p role="status" className="mb-4 text-sm rounded-xl px-3 py-2 bg-primary-50 text-primary-700">{tip}</p>
       )}
 
       <div className="flex flex-wrap gap-2 mb-4">
         <input
           className="input-styled flex-1 min-w-[180px]"
+          aria-label="搜索诗歌标题 / 作者 / 标签"
           placeholder="搜索诗歌标题 / 作者 / 标签"
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -208,16 +211,19 @@ export default function AdminSongsPage() {
         <Empty label="暂无诗歌" />
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
-          <table className="w-full text-sm">
-            <thead className="bg-ink-50 text-ink-500">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium">诗歌</th>
-                <th className="text-left px-4 py-3 font-medium">分类</th>
-                <th className="text-center px-4 py-3 font-medium">歌词</th>
-                <th className="text-center px-4 py-3 font-medium">音频类型</th>
-                <th className="text-center px-4 py-3 font-medium">人声版外链</th>
-                <th className="text-center px-4 py-3 font-medium">播放</th>
-                <th className="text-center px-4 py-3 font-medium">收藏</th>
+          {/* 窄屏下横向滚动，而不是把 880px 的列宽压成竖排（探针实测） */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[880px] text-sm">
+            <caption className="sr-only">赞美诗管理</caption>
+            <thead className="bg-ink-50 text-ink-600">
+              <tr className="whitespace-nowrap">
+                <th scope="col" className="text-left px-4 py-3 font-medium">诗歌</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">分类</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">歌词</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">音频类型</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">人声版外链</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">播放</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">收藏</th>
               </tr>
             </thead>
             <tbody>
@@ -234,6 +240,7 @@ export default function AdminSongsPage() {
                     <div className="inline-flex flex-col items-center gap-1">
                       <select
                         value={s.audioType}
+                        aria-label={`${s.title} 的音频类型`}
                         disabled={busyId === s.id}
                         onChange={(e) => openTypeEditor(s, e.target.value as AudioType)}
                         title={s.audioCredit || AUDIO_TYPE_LABEL[s.audioType]}
@@ -242,7 +249,7 @@ export default function AdminSongsPage() {
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : s.audioType === 'instrumental'
                               ? 'bg-amber-50 text-amber-700 border-amber-200'
-                              : 'bg-ink-100 text-ink-500 border-ink-200'
+                              : 'bg-ink-100 text-ink-600 border-ink-200'
                         }`}
                       >
                         <option value="vocal">人声</option>
@@ -280,7 +287,7 @@ export default function AdminSongsPage() {
                         type="button"
                         onClick={() => openListenEditor(s)}
                         disabled={busyId === s.id}
-                        className="text-[11px] px-2 py-0.5 rounded-full bg-ink-100 text-ink-500 border border-ink-200 hover:bg-ink-50 disabled:opacity-50"
+                        className="text-[11px] px-2 py-0.5 rounded-full bg-ink-100 text-ink-600 border border-ink-200 hover:bg-ink-50 disabled:opacity-50"
                       >
                         登记链接
                       </button>
@@ -295,8 +302,9 @@ export default function AdminSongsPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         {editor.mode === 'type' ? (
                           <>
-                            <span className="text-xs text-ink-500">音频类型</span>
+                            <label htmlFor={`${editorUid}-type`} className="text-xs text-ink-500">音频类型</label>
                             <select
+                              id={`${editorUid}-type`}
                               value={editor.audioType}
                               disabled={busyId === s.id}
                               onChange={(e) => setEditor({ ...editor, audioType: e.target.value as AudioType })}
@@ -308,8 +316,9 @@ export default function AdminSongsPage() {
                             </select>
                             {editor.audioType !== 'none' && (
                               <>
-                                <span className="text-xs text-ink-500 ml-2">演唱者与授权说明</span>
+                                <label htmlFor={`${editorUid}-credit`} className="text-xs text-ink-500 ml-2">演唱者与授权说明</label>
                                 <input
+                                  id={`${editorUid}-credit`}
                                   className="input-styled input-sm text-xs flex-1 min-w-[240px]"
                                   placeholder="演唱：光盐诗班 / 已获教会授权"
                                   value={editor.credit}
@@ -318,20 +327,25 @@ export default function AdminSongsPage() {
                               </>
                             )}
                             {editor.audioType === 'vocal' && !s.hasAudio && (
-                              <span className="text-xs text-rose-600">该诗没有音频文件，无法标为人声</span>
+                              <span role="alert" className="text-xs text-rose-600">该诗没有音频文件，无法标为人声</span>
                             )}
                           </>
                         ) : (
                           <>
-                            <span className="text-xs text-ink-500">人声试听链接</span>
+                            <label htmlFor={`${editorUid}-listen`} className="text-xs text-ink-500">人声试听链接</label>
+                            {/* 链接仍由 saveEditor 校验 http(s) 前缀；这里没有 form，type=url 不会引入原生校验 */}
                             <input
+                              id={`${editorUid}-listen`}
+                              type="url"
+                              inputMode="url"
                               className="input-styled input-sm text-xs flex-1 min-w-[260px]"
                               placeholder="https://…（留空并保存＝清除）"
                               value={editor.listenUrl}
                               onChange={(e) => setEditor({ ...editor, listenUrl: e.target.value })}
                             />
-                            <span className="text-xs text-ink-500 ml-2">来源名</span>
+                            <label htmlFor={`${editorUid}-source`} className="text-xs text-ink-500 ml-2">来源名</label>
                             <input
+                              id={`${editorUid}-source`}
                               className="input-styled input-sm text-xs w-[150px]"
                               placeholder="B站 / 网易云"
                               value={editor.listenSource}
@@ -340,16 +354,18 @@ export default function AdminSongsPage() {
                           </>
                         )}
                         <div className="flex items-center gap-2 w-full mt-2 pt-2 border-t border-primary-200">
-                          <span className="text-xs text-ink-500">和弦谱</span>
+                          <label htmlFor={`${editorUid}-chords`} className="text-xs text-ink-500">和弦谱</label>
                           <textarea
+                            id={`${editorUid}-chords`}
                             className="input-styled input-sm text-xs flex-1 min-w-[260px] font-mono"
                             rows={2}
                             placeholder="用 [和弦] 标记，例如：[C]Amazing [G]grace"
                             value={editor.chords}
                             onChange={(e) => setEditor({ ...editor, chords: e.target.value })}
                           />
-                          <span className="text-xs text-ink-500 ml-2">原调</span>
+                          <label htmlFor={`${editorUid}-key`} className="text-xs text-ink-500 ml-2">原调</label>
                           <input
+                            id={`${editorUid}-key`}
                             className="input-styled input-sm text-xs w-[90px]"
                             placeholder="如 C / Am"
                             value={editor.originalKey}
@@ -383,6 +399,7 @@ export default function AdminSongsPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
@@ -406,13 +423,14 @@ export default function AdminSongsPage() {
             <textarea
               className="input-styled w-full font-mono text-xs"
               rows={10}
+              aria-label="批量导入诗歌文本"
               placeholder={'# 奇异恩典\n作者：约翰·牛顿\n分类：恩典\n原调：G\n标签：救恩, 安慰\n\n[C]Amazing [G]grace how [Am]sweet the [F]sound\n\n---\n# 第二首\n作者：佚名\n歌词内容…'}
               value={batchText}
               onChange={(e) => setBatchText(e.target.value)}
             />
-            {batchErr && <p className="text-rose-600 text-xs mt-2">{batchErr}</p>}
+            {batchErr && <p role="alert" className="text-rose-600 text-xs mt-2">{batchErr}</p>}
             {batchResult && (
-              <div className="mt-3 text-xs rounded-xl bg-emerald-50 text-emerald-800 px-3 py-2 space-y-1">
+              <div role="status" className="mt-3 text-xs rounded-xl bg-emerald-50 text-emerald-800 px-3 py-2 space-y-1">
                 <p>导入完成：新建 {batchResult.created} 首 · 跳过 {batchResult.skipped} 首 · 错误 {batchResult.errors} 首</p>
                 {batchResult.detail.skipped.length > 0 && (
                   <p className="text-emerald-700/80">跳过：{batchResult.detail.skipped.join('、')}</p>

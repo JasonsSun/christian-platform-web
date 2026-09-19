@@ -176,7 +176,7 @@ export default function AdminOrganizationsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>组织管理</SectionTitle>
+      <SectionTitle as="h1">组织管理</SectionTitle>
       <p className="-mt-3 mb-4 text-sm text-ink-500">教会 / 团契 / 事工 / 公益组织的审核与成员管理</p>
 
       {/* 组织是什么、从哪来 —— 管理台最容易看不懂的一块，直接讲清楚 */}
@@ -189,7 +189,7 @@ export default function AdminOrganizationsPage() {
           </li>
           <li>
             <span className="text-ink-700">产生方式</span>：由「注册机构」申请提交后落到本表，初始状态为
-            <span className="text-amber-600 font-medium"> 待审核</span>；也支持平台运营在后台代为录入。
+            <span className="text-amber-700 font-medium"> 待审核</span>；也支持平台运营在后台代为录入。
           </li>
           <li>
             <span className="text-ink-700">审核员</span>负责「通过 / 驳回」；<span className="text-ink-700">管理员</span>
@@ -209,7 +209,7 @@ export default function AdminOrganizationsPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4 items-center">
-        <input className="input-styled flex-1 min-w-[180px]" placeholder="搜索组织名称 / 城市" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className="input-styled flex-1 min-w-[180px]" aria-label="搜索组织名称 / 城市" placeholder="搜索组织名称 / 城市" value={q} onChange={(e) => setQ(e.target.value)} />
         {['', 'pending', 'approved', 'rejected'].map((s) => (
           <button key={s || 'all'} onClick={() => setStatus(s)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition ${status === s ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600 hover:bg-ink-200'}`}>
@@ -219,26 +219,27 @@ export default function AdminOrganizationsPage() {
       </div>
 
       {!canDelete ? (
-        <p className="mb-4 text-xs text-amber-600">
+        <p className="mb-4 text-xs text-amber-700">
           当前为审核员视角：可通过 / 驳回组织审核；删除组织等破坏性操作仅平台管理员可执行。
         </p>
       ) : null}
 
-      {msg ? <div className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
+      {msg ? <div role="status" className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
 
       {loading ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : items.length === 0 ? (
         <Empty label="暂无组织" />
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
           <table className="w-full text-sm">
-            <thead className="bg-ink-50 text-ink-500">
+            <caption className="sr-only">组织管理</caption>
+            <thead className="bg-ink-50 text-ink-600">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">组织</th>
-                <th className="text-left px-4 py-3 font-medium">类型</th>
-                <th className="text-left px-4 py-3 font-medium">城市</th>
-                <th className="text-center px-4 py-3 font-medium">成员</th>
-                <th className="text-center px-4 py-3 font-medium">状态</th>
-                <th className="text-right px-4 py-3 font-medium">操作</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">组织</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">类型</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">城市</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">成员</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
+                <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -262,7 +263,7 @@ export default function AdminOrganizationsPage() {
                         </button>
                       ) : null}
                       {canReview && o.status !== 'approved' ? (
-                        <button disabled={busy === o.id} onClick={() => review(o.id, 'approved')} className="text-emerald-600 hover:underline disabled:opacity-50">通过</button>
+                        <button disabled={busy === o.id} onClick={() => review(o.id, 'approved')} className="text-emerald-700 hover:underline disabled:opacity-50">通过</button>
                       ) : null}
                       {canReview && o.status !== 'rejected' ? (
                         <button disabled={busy === o.id} onClick={() => review(o.id, 'rejected')} className="text-rose-600 hover:underline disabled:opacity-50">驳回</button>
@@ -285,6 +286,7 @@ export default function AdminOrganizationsPage() {
                         <div className="flex flex-wrap gap-2 mb-3">
                           <input
                             className="input-styled flex-1 min-w-[200px]"
+                            aria-label="按用户名 / 昵称 / 邮箱搜索待添加用户"
                             placeholder="按用户名 / 昵称 / 邮箱搜索待添加用户"
                             value={candKeyword}
                             onChange={(e) => setCandKeyword(e.target.value)}
@@ -322,7 +324,7 @@ export default function AdminOrganizationsPage() {
                           </div>
                         ) : null}
 
-                        {memberMsg ? <div className="mb-3 text-xs text-rose-600">{memberMsg}</div> : null}
+                        {memberMsg ? <div role="alert" className="mb-3 text-xs text-rose-600">{memberMsg}</div> : null}
 
                         {membersLoading ? (
                           <p className="text-sm text-ink-400 py-3">成员加载中…</p>
@@ -331,12 +333,13 @@ export default function AdminOrganizationsPage() {
                         ) : (
                           <div className="rounded-xl overflow-hidden border border-ink-100 bg-white">
                             <table className="w-full text-xs">
-                              <thead className="bg-ink-50 text-ink-500">
+                              <caption className="sr-only">该组织的成员列表</caption>
+                              <thead className="bg-ink-50 text-ink-600">
                                 <tr>
-                                  <th className="text-left px-3 py-2 font-medium">成员</th>
-                                  <th className="text-left px-3 py-2 font-medium">邮箱</th>
-                                  <th className="text-left px-3 py-2 font-medium">角色</th>
-                                  <th className="text-right px-3 py-2 font-medium">操作</th>
+                                  <th scope="col" className="text-left px-3 py-2 font-medium">成员</th>
+                                  <th scope="col" className="text-left px-3 py-2 font-medium">邮箱</th>
+                                  <th scope="col" className="text-left px-3 py-2 font-medium">角色</th>
+                                  <th scope="col" className="text-right px-3 py-2 font-medium">操作</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -350,6 +353,7 @@ export default function AdminOrganizationsPage() {
                                     <td className="px-3 py-2">
                                       <select
                                         value={m.role}
+                                        aria-label={`设置 ${m.displayName} 的组织角色`}
                                         disabled={memberBusy === m.userId}
                                         onChange={(e) => changeRole(m, e.target.value)}
                                         className="rounded-lg border border-ink-200 px-2 py-1 text-xs bg-white"

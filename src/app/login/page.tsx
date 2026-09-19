@@ -10,7 +10,10 @@ import { safeNext } from '@/lib/nav';
 /** 统一错误提示条（登录/注册/2FA 复用） */
 function ErrorBox({ message }: { message: string }) {
   return (
-    <div className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+    <div
+      role="alert"
+      className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm"
+    >
       <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
@@ -74,7 +77,7 @@ function LoginSkeleton() {
           <div className="h-4 w-2/3 rounded bg-white/[0.07] mt-2.5" />
         </div>
       </aside>
-      <main className="flex-1 flex flex-col items-center px-4 sm:px-8 pt-8 pb-12 sm:pt-14 lg:pt-[max(3.5rem,12vh)] lg:pb-14">
+      <div className="flex-1 flex flex-col items-center px-4 sm:px-8 pt-8 pb-12 sm:pt-14 lg:pt-[max(3.5rem,12vh)] lg:pb-14">
         <div className="h-[68px] lg:hidden" />
         <div className="w-full max-w-[430px]">
           <div className="bg-white rounded-3xl border border-ink-100 shadow-[0_24px_60px_-24px_rgba(19,24,66,0.3)] p-7 sm:p-9">
@@ -96,7 +99,7 @@ function LoginSkeleton() {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
@@ -322,14 +325,14 @@ function LoginInner() {
 
         <p className="relative z-10 text-sm text-white/60 border-l-2 border-gold-400/70 pl-4 max-w-sm">
           「你的话是我脚前的灯，是我路上的光。」
-          <span className="block text-white/40 mt-1 text-xs">诗篇 119:105</span>
+          <span className="block text-white/70 mt-1 text-xs">诗篇 119:105</span>
         </p>
       </aside>
 
       {/* 右：登录 / 注册表单。顶部对齐而非垂直居中——居中的话，验证码/第三方按钮
           异步补上、或登录↔注册切换改变卡高，都会把整张卡片往上顶，看起来就是「跳」。
           钉住上沿后内容只向下生长，标题和输入框位置不动。 */}
-      <main className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-8 pb-12 sm:pt-14 lg:pt-[max(3.5rem,12vh)] lg:pb-14">
+      <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-8 pb-12 sm:pt-14 lg:pt-[max(3.5rem,12vh)] lg:pb-14">
         <Link href="/" className="lg:hidden mb-5 self-center inline-flex items-center gap-2.5">
           <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-glow">
             <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -378,6 +381,7 @@ function LoginInner() {
                 <button
                   type="button"
                   onClick={() => { setMode('login'); setError(''); }}
+                  aria-pressed={mode === 'login'}
                   className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${mode === 'login' ? 'seg-thumb' : 'text-ink-500 hover:text-ink-700'}`}
                 >
                   登录
@@ -385,6 +389,7 @@ function LoginInner() {
                 <button
                   type="button"
                   onClick={() => { setMode('register'); setError(''); }}
+                  aria-pressed={mode === 'register'}
                   className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${mode === 'register' ? 'seg-thumb' : 'text-ink-500 hover:text-ink-700'}`}
                 >
                   注册
@@ -397,8 +402,10 @@ function LoginInner() {
             {twoFaTicket ? (
               <form onSubmit={submit2fa} className="auth-form flex flex-col justify-center gap-3.5">
                 <div>
-                  <label className="block text-sm font-medium text-ink-700 mb-1">动态码 / 恢复码</label>
+                  <label htmlFor="twofa-code" className="block text-sm font-medium text-ink-700 mb-1">动态码 / 恢复码</label>
                   <input
+                    id="twofa-code"
+                    name="code"
                     className="input-styled input-field text-center tracking-[0.3em] font-mono"
                     placeholder="000000"
                     value={twoFaCode}
@@ -435,39 +442,46 @@ function LoginInner() {
                     380px 以下再并排会把输入框挤到 100px 出头，退回竖排。 */}
                 <div className={mode === 'register' ? 'grid gap-3.5 min-[380px]:grid-cols-2' : ''}>
                   <div>
-                    <label className="block text-sm font-medium text-ink-700 mb-1">{mode === 'register' ? '用户名' : '账号'}</label>
+                    <label htmlFor="auth-identifier" className="block text-sm font-medium text-ink-700 mb-1">{mode === 'register' ? '用户名' : '账号'}</label>
                     <input
+                      id="auth-identifier"
+                      name="username"
                       className="input-styled input-field"
                       placeholder={mode === 'register' ? '登录用的用户名' : '用户名 / 邮箱'}
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
+                      autoComplete="username"
                       required
                     />
                   </div>
                   {mode === 'register' && (
                     <div>
-                      <label className="block text-sm font-medium text-ink-700 mb-1">昵称</label>
-                      <input className="input-styled input-field" placeholder="显示名称" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+                      <label htmlFor="auth-display-name" className="block text-sm font-medium text-ink-700 mb-1">昵称</label>
+                      <input id="auth-display-name" name="nickname" autoComplete="nickname" className="input-styled input-field" placeholder="显示名称" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
                     </div>
                   )}
                 </div>
 
                 {mode === 'register' && (
                   <div>
-                    <label className="block text-sm font-medium text-ink-700 mb-1">邮箱</label>
-                    <input type="email" className="input-styled input-field" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    <label htmlFor="auth-email" className="block text-sm font-medium text-ink-700 mb-1">邮箱</label>
+                    <input id="auth-email" type="email" name="email" autoComplete="email" className="input-styled input-field" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-ink-700 mb-1">密码</label>
+                  <label htmlFor="auth-password" className="block text-sm font-medium text-ink-700 mb-1">密码</label>
                   <div className="relative">
                     <input
+                      id="auth-password"
+                      name="password"
                       className="input-styled input-field input-suffix"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="请输入密码"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      // 注册走新密码、登录走当前密码，浏览器才会分别记住/填入
+                      autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
                       required
                     />
                     <button
@@ -489,14 +503,17 @@ function LoginInner() {
 
                 {/* 图形验证码 */}
                 <div>
-                  <label className="block text-sm font-medium text-ink-700 mb-1">验证码</label>
+                  <label htmlFor="auth-captcha" className="block text-sm font-medium text-ink-700 mb-1">验证码</label>
                   <div className="flex items-stretch gap-3">
                     <input
+                      id="auth-captcha"
+                      name="captchaCode"
                       className="input-styled input-field flex-1 min-w-0"
                       placeholder="请输入右侧字符"
                       value={captchaCode}
                       maxLength={4}
                       autoComplete="off"
+                      aria-describedby={captchaError ? 'auth-captcha-error' : undefined}
                       onChange={(e) => setCaptchaCode(e.target.value.toUpperCase())}
                     />
                     {/* 外层固定 120px（与后端产出的验证码同宽，多了会被裁掉右边）、
@@ -521,7 +538,11 @@ function LoginInner() {
                     于是弹出「验证码错误」时按钮和卡片都不跟着下移。 */}
                 {error && <ErrorBox message={error} />}
                 {captchaError && (
-                  <p className="-mt-2 px-4 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+                  <p
+                    id="auth-captcha-error"
+                    role="alert"
+                    className="-mt-2 px-4 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm"
+                  >
                     {captchaError}
                   </p>
                 )}
@@ -571,15 +592,16 @@ function LoginInner() {
                   </button>
 
                   <p className="text-center text-[11px] text-ink-400 leading-relaxed">
-                    登录即表示同意 <a href="#" className="text-primary-600 hover:underline">服务条款</a> 和{' '}
-                    <a href="#" className="text-primary-600 hover:underline">隐私政策</a>
+                    {/* 同 Footer 的约定：条款/隐私还没有落地页，写成 <a href="#"> 只会让 Tab
+                        停在一个无处可去、还把页面滚回顶部的锚点上。 */}
+                    登录即表示同意服务条款和隐私政策
                   </p>
                 </div>
               </form>
             )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

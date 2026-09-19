@@ -37,7 +37,7 @@ function Avatar({ name, color, size = 34 }: { name: string; color: string; size?
   return (
     <span
       className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
-      style={{ backgroundColor: color || '#4f6df5', width: size, height: size, fontSize: size * 0.42 }}
+      style={{ backgroundColor: color || '#3d52d9', width: size, height: size, fontSize: size * 0.42 }}
     >
       {(name || '?').slice(0, 1)}
     </span>
@@ -90,7 +90,7 @@ function MemberPanel({
   );
 
   if (loading) return <div className="px-6 py-4 text-sm text-ink-400">加载成员…</div>;
-  if (error) return <div className="px-6 py-4 text-sm text-rose-600">{error}</div>;
+  if (error) return <div role="alert" className="px-6 py-4 text-sm text-rose-600">{error}</div>;
   if (!data) return null;
 
   return (
@@ -99,7 +99,7 @@ function MemberPanel({
         <span>成员 <b className="text-ink-800">{data.memberCount}</b> 人</span>
         <span>动态 <b className="text-ink-800">{data.postCount}</b> 条</span>
         <span>团长 <b className="text-ink-800">{data.owner.displayName || data.owner.username || '—'}</b></span>
-        {!canManage ? <span className="text-amber-600">（仅管理员可移交团长 / 移出成员 / 解散团契）</span> : null}
+        {!canManage ? <span className="text-amber-700">（仅管理员可移交团长 / 移出成员 / 解散团契）</span> : null}
       </div>
       <div className="grid sm:grid-cols-2 gap-2">
         {data.members.map((m) => (
@@ -145,7 +145,7 @@ function MemberPanel({
         ))}
       </div>
       <div className="mt-3">
-        <Link href={`/groups/${data.id}`} className="text-xs text-primary-700 hover:underline" target="_blank">
+        <Link href={`/groups/${data.id}`} className="text-xs text-primary-700 hover:underline" target="_blank" rel="noopener noreferrer">
           在站点中查看该团契 ↗
         </Link>
       </div>
@@ -186,7 +186,7 @@ export default function AdminGroupsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>群组管理</SectionTitle>
+      <SectionTitle as="h1">群组管理</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">
         查看团契/群组成员、动态与负责人；对违规群组可直接解散（无需等团长操作）
       </p>
@@ -200,12 +200,13 @@ export default function AdminGroupsPage() {
       <div className="flex flex-wrap gap-3 items-center mb-4">
         <input
           className="input-styled flex-1 min-w-[220px]"
+          aria-label="搜索群组名称 / 城市"
           placeholder="搜索群组名称 / 城市"
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
         <button className="btn-secondary" onClick={reload}>刷新</button>
-        {!canManage ? <span className="text-xs text-amber-600">当前为审核员视角：可查看成员，解散/调整团契仅管理员可操作</span> : null}
+        {!canManage ? <span className="text-xs text-amber-700">当前为审核员视角：可查看成员，解散/调整团契仅管理员可操作</span> : null}
       </div>
 
       {loading ? (
@@ -217,16 +218,17 @@ export default function AdminGroupsPage() {
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
           <table className="w-full text-sm">
-            <thead className="bg-ink-50 text-ink-500">
+            <caption className="sr-only">群组管理</caption>
+            <thead className="bg-ink-50 text-ink-600">
               <tr>
-                <th className="text-left px-4 py-3 font-medium">群组</th>
-                <th className="text-left px-4 py-3 font-medium">分类</th>
-                <th className="text-left px-4 py-3 font-medium">城市</th>
-                <th className="text-left px-4 py-3 font-medium">负责人</th>
-                <th className="text-center px-4 py-3 font-medium">成员</th>
-                <th className="text-center px-4 py-3 font-medium">动态</th>
-                <th className="text-left px-4 py-3 font-medium">创建时间</th>
-                <th className="text-right px-4 py-3 font-medium">操作</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">群组</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">分类</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">城市</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">负责人</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">成员</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">动态</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">创建时间</th>
+                <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
               </tr>
             </thead>
             <tbody>

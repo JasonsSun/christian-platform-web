@@ -6,6 +6,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
+import { scrollBehavior } from '@/lib/motion';
 import { apiGet, apiPost, qs } from '@/lib/api';
 import { HlsPlayer } from '@/components/HlsPlayer';
 import { Danmaku } from '@/components/Danmaku';
@@ -232,7 +233,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
     return () => clearInterval(t);
   }, [live, wsReady, id]);
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: scrollBehavior() }); }, [messages]);
 
   // 录像生成：后端落盘最长约 15 秒，期间自动刷新房间状态；
   // 超过 2 分钟仍没有 recordingMediaId 就判定失败，避免页面永久停在「生成中」。
@@ -379,7 +380,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               <button
                 type="button"
                 onClick={toggleDanmaku}
-                className={`text-xs px-2 py-1 rounded-full backdrop-blur-sm transition-colors ${danmakuOn ? 'bg-amber-400 text-white' : 'bg-black/50 text-white/90'}`}
+                className={`text-xs px-2 py-1 rounded-full backdrop-blur-sm transition-colors ${danmakuOn ? 'bg-amber-400 text-ink-950' : 'bg-black/50 text-white/90'}`}
               >
                 {danmakuOn ? '弹幕开' : '弹幕关'}
               </button>
@@ -449,7 +450,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
             </div>
           ) : null}
           {room.reviewStatus === 'rejected' && !room.cancelled ? (
-            <div className="rounded-xl px-4 py-3 bg-rose-50/80 border border-rose-200 text-sm text-rose-700">
+            <div role="alert" className="rounded-xl px-4 py-3 bg-rose-50/80 border border-rose-200 text-sm text-rose-700">
               ✕ 审核未通过{room.reviewNote ? `:${room.reviewNote}` : ''}。
               {isStaff && <Link href="/admin/live" className="ml-2 underline">去管理后台处理</Link>}
             </div>
@@ -476,16 +477,16 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                       : <button className="btn-primary" disabled={pending || !!startBlock} onClick={startLive}>开始直播</button>
                   )}
                   {startBlock && room.status !== 'ended' && !room.cancelled && (
-                    <p className="text-xs text-rose-600 w-full">⚠ {startBlock}</p>
+                    <p role="alert" className="text-xs text-rose-600 w-full">⚠ {startBlock}</p>
                   )}
                   {room.reviewStatus === 'pending' && room.reviewVideoId && (
                     <div className="w-full text-sm space-y-2 border-t border-ink-100 pt-3">
                       <p className="text-ink-500">已提交现场视频审核材料:</p>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">media/{room.reviewVideoId}</code>
-                        <Link href={`/media/${room.reviewVideoId}`} target="_blank" className="btn-ghost">查看视频</Link>
+                        <Link href={`/media/${room.reviewVideoId}`} target="_blank" rel="noopener noreferrer" className="btn-ghost">查看视频</Link>
                       </div>
-                      <p className="text-xs text-amber-600">审核通过后系统会发通知，点通知回到本页即可开播。</p>
+                      <p className="text-xs text-amber-700">审核通过后系统会发通知，点通知回到本页即可开播。</p>
                     </div>
                   )}
                   {room.status === 'ended' && <span className="text-sm text-ink-400">本场已结束</span>}
@@ -500,7 +501,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                       ? <Link href={`/media/${room.recordingMediaId}`} className="btn-secondary text-sm">📼 查看录像</Link>
                       : recordTimeout
                         ? <span className="text-xs text-ink-400">本次未生成录像（服务端未录制或时长过短），可在管理台手动上传回放</span>
-                        : <span className="text-xs text-amber-600">⏳ 录像生成中,自动刷新…</span>
+                        : <span className="text-xs text-amber-700">⏳ 录像生成中,自动刷新…</span>
                   )}
                   {room.recordEnabled && room.status !== 'ended' && (
                     <span className="text-xs text-ink-400">本场已开启保存录像,结束后自动入库审核</span>
@@ -562,10 +563,11 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               const mine = !!user?.id && !!m.userId && m.userId === user.id;
               return (
                 <div key={m.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
-                  <span
-                    className="text-[11px] px-1 mb-0.5 font-medium"
-                    style={{ color: mine ? undefined : (m.avatarColor || undefined) }}
-                  >
+                  {/* 发言人的色相只留给这颗小圆点：avatarColor 是 500 档的浅色系
+                      （#84cc16 / #f59e0b / #ec4899…），原来直接当 11px 名字色写在深色
+                      聊天底上，最差的一档不到 2:1。名字回到主题正文色，配色照样认得出人。 */}
+                  <span className="mb-0.5 flex max-w-full items-center gap-1.5 px-1 text-[11px] font-medium text-ink-600">
+                    {!mine && m.avatarColor && <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: m.avatarColor }} />}
                     {mine ? '我' : (m.displayName || '匿名')}
                   </span>
                   <div
@@ -586,6 +588,8 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
             <div className="p-3 border-t border-ink-100 flex items-center gap-2">
               <input
                 className="input-styled flex-1"
+                name="chatMessage"
+                aria-label="聊天内容"
                 placeholder={user ? '说点什么…' : '登录后参与聊天'}
                 value={draft}
                 disabled={!user}

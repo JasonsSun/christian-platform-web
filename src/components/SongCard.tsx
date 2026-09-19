@@ -23,17 +23,19 @@ export default function SongCard({
   const meta = audioTypeMeta(s.audioType);
   const listen = vocalListenTarget(s);
   return (
-    <Link
-      key={s.id}
-      href={`/songs/${s.id}`}
-      className="group bg-white rounded-2xl p-4 shadow-soft hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5 border border-ink-100 hover:border-gold-200 flex items-center gap-4"
-    >
+    <div className="group relative bg-white rounded-2xl p-4 shadow-soft hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5 border border-ink-100 hover:border-gold-200 flex items-center gap-4">
+      {/* 整卡可点用「铺满式链接」实现：交互元素不能嵌套在 <a> 里，试听/投稿按钮要留在链接外面（靠 z-10 盖回上层） */}
+      <Link
+        href={`/songs/${s.id}`}
+        aria-label={`查看诗歌 ${s.title}`}
+        className="absolute inset-0 rounded-2xl"
+      />
       <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-gold-100 to-gold-200 flex items-center justify-center text-gold-700 group-hover:from-gold-400 group-hover:to-gold-500 group-hover:text-ink-950 transition-all flex-shrink-0">
         <IconMusicNote className="w-6 h-6" strokeWidth={1.7} />
         <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-gold-400/0 group-hover:bg-gold-300/70 transition-colors blur-[1px]" />
       </div>
       <div className="flex-1 min-w-0">
-        <h3 className="font-semibold text-ink-900 group-hover:text-gold-600 transition-colors truncate">{s.title}</h3>
+        <p className="font-semibold text-ink-900 group-hover:text-gold-600 transition-colors truncate">{s.title}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="text-xs text-ink-500 truncate">{s.author}</span>
           {s.category && (
@@ -60,12 +62,12 @@ export default function SongCard({
                   onRequestVocal(s.title);
                 }}
                 title={VOCAL_WANTED_HINT}
-                className="hover:underline truncate py-1.5 -my-1.5"
+                className="relative z-10 hover:underline truncate py-1.5 -my-1.5"
               >
                 🎤 我来投稿
               </button>
             )}
-            {/* 不能用 <a>:外层已经是 <Link> 渲染的 <a>,嵌套 a 会造成非法 HTML */}
+            {/* 站外链接用 button 而不是 <a>：它要盖在铺满式链接之上，两套链接嵌套是非法 HTML */}
             <button
               type="button"
               onClick={(e) => {
@@ -78,7 +80,7 @@ export default function SongCard({
                   ? `管理员已核实是人声演唱（${listen.source}）`
                   : `去${listen.source}找这首的人声版`
               }
-              className="hover:underline truncate py-1.5 -my-1.5"
+              className="relative z-10 hover:underline truncate py-1.5 -my-1.5"
             >
               🎧 {listen.verified ? '在线听人声版' : '找人声版'}
             </button>
@@ -96,7 +98,7 @@ export default function SongCard({
             });
           }}
           title={active ? '暂停' : '在线试听'}
-          className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition ${
+          className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition ${
             active ? 'bg-gold-500 text-ink-950' : 'bg-gold-100 text-gold-700 hover:bg-gold-400 hover:text-ink-950'
           }`}
         >
@@ -107,6 +109,6 @@ export default function SongCard({
         <IconEye className="w-4 h-4" />
         {s.playCount}
       </div>
-    </Link>
+    </div>
   );
 }

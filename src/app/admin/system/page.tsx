@@ -180,7 +180,7 @@ export default function AdminSystemPage() {
           生产环境由定时任务调用同一接口自动冲刷；队列堆积时可在后台手动跑一轮。
         </p>
 
-        {notifyMsg ? <div className="mb-3 text-xs text-ink-600 bg-ink-50 rounded-xl px-3 py-2">{notifyMsg}</div> : null}
+        {notifyMsg ? <div role="status" className="mb-3 text-xs text-ink-600 bg-ink-50 rounded-xl px-3 py-2">{notifyMsg}</div> : null}
 
         {!notifyData ? (
           notifyLoading ? <Loading /> : <Empty label="暂无数据" />
@@ -213,13 +213,14 @@ export default function AdminSystemPage() {
             {notifyData.recent?.length ? (
               <div className="rounded-xl border border-ink-100 overflow-hidden">
                 <table className="w-full text-xs">
-                  <thead className="bg-ink-50 text-ink-500">
+                  <caption className="sr-only">外发通知队列</caption>
+                  <thead className="bg-ink-50 text-ink-600">
                     <tr>
-                      <th className="text-left px-3 py-2 font-medium">通道</th>
-                      <th className="text-left px-3 py-2 font-medium">类型</th>
-                      <th className="text-left px-3 py-2 font-medium">标题</th>
-                      <th className="text-center px-3 py-2 font-medium">状态</th>
-                      <th className="text-right px-3 py-2 font-medium">时间</th>
+                      <th scope="col" className="text-left px-3 py-2 font-medium">通道</th>
+                      <th scope="col" className="text-left px-3 py-2 font-medium">类型</th>
+                      <th scope="col" className="text-left px-3 py-2 font-medium">标题</th>
+                      <th scope="col" className="text-center px-3 py-2 font-medium">状态</th>
+                      <th scope="col" className="text-right px-3 py-2 font-medium">时间</th>
                     </tr>
                   </thead>
                   <tbody>

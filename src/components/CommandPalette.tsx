@@ -10,9 +10,11 @@
  * - 任意组件可 `window.dispatchEvent(new Event('open-command-palette'))` 唤起
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiGet } from '@/lib/api';
+import { scrollBehavior } from '@/lib/motion';
+import { useDialogFocus } from '@/lib/a11y';
 import {
   MagnifyingGlassIcon,
   ArrowRightIcon,
@@ -164,6 +166,9 @@ export default function CommandPalette() {
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const dlgRef = useDialogFocus<HTMLDivElement>(open);
+  // aria-activedescendant 要在整棵文档里指向唯一一行，id 不能手拼
+  const listId = useId();
 
   const close = useCallback(() => {
     setOpen(false);
@@ -324,15 +329,17 @@ export default function CommandPalette() {
   // 选中项滚动到可视区
   useEffect(() => {
     const el = listRef.current?.querySelector<HTMLElement>(`[data-idx="${active}"]`);
-    el?.scrollIntoView({ block: 'nearest' });
+    el?.scrollIntoView({ block: 'nearest', behavior: scrollBehavior() });
   }, [active]);
 
   if (!open) return null;
 
   let lastGroup = '';
+  // 结果刚变化、active 还没归位时不要指向不存在的行
+  const activeOptionId = results[active] ? `${listId}-opt-${active}` : undefined;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[10vh] px-4">
+    <div ref={dlgRef} className="fixed inset-0 z-[200] flex items-start justify-center pt-[10vh] px-4" role="dialog" aria-modal="true" aria-label="全站搜索">
       <div
         className="absolute inset-0 bg-ink-950/60 backdrop-blur-sm animate-fade-in"
         onClick={close}
@@ -346,23 +353,28 @@ export default function CommandPalette() {
           <div className="flex items-center gap-3 px-5 py-4 border-b border-ui-border">
             <MagnifyingGlassIcon className="w-5 h-5 text-primary-500 shrink-0" />
             <input
+              aria-label="全站搜索"
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onInputKeyDown}
               placeholder="搜索页面、经文、诗歌、讲道、团契…"
               className="flex-1 bg-transparent outline-none text-base text-ink-900 placeholder:text-ink-400"
-              aria-label="全站搜索"
+              role="combobox"
+              aria-expanded
+              aria-autocomplete="list"
+              aria-controls={listId}
+              aria-activedescendant={activeOptionId}
             />
             {loading && (
               <span className="w-4 h-4 rounded-full border-2 border-primary-500/30 border-t-primary-500 animate-spin shrink-0" />
             )}
-            <kbd className="hidden sm:inline-block px-2 py-0.5 text-[10px] rounded-md bg-ink-100 text-ink-500 border border-ink-200">
+            <kbd className="hidden sm:inline-block px-2 py-0.5 text-[10px] rounded-md bg-ink-100 text-ink-600 border border-ink-200">
               Esc
             </kbd>
           </div>
 
-          <div ref={listRef} className="max-h-[52vh] overflow-y-auto py-2">
+          <div ref={listRef} id={listId} role="listbox" aria-label="搜索结果" className="max-h-[52vh] overflow-y-auto py-2">
             {results.length === 0 ? (
               <div className="px-5 py-10 text-center text-sm text-ink-500">
                 {loading ? '搜索中…' : '没有找到匹配项'}
@@ -381,6 +393,10 @@ export default function CommandPalette() {
                     )}
                     <button
                       type="button"
+                      // 高亮此前只是画上去的：DOM 焦点一直停在输入框，读屏完全不知道选中了谁
+                      role="option"
+                      id={`${listId}-opt-${idx}`}
+                      aria-selected={isActive}
                       data-idx={idx}
                       onMouseEnter={() => setActive(idx)}
                       onClick={() => go(item.href)}

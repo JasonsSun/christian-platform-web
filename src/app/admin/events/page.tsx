@@ -44,7 +44,7 @@ export default function AdminEventsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle>事件中心</SectionTitle>
+      <SectionTitle as="h1">事件中心</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">事务性发件箱(outbox)事件查询、消费者状态与重试</p>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -66,19 +66,22 @@ export default function AdminEventsPage() {
         </button>
       </div>
 
-      {msg ? <div className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
+      {msg ? <div role="status" className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
 
       {loading ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : items.length === 0 ? (
         <Empty label="暂无事件" />
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
-          <table className="w-full text-sm">
-            <thead className="bg-ink-50 text-ink-500">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium">事件类型</th>
-                <th className="text-left px-4 py-3 font-medium">创建时间</th>
-                <th className="text-center px-4 py-3 font-medium">状态</th>
-                <th className="text-right px-4 py-3 font-medium">载荷</th>
+          {/* 窄屏下横向滚动，而不是把 620px 的列宽压成竖排（探针实测） */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[620px] text-sm">
+            <caption className="sr-only">事件中心</caption>
+            <thead className="bg-ink-50 text-ink-600">
+              <tr className="whitespace-nowrap">
+                <th scope="col" className="text-left px-4 py-3 font-medium">事件类型</th>
+                <th scope="col" className="text-left px-4 py-3 font-medium">创建时间</th>
+                <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
+                <th scope="col" className="text-right px-4 py-3 font-medium">载荷</th>
               </tr>
             </thead>
             <tbody>
@@ -107,6 +110,7 @@ export default function AdminEventsPage() {
               ) : null}
             </tbody>
           </table>
+          </div>
         </div>
       )}
     </AdminLayout>

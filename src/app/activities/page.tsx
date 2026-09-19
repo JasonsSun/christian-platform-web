@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { apiPost, qs } from '@/lib/api';
+import { qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
@@ -50,13 +50,13 @@ function Avatar({ name, color, size = 36 }: { name: string; color: string; size?
 
 function getActivityStatus(a: ActivityItem): { label: string; cls: string } {
   const ended = a.endAt ? new Date(a.endAt).getTime() < Date.now() : new Date(a.startAt).getTime() < Date.now();
-  if (ended) return { label: '已结束', cls: 'bg-ink-100 text-ink-500' };
+  if (ended) return { label: '已结束', cls: 'bg-ink-100 text-ink-600' };
   if (a.registered) {
     if (a.myStatus === 'waitlist') return { label: '候补中', cls: 'bg-gold-100 text-gold-700' };
     return { label: '已报名', cls: 'bg-emerald-100 text-emerald-700' };
   }
   const full = a.capacity > 0 && a.confirmedCount >= a.capacity;
-  if (full) return { label: '满员候补', cls: 'bg-rose-100 text-rose-600' };
+  if (full) return { label: '满员候补', cls: 'bg-rose-100 text-rose-700' };
   return { label: '可报名', cls: 'bg-primary-100 text-primary-700' };
 }
 
@@ -128,13 +128,14 @@ export default function ActivitiesPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
+                aria-label="搜索活动"
                 className="input-styled input-icon"
                 placeholder="搜索活动名称或介绍"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
               />
             </div>
-            <select className="input-styled" value={city} onChange={(e) => setCity(e.target.value)}>
+            <select aria-label="活动城市筛选" className="input-styled" value={city} onChange={(e) => setCity(e.target.value)}>
               <option value="">全部城市</option>
               {CITIES.map((c) => (
                 <option key={c} value={c}>
@@ -142,7 +143,7 @@ export default function ActivitiesPage() {
                 </option>
               ))}
             </select>
-            <select className="input-styled" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <select aria-label="活动分类筛选" className="input-styled" value={category} onChange={(e) => setCategory(e.target.value)}>
               {CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>
                   {c.label}
@@ -208,7 +209,7 @@ function ActivityCard({ a }: { a: ActivityItem }) {
         )}
         {a.cover && a.cover.startsWith('http') && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img loading="lazy" src={a.cover} alt={a.title} className="absolute inset-0 w-full h-full object-cover" />
+          <img loading="lazy" src={a.cover} alt={a.title} className="absolute inset-0 w-full h-full object-cover"  decoding="async" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
         <div className="absolute top-4 left-4 flex gap-2">
@@ -230,7 +231,7 @@ function ActivityCard({ a }: { a: ActivityItem }) {
           </span>
         </div>
         <div className="absolute bottom-4 left-4 right-4">
-          <h3 className="font-display text-xl font-bold text-white drop-shadow-lg line-clamp-2">{a.title}</h3>
+          <h2 className="font-display text-xl font-bold text-white drop-shadow-lg line-clamp-2">{a.title}</h2>
         </div>
       </div>
 
@@ -258,7 +259,14 @@ function ActivityCard({ a }: { a: ActivityItem }) {
             <span className="text-ink-500">报名进度</span>
             <span className="font-semibold text-primary-600">{a.confirmedCount}/{a.capacity} 人</span>
           </div>
-          <div className="h-2 rounded-full bg-ink-100 overflow-hidden">
+          <div
+            className="h-2 rounded-full bg-ink-100 overflow-hidden"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(percent)}
+            aria-label="报名进度"
+          >
             <div
               className={`h-full rounded-full transition-all ${
                 percent >= 100 ? 'bg-gradient-to-r from-rose-400 to-rose-500' : 'bg-gradient-to-r from-primary-500 to-primary-400'

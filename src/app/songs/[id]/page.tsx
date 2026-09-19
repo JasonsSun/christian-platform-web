@@ -56,7 +56,7 @@ function VocalWantedCard({ song, onSubmit }: { song: SongDetail; onSubmit: () =>
           上传我演唱的版本
         </button>
       </div>
-      <p className="text-white/35 text-[11px] mt-3 leading-relaxed">
+      <p className="text-white/70 text-[11px] mt-3 leading-relaxed">
         平台不转载版权录音:试听会跳转到 {target.source} 播放
         {target.verified ? '（该链接已由管理员核实是人声演唱）' : ',请自行挑选演唱版本'};
         上传的录音请确保你拥有版权或已获授权。
@@ -232,7 +232,7 @@ export default function SongDetailPage() {
                 >
                   投屏
                 </Link>
-                <span className="text-white/50 text-sm flex items-center gap-1">
+                <span className="text-white/75 text-sm flex items-center gap-1">
                   <IconEye className="w-4 h-4" strokeWidth={1.8} />
                   {data.playCount} 次播放
                 </span>
@@ -274,7 +274,7 @@ export default function SongDetailPage() {
                   </div>
                 )}
               </div>
-              <p className="text-center text-white/40 text-xs mt-4">收录于 {formatDate(data.createdAt)}</p>
+              <p className="text-center text-white/70 text-xs mt-4">收录于 {formatDate(data.createdAt)}</p>
             </section>
 
             {/* 相关推荐 */}
@@ -307,7 +307,7 @@ export default function SongDetailPage() {
               </section>
             )}
 
-            <footer className="text-center py-8 text-white/40 text-xs">
+            <footer className="text-center py-8 text-white/70 text-xs">
               <p>愿这首诗歌带给你心灵的慰藉与力量</p>
             </footer>
           </>

@@ -140,7 +140,9 @@ export default function CalendarPage() {
         <div className="absolute inset-0 mesh-bg opacity-70" />
         <div className="absolute inset-0 dot-grid opacity-25" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full glass-tech text-white/90 text-xs font-medium mb-3">
+          {/* 原先用 glass-on-dark（白 12% 磨砂片）：它把 primary-600 那条带子提亮了，
+              白字压在提亮后的 rgb(64,94,255) 上只剩 4.30。换成深色底片，白字回到 7 以上。 */}
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ink-950/30 border border-white/20 text-white/90 text-xs font-medium mb-3">
             <span className="w-1.5 h-1.5 rounded-full bg-gold-400 animate-pulse" />
             活动 · 打卡 · 读经
           </span>
@@ -218,7 +220,7 @@ export default function CalendarPage() {
           )}
 
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl p-4 text-sm mb-5">{error}</div>
+            <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm mb-5">{error}</div>
           )}
 
           <div className="grid lg:grid-cols-3 gap-6">
@@ -343,7 +345,7 @@ export default function CalendarPage() {
                               <button
                                 onClick={() => cancelReminder(a.id)}
                                 disabled={busy === a.id}
-                                className="text-[11px] text-ink-400 hover:text-rose-500 transition-colors disabled:opacity-50"
+                                className="text-[11px] text-ink-400 hover:text-rose-600 transition-colors disabled:opacity-50"
                               >
                                 取消
                               </button>
@@ -379,7 +381,7 @@ export default function CalendarPage() {
                 )}
 
                 {data?.loggedIn === false && (
-                  <div className="mt-4 p-3 rounded-xl bg-ink-50 text-xs text-ink-500">
+                  <div className="mt-4 p-3 rounded-xl bg-ink-50 text-xs text-ink-600">
                     <Link href="/login" className="text-primary-600 hover:underline">
                       登录
                     </Link>

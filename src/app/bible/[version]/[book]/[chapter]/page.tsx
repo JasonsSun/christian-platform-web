@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { useApi, useAction } from '@/lib/useApi';
 import { api, apiPost, apiDelete, qs } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useEscape } from '@/lib/a11y';
+import { useDialogFocus, useEscape } from '@/lib/a11y';
+import { scrollBehavior } from '@/lib/motion';
 import { type SpeechItem } from '@/lib/useSpeech';
 import { useHostedSpeech } from '@/lib/speechHost';
 import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
@@ -59,6 +60,13 @@ type ReadTheme = 'light' | 'dark' | 'sepia';
 type FontSize = 'sm' | 'md' | 'lg' | 'xl';
 type LineHeight = 'tight' | 'normal' | 'loose';
 type ReadWidth = 'narrow' | 'medium' | 'wide';
+// 四个字号按钮的可见内容都只是「A」字形，读屏里靠这套名字区分
+const FONT_LABEL: Record<FontSize, string> = {
+  sm: '小号字',
+  md: '标准字号',
+  lg: '大号字',
+  xl: '特大字',
+};
 
 export default function ReadChapter() {
   const params = useParams();
@@ -87,6 +95,8 @@ export default function ReadChapter() {
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEscape(settingsOpen, () => setSettingsOpen(false));
+  // 排版面板不是模态框，只要关闭后焦点回到那个齿轮按钮
+  const settingsRef = useDialogFocus<HTMLDivElement>(settingsOpen, { trap: false, autofocus: false });
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [autoNextChapter, setAutoNextChapter] = useState(false);
@@ -359,7 +369,7 @@ export default function ReadChapter() {
     setStartVerse(n);
     const el = document.getElementById(`v${n}`);
     if (el && typeof el.scrollIntoView === 'function') {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
     }
     try {
       const url = new URL(window.location.href);
@@ -379,7 +389,7 @@ export default function ReadChapter() {
     setStartVerse(verse);
     const el = document.getElementById(`v${verse}`);
     if (el && typeof el.scrollIntoView === 'function') {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
     }
     try {
       const url = new URL(window.location.href);
@@ -446,7 +456,7 @@ export default function ReadChapter() {
     setStartVerse(v);
     const t = setTimeout(() => {
       const el = document.getElementById(`v${v}`);
-      if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'center' });
+      if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
     }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -492,7 +502,7 @@ export default function ReadChapter() {
     if (speech.speakingKey == null) return;
     const el = document.getElementById(`v${speech.speakingKey}`);
     if (el && typeof el.scrollIntoView === 'function') {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.scrollIntoView({ behavior: scrollBehavior(), block: 'center' });
     }
   }, [speech.speakingKey]);
 
@@ -595,11 +605,20 @@ export default function ReadChapter() {
     };
   }, [speech.state]);
 
-  // 键盘快捷键：←/→ 翻章，空格 播放/暂停（输入框聚焦时忽略）
+  // 键盘快捷键：←/→ 翻章，空格 播放/暂停（焦点落在自带键盘语义的控件上时全部让位）
   useEffect(() => {
+    // 空格本身就是按钮的「按下」，方向键本身就是 select/滑杆的按键语义；
+    // 此前只放行输入框，结果一进读经页，全站按钮按空格都变成朗读、下拉都翻不了章。
+    const ownsKey = (el: EventTarget | null) => {
+      const node = el as HTMLElement | null;
+      if (!node || typeof node.matches !== 'function') return false;
+      return (
+        node.isContentEditable === true ||
+        node.matches('input, textarea, select, button, a, video, audio, [role], [aria-haspopup], [tabindex], [contenteditable]')
+      );
+    };
     const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (ownsKey(e.target) || ownsKey(document.activeElement)) return;
       if (e.key === 'ArrowLeft' && prev) {
         router.push(`/bible/${version}/${book}/${prev}`);
       } else if (e.key === 'ArrowRight' && next) {
@@ -791,10 +810,12 @@ export default function ReadChapter() {
                 <button
                   key={size}
                   onClick={() => setFontSize(size)}
+                  aria-label={FONT_LABEL[size]}
+                  aria-pressed={fontSize === size}
                   className={`w-9 h-8 inline-flex items-center justify-center rounded-full font-bold font-serif transition-colors ${
                     fontSize === size ? 'bg-primary-600 text-white' : 'text-ink-500 hover:text-primary-600'
                   }`}
-                  title={size === 'sm' ? '小号字' : size === 'md' ? '中号字' : size === 'lg' ? '大号字' : '特大号字'}
+                  title={FONT_LABEL[size]}
                 >
                   <span className={size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : size === 'lg' ? 'text-lg' : 'text-xl'}>A</span>
                 </button>
@@ -807,13 +828,16 @@ export default function ReadChapter() {
                   settingsOpen ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-ink-600 border-ink-100 hover:text-primary-600'
                 }`}
                 title="阅读排版与主题"
+                aria-label="阅读排版与主题"
+                aria-haspopup="dialog"
+                aria-expanded={settingsOpen}
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
               </button>
               {settingsOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setSettingsOpen(false)} />
-                  <div className="absolute right-0 top-12 z-40 w-72 bg-white rounded-2xl shadow-card-hover border border-ink-100 p-4 text-ink-800">
+                  <div ref={settingsRef} className="absolute right-0 top-12 z-40 w-72 bg-white rounded-2xl shadow-card-hover border border-ink-100 p-4 text-ink-800" role="dialog" aria-label="阅读排版与主题">
                     {/* 主题 */}
                     <div className="text-xs font-semibold text-ink-500 mb-2">主题</div>
                     <div className="grid grid-cols-3 gap-2 mb-4">
@@ -926,7 +950,7 @@ export default function ReadChapter() {
         </div>
 
         {error && (
-          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-6 text-rose-600 text-sm">
+          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-6 text-rose-700 text-sm">
             加载失败：{error}
             <button onClick={reload} className="ml-3 underline">重试</button>
           </div>
@@ -1010,7 +1034,7 @@ export default function ReadChapter() {
                       : '朗读本章'}
               </button>
               {speech.ttsMode === 'server' && !speech.ttsError && !speech.ttsLoading && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-400">
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-600">
                   🎧 语音朗读（微信内也能听）
                   {speech.ttsProvider === 'cache' ? '·已缓存' : speech.ttsProvider === 'baidu' ? '·百度' : speech.ttsProvider === 'edge' ? '·微软' : speech.ttsProvider === 'client' ? '·直连' : ''}
                 </span>
@@ -1044,12 +1068,12 @@ export default function ReadChapter() {
               )}
               {/* 服务器语音模式下的说明：让用户知道这是网络合成的、为什么用它 */}
               {speech.ttsMode === 'server' && !speech.ttsLoading && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-50 border border-ink-100 text-xs text-ink-400">
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-50 border border-ink-100 text-xs text-ink-600">
                   当前使用在线语音（服务器合成，需联网）
                 </span>
               )}
               {speech.ttsError && !speech.clientReady && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-500">
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
                   ⚠ 语音合成暂不可用，请稍后重试；也可改用 Chrome / Safari 的本地语音
                 </span>
               )}
@@ -1147,7 +1171,7 @@ export default function ReadChapter() {
                   </label>
                 </>
               {speech.ttsMode === 'server' && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-400">
+                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-600">
                   服务端语音：设置更改后重新朗读生效
                 </span>
               )}
@@ -1233,7 +1257,7 @@ export default function ReadChapter() {
                           ? 'bg-amber-500 text-ink-950 scale-110 shadow-md'
                           : targeted
                             ? 'bg-primary-600 text-white'
-                            : 'text-amber-600/70 group-hover:text-amber-700 group-hover:bg-amber-100'
+                            : 'text-amber-700 group-hover:text-amber-900 group-hover:bg-amber-100'
                       }`}
                     >
                       {v.verse}
@@ -1263,7 +1287,7 @@ export default function ReadChapter() {
                               return dropCap ? (
                                 <span
                                   key={j}
-                                  className="float-left text-5xl font-bold text-amber-600 mr-2 mt-[-8px] leading-none"
+                                  className="float-left text-5xl font-bold text-amber-700 mr-2 mt-[-8px] leading-none"
                                 >
                                   {ch}
                                 </span>
@@ -1287,7 +1311,7 @@ export default function ReadChapter() {
                     {/* 对照译本：仅在开启对照且该节有译文时显示（英文自动用衬线体） */}
                     {cmpVersion && cmpVerses[v.verse] && (
                       <span className="block mt-1.5 text-[0.88em] leading-relaxed text-ink-500 border-l-2 border-primary-200 pl-2.5">
-                        <span className="text-[0.9em] font-medium text-primary-500/80 mr-1.5">
+                        <span className="text-[0.9em] font-medium text-primary-700 mr-1.5">
                           {CMP_VERSIONS.find((x) => x.id === cmpVersion)?.label || cmpVersion}
                         </span>
                         <span className={cmpVersion === 'kjv' ? 'italic' : ''}>{cmpVerses[v.verse]}</span>
@@ -1298,7 +1322,7 @@ export default function ReadChapter() {
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleVerseBookmark(v.verse); }}
                       disabled={!user || bookmarkAction.pending || bmLoading}
-                      className={`absolute right-2 top-2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-amber-100 ${
+                      className={`absolute right-2 top-2 opacity-0 max-md:opacity-100 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-amber-100 ${
                         vb 
                           ? 'opacity-100 text-amber-500' 
                           : 'text-ink-500 hover:text-amber-500'
@@ -1318,7 +1342,7 @@ export default function ReadChapter() {
                         setNoteEditing(noteEditing === v.verse ? null : v.verse);
                       }}
                       disabled={!user}
-                      className={`absolute right-9 top-2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-primary-100 ${
+                      className={`absolute right-9 top-2 opacity-0 max-md:opacity-100 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-primary-100 ${
                         noteEditing === v.verse
                           ? 'opacity-100 text-primary-600'
                           : 'text-ink-500 hover:text-primary-600'
@@ -1344,7 +1368,7 @@ export default function ReadChapter() {
                           onClick={() => deleteVerseNote(v.verse)}
                           disabled={bookmarkAction.pending}
                           title="删除这条笔记"
-                          className="flex-shrink-0 text-[11px] px-2 py-1.5 rounded-lg border border-ink-200 text-ink-400 hover:text-rose-500 hover:border-rose-200 transition-colors"
+                          className="flex-shrink-0 text-[11px] px-2 py-1.5 rounded-lg border border-ink-200 text-ink-400 hover:text-rose-600 hover:border-rose-200 transition-colors"
                         >
                           删除
                         </button>
@@ -1354,6 +1378,7 @@ export default function ReadChapter() {
                   {noteEditing === v.verse && (
                     <div className="mt-2 ml-10 mr-4" onClick={(e) => e.stopPropagation()}>
                       <textarea
+                        aria-label="本节经文笔记内容"
                         value={noteDraft}
                         autoFocus
                         onChange={(e) => setNoteDraft(e.target.value)}
@@ -1378,7 +1403,7 @@ export default function ReadChapter() {
                           <button
                             onClick={() => deleteVerseNote(v.verse)}
                             disabled={bookmarkAction.pending}
-                            className="btn-ghost btn-sm text-xs px-3 text-rose-500 hover:bg-rose-50"
+                            className="btn-ghost btn-sm text-xs px-3 text-rose-600 hover:bg-rose-50"
                           >
                             删除笔记
                           </button>
@@ -1445,7 +1470,7 @@ export default function ReadChapter() {
             onClick={() => next && router.push(`/bible/${version}/${book}/${next}`)}
             disabled={!next}
             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium text-sm transition-colors ${
-              next ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-500/25 hover:shadow-xl' : 'bg-ink-100 text-ink-300 cursor-not-allowed'
+              next ? 'bg-gradient-to-r from-primary-700 to-primary-600 text-white shadow-lg shadow-primary-500/25 hover:shadow-xl' : 'bg-ink-100 text-ink-500 cursor-not-allowed'
             }`}
           >
             下一章

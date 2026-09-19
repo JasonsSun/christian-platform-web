@@ -34,11 +34,18 @@ export function fmtDuration(sec: number): string {
   return m ? `${h} 小时 ${m} 分` : `${h} 小时`;
 }
 
-function Bar({ value, max, tone = 'primary' }: { value: number; max: number; tone?: 'primary' | 'gold' }) {
+function Bar({ value, max, tone = 'primary', label }: { value: number; max: number; tone?: 'primary' | 'gold'; label: string }) {
   const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
   const color = tone === 'gold' ? 'bg-gold-500' : pct > 85 ? 'bg-rose-500' : 'bg-primary-600';
   return (
-    <div className="h-2 rounded-full bg-ink-100 overflow-hidden">
+    <div
+      className="h-2 rounded-full bg-ink-100 overflow-hidden"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+      aria-label={label}
+    >
       <div className={`h-full ${color} transition-all`} style={{ width: `${pct}%` }} />
     </div>
   );
@@ -81,7 +88,7 @@ export default function QuotaCard({ data, compact = false }: { data: QuotaData; 
             <span>距「{next.name}」还需 {next.gap} 分</span>
             <span>{scorePct}%</span>
           </div>
-          <Bar value={data.trustScore} max={next.minScore} tone="gold" />
+          <Bar value={data.trustScore} max={next.minScore} tone="gold" label="信任分升级进度" />
           <div className="text-xs text-gold-700 mt-1.5">升级后:{next.gains}</div>
         </div>
       ) : (
@@ -103,14 +110,14 @@ export default function QuotaCard({ data, compact = false }: { data: QuotaData; 
                 <span>存储空间</span>
                 <span>{formatSize(data.usage.totalBytes)} / {formatSize(p.totalBytes)}</span>
               </div>
-              <Bar value={data.usage.totalBytes} max={p.totalBytes} />
+              <Bar value={data.usage.totalBytes} max={p.totalBytes} label="存储空间使用率" />
             </div>
             <div>
               <div className="flex justify-between text-xs text-ink-500 mb-1">
                 <span>今日流量</span>
                 <span>{formatSize(data.usage.todayBytes)} / {formatSize(p.dailyBytes)}</span>
               </div>
-              <Bar value={data.usage.todayBytes} max={p.dailyBytes} />
+              <Bar value={data.usage.todayBytes} max={p.dailyBytes} label="今日流量使用率" />
             </div>
           </div>
 

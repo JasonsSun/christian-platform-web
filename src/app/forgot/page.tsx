@@ -68,19 +68,27 @@ export default function ForgotPasswordPage() {
           ) : (
             <form onSubmit={submit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-ink-700 mb-1.5">邮箱</label>
+                <label htmlFor="forgot-email" className="block text-sm font-medium text-ink-700 mb-1.5">邮箱</label>
                 <input
+                  id="forgot-email"
                   type="email"
+                  name="email"
+                  autoComplete="email"
                   className="input-styled input-field"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  aria-describedby={error ? 'forgot-error' : undefined}
                   required
                 />
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+                <div
+                  id="forgot-error"
+                  role="alert"
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm"
+                >
                   <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>

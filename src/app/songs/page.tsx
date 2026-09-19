@@ -104,7 +104,7 @@ export default function SongsPage() {
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-gold-700 via-gold-600 to-gold-800" />
+        <div className="absolute inset-0 bg-gradient-to-br from-gold-800 via-gold-700 to-gold-900" />
         <div className="absolute inset-0 overflow-hidden">
           {[
             { top: '15%', left: '10%', size: 48, delay: '0s', duration: '6s' },
@@ -122,7 +122,7 @@ export default function SongsPage() {
           ))}
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10 md:pt-16 md:pb-14 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/15 backdrop-blur-sm border border-white/25 mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-ink-950/20 backdrop-blur-sm border border-white/20 mb-6">
             <IconMusicNote className="w-4 h-4 text-white" strokeWidth={1.7} />
             <span className="text-white font-medium">
               {tab === 'favorites'
@@ -133,7 +133,7 @@ export default function SongsPage() {
             </span>
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 md:mb-6">赞美诗歌</h1>
-          <p className="text-base sm:text-xl text-white/85 max-w-2xl mx-auto mb-6 md:mb-8 font-serif italic">
+          <p className="text-base sm:text-xl text-white/95 max-w-2xl mx-auto mb-6 md:mb-8 font-serif italic">
             "我要向耶和华歌唱，称颂他的大名。" —— 诗篇 66:2
           </p>
 
@@ -148,6 +148,7 @@ export default function SongsPage() {
               >
                 <IconSearch className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-ink-400" strokeWidth={2} />
                 <input
+                  aria-label="搜索诗歌"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="搜索诗歌、作者或标签..."
@@ -156,7 +157,7 @@ export default function SongsPage() {
               </form>
               <button
                 onClick={() => openSubmit()}
-                className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 text-white font-medium text-sm transition-colors"
+                className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-ink-950/20 hover:bg-ink-950/30 backdrop-blur-sm border border-white/25 text-white font-medium text-sm transition-colors"
               >
                 <IconMicrophone className="w-4 h-4" strokeWidth={2} />
                 投稿人声版本
@@ -202,7 +203,7 @@ export default function SongsPage() {
             >
               {t.label}
               {t.id === 'vocal' && vocalCount > 0 && (
-                <span className={`ml-1.5 text-xs ${tab === t.id ? 'text-white/70' : 'text-ink-400'}`}>{vocalCount}</span>
+                <span className={`ml-1.5 text-xs ${tab === t.id ? 'text-ink-950/90' : 'text-ink-400'}`}>{vocalCount}</span>
               )}
             </button>
           ))}
@@ -225,7 +226,7 @@ export default function SongsPage() {
                     }`}
                   >
                     {c.name}
-                    <span className={`ml-1.5 text-xs ${active ? 'text-white/70' : 'text-ink-400'}`}>{c.count}</span>
+                    <span className={`ml-1.5 text-xs ${active ? 'text-ink-950/90' : 'text-ink-400'}`}>{c.count}</span>
                   </button>
                 );
               })}
@@ -266,9 +267,9 @@ export default function SongsPage() {
             <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-gold-100 to-gold-200 flex items-center justify-center text-gold-600">
               {tab === 'vocal' ? <IconMicrophone className="w-8 h-8" strokeWidth={1.5} /> : <IconMusicNote className="w-8 h-8" strokeWidth={1.5} />}
             </div>
-            <h3 className="font-display text-xl font-bold text-ink-900 mb-2">
+            <h2 className="font-display text-xl font-bold text-ink-900 mb-2">
               {tab === 'vocal' ? '站内还没有人声演唱的版本' : q ? <>站内没有找到「{q}」</> : '没有找到相关诗歌'}
-            </h3>
+            </h2>
             <p className="text-ink-500 mb-6">
               {tab === 'vocal'
                 ? '平台的音频目前以伴奏为主，真人演唱版本正在向各教会与诗班征集。有录音欢迎投稿，管理员核实后就会出现在这里'
@@ -369,7 +370,7 @@ export default function SongsPage() {
               </div>
             )}
             {favError && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl p-4 text-sm">
+              <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm">
                 加载失败：{favError}
                 {favError.includes('401') || favError.includes('登录') ? (
                   <Link href="/login" className="underline ml-1">去登录</Link>
@@ -381,7 +382,7 @@ export default function SongsPage() {
                 <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-gold-100 to-gold-200 flex items-center justify-center text-gold-600">
                   <IconStar className="w-8 h-8" strokeWidth={1.5} />
                 </div>
-                <h3 className="font-display text-xl font-bold text-ink-900 mb-2">还没有收藏的诗歌</h3>
+                <h2 className="font-display text-xl font-bold text-ink-900 mb-2">还没有收藏的诗歌</h2>
                 <p className="text-ink-500 mb-4">在诗歌详情页点击收藏，让喜爱的诗歌常伴左右</p>
                 <Link href="/songs" className="btn-primary btn-sm inline-block px-6 text-sm">去逛逛诗歌</Link>
               </div>

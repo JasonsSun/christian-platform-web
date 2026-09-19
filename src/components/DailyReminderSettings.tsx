@@ -105,6 +105,9 @@ export default function DailyReminderSettings({
         <button
           disabled={busy}
           onClick={() => onChange({ remindEnabled: !on })}
+          aria-label="每日提醒"
+          // 开关只有圆点位移这一处视觉差异，读屏要靠 aria-pressed 才知道当前是开还是关
+          aria-pressed={on}
           className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 ${on ? 'bg-primary-500' : 'bg-ink-200'}`}
         >
           <span className={`block w-5 h-5 rounded-full bg-white transition-transform mx-1 ${on ? 'translate-x-5' : 'translate-x-0'}`} />
@@ -116,6 +119,7 @@ export default function DailyReminderSettings({
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm text-ink-700 w-28">读经提醒</span>
             <input
+              aria-label="读经提醒"
               type="time"
               value={prefs?.remindReadAt || '06:30'}
               onChange={(e) => onChange({ remindReadAt: e.target.value })}
@@ -126,6 +130,7 @@ export default function DailyReminderSettings({
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm text-ink-700 w-28">灵修提醒</span>
             <input
+              aria-label="灵修提醒"
               type="time"
               value={prefs?.remindDevotionAt || '21:30'}
               onChange={(e) => onChange({ remindDevotionAt: e.target.value })}
