@@ -23,9 +23,11 @@ interface TopicItem {
 }
 
 const SORT_TABS = [
+  // 标签压到两个字：390px 宽时四个按钮加图标刚好一行，
+  // 之前「内容数 / 最近活跃」会被挤成竖排两行。
   { id: 'hot', label: '热度', icon: '🔥' },
-  { id: 'count', label: '内容数', icon: '📚' },
-  { id: 'new', label: '最近活跃', icon: '🕒' },
+  { id: 'count', label: '内容', icon: '📚' },
+  { id: 'new', label: '活跃', icon: '🕒' },
   { id: 'name', label: '名称', icon: '🔤' },
 ];
 
@@ -166,15 +168,15 @@ export default function TopicsPage() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder="搜索话题，如：信心、祷告、家庭…"
-                className="input-styled pl-10"
+                className="input-styled input-icon"
               />
             </form>
-            <div className="flex gap-1 bg-ink-50 rounded-xl p-1">
+            <div className="flex gap-1 bg-ink-50 rounded-xl p-1 overflow-x-auto">
               {SORT_TABS.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setSort(t.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1 ${
+                  className={`px-2.5 sm:px-3 py-3 sm:py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1 shrink-0 whitespace-nowrap ${
                     sort === t.id ? 'text-primary-700 bg-white shadow-sm' : 'text-ink-500 hover:text-ink-700'
                   }`}
                 >
@@ -244,7 +246,7 @@ export default function TopicsPage() {
               >
                 {/* 排名前三的话题打上金标 */}
                 {sort === 'hot' && i < 3 && (
-                  <span className="absolute top-0 right-0 px-2.5 py-1 rounded-bl-xl text-[11px] font-semibold bg-gradient-to-r from-gold-400 to-gold-600 text-white">
+                  <span className="absolute top-0 right-0 px-2.5 py-1 rounded-bl-xl text-[11px] font-semibold bg-gradient-to-r from-gold-400 to-gold-600 text-ink-950">
                     TOP {i + 1}
                   </span>
                 )}
@@ -258,9 +260,9 @@ export default function TopicsPage() {
 
                 <div className="flex items-center gap-3 text-xs text-ink-500 mb-3">
                   <span>{t.count} 篇内容</span>
-                  <span className="text-ink-300">·</span>
+                  <span className="text-ink-400">·</span>
                   <span>{t.likes} 赞</span>
-                  <span className="text-ink-300">·</span>
+                  <span className="text-ink-400">·</span>
                   <span>{t.comments} 评论</span>
                 </div>
 

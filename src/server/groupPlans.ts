@@ -1,6 +1,7 @@
 import { exec, one, q, newId, ts } from '@/server/db';
 import { getPlan, planPercent } from '@/lib/readingPlans';
 import { enrollPlan } from '@/server/planProgress';
+import { whiteSafeColor } from '@/server/mappers';
 
 /**
  * 小组共读：把「团契」和「读经计划」打通。
@@ -258,7 +259,7 @@ export async function groupPlanProgress(
     members.push({
       userId: r.id,
       displayName: r.display_name || '',
-      avatarColor: r.avatar_color || '#4f6df5',
+      avatarColor: whiteSafeColor(r.avatar_color || '#4f6df5'),
       done,
       percent: planPercent(done, plan.days),
       behind: exp - done,

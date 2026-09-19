@@ -3,6 +3,7 @@ import { q } from '@/server/db';
 import { ok, withApi } from '@/server/http';
 import { requireUser } from '@/server/auth';
 import { ensureMessageColumns } from '@/server/messageColumns';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,7 @@ export const GET = withApi(async (req: NextRequest) => {
           id: peerId,
           username: u?.username || '',
           displayName: u?.display_name || '未知用户',
-          avatarColor: u?.avatar_color || '#4f6df5',
+          avatarColor: whiteSafeColor(u?.avatar_color || '#4f6df5'),
           city: u?.city || '',
         },
         // 撤回的消息不给正文；纯图片消息用占位符预览

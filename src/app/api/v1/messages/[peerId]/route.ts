@@ -7,6 +7,7 @@ import { notify } from '@/server/services';
 import { guardWrite } from '@/server/guard';
 import { canDm } from '@/server/dm';
 import { ensureMessageColumns } from '@/server/messageColumns';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +52,7 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
   return ok({
     peer: {
       id: peer.id, username: peer.username, displayName: peer.display_name,
-      avatarColor: peer.avatar_color, city: peer.city,
+      avatarColor: whiteSafeColor(peer.avatar_color), city: peer.city,
     },
     items: rows.map(mapMessage),
   });

@@ -145,7 +145,7 @@ function SearchInner() {
               <button
                 type="button"
                 onClick={() => setInput('')}
-                className="text-ink-400 hover:text-ink-600 p-1"
+                className="text-ink-400 hover:text-ink-600 px-2 py-1 -mx-1"
                 aria-label="清除"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>

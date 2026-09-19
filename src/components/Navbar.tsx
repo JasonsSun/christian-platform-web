@@ -13,6 +13,7 @@ import ShareModal from '@/components/ShareModal';
 import { moduleOfPath } from '@/lib/siteModules';
 import { useDisabledModules } from '@/lib/useSiteModules';
 import { COMMAND_PALETTE_EVENT } from '@/components/CommandPalette';
+import { isBareRoute } from '@/lib/bareRoutes';
 
 const topLinks = [
   { href: '/', key: 'nav.home' },
@@ -68,8 +69,10 @@ type NavGroup = { key: string; labelKey: string; icon: string; items: NavItem[] 
 /**
  * 桌面端分类目录 mega menu。
  * 左侧分类列表，右侧当前分类子项；点击外部 / ESC / 路由变化自动关闭。
- * 视觉：入场自顶部下滑淡入 + 页面遮罩压暗聚焦；子项卡片带图标/描述与逐项浮现；
- * 分类悬停即切换，右侧网格随分类重新挂载触发交错入场。
+ * 配色一律走 --ui-* 令牌（bg-ui-surface / text-ui-muted 等）：
+ * 全局主题覆盖只重写 .bg-white、.text-ink-* 这类精确类名，渐变与 bg-x/70 变体不在名单内，
+ * 用旧写法会在深色/护眼下留下「浅轨道 + 被改浅的文字」的同色叠加。
+ * 视觉：居中浮层卡片 + 页面遮罩压暗聚焦；子项卡片带图标/描述与逐项交错浮现，分类悬停即切换。
  */
 function CatalogMenu({ groups, buttonClass, isActive }: { groups: NavGroup[]; buttonClass: string; isActive: (href: string) => boolean }) {
   const { t } = useI18n();
@@ -109,12 +112,14 @@ function CatalogMenu({ groups, buttonClass, isActive }: { groups: NavGroup[]; bu
         aria-modal="true"
         aria-label={t('nav.catalog')}
         data-guard="nav-catalog"
-        className="fixed top-[64px] md:top-[80px] left-0 right-0 z-40 hidden xl:block"
+        className="fixed top-[92px] left-0 right-0 z-40 hidden xl:block"
       >
-        <div className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="animate-menu-in origin-top bg-white rounded-b-2xl shadow-card-hover border border-t-0 border-ink-100 overflow-hidden">
-            <div className="flex">
-              <div className="w-60 shrink-0 border-r border-ink-100 bg-gradient-to-b from-ink-50/80 to-white py-3">
+        {/* 居中浮层卡片而非通栏贴边：通栏在 1440px+ 会把 2 个子项拉成两张空壳大卡 */}
+        <div className="mx-auto w-[min(1060px,calc(100vw-48px))]">
+          <div className="animate-menu-in origin-top bg-ui-surface rounded-2xl border border-ui-border shadow-[0_28px_70px_-24px_rgba(19,22,37,0.45)] overflow-hidden">
+            <div className="flex items-stretch max-h-[calc(100vh-140px)] overflow-hidden">
+              {/* 左栏：选中项用「抬升卡片」而不是换底色，三种主题下都能靠明度差与投影分辨 */}
+              <div className="w-[212px] shrink-0 overflow-y-auto bg-ui-rail border-r border-ui-border p-2 space-y-0.5">
                 {groups.map((g) => {
                   const active = activeKey === g.key;
                   return (
@@ -123,70 +128,65 @@ function CatalogMenu({ groups, buttonClass, isActive }: { groups: NavGroup[]; bu
                       type="button"
                       onMouseEnter={() => setActiveKey(g.key)}
                       onClick={() => setActiveKey(g.key)}
-                      className={`group w-full flex items-center gap-3 text-left px-4 py-3 text-sm font-medium transition-all duration-200 border-l-[3px] ${
+                      aria-current={active ? 'true' : undefined}
+                      className={`group w-full flex items-center gap-2.5 text-left px-2.5 py-2 rounded-xl text-sm transition-all duration-200 ${
                         active
-                          ? 'bg-white text-primary-700 border-primary-500 shadow-soft'
-                          : 'text-ink-600 border-transparent hover:bg-white/70 hover:text-primary-600'
+                          ? 'bg-ui-surface text-ui-accent font-semibold shadow-[0_2px_8px_-2px_rgba(19,22,37,0.18)]'
+                          : 'text-ui-muted font-medium hover:bg-ui-hover hover:text-ui-text'
                       }`}
                     >
-                      <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 ${
+                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 ${
                         active
-                          ? 'bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-md shadow-primary-500/30'
-                          : 'bg-primary-50 text-primary-500 group-hover:bg-primary-100'
+                          ? 'bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-sm shadow-primary-500/30'
+                          : 'text-ui-muted group-hover:text-ui-accent'
                       }`}>
-                        <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <svg className="w-[17px] h-[17px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" d={g.icon} />
                         </svg>
                       </span>
-                      <span className="flex-1 whitespace-nowrap">{t(g.labelKey as any)}</span>
-                      <svg
-                        className={`w-4 h-4 shrink-0 transition-all duration-200 ${
-                          active ? 'translate-x-0 opacity-100 text-primary-400' : '-translate-x-1 opacity-0'
-                        }`}
-                        fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
+                      <span className="flex-1 min-w-0 truncate">{t(g.labelKey as any)}</span>
                     </button>
                   );
                 })}
               </div>
-              <div className="flex-1 p-5 min-w-0 bg-white">
+              <div className="flex-1 min-w-0 overflow-y-auto p-4">
                 {activeGroup && (
-                  /* key 重新挂载：切换分类时子项重新播放交错入场 */
-                  <div key={activeGroup.key} className="menu-stagger grid grid-cols-2 lg:grid-cols-3 gap-3">
-                    {activeGroup.items.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setOpen(false)}
-                        className={`group/item flex items-start gap-3 p-3.5 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 hover:shadow-soft ${
-                          isActive(item.href)
-                            ? 'border-primary-200 bg-primary-50/70'
-                            : 'border-ink-100 bg-white hover:border-primary-200 hover:bg-primary-50/50'
-                        }`}
-                      >
-                        <span className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-200 ${
-                          isActive(item.href)
-                            ? 'bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-md shadow-primary-500/25'
-                            : 'bg-primary-50 text-primary-600 group-hover/item:bg-gradient-to-br group-hover/item:from-primary-500 group-hover/item:to-primary-700 group-hover/item:text-white'
-                        }`}>
-                          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
-                          </svg>
-                        </span>
-                        <span className="min-w-0">
-                          <span className={`block text-sm font-semibold transition-colors ${
-                            isActive(item.href) ? 'text-primary-700' : 'text-ink-800 group-hover/item:text-primary-700'
+                  <div key={activeGroup.key}>
+                    <div className="flex items-baseline justify-between gap-3 mb-3 px-0.5">
+                      <span className="text-sm font-semibold text-ui-text">{t(activeGroup.labelKey as any)}</span>
+                      <span className="text-xs text-ui-muted">{activeGroup.items.length} 个入口</span>
+                    </div>
+                    {/* key 重新挂载：切换分类时子项重新播放交错入场 */}
+                    <div className="menu-stagger grid grid-cols-2 gap-2.5 content-start">
+                      {activeGroup.items.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setOpen(false)}
+                          className={`group/item flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200 hover:-translate-y-0.5 ${
+                            isActive(item.href)
+                              ? 'border-ui-accent bg-ui-accent-soft'
+                              : 'border-ui-border bg-ui-surface hover:bg-ui-hover'
+                          }`}
+                        >
+                          <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-all duration-200 ${
+                            isActive(item.href)
+                              ? 'bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-sm shadow-primary-500/25'
+                              : 'bg-ui-accent-soft text-ui-accent group-hover/item:bg-gradient-to-br group-hover/item:from-primary-500 group-hover/item:to-primary-700 group-hover/item:text-white'
                           }`}>
-                            {t(item.key as any)}
+                            <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+                              <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+                            </svg>
                           </span>
-                          <span className="block text-xs text-ink-500 mt-0.5 leading-relaxed">
-                            {t(item.descKey as any)}
+                          <span className="min-w-0">
+                            <span className="block text-sm font-semibold text-ui-text">{t(item.key as any)}</span>
+                            <span className="block text-xs text-ui-muted mt-1 leading-relaxed">
+                              {t(item.descKey as any)}
+                            </span>
                           </span>
-                        </span>
-                      </Link>
-                    ))}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -195,13 +195,13 @@ function CatalogMenu({ groups, buttonClass, isActive }: { groups: NavGroup[]; bu
             <button
               type="button"
               onClick={() => { setOpen(false); window.dispatchEvent(new Event(COMMAND_PALETTE_EVENT)); }}
-              className="group/footer w-full flex items-center justify-center gap-2 px-5 py-3 bg-ink-50/70 border-t border-ink-100 text-xs text-ink-500 hover:bg-primary-50 hover:text-primary-700 transition-colors"
+              className="group/footer w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-ui-rail border-t border-ui-border text-xs text-ui-muted hover:text-ui-accent transition-colors"
             >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <span>{t('nav.catalogHint')}</span>
-              <kbd className="px-1.5 py-0.5 rounded bg-white border border-ink-200 text-[10px] shadow-sm group-hover/footer:border-primary-200 group-hover/footer:text-primary-600 transition-colors">⌘K</kbd>
+              <kbd className="px-1.5 py-0.5 rounded-md bg-ui-surface border border-ui-border text-[10px] group-hover/footer:border-ui-accent group-hover/footer:text-ui-accent transition-colors">⌘K</kbd>
             </button>
           </div>
         </div>
@@ -304,6 +304,10 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
 
   const iconBtnCls = `p-2 rounded-lg transition-colors text-white/85 hover:text-white hover:bg-white/10`;
 
+  // 登录/注册这类页面自带品牌头：再叠一条全站导航会出现两个 logo、两个返回入口，
+  // 而且移动端那条 64px 的固定头把首屏顶掉半屏。所有 hook 已在上面跑完，此处才能提前返回。
+  if (isBareRoute(pathname)) return null;
+
   return (
     <>
     {/* 不透明实色深蓝：不依赖 backdrop-filter / 透明度 / 各主题变量，
@@ -394,7 +398,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                   </svg>
                   {!!liveUnread && (
-                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center">
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-rose-600 text-white text-[10px] flex items-center justify-center">
                       {liveUnread > 99 ? '99+' : liveUnread}
                     </span>
                   )}

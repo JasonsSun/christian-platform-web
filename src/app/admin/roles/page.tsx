@@ -280,7 +280,7 @@ export default function AdminRolesPage() {
               <div className="text-sm text-ink-600 mb-2">添加审核员</div>
               <div className="flex gap-2 mb-3">
                 <input
-                  className="flex-1 rounded-xl border border-ink-200 px-3 py-2 text-sm"
+                  className="input-styled flex-1 text-sm"
                   placeholder="按用户名搜索成员"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
@@ -333,7 +333,7 @@ export default function AdminRolesPage() {
                               {has(r.key, perm) ? (
                                 <span className="text-emerald-600 font-bold">✓</span>
                               ) : (
-                                <span className="text-ink-300">—</span>
+                                <span className="text-ink-400">—</span>
                               )}
                             </td>
                           ))}

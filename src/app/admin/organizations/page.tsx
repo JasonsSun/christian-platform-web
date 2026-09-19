@@ -360,7 +360,7 @@ export default function AdminOrganizationsPage() {
                                       </select>
                                     </td>
                                     <td className="px-3 py-2 text-right whitespace-nowrap">
-                                      <span className="text-ink-300 mr-2">{roleLabel(m.role)}</span>
+                                      <span className="text-ink-500 mr-2">{roleLabel(m.role)}</span>
                                       <button
                                         disabled={memberBusy === m.userId}
                                         onClick={() => removeMember(m)}

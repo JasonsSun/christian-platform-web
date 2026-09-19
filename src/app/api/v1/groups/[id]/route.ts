@@ -4,6 +4,7 @@ import { ok, withApi, notFound, HttpError, readJson } from '@/server/http';
 import { currentUser, requireUser, UserRow } from '@/server/auth';
 import { mapGroup } from '@/server/mappers';
 import { str } from '@/server/sanitize';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,11 +43,11 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
     ...mapGroup(row),
     members: members.map((m) => ({
       id: m.id, username: m.username, displayName: m.display_name,
-      avatarColor: m.avatar_color, city: m.city, role: m.role,
+      avatarColor: whiteSafeColor(m.avatar_color), city: m.city, role: m.role,
     })),
     posts: posts.map((p) => ({
       id: p.id, body: p.body, createdAt: p.created_at,
-      user: { id: p.user_id, username: p.username, displayName: p.display_name, avatarColor: p.avatar_color },
+      user: { id: p.user_id, username: p.username, displayName: p.display_name, avatarColor: whiteSafeColor(p.avatar_color) },
     })),
   });
 });

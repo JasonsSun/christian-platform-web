@@ -203,7 +203,7 @@ export default function AdminUsersPage() {
                         <td className="px-4 py-3">
                           <div className="flex flex-wrap gap-1.5">
                             <button
-                              className="btn-secondary text-xs px-2 py-1"
+                              className="btn-secondary btn-sm text-xs px-2"
                               disabled={disabled || u.role === 'moderator'}
                               onClick={() => changeRole(u, 'moderator')}
                               title={self ? '不能修改自己' : canManage ? '' : '仅管理员可操作'}
@@ -211,7 +211,7 @@ export default function AdminUsersPage() {
                               升审核员
                             </button>
                             <button
-                              className="btn-gold text-xs px-2 py-1"
+                              className="btn-gold btn-sm text-xs px-2"
                               disabled={disabled || u.role === 'admin'}
                               onClick={() => changeRole(u, 'admin')}
                               title={self ? '不能修改自己' : canManage ? '' : '仅管理员可操作'}

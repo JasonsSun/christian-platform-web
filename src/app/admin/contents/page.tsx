@@ -244,7 +244,7 @@ export default function AdminContentsPage() {
                       ) : (
                         <button onClick={() => doBulk('published', [c.id])} disabled={bulk.pending} className="text-xs text-primary-600 hover:underline">上架</button>
                       )}
-                      <span className="text-ink-300 mx-1.5">·</span>
+                      <span className="text-ink-400 mx-1.5">·</span>
                       <button onClick={() => setPendingDelete([c.id])} className="text-xs text-ink-500 hover:text-rose-600">删除</button>
                     </td>
                   </tr>

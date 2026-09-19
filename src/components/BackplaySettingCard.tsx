@@ -15,7 +15,7 @@ export default function BackplaySettingCard() {
   const supported = mediaSessionSupported();
 
   return (
-    <div className="mt-6 rounded-2xl border border-ink-100 bg-white/70 p-5">
+    <div className="mt-6 rounded-2xl border border-ink-100 bg-ui-surface p-5">
       <div className="flex items-start gap-4">
         <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">🌙</div>
         <div className="min-w-0 flex-1">

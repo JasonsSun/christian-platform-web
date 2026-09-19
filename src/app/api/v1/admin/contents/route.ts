@@ -5,6 +5,7 @@ import { UserRow } from '@/server/auth';
 import { requireModeratorModule } from '@/server/moderation';
 import { audit } from '@/server/services';
 import { notifyTopicFollowers } from '@/server/topicFollows';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,7 +103,7 @@ function mapContent(r: any) {
       id: r.author_id,
       username: r.username,
       displayName: r.display_name,
-      avatarColor: r.avatar_color,
+      avatarColor: whiteSafeColor(r.avatar_color),
     },
   };
 }

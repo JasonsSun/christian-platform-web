@@ -118,7 +118,7 @@ export default function TransparencyPage() {
               key={p.period}
               onClick={() => setPeriod(period === p.period ? '' : p.period)}
               className={`px-3 py-1.5 rounded-xl text-xs font-medium transition ${
-                period === p.period ? 'bg-gold-500 text-white shadow-card' : 'text-ink-500 hover:bg-gold-50'
+                period === p.period ? 'bg-gold-500 text-ink-950 shadow-card' : 'text-ink-500 hover:bg-gold-50'
               }`}
             >
               {p.period}

@@ -152,7 +152,7 @@ export function MyContentFavorites() {
               <button
                 onClick={() => remove(f)}
                 disabled={busy}
-                className="w-6 h-6 rounded-full text-ink-300 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-40"
+                className="w-6 h-6 rounded-full text-ink-500 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-40"
                 aria-label={`删除分类 ${f.name}`}
                 title="删除分类（其中收藏退回未分类）"
               >
@@ -243,7 +243,7 @@ export function MyContentFavorites() {
                 <button
                   onClick={() => toggle(c.id)}
                   aria-label={selected ? '取消选择' : '选择'}
-                  className={`absolute top-3 right-3 w-5 h-5 rounded-md border flex items-center justify-center text-xs transition-colors ${
+                  className={`absolute top-3 right-3 w-6 h-6 rounded-md border flex items-center justify-center text-xs transition-colors ${
                     selected ? 'bg-primary-600 border-primary-600 text-white' : 'border-ink-300 text-transparent hover:border-primary-400'
                   }`}
                 >
@@ -256,8 +256,8 @@ export function MyContentFavorites() {
                   </div>
                   <p className="text-sm text-ink-500 line-clamp-2">{c.excerpt || c.body}</p>
                   <div className="flex flex-wrap gap-3 mt-3 text-xs text-ink-400">
-                    <span>❤️ {c.likeCount}</span>
-                    <span>💬 {c.commentCount}</span>
+                    <span><span aria-hidden="true">❤️</span> <span className="sr-only">点赞</span>{c.likeCount}</span>
+                    <span><span aria-hidden="true">💬</span> <span className="sr-only">评论</span>{c.commentCount}</span>
                     {cur ? (
                       <span className={`px-2 py-0.5 rounded-full border ${FOLDER_CHIP[cur.color] || FOLDER_CHIP.primary}`}>
                         {cur.name}

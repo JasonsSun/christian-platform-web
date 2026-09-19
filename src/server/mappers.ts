@@ -10,13 +10,33 @@ export function normalizeAudioType(raw: unknown, audioUrl?: unknown): AudioType 
   return audioUrl ? 'instrumental' : 'none';
 }
 
+/**
+ * 字母头像的首字是白字，且写死在各页面的 className 里（底色走内联 style，主题白名单管不到）。
+ * 底色却来自 users.avatar_color——注册时从 #84cc16 / #10b981 这一档亮色里随机抽的，
+ * 白压上去实测 1.98~3.53:1，圆片上的首字像被洗掉。颜色是机器分配的、存量行又已入库，
+ * 只改种子救不到老数据，所以在出口统一压深：三个通道乘同一个系数，色相不动，白字够 4.5 就停。
+ */
+const srgb = (c: number) => (c <= 0.03928 * 255 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4);
+const WHITE_SAFE_LUM = 0.1833; // 1.05 / (L + 0.05) >= 4.5
+
+export function whiteSafeColor(raw: unknown): string {
+  const hex = /^#?([0-9a-fA-F]{6})$/.exec(String(raw ?? '').trim())?.[1];
+  if (!hex) return '#4f6df5';
+  const rgb = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  let out = rgb;
+  for (let k = 1; k > 0.04 && 0.2126 * srgb(out[0]) + 0.7152 * srgb(out[1]) + 0.0722 * srgb(out[2]) > WHITE_SAFE_LUM; k -= 0.01) {
+    out = rgb.map((v) => Math.round(v * k));
+  }
+  return `#${out.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
 export const mapUser = (r: any) => ({
   id: r.id,
   username: r.username,
   displayName: r.display_name ?? r.displayName,
   role: r.role,
   status: r.status,
-  avatarColor: r.avatar_color ?? r.author_color ?? '#4f6df5',
+  avatarColor: whiteSafeColor(r.avatar_color ?? r.author_color ?? '#4f6df5'),
   bio: r.bio || '',
   city: r.city || '',
   church: r.church || '',
@@ -27,7 +47,7 @@ export const mapAuthor = (r: any) => ({
   id: r.author_id,
   username: r.author_username,
   displayName: r.author_name,
-  avatarColor: r.author_color,
+  avatarColor: whiteSafeColor(r.author_color),
 });
 
 export const mapContent = (r: any) => ({
@@ -59,7 +79,7 @@ export const mapComment = (r: any) => ({
     id: r.user_id,
     username: r.username,
     displayName: r.display_name,
-    avatarColor: r.avatar_color,
+    avatarColor: whiteSafeColor(r.avatar_color),
   },
 });
 
@@ -86,7 +106,7 @@ export const mapActivity = (r: any) => ({
     id: r.organizer_id,
     username: r.organizer_username,
     displayName: r.organizer_name,
-    avatarColor: r.organizer_color,
+    avatarColor: whiteSafeColor(r.organizer_color),
   },
 });
 
@@ -106,7 +126,7 @@ export const mapGroup = (r: any) => ({
     id: r.owner_id,
     username: r.owner_username,
     displayName: r.owner_name,
-    avatarColor: r.owner_color,
+    avatarColor: whiteSafeColor(r.owner_color),
   },
 });
 
@@ -121,7 +141,7 @@ export const mapPrayer = (r: any) => ({
     id: r.user_id,
     username: r.username,
     displayName: r.display_name,
-    avatarColor: r.avatar_color,
+    avatarColor: whiteSafeColor(r.avatar_color),
   },
 });
 
@@ -172,7 +192,7 @@ export const mapReviewTask = (r: any) => ({
       id: r.author_id,
       username: r.username,
       displayName: r.display_name,
-      avatarColor: r.avatar_color,
+      avatarColor: whiteSafeColor(r.avatar_color),
     },
   },
 });

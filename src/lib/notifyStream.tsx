@@ -164,7 +164,7 @@ function NotificationToast({
             e.stopPropagation();
             onClose();
           }}
-          className="text-ink-300 hover:text-ink-500 text-xs flex-shrink-0"
+          className="text-ink-500 hover:text-ink-700 text-xs flex-shrink-0"
         >
           ✕
         </span>

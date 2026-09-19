@@ -65,19 +65,19 @@ export function LiveGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
         <div className="px-4 sm:px-5 pb-5 pt-1 space-y-4">
           {/* 软件推荐 */}
           <div className="grid sm:grid-cols-2 gap-3">
-            <div className="rounded-xl border border-ink-100 bg-ink-50/50 p-3.5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-ink-800">
+            <div className="rounded-xl border border-ui-border bg-ui-rail p-3.5">
+              <div className="flex items-center gap-2 text-sm font-semibold text-ui-text">
                 <span aria-hidden="true">💻</span> 电脑推流
               </div>
-              <p className="text-sm text-ink-600 mt-1">推荐 <b>OBS Studio</b>（免费开源）。下载：obsproject.com</p>
-              <p className="text-xs text-ink-400 mt-1">功能全，适合主日崇拜、特会等正式场景。</p>
+              <p className="text-sm text-ui-muted mt-1">推荐 <b>OBS Studio</b>（免费开源）。下载：obsproject.com</p>
+              <p className="text-xs text-ui-muted mt-1">功能全，适合主日崇拜、特会等正式场景。</p>
             </div>
-            <div className="rounded-xl border border-ink-100 bg-ink-50/50 p-3.5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-ink-800">
+            <div className="rounded-xl border border-ui-border bg-ui-rail p-3.5">
+              <div className="flex items-center gap-2 text-sm font-semibold text-ui-text">
                 <span aria-hidden="true">📱</span> 手机推流
               </div>
-              <p className="text-sm text-ink-600 mt-1">App 搜 <b>Larix Broadcaster</b>（免费，iOS / Android）</p>
-              <p className="text-xs text-ink-400 mt-1">适合手机架在讲台后拍讲员、户外洗礼等场景。</p>
+              <p className="text-sm text-ui-muted mt-1">App 搜 <b>Larix Broadcaster</b>（免费，iOS / Android）</p>
+              <p className="text-xs text-ui-muted mt-1">适合手机架在讲台后拍讲员、户外洗礼等场景。</p>
             </div>
           </div>
 
@@ -88,7 +88,7 @@ export function LiveGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
                 key={i}
                 type="button"
                 onClick={() => setStep(step === i ? null : i)}
-                className="w-full text-left rounded-xl border border-ink-100 p-3 hover:bg-ink-50/60 transition-colors"
+                className="w-full text-left rounded-xl border border-ui-border p-3 hover:bg-ui-hover transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <span className="shrink-0 w-6 h-6 rounded-full bg-primary-600 text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>

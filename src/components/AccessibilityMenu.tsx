@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/I18nProvider';
-import { useA11y, type FontScale } from '@/lib/a11y';
+import { useA11y, useEscape, type FontScale } from '@/lib/a11y';
 
 export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
   const { t } = useI18n();
@@ -17,6 +17,8 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
+
+  useEscape(open, () => setOpen(false));
 
   const base =
     tone === 'light'

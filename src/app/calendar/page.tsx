@@ -192,7 +192,7 @@ export default function CalendarPage() {
               {/* 订阅到系统日历：站外也能收到提醒，无需登录在线 */}
               <a
                 href="/api/v1/calendar/ics"
-                className="px-3 py-1.5 rounded-xl text-xs border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-700 transition-colors"
+                className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-700 transition-colors"
                 title="下载 .ics 订阅到手机/电脑日历"
               >
                 📆 订阅日历
@@ -255,7 +255,7 @@ export default function CalendarPage() {
                               isSel
                                 ? 'border-primary-500 ring-2 ring-primary-200 bg-primary-50/60'
                                 : 'border-ink-100 hover:border-primary-300'
-                            } ${d.count === 0 ? 'bg-white/40' : 'bg-white'}`}
+                            } ${d.count === 0 ? 'bg-ink-50' : 'bg-white'}`}
                           >
                             <span
                               className={`text-xs font-semibold ${

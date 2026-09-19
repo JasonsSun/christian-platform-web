@@ -186,7 +186,7 @@ export default function AdminDonationsPage() {
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1.5">
                           <button
-                            className="btn-primary text-xs px-2.5 py-1"
+                            className="btn-primary btn-sm text-xs px-2.5"
                             disabled={pending || d.status === 'confirmed'}
                             onClick={() => confirmOne(d)}
                             title={d.status === 'confirmed' ? '已是已确认状态' : '确认并展示到公开名录'}

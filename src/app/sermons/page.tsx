@@ -116,11 +116,11 @@ export default function SermonsPage() {
                 ) : (
                   <span className="text-white/80 text-5xl">🎙️</span>
                 )}
-                <span className="absolute top-2 left-2 text-[11px] px-2 py-0.5 rounded-full bg-black/40 text-white">
+                <span className="absolute top-2 left-2 text-[11px] px-2 py-0.5 rounded-full bg-black/60 text-white">
                   {s.mediaType === 'audio' ? '音频' : s.mediaType === 'video' ? '视频' : '文稿'}
                 </span>
                 {fmtDur(s.durationSec) ? (
-                  <span className="absolute bottom-2 right-2 text-[11px] px-2 py-0.5 rounded-full bg-black/50 text-white">
+                  <span className="absolute bottom-2 right-2 text-[11px] px-2 py-0.5 rounded-full bg-black/60 text-white">
                     {fmtDur(s.durationSec)}
                   </span>
                 ) : null}
@@ -135,8 +135,8 @@ export default function SermonsPage() {
                 </div>
                 <div className="text-xs text-ink-400 mt-2 flex items-center gap-3">
                   {s.preachedAt ? <span>{s.preachedAt}</span> : <span>{timeAgo(s.createdAt)}</span>}
-                  <span>▶ {s.viewCount}</span>
-                  <span>♥ {s.likeCount}</span>
+                  <span><span aria-hidden="true">▶</span> <span className="sr-only">播放</span>{s.viewCount}</span>
+                  <span><span aria-hidden="true">♥</span> <span className="sr-only">点赞</span>{s.likeCount}</span>
                 </div>
               </div>
             </Link>

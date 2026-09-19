@@ -19,7 +19,7 @@ interface HeatmapView {
 
 function StatV({ label, value, unit }: { label: string; value: number; unit: string }) {
   return (
-    <div className="rounded-xl bg-white/70 px-3 py-2">
+    <div className="rounded-xl bg-ui-surface px-3 py-2">
       <div className="text-xl font-bold text-ink-900">
         {value}
         <span className="text-xs font-normal text-ink-400 ml-0.5">{unit}</span>
@@ -119,7 +119,7 @@ export default function CheckinHeatmap() {
           <span
             key={b.label}
             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-              b.got ? 'bg-gradient-to-r from-gold-500 to-gold-400 text-white shadow-gold' : 'bg-ink-100 text-ink-400'
+              b.got ? 'bg-gradient-to-r from-gold-500 to-gold-400 text-ink-950 shadow-gold' : 'bg-ink-100 text-ink-400'
             }`}
           >
             {b.got ? '🏅' : '🔒'} {b.label}

@@ -3,6 +3,7 @@ import { q } from '@/server/db';
 import { ok, withApi } from '@/server/http';
 import { requireUser, UserRow } from '@/server/auth';
 import { mapContent } from '@/server/mappers';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +42,7 @@ export const GET = withApi(async (req: NextRequest) => {
       data: {
         id: p.id, body: p.body, amenCount: Number(p.amen_count || 0), answered: !!p.answered,
         createdAt: p.created_at, amened: !!p.amened,
-        user: { id: p.user_id, username: p.username, displayName: p.display_name, avatarColor: p.avatar_color },
+        user: { id: p.user_id, username: p.username, displayName: p.display_name, avatarColor: whiteSafeColor(p.avatar_color) },
       },
     })),
   ].sort((a: any, b: any) => String(b.data.createdAt || '').localeCompare(String(a.data.createdAt || '')));

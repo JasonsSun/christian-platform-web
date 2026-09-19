@@ -8,6 +8,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useConfirmNav } from '@/lib/confirm';
 import Portal from '@/components/Portal';
+import { useEscape } from '@/lib/a11y';
 import { useNotice } from '@/lib/notice';
 import { formatDate, formatSize, MEDIA_REVIEW_LABEL } from '@/lib/format';
 import QuotaCard, { type QuotaData } from '@/components/QuotaCard';
@@ -124,7 +125,7 @@ export default function MePage() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="absolute inset-0 rounded-full bg-black/45 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute inset-0 rounded-full bg-black/60 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             >
               {uploading ? '上传中…' : '更换头像'}
             </button>
@@ -198,7 +199,7 @@ export default function MePage() {
           href="/bible/notes"
           className="group flex items-center gap-3 rounded-2xl bg-white p-4 shadow-soft border border-ink-100 hover:border-gold-300 hover:shadow-card-hover transition-all"
         >
-          <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-100 to-gold-200 text-gold-700 flex items-center justify-center text-xl flex-shrink-0 group-hover:from-gold-400 group-hover:to-gold-600 group-hover:text-white transition-colors">
+          <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-100 to-gold-200 text-gold-700 flex items-center justify-center text-xl flex-shrink-0 group-hover:from-gold-400 group-hover:to-gold-600 group-hover:text-ink-950 transition-colors">
             ✎
           </span>
           <span className="min-w-0">
@@ -333,7 +334,7 @@ export default function MePage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-white/70 rounded-2xl p-3 text-center border border-ink-100 hover:border-primary-200 transition-colors">
+    <div className="bg-ui-surface rounded-2xl p-3 text-center border border-ink-100 hover:border-primary-200 transition-colors">
       <div className="font-display text-2xl font-bold text-ink-900">{value}</div>
       <div className="text-xs text-ink-500 mt-0.5">{label}</div>
     </div>
@@ -431,6 +432,7 @@ function PasswordModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
   const [error, setError] = useState('');
   const { run, pending } = useAction();
   const notice = useNotice();
+  useEscape(true, onClose);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -483,6 +485,7 @@ function DeleteAccountModal({ onClose, onDone }: { onClose: () => void; onDone: 
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState('');
   const { run, pending } = useAction();
+  useEscape(true, onClose);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

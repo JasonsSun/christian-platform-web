@@ -4,6 +4,7 @@ import { ok, withApi, clientIp, HttpError } from '@/server/http';
 import { UserRow } from '@/server/auth';
 import { requireModeratorModule } from '@/server/moderation';
 import { audit } from '@/server/services';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,7 +65,7 @@ export const GET = withApi(async (req: NextRequest) => {
       id: r.id,
       body: r.body,
       createdAt: r.created_at,
-      author: { id: r.user_id, username: r.username, displayName: r.display_name, avatarColor: r.avatar_color },
+      author: { id: r.user_id, username: r.username, displayName: r.display_name, avatarColor: whiteSafeColor(r.avatar_color) },
       content: { id: r.cid, title: r.content_title, status: r.content_status },
     })),
     total: Number(totalRow?.c || 0),

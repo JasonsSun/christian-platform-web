@@ -3,6 +3,7 @@ import { one, q } from '@/server/db';
 import { ok, withApi, notFound } from '@/server/http';
 import { currentUser, UserRow, userStats } from '@/server/auth';
 import { mapContent } from '@/server/mappers';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,7 +41,7 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
     username: row.username,
     displayName: row.display_name,
     role: row.role,
-    avatarColor: row.avatar_color,
+    avatarColor: whiteSafeColor(row.avatar_color),
     bio: row.bio,
     city: row.city,
     church: row.church,

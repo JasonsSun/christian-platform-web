@@ -205,7 +205,7 @@ export default function CommunityPage() {
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="搜索文章、见证、代祷、分享…"
-                    className="input-styled pl-10"
+                    className="input-styled input-icon"
                   />
                 </div>
               </div>
@@ -285,12 +285,14 @@ export default function CommunityPage() {
                       <div className="flex items-center gap-3 mt-4 text-sm text-ink-500">
                         <Avatar user={item.author} size={28} />
                         <span className="text-ink-700 font-medium">{item.author.displayName}</span>
-                        <span className="text-ink-300">·</span>
+                        <span className="text-ink-400">·</span>
                         <span>{timeAgo(item.publishedAt || item.createdAt)}</span>
                         <div className="ml-auto flex items-center gap-4">
                           <button
                             onClick={() => handleLike(item)}
-                            className={`flex items-center gap-1 py-1.5 -my-1.5 transition-all ${
+                            aria-pressed={item.liked}
+                            aria-label={`点赞，当前 ${item.likeCount} 赞`}
+                            className={`flex items-center gap-1 py-1.5 -my-1.5 px-2 -mx-2 transition-all ${
                               item.liked ? 'text-rose-500 scale-105' : 'text-ink-500 hover:text-rose-500'
                             }`}
                           >
@@ -299,17 +301,22 @@ export default function CommunityPage() {
                             </svg>
                             {item.likeCount}
                           </button>
-                          <Link href={`/contents/${item.id}`} className="flex items-center gap-1 py-2 -my-2 text-ink-500 hover:text-primary-600 transition-colors">
+                          <Link
+                            href={`/contents/${item.id}`}
+                            aria-label={`查看 ${item.commentCount} 条评论：${item.title}`}
+                            className="flex items-center gap-1 py-2 -my-2 px-2 -mx-2 text-ink-500 hover:text-primary-600 transition-colors"
+                          >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8M8 14h6m-6 6h8a2 2 0 002-2V8l-4-4H8a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
                             {item.commentCount}
                           </Link>
-                          <span className="flex items-center gap-1 py-2 -my-2">
+                          <span className="flex items-center gap-1 py-2 -my-2" title="阅读数">
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
+                            <span className="sr-only">阅读</span>
                             {item.viewCount}
                           </span>
                         </div>
@@ -329,7 +336,7 @@ export default function CommunityPage() {
                     <span className="text-xl">🙏</span>
                     <h2 className="font-display text-xl font-bold text-ink-900">代祷墙</h2>
                   </div>
-                  <Link href="/prayers" className="text-primary-600 text-sm font-medium hover:underline">
+                  <Link href="/prayers" className="inline-flex items-center text-primary-600 text-sm font-medium hover:underline">
                     更多 →
                   </Link>
                 </div>
@@ -339,10 +346,10 @@ export default function CommunityPage() {
                     value={prayerBody}
                     onChange={(e) => setPrayerBody(e.target.value)}
                     placeholder="写下你的代祷事项…"
-                    className="input-styled py-2 text-sm min-w-0 flex-1"
+                    className="input-styled input-sm text-sm min-w-0 flex-1"
                     onKeyDown={(e) => e.key === 'Enter' && submitPrayer()}
                   />
-                  <button onClick={submitPrayer} disabled={prayerAction.pending} className="btn-primary px-4 py-2 text-sm flex-shrink-0">
+                  <button onClick={submitPrayer} disabled={prayerAction.pending} className="btn-primary btn-sm px-4 text-sm flex-shrink-0">
                     发布
                   </button>
                 </div>
@@ -406,7 +413,7 @@ export default function CommunityPage() {
                     <span className="text-xl">👥</span>
                     <h2 className="font-display text-xl font-bold text-ink-900">推荐团契</h2>
                   </div>
-                  <Link href="/groups" className="text-primary-600 text-sm font-medium hover:underline">
+                  <Link href="/groups" className="inline-flex items-center text-primary-600 text-sm font-medium hover:underline">
                     全部 →
                   </Link>
                 </div>
@@ -424,7 +431,7 @@ export default function CommunityPage() {
                         <h3 className="font-semibold text-ink-900 truncate">{g.name}</h3>
                         <p className="text-xs text-ink-500">{g.memberCount} 成员 · {g.city || '线上'}</p>
                       </div>
-                      <svg className="w-4 h-4 text-ink-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 text-ink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Link>

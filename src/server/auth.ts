@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { NextRequest } from 'next/server';
 import { one, q, exec, newId, ts } from './db';
 import { HttpError, unauthorized, forbidden, fail } from './http';
+import { whiteSafeColor } from '@/server/mappers';
 
 const DEV_FALLBACK_SECRET = 'change-me-in-production-change-me-in-production';
 const COMPOSE_FALLBACK_SECRET = 'please-set-a-long-random-secret';
@@ -258,7 +259,7 @@ export function publicUser(u: UserRow) {
     displayName: u.display_name,
     role: u.role,
     status: u.status,
-    avatarColor: u.avatar_color,
+    avatarColor: whiteSafeColor(u.avatar_color),
     avatarUrl: u.avatar_url || '',
     bio: u.bio,
     city: u.city,

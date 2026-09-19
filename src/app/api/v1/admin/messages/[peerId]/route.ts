@@ -4,6 +4,7 @@ import { ok, withApi, HttpError, notFound, readJson } from '@/server/http';
 import { requireRole } from '@/server/auth';
 import { notify } from '@/server/services';
 import { MODULE_ORDER, isModuleKey } from '@/lib/moderationModules';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +57,7 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
       id: peer.id,
       username: peer.username,
       displayName: peer.display_name || peer.username,
-      avatarColor: peer.avatar_color || '#4f6df5',
+      avatarColor: whiteSafeColor(peer.avatar_color || '#4f6df5'),
       role: peer.role,
       scopes,
     },

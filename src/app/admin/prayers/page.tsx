@@ -107,7 +107,7 @@ export default function AdminPrayersPage() {
         巡查并移除违规违法内容。默认按发布时间倒序，「长文」档用于优先排查广告与灌水。
       </p>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
         <StatCard title="代祷总数" value={stats?.total ?? '—'} />
         <StatCard title="已蒙应允" value={stats?.answered ?? '—'} />
         <StatCard title="长文（≥300字）" value={stats?.longBody ?? '—'} />
@@ -132,9 +132,9 @@ export default function AdminPrayersPage() {
             onChange={(e) => setKw(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { setQ(kw.trim()); setPage(1); } }}
             placeholder="搜索内容 / 发布人…"
-            className="input-styled py-2 text-sm w-56"
+            className="input-styled input-sm text-sm w-56"
           />
-          <button onClick={() => { setQ(kw.trim()); setPage(1); }} className="btn-secondary text-sm py-2 px-4">
+          <button onClick={() => { setQ(kw.trim()); setPage(1); }} className="btn-secondary btn-sm text-sm px-4">
             搜索
           </button>
           {q && (
@@ -212,7 +212,7 @@ export default function AdminPrayersPage() {
               <button
                 onClick={() => setPage((n) => Math.max(1, n - 1))}
                 disabled={page <= 1 || loading}
-                className="btn-secondary py-1.5 px-4 disabled:opacity-40"
+                className="btn-secondary btn-sm px-4 disabled:opacity-40"
               >
                 上一页
               </button>
@@ -222,7 +222,7 @@ export default function AdminPrayersPage() {
               <button
                 onClick={() => setPage((n) => n + 1)}
                 disabled={page >= Math.ceil(total / PAGE_SIZE) || loading}
-                className="btn-secondary py-1.5 px-4 disabled:opacity-40"
+                className="btn-secondary btn-sm px-4 disabled:opacity-40"
               >
                 下一页
               </button>

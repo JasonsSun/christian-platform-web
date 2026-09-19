@@ -30,9 +30,11 @@ const NoticeContext = createContext<NoticeApi | null>(null);
 
 const TONE_STYLE: Record<NoticeTone, string> = {
   info: 'bg-primary-600 text-white',
-  success: 'bg-emerald-600 text-white',
+  // toast 正文是 14px,必须走 4.5:1。实测:emerald-600/white=3.77、gold-600/white=3.19,
+  // 都不合格;把绿底压深一档、金底改成「墨字压金」(与 .btn-gold 同一套配色)后为 5.48 / 10.8。
+  success: 'bg-emerald-700 text-white',
   error: 'bg-rose-600 text-white',
-  warn: 'bg-gold-600 text-white',
+  warn: 'bg-gold-500 text-ink-950',
 };
 
 const TONE_ICON: Record<NoticeTone, string> = {
@@ -110,7 +112,8 @@ export function NoticeProvider({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => dismiss(n.id)}
-                className="text-white/80 hover:text-white flex-shrink-0"
+                // 跟随各 tone 的前景色:warn 是墨字金底,写死 text-white 会让关闭键消失
+                className="text-current opacity-70 hover:opacity-100 flex-shrink-0"
                 aria-label="关闭提示"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

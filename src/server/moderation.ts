@@ -13,6 +13,7 @@ import { q, exec, one, ts } from './db';
 import { HttpError, forbidden } from './http';
 import { requireUser, UserRow } from './auth';
 import { MODULE_META, MODULE_ORDER, isModuleKey, type ModuleKey } from '@/lib/moderationModules';
+import { whiteSafeColor } from '@/server/mappers';
 
 export type { ModuleKey };
 
@@ -102,7 +103,7 @@ const toMember = (r: any): TeamMember => ({
   id: r.id,
   username: r.username || '',
   displayName: r.display_name || r.username || '未命名',
-  avatarColor: r.avatar_color || '#4f6df5',
+  avatarColor: whiteSafeColor(r.avatar_color || '#4f6df5'),
   bio: r.bio || '',
   church: r.church || '',
   city: r.city || '',

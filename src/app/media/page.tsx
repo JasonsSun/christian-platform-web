@@ -68,7 +68,7 @@ export default function MediaPage() {
           <button
             key={k.key || 'all'}
             onClick={() => setKind(k.key)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition ${
               kind === k.key ? 'bg-primary-600 text-white shadow-card' : 'bg-ink-100 text-ink-600 hover:bg-ink-200'
             }`}
           >
@@ -86,12 +86,12 @@ export default function MediaPage() {
             onClick={() => setSource(s.key)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition border ${
               source === s.key
-                ? 'bg-gold-500/15 border-gold-500 text-gold-700'
+                ? 'bg-gold-500/15 border-gold-500 text-gold-800'
                 : 'bg-white border-ink-200 text-ink-500 hover:border-ink-300'
             }`}
           >
             {s.label}
-            <span className="ml-1 opacity-70">{s.key ? countSource(s.key) : ''}</span>
+            <span className="ml-1 opacity-90">{s.key ? countSource(s.key) : ''}</span>
           </button>
         ))}
         <input
@@ -128,7 +128,7 @@ export default function MediaPage() {
             <div key={m.id} className="glass rounded-2xl overflow-hidden shadow-soft card-hover flex flex-col">
               <div className="relative bg-ink-100 flex items-center justify-center" style={{ height: 172 }}>
                 {m.kind === 'video' ? (
-                  <Link href={`/media/${m.id}`} className="w-full h-full block">
+                  <Link href={`/media/${m.id}`} className="w-full h-full block" aria-label={`播放 ${m.title}`}>
                     <video
                       src={m.url}
                       poster={m.posterUrl || undefined}
@@ -137,7 +137,7 @@ export default function MediaPage() {
                       className="w-full h-full object-cover bg-black"
                     />
                     <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="w-12 h-12 rounded-full bg-black/45 text-white flex items-center justify-center text-lg backdrop-blur-sm">▶</span>
+                      <span className="w-12 h-12 rounded-full bg-black/60 text-white flex items-center justify-center text-lg backdrop-blur-sm">▶</span>
                     </span>
                   </Link>
                 ) : m.kind === 'audio' ? (
@@ -148,6 +148,7 @@ export default function MediaPage() {
                     })}
                     className="w-full h-full flex flex-col items-center justify-center gap-2 group"
                     title="在线播放"
+                    aria-label={`播放 ${m.title}`}
                   >
                     <span className="w-12 h-12 rounded-full bg-primary-600 text-white flex items-center justify-center text-lg shadow-card group-hover:scale-110 transition">▶</span>
                     <span className="text-xs text-ink-500">
@@ -160,12 +161,12 @@ export default function MediaPage() {
                     <img loading="lazy" decoding="async" src={m.url} alt={m.title} className="w-full h-full object-cover" />
                   </Link>
                 ) : (
-                  <Link href={`/media/${m.id}`} className="w-full h-full flex flex-col items-center justify-center">
+                  <Link href={`/media/${m.id}`} className="w-full h-full flex flex-col items-center justify-center" aria-label={`查看 ${m.title}`}>
                     <div className="text-5xl mb-2"><TypeIcon kind={m.kind} /></div>
                     <div className="text-xs text-ink-500 uppercase">{m.extension}</div>
                   </Link>
                 )}
-                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/55 text-white text-xs">
+                <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 text-white text-xs">
                   {m.kindLabel}
                 </span>
                 {m.source === 'live' && (
@@ -189,7 +190,7 @@ export default function MediaPage() {
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-xs text-ink-400">{m.owner || '匿名'}</span>
-                  <a href={m.url} download={m.fileName} className="text-xs text-primary-600 hover:underline">下载</a>
+                  <a href={m.url} download={m.fileName} aria-label={`下载 ${m.fileName || m.title}`} className="inline-flex items-center px-2 py-1.5 -my-1.5 text-xs text-primary-600 hover:underline">下载</a>
                 </div>
               </div>
             </div>

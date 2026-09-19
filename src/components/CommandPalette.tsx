@@ -343,7 +343,7 @@ export default function CommandPalette() {
           {/* 顶部辉光线 */}
           <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-400 to-transparent" />
 
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-ink-200/60">
+          <div className="flex items-center gap-3 px-5 py-4 border-b border-ui-border">
             <MagnifyingGlassIcon className="w-5 h-5 text-primary-500 shrink-0" />
             <input
               ref={inputRef}
@@ -390,7 +390,7 @@ export default function CommandPalette() {
                     >
                       <span
                         className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                          isActive ? 'bg-primary-500 shadow-glow' : 'bg-ink-300'
+                          isActive ? 'bg-primary-500 shadow-glow' : 'bg-ui-muted'
                         }`}
                       />
                       <span className="flex-1 min-w-0">
@@ -413,7 +413,7 @@ export default function CommandPalette() {
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-3 px-5 py-2.5 border-t border-ink-200/60 text-[11px] text-ink-400">
+          <div className="flex items-center justify-between gap-3 px-5 py-2.5 border-t border-ui-border text-[11px] text-ink-400">
             <span className="inline-flex items-center gap-1">
               <SparklesIcon className="w-3.5 h-3.5 text-gold-500" />
               ↑↓ 选择 · Enter 打开

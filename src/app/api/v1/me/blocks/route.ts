@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { q } from '@/server/db';
 import { ok, withApi } from '@/server/http';
 import { requireUser } from '@/server/auth';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export const GET = withApi(async (req: NextRequest) => {
       id: r.id,
       username: r.username,
       displayName: r.display_name,
-      avatarColor: r.avatar_color,
+      avatarColor: whiteSafeColor(r.avatar_color),
       city: r.city || '',
       church: r.church || '',
       createdAt: r.created_at,

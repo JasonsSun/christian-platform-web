@@ -50,6 +50,57 @@ const FEATURES: { title: string; desc: string; icon: JSX.Element }[] = [
   },
 ];
 
+/** Suspense 占位。骨架必须和真表单同结构（左品牌栏 + 右 430px 卡片）、同外边距，
+    否则水合那一刻是「一行居中文字」整块换成满屏布局，看着就是白屏一闪再跳位。 */
+function LoginSkeleton() {
+  return (
+    <div className="auth-shell w-full flex flex-col lg:flex-row bg-ink-50">
+      <aside
+        className="hidden lg:flex lg:w-[45%] xl:w-[48%] flex-col justify-center p-12 xl:p-16 text-white overflow-hidden"
+        style={{ background: 'linear-gradient(140deg, #0f1338 0%, #1e2664 46%, #3242b0 100%)' }}
+      >
+        <div className="max-w-md">
+          <div className="flex items-center gap-3 mb-10">
+            <span className="w-12 h-12 rounded-2xl bg-white/12 border border-white/25 flex items-center justify-center">
+              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v18m9-9H3" />
+              </svg>
+            </span>
+            <span className="font-display text-xl xl:text-2xl font-bold">圣约社区</span>
+          </div>
+          <div className="h-9 w-3/4 rounded-lg bg-white/10" />
+          <div className="h-9 w-1/2 rounded-lg bg-white/10 mt-3" />
+          <div className="h-4 w-full rounded bg-white/[0.07] mt-7" />
+          <div className="h-4 w-2/3 rounded bg-white/[0.07] mt-2.5" />
+        </div>
+      </aside>
+      <main className="flex-1 flex flex-col items-center px-4 sm:px-8 pt-8 pb-12 sm:pt-14 lg:pt-[max(3.5rem,12vh)] lg:pb-14">
+        <div className="h-[68px] lg:hidden" />
+        <div className="w-full max-w-[430px]">
+          <div className="bg-white rounded-3xl border border-ink-100 shadow-[0_24px_60px_-24px_rgba(19,24,66,0.3)] p-7 sm:p-9">
+            <div className="mb-6 space-y-2.5">
+              <div className="h-8 w-40 rounded-lg bg-ink-100" />
+              <div className="h-4 w-56 rounded bg-ink-100" />
+            </div>
+            <div className="h-11 rounded-2xl bg-ink-100 mb-6" />
+            {/* 沿用 .auth-form + 同款 mt-auto：骨架和真表单占同一块高度、
+                提交按钮也停在同一行，换过去时卡片和按钮都不动 */}
+            <div className="auth-form flex flex-col gap-3.5">
+              <div className="h-[44px] rounded-xl bg-ink-100" />
+              <div className="h-[44px] rounded-xl bg-ink-100" />
+              <div className="flex gap-3">
+                <div className="h-[44px] flex-1 rounded-xl bg-ink-100" />
+                <div className="h-[44px] w-[120px] rounded-xl bg-ink-100" />
+              </div>
+              <div className="h-[44px] mt-auto rounded-xl bg-primary-100" />
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
 function LoginInner() {
   const params = useSearchParams();
   const modeParam = params.get('mode');
@@ -134,10 +185,11 @@ function LoginInner() {
     }
   }
 
-  if (user && !loading) {
-    // 已登录则跳转（带 next 时回到来源页）
-    router.push(nextPath);
-  }
+  // 已登录则离开（带 next 时回到来源页）。放进 effect：渲染期直接 router.push
+  // 每次重渲染都会再触发一次，和水合期的验证码/OAuth 请求抢同一帧。
+  useEffect(() => {
+    if (user && !loading) router.push(nextPath);
+  }, [user, loading, nextPath, router]);
 
   function validate(): string | null {
     if (mode === 'register') {
@@ -221,7 +273,7 @@ function LoginInner() {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-ink-50">
+    <div className="auth-shell w-full flex flex-col lg:flex-row bg-ink-50">
       {/* 左：品牌展示（大屏可见） */}
       <aside
         className="relative hidden lg:flex lg:w-[45%] xl:w-[48%] flex-col justify-between p-12 xl:p-16 overflow-hidden text-white"
@@ -274,17 +326,20 @@ function LoginInner() {
         </p>
       </aside>
 
-      {/* 右：登录 / 注册表单 */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 sm:px-8 py-10 sm:py-14">
-        <Link href="/" className="lg:hidden inline-flex flex-col items-center gap-2.5 mb-7">
-          <span className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-glow">
-            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      {/* 右：登录 / 注册表单。顶部对齐而非垂直居中——居中的话，验证码/第三方按钮
+          异步补上、或登录↔注册切换改变卡高，都会把整张卡片往上顶，看起来就是「跳」。
+          钉住上沿后内容只向下生长，标题和输入框位置不动。 */}
+      <main className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-8 pb-12 sm:pt-14 lg:pt-[max(3.5rem,12vh)] lg:pb-14">
+        <Link href="/" className="lg:hidden mb-5 self-center inline-flex items-center gap-2.5">
+          <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-glow">
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v18m9-9H3" />
             </svg>
           </span>
-          <span className="text-center leading-tight">
-            <span className="block font-display text-xl font-bold text-ink-900">圣约社区</span>
-            <span className="block text-[10px] tracking-[0.2em] text-ink-400 mt-0.5">COVENANT COMMUNITY</span>
+          {/* 手机上用横排小字标：竖排那版连图带字 118px，正好把「注册」态的提交按钮顶到首屏外 */}
+          <span className="leading-tight">
+            <span className="block font-display text-base font-bold text-ink-900">圣约社区</span>
+            <span className="block text-[9px] tracking-[0.2em] text-ink-400">COVENANT COMMUNITY</span>
           </span>
         </Link>
 
@@ -303,33 +358,48 @@ function LoginInner() {
               </p>
             </div>
 
-            {/* 模式切换（2FA 步骤隐藏） */}
-            {!twoFaTicket && (
-              <div className="flex bg-ink-100 rounded-2xl p-1 mb-6">
+            {/* 邀请提示放在切换器之上、且不随模式增减：原本它写在注册表单内部，
+                于是「点注册多出一条横幅、点登录又少一条」，页面高度来回变。 */}
+            {inviteCode && !twoFaTicket && (
+              <div className="mb-4 rounded-xl bg-primary-50 border border-primary-100 px-4 py-2.5 text-sm text-primary-800">
+                通过好友邀请进入（邀请码 <b className="font-mono">{inviteCode}</b>），注册后你和对方都会获得成长奖励。
+              </div>
+            )}
+
+            {/* 模式切换（2FA 步骤换成同高的步骤条：直接隐藏会让卡片凭空短掉 44px，
+                从「登录」进入这一步时整张卡上下抖一下） */}
+            {twoFaTicket ? (
+              <div className="seg-track flex items-center justify-between rounded-2xl px-4 py-3 mb-6">
+                <span className="text-sm font-semibold text-ink-700">两步验证</span>
+                <span className="text-xs text-ink-500">第 2 / 2 步</span>
+              </div>
+            ) : (
+              <div className="seg-track flex rounded-2xl p-1 mb-6">
                 <button
                   type="button"
                   onClick={() => { setMode('login'); setError(''); }}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${mode === 'login' ? 'bg-white text-primary-700 shadow-sm' : 'text-ink-500 hover:text-ink-700'}`}
+                  className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${mode === 'login' ? 'seg-thumb' : 'text-ink-500 hover:text-ink-700'}`}
                 >
                   登录
                 </button>
                 <button
                   type="button"
                   onClick={() => { setMode('register'); setError(''); }}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${mode === 'register' ? 'bg-white text-primary-700 shadow-sm' : 'text-ink-500 hover:text-ink-700'}`}
+                  className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${mode === 'register' ? 'seg-thumb' : 'text-ink-500 hover:text-ink-700'}`}
                 >
                   注册
                 </button>
               </div>
             )}
 
-            {/* 双因素第二步：替换掉整个主表单 */}
+            {/* 双因素第二步：替换掉整个主表单。沿用 .auth-form 占位，
+                免得从「登录」切进这一步时卡片突然塌一块。 */}
             {twoFaTicket ? (
-              <form onSubmit={submit2fa} className="space-y-5">
+              <form onSubmit={submit2fa} className="auth-form flex flex-col justify-center gap-3.5">
                 <div>
-                  <label className="block text-sm font-medium text-ink-700 mb-1.5">动态码 / 恢复码</label>
+                  <label className="block text-sm font-medium text-ink-700 mb-1">动态码 / 恢复码</label>
                   <input
-                    className="input-styled text-center text-lg tracking-[0.3em] font-mono"
+                    className="input-styled input-field text-center tracking-[0.3em] font-mono"
                     placeholder="000000"
                     value={twoFaCode}
                     onChange={(e) => setTwoFaCode(e.target.value)}
@@ -338,16 +408,16 @@ function LoginInner() {
                     maxLength={10}
                     autoFocus
                   />
-                  <p className="text-xs text-ink-400 mt-1.5">
+                  <p className="text-xs text-ink-400 mt-1">
                     手机没电了？可以输入绑定时保存的 10 位恢复码。
                   </p>
                 </div>
 
-                {error && <ErrorBox message={error} />}
-
-                <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 disabled:opacity-70">
+                <button type="submit" disabled={loading} className="btn-primary w-full py-3 disabled:opacity-70">
                   {loading ? '验证中…' : '验证并登录'}
                 </button>
+
+                {error && <ErrorBox message={error} />}
 
                 <button
                   type="button"
@@ -358,42 +428,42 @@ function LoginInner() {
                 </button>
               </form>
             ) : (
-              <form onSubmit={submit} className="space-y-5">
-                {inviteCode && mode === 'register' && (
-                  <div className="rounded-xl bg-primary-50 border border-primary-100 px-4 py-3 text-sm text-primary-800">
-                    你正通过好友邀请注册（邀请码 <b className="font-mono">{inviteCode}</b>），注册后你和对方都会获得成长奖励。
+              <form onSubmit={submit} className="auth-form flex flex-col gap-3.5">
+                {/* 注册时用户名与昵称并排（两者都是短字段），邮箱独占一行：注册只比
+                    登录多出一行，占位区里登录态空出的余量就只剩 50px 上下，落在按钮
+                    上方像正常留白，而不是卡片底部的一大块空洞。
+                    380px 以下再并排会把输入框挤到 100px 出头，退回竖排。 */}
+                <div className={mode === 'register' ? 'grid gap-3.5 min-[380px]:grid-cols-2' : ''}>
+                  <div>
+                    <label className="block text-sm font-medium text-ink-700 mb-1">{mode === 'register' ? '用户名' : '账号'}</label>
+                    <input
+                      className="input-styled input-field"
+                      placeholder={mode === 'register' ? '登录用的用户名' : '用户名 / 邮箱'}
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {mode === 'register' && (
+                    <div>
+                      <label className="block text-sm font-medium text-ink-700 mb-1">昵称</label>
+                      <input className="input-styled input-field" placeholder="显示名称" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
+                    </div>
+                  )}
+                </div>
+
+                {mode === 'register' && (
+                  <div>
+                    <label className="block text-sm font-medium text-ink-700 mb-1">邮箱</label>
+                    <input type="email" className="input-styled input-field" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-ink-700 mb-1.5">{mode === 'register' ? '用户名' : '账号'}</label>
-                  <input
-                    className="input-styled"
-                    placeholder={mode === 'register' ? '登录用的用户名' : '用户名 / 邮箱'}
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    required
-                  />
-                </div>
-
-                {mode === 'register' && (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-ink-700 mb-1.5">昵称</label>
-                      <input className="input-styled" placeholder="显示名称" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-ink-700 mb-1.5">邮箱</label>
-                      <input type="email" className="input-styled" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                    </div>
-                  </>
-                )}
-
-                <div>
-                  <label className="block text-sm font-medium text-ink-700 mb-1.5">密码</label>
+                  <label className="block text-sm font-medium text-ink-700 mb-1">密码</label>
                   <div className="relative">
                     <input
-                      className="input-styled pr-16"
+                      className="input-styled input-field input-suffix"
                       type={showPassword ? 'text' : 'password'}
                       placeholder="请输入密码"
                       value={password}
@@ -403,13 +473,13 @@ function LoginInner() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 rounded-md text-xs font-medium text-ink-400 hover:text-ink-600"
+                      className="absolute right-2.5 inset-y-1 flex items-center px-2 rounded-md text-xs font-medium text-ink-400 hover:text-ink-600"
                     >
                       {showPassword ? '隐藏' : '显示'}
                     </button>
                   </div>
                   {mode === 'login' && (
-                    <div className="mt-2 text-right">
+                    <div className="mt-1.5 text-right">
                       <Link href="/forgot" className="text-sm text-primary-600 hover:underline">
                         忘记密码？
                       </Link>
@@ -417,43 +487,62 @@ function LoginInner() {
                   )}
                 </div>
 
-                {error && <ErrorBox message={error} />}
-
                 {/* 图形验证码 */}
                 <div>
-                  <label className="block text-sm font-medium text-ink-700 mb-1.5">验证码</label>
+                  <label className="block text-sm font-medium text-ink-700 mb-1">验证码</label>
                   <div className="flex items-stretch gap-3">
                     <input
-                      className="input-styled flex-1 min-w-0"
+                      className="input-styled input-field flex-1 min-w-0"
                       placeholder="请输入右侧字符"
                       value={captchaCode}
                       maxLength={4}
                       autoComplete="off"
                       onChange={(e) => setCaptchaCode(e.target.value.toUpperCase())}
                     />
-                    <button
-                      type="button"
-                      onClick={loadCaptcha}
-                      title="点击刷新验证码"
-                      className="shrink-0 w-[120px] p-0 rounded-xl overflow-hidden border border-ink-200 bg-ink-50 hover:border-primary-300 transition-colors"
-                      dangerouslySetInnerHTML={{ __html: captchaSvg }}
-                    />
+                    {/* 外层固定 120px（与后端产出的验证码同宽，多了会被裁掉右边）、
+                        由 items-stretch 撑成输入框等高：SVG 还没返回时这里也是一块实的
+                        灰色呼吸位，不会先空后涨。 */}
+                    <div className="relative shrink-0 w-[120px]">
+                      {!captchaSvg && (
+                        <span className="absolute inset-0 rounded-xl bg-ink-100 animate-pulse" aria-hidden />
+                      )}
+                      <button
+                        type="button"
+                        onClick={loadCaptcha}
+                        title="点击刷新验证码"
+                        className="relative w-full h-full p-0 rounded-xl overflow-hidden border border-ink-200 bg-ink-50 hover:border-primary-300 transition-colors"
+                        dangerouslySetInnerHTML={{ __html: captchaSvg }}
+                      />
+                    </div>
                   </div>
-                  {captchaError && <p className="mt-1.5 text-sm text-rose-500">{captchaError}</p>}
                 </div>
 
-                <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 disabled:opacity-70">
+                {/* 报错排在按钮之前：它要吃的正是下面 mt-auto 让出来的那 50px 预留，
+                    于是弹出「验证码错误」时按钮和卡片都不跟着下移。 */}
+                {error && <ErrorBox message={error} />}
+                {captchaError && (
+                  <p className="-mt-2 px-4 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+                    {captchaError}
+                  </p>
+                )}
+
+                {/* mt-auto 把占位区的余量全推到这一行上方：登录态少一行，空出来的一段
+                    就是「验证码 → 按钮」之间的留白。两种模式下按钮停在同一个位置，
+                    点「注册」时页面纹丝不动。 */}
+                <button type="submit" disabled={loading} className="btn-primary w-full py-3 mt-auto disabled:opacity-70">
                   {loading ? (mode === 'login' ? '登录中…' : '注册中…') : mode === 'login' ? '登录' : '注册并登录'}
                 </button>
 
-                {oauthProviders.length > 0 && (
-                  <>
-                    <div className="flex items-center gap-3 pt-1">
-                      <div className="h-px flex-1 bg-ink-200" />
-                      <span className="text-xs text-ink-400">或使用第三方账号</span>
-                      <div className="h-px flex-1 bg-ink-200" />
-                    </div>
-                    <div className="grid grid-cols-1 gap-2">
+                {/* 卡片底部这块（第三方登录 / 模式互切 / 条款）紧跟在按钮下方，
+                    两者之间不留余量：余量全在按钮上方，所以这块的位置也是固定的。 */}
+                <div className="flex flex-col gap-2 pt-1">
+                  {oauthProviders.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-ink-200" />
+                        <span className="text-xs text-ink-400">或使用第三方账号</span>
+                        <div className="h-px flex-1 bg-ink-200" />
+                      </div>
                       {oauthProviders.map((p) => (
                         <button
                           key={p.key}
@@ -464,16 +553,31 @@ function LoginInner() {
                           {p.name} 登录
                         </button>
                       ))}
-                    </div>
-                  </>
-                )}
+                    </>
+                  )}
+
+                  {/* 用按钮切模式而不是 <Link href="/login?mode=register">：
+                      本页 mode 是 state，同一路由换 query 不会重挂载，点了不会真的切换。 */}
+                  <button
+                    type="button"
+                    onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); }}
+                    className="w-full text-center text-sm text-ink-500"
+                  >
+                    {mode === 'login' ? (
+                      <>还没有账号？<span className="text-primary-700 font-semibold">注册一个</span></>
+                    ) : (
+                      <>已经有账号？<span className="text-primary-700 font-semibold">直接登录</span></>
+                    )}
+                  </button>
+
+                  <p className="text-center text-[11px] text-ink-400 leading-relaxed">
+                    登录即表示同意 <a href="#" className="text-primary-600 hover:underline">服务条款</a> 和{' '}
+                    <a href="#" className="text-primary-600 hover:underline">隐私政策</a>
+                  </p>
+                </div>
               </form>
             )}
           </div>
-
-          <p className="text-center mt-6 text-xs text-ink-400">
-            登录即表示同意 <a href="#" className="text-primary-600 hover:underline">服务条款</a> 和 <a href="#" className="text-primary-600 hover:underline">隐私政策</a>
-          </p>
         </div>
       </main>
     </div>
@@ -481,8 +585,10 @@ function LoginInner() {
 }
 
 export default function LoginPage() {
+  // useSearchParams 要求 Suspense 边界，否则整页退化成 CSR；
+  // 但兜底内容必须和真表单同尺寸，否则换成满屏布局的那一下就是用户说的「跳」。
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-ink-400">加载中…</div>}>
+    <Suspense fallback={<LoginSkeleton />}>
       <LoginInner />
     </Suspense>
   );

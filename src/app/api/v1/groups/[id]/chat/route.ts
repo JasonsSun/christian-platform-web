@@ -8,6 +8,7 @@ import {
 } from '@/server/groupChat';
 import { broadcastChat } from '@/server/realtime';
 import { rateLimitAsync } from '@/server/ratelimit';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -23,7 +24,7 @@ function shape(m: any) {
       id: m.user_id,
       displayName: m.display_name,
       username: m.username,
-      avatarColor: m.avatar_color || '#4f6df5',
+      avatarColor: whiteSafeColor(m.avatar_color || '#4f6df5'),
     },
   };
 }

@@ -282,7 +282,7 @@ export default function PrayersPage() {
           <button
             onClick={() => setPage((n) => n + 1)}
             disabled={loading}
-            className="btn-ghost px-6 py-2 text-sm"
+            className="btn-ghost btn-sm px-6 text-sm"
           >
             {loading ? '加载中…' : '加载更多'}
           </button>

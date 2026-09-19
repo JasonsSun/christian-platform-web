@@ -51,8 +51,8 @@ export function MyContents() {
             </div>
             <p className="text-sm text-ink-500 line-clamp-2">{c.excerpt || c.body}</p>
             <div className="flex gap-3 mt-3 text-xs text-ink-400">
-              <span>❤️ {c.likeCount}</span>
-              <span>💬 {c.commentCount}</span>
+              <span><span aria-hidden="true">❤️</span> <span className="sr-only">点赞</span>{c.likeCount}</span>
+              <span><span aria-hidden="true">💬</span> <span className="sr-only">评论</span>{c.commentCount}</span>
               <span>
                 {c.status === 'published' ? '已发布' : c.status === 'pending_review' ? '审核中' : c.status}
               </span>

@@ -39,7 +39,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
     <label className="block">
       <span className="flex items-baseline justify-between mb-1">
         <span className="text-[11px] font-medium text-ink-500">{label}</span>
-        {hint ? <span className="text-[11px] text-ink-300">{hint}</span> : null}
+        {hint ? <span className="text-[11px] text-ink-500">{hint}</span> : null}
       </span>
       {children}
     </label>
@@ -124,7 +124,7 @@ export default function AdminQuotasPage() {
             <h3 className="font-semibold text-ink-900 mb-3">等级分布</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {data.stats.byLevel.map((b: any) => (
-                <div key={b.level} className="rounded-2xl border border-ink-100 bg-white/70 px-4 py-3">
+                <div key={b.level} className="rounded-2xl border border-ink-100 bg-ui-surface px-4 py-3">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${LEVEL_TONE[b.level] || LEVEL_TONE[0]}`}>
                     L{b.level} {b.name}
                   </span>
@@ -152,7 +152,7 @@ export default function AdminQuotasPage() {
                   <div
                     key={p.level}
                     className={`rounded-2xl border p-4 transition-colors ${
-                      dirty ? 'border-primary-300 bg-primary-50/50' : 'border-ink-100 bg-white/60'
+                      dirty ? 'border-primary-300 bg-primary-50/50' : 'border-ink-100 bg-ui-surface'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2 mb-3">
@@ -173,35 +173,35 @@ export default function AdminQuotasPage() {
 
                     <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
                       <Field label="视频大小 (MB)">
-                        <input className="input-styled w-full px-2.5 py-1.5 text-sm" value={d.maxVideoMb ?? p.maxVideoMb}
+                        <input className="input-styled input-sm w-full text-sm" value={d.maxVideoMb ?? p.maxVideoMb}
                           onChange={(e) => setDraft(p.level, 'maxVideoMb', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="视频时长" hint={fmtDur(Number(d.maxVideoSeconds ?? p.maxVideoSeconds))}>
-                        <input className="input-styled w-full px-2.5 py-1.5 text-sm" value={d.maxVideoSeconds ?? p.maxVideoSeconds}
+                        <input className="input-styled input-sm w-full text-sm" value={d.maxVideoSeconds ?? p.maxVideoSeconds}
                           onChange={(e) => setDraft(p.level, 'maxVideoSeconds', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="音乐大小 (MB)">
-                        <input className="input-styled w-full px-2.5 py-1.5 text-sm" value={d.maxAudioMb ?? p.maxAudioMb}
+                        <input className="input-styled input-sm w-full text-sm" value={d.maxAudioMb ?? p.maxAudioMb}
                           onChange={(e) => setDraft(p.level, 'maxAudioMb', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="音乐时长" hint={fmtDur(Number(d.maxAudioSeconds ?? p.maxAudioSeconds))}>
-                        <input className="input-styled w-full px-2.5 py-1.5 text-sm" value={d.maxAudioSeconds ?? p.maxAudioSeconds}
+                        <input className="input-styled input-sm w-full text-sm" value={d.maxAudioSeconds ?? p.maxAudioSeconds}
                           onChange={(e) => setDraft(p.level, 'maxAudioSeconds', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="图片大小 (MB)">
-                        <input className="input-styled w-full px-2.5 py-1.5 text-sm" value={d.maxImageMb ?? p.maxImageMb}
+                        <input className="input-styled input-sm w-full text-sm" value={d.maxImageMb ?? p.maxImageMb}
                           onChange={(e) => setDraft(p.level, 'maxImageMb', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="资料大小 (MB)">
-                        <input className="input-styled w-full px-2.5 py-1.5 text-sm" value={d.maxDocMb ?? p.maxDocMb}
+                        <input className="input-styled input-sm w-full text-sm" value={d.maxDocMb ?? p.maxDocMb}
                           onChange={(e) => setDraft(p.level, 'maxDocMb', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="每日上传 (次)">
-                        <input className="input-styled w-full px-2.5 py-1.5 text-sm" value={d.dailyUploads ?? p.dailyUploads}
+                        <input className="input-styled input-sm w-full text-sm" value={d.dailyUploads ?? p.dailyUploads}
                           onChange={(e) => setDraft(p.level, 'dailyUploads', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
                       </Field>
                       <Field label="总存储 (MB)">
-                        <input className="input-styled w-full px-2.5 py-1.5 text-sm" value={d.totalMb ?? Math.round(p.totalBytes / 1048576)}
+                        <input className="input-styled input-sm w-full text-sm" value={d.totalMb ?? Math.round(p.totalBytes / 1048576)}
                           onChange={(e) => setDraft(p.level, 'totalMb', e.target.value)} disabled={!isAdmin} inputMode="numeric" />
                       </Field>
                     </div>
@@ -225,19 +225,19 @@ export default function AdminQuotasPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                   <input
-                    className="input-styled w-56 pl-9 pr-3 py-1.5 text-sm"
+                    className="input-styled input-sm input-icon w-56 pr-3 text-sm"
                     placeholder="搜索用户名 / 昵称 / 邮箱"
                     value={kwInput}
                     onChange={(e) => setKwInput(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') { setKw(kwInput); setPage(1); } }}
                   />
                 </div>
-                <select className="input-styled w-auto px-3 py-1.5 text-sm" value={level} onChange={(e) => { setLevel(e.target.value); setPage(1); }}>
+                <select className="input-styled input-sm w-auto text-sm" value={level} onChange={(e) => { setLevel(e.target.value); setPage(1); }}>
                   <option value="">全部等级</option>
                   {data.policies.map((p) => <option key={p.level} value={p.level}>L{p.level} {p.name}</option>)}
                 </select>
-                <button onClick={() => { setKw(kwInput); setPage(1); }} className="btn-primary text-sm px-4 py-1.5">搜索</button>
-                <button onClick={() => recompute()} disabled={pending} className="btn-secondary text-sm px-4 py-1.5 disabled:opacity-50">
+                <button onClick={() => { setKw(kwInput); setPage(1); }} className="btn-primary btn-sm text-sm px-4">搜索</button>
+                <button onClick={() => recompute()} disabled={pending} className="btn-secondary btn-sm text-sm px-4 disabled:opacity-50">
                   全部重算
                 </button>
               </div>

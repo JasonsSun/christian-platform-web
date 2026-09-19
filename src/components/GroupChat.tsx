@@ -192,11 +192,11 @@ export default function GroupChat({
               <div className={`max-w-[78%] ${mine ? 'items-end' : ''}`}>
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-xs text-ink-500">{m.user.displayName}</span>
-                  <span className="text-[10px] text-ink-300">{timeAgo(m.createdAt)}</span>
+                  <span className="text-[10px] text-ink-500">{timeAgo(m.createdAt)}</span>
                   {(mine || isOwner) && (
                     <button
                       onClick={() => remove(m.id)}
-                      className="text-[10px] text-ink-300 hover:text-rose-500 transition"
+                      className="text-[10px] text-ink-500 hover:text-rose-500 transition"
                       title="删除"
                     >
                       删除

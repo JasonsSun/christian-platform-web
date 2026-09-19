@@ -242,7 +242,7 @@ export default function GroupsPage() {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="搜索团契名称或简介…"
-                  className="input-styled pl-10"
+                  className="input-styled input-icon"
                 />
               </div>
               <select className="input-styled" value={category} onChange={(e) => setCategory(e.target.value)}>
@@ -314,14 +314,16 @@ export default function GroupsPage() {
                   <div className="mt-auto flex gap-2">
                     <Link
                       href={`/groups/${g.id}`}
-                      className="btn-secondary flex-1 py-2 text-sm"
+                      className="btn-secondary btn-sm flex-1 text-sm"
+                      aria-label={`查看 ${g.name} 详情`}
                     >
                       查看详情
                     </Link>
                     {g.joined ? (
                       <Link
                         href={`/groups/${g.id}`}
-                        className="btn-primary flex-1 py-2 text-sm"
+                        className="btn-primary btn-sm flex-1 text-sm"
+                        aria-label={`进入 ${g.name}`}
                       >
                         进入团契
                       </Link>
@@ -329,7 +331,8 @@ export default function GroupsPage() {
                       <button
                         onClick={() => handleJoin(g)}
                         disabled={joinAction.pending}
-                        className="btn-gold flex-1 py-2 text-sm disabled:opacity-70"
+                        className="btn-gold btn-sm flex-1 text-sm disabled:opacity-70"
+                        aria-label={`加入 ${g.name}`}
                       >
                         {joinAction.pending ? '加入中…' : '加入团契'}
                       </button>

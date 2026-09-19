@@ -179,7 +179,7 @@ export default function AdminBackupsPage() {
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setConfirmRestore(null)} className="flex-1 py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition">取消</button>
-                <button onClick={doRestore} disabled={restoreAction.pending} className="flex-1 py-2.5 rounded-xl bg-gold-600 text-white text-sm font-semibold hover:bg-gold-700 transition disabled:opacity-50">
+                <button onClick={doRestore} disabled={restoreAction.pending} className="flex-1 py-2.5 rounded-xl bg-gold-500 text-ink-950 text-sm font-semibold hover:bg-gold-600 transition disabled:opacity-50">
                   {restoreAction.pending ? '恢复中…' : '确认恢复'}
                 </button>
               </div>

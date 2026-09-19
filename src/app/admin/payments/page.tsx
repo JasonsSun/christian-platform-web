@@ -143,7 +143,7 @@ export default function AdminPaymentsPage() {
                             <>
                               <button
                                 type="button"
-                                className="btn-secondary text-xs px-2 py-1"
+                                className="btn-secondary btn-sm text-xs px-2"
                                 onClick={() => setReveal((p) => ({ ...p, [f.key]: !p[f.key] }))}
                               >
                                 {reveal[f.key] ? '隐藏' : '显示'}
@@ -151,7 +151,7 @@ export default function AdminPaymentsPage() {
                               {f.set ? (
                                 <button
                                   type="button"
-                                  className="btn-secondary text-xs px-2 py-1 text-rose-600"
+                                  className="btn-secondary btn-sm text-xs px-2 text-rose-600"
                                   onClick={() => setVal(f.key, CLEAR)}
                                 >
                                   清空

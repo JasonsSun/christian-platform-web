@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center py-20">
+    <div className="auth-shell relative overflow-hidden flex items-center justify-center py-10 sm:py-14">
       <div className="absolute inset-0 bg-animated-gradient" />
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 -left-20 w-72 h-72 bg-gold-400/20 rounded-full blur-3xl animate-float" />
@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
                 <label className="block text-sm font-medium text-ink-700 mb-1.5">邮箱</label>
                 <input
                   type="email"
-                  className="input-styled"
+                  className="input-styled input-field"
                   placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}

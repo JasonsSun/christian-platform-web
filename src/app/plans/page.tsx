@@ -67,7 +67,7 @@ export default function PlansPage() {
   const pct = detail ? Math.round((detail.doneDays / detail.plan.days) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-[#f6f7fb]">
+    <div className="min-h-screen bg-ink-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         {/* 头部 */}
         <div className="mb-6">
@@ -177,7 +177,7 @@ export default function PlansPage() {
                   }`}
                 >
                   <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
-                    d.done ? 'bg-emerald-500 text-white' : 'bg-ink-50 text-ink-500'
+                    d.done ? 'bg-emerald-700 text-white' : 'bg-ink-50 text-ink-500'
                   }`}>
                     {d.done ? '✓' : d.day}
                   </span>

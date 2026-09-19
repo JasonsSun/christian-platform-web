@@ -5,6 +5,7 @@ import { requireRole, UserRow, hashPassword } from '@/server/auth';
 import { audit, notify } from '@/server/services';
 import { reassignAllOwnedGroups } from '@/server/groups';
 import crypto from 'node:crypto';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,7 @@ export const GET = withApi(async (req: NextRequest) => {
     items: rows.map((r) => ({
       id: r.id, username: r.username, email: r.email, displayName: r.display_name,
       role: r.role, status: r.status, city: r.city, church: r.church,
-      avatarColor: r.avatar_color, createdAt: r.created_at,
+      avatarColor: whiteSafeColor(r.avatar_color), createdAt: r.created_at,
       contentCount: Number(r.content_count), followers: Number(r.followers),
     })),
     total: Number(total?.c || 0), page, pageSize,

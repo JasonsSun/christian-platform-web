@@ -66,7 +66,7 @@ export default function SongCollectionsPage() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-44 rounded-2xl bg-white/60 animate-pulse border border-ink-100" />
+              <div key={i} className="h-44 rounded-2xl bg-ui-surface animate-pulse border border-ink-100" />
             ))}
           </div>
         ) : (
@@ -103,7 +103,7 @@ export default function SongCollectionsPage() {
                 </div>
 
                 {c.verse && (
-                  <p className="mt-3 text-xs text-gold-700/80 font-serif italic truncate">「{c.verse}」</p>
+                  <p className="mt-3 text-xs text-gold-700 font-serif italic truncate">「{c.verse}」</p>
                 )}
               </Link>
             ))}

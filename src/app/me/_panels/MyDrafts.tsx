@@ -74,13 +74,13 @@ export function MyDrafts() {
               删除
             </button>
             {/* 「继续编辑」必须进编辑页；此前跳的是详情页，点进去只能看不能改 */}
-            <Link href={`/community/create?edit=${c.id}`} className="btn-secondary text-sm py-1.5 px-3">
+            <Link href={`/community/create?edit=${c.id}`} className="btn-secondary btn-sm text-sm px-3">
               继续编辑
             </Link>
             <button
               onClick={() => submit(c)}
               disabled={submittingId === c.id}
-              className="btn-primary text-sm py-1.5 px-3 disabled:opacity-70"
+              className="btn-primary btn-sm text-sm px-3 disabled:opacity-70"
             >
               {submittingId === c.id ? '提交中…' : '提交审核'}
             </button>

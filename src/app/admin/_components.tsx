@@ -240,9 +240,9 @@ export function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="glass rounded-2xl p-5 card-hover shadow-soft">
-      <div className="text-sm text-ink-500">{title}</div>
-      <div className="font-display text-3xl font-bold text-ink-900 mt-1">{value}</div>
+    <div className="glass rounded-2xl p-4 sm:p-5 card-hover shadow-soft">
+      <div className="text-xs sm:text-sm text-ink-500 leading-snug">{title}</div>
+      <div className="font-display text-2xl sm:text-3xl font-bold text-ink-900 mt-1">{value}</div>
       {hint ? <div className="text-xs text-ink-400 mt-1">{hint}</div> : null}
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Portal from '@/components/Portal';
+import { useEscape } from '@/lib/a11y';
 
 /** 生成分享卡片图所需数据（经文/诗歌/金句） */
 export type ShareCard = {
@@ -286,6 +287,8 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
     if (!open) setCopied(false);
   }, [open]);
 
+  useEscape(open, onClose);
+
   if (!open) return null;
 
   const copy = async () => {
@@ -357,7 +360,7 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
         <p className="text-sm text-ink-500 mb-4">选择一种方式，把圣约社区分享给主内肢体</p>
 
         {/* 分段选择器：选哪个功能才展示对应内容 */}
-        <div className="flex p-1 bg-ink-100/70 rounded-2xl mb-4">
+        <div className="flex p-1 bg-ui-rail rounded-2xl mb-4">
           {tabs.map((tb) => (
             <button
               key={tb.key}
@@ -365,8 +368,8 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
               onClick={() => setActiveTab(tb.key)}
               className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
                 activeTab === tb.key
-                  ? 'bg-white text-primary-700 shadow-sm'
-                  : 'text-ink-500 hover:text-ink-700'
+                  ? 'bg-ui-surface text-ui-accent shadow-sm'
+                  : 'text-ui-muted hover:text-ui-text'
               }`}
             >
               {tb.label}
@@ -419,7 +422,7 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={qr} alt="分享二维码" className="w-44 h-44" width={176} height={176} decoding="async" />
               ) : (
-                <div className="w-44 h-44 flex items-center justify-center text-ink-300 text-sm">生成中…</div>
+                <div className="w-44 h-44 flex items-center justify-center text-ink-500 text-sm">生成中…</div>
               )}
             </div>
             <p className="text-xs text-ink-400 mt-3 break-all text-center max-w-[16rem]">{shareUrl}</p>
@@ -443,7 +446,7 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
             <button
               type="button"
               onClick={nativeShare}
-              className="w-full py-2.5 rounded-xl border border-ink-200 bg-white/70 text-ink-700 font-medium text-sm hover:bg-ink-50 transition-colors flex items-center justify-center gap-2"
+              className="w-full py-2.5 rounded-xl border border-ui-border bg-ui-surface text-ui-text font-medium text-sm hover:bg-ui-hover transition-colors flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />

@@ -294,17 +294,17 @@ export default function AdminBiblePage() {
                   <button
                     disabled={prev == null}
                     onClick={() => prev != null && setChapter(prev)}
-                    className="btn-secondary px-3 py-1.5 text-sm disabled:opacity-40"
+                    className="btn-secondary btn-sm px-3 text-sm disabled:opacity-40"
                   >上一章</button>
                   <button
                     disabled={next == null}
                     onClick={() => next != null && setChapter(next)}
-                    className="btn-secondary px-3 py-1.5 text-sm disabled:opacity-40"
+                    className="btn-secondary btn-sm px-3 text-sm disabled:opacity-40"
                   >下一章</button>
                   <Link
                     href={`/bible/${version}/${bookId}/${chapter}`}
                     target="_blank"
-                    className="btn-secondary px-3 py-1.5 text-sm"
+                    className="btn-secondary btn-sm px-3 text-sm"
                   >前台查看 ↗</Link>
                 </div>
               </div>
@@ -346,11 +346,11 @@ export default function AdminBiblePage() {
                                   <button
                                     onClick={saveEdit}
                                     disabled={action.pending}
-                                    className="btn-primary px-3 py-1.5 text-sm disabled:opacity-50"
+                                    className="btn-primary btn-sm px-3 text-sm disabled:opacity-50"
                                   >{action.pending ? '保存中…' : '保存'}</button>
                                   <button
                                     onClick={() => { setEditing(null); action.setError(null); }}
-                                    className="btn-secondary px-3 py-1.5 text-sm"
+                                    className="btn-secondary btn-sm px-3 text-sm"
                                   >取消</button>
                                 </div>
                               </div>

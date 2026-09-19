@@ -138,11 +138,11 @@ export default function DailyReminderSettings({
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <span className="text-sm text-ink-700 w-28">浏览器推送</span>
               {subscribed ? (
-                <button onClick={unsubscribe} disabled={busy} className="btn-secondary text-sm py-2 px-4">
+                <button onClick={unsubscribe} disabled={busy} className="btn-secondary btn-sm text-sm px-4">
                   关闭推送
                 </button>
               ) : (
-                <button onClick={subscribe} disabled={busy} className="btn-secondary text-sm py-2 px-4">
+                <button onClick={subscribe} disabled={busy} className="btn-secondary btn-sm text-sm px-4">
                   开启推送
                 </button>
               )}

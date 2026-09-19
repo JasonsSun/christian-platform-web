@@ -128,7 +128,7 @@ export default function ActivitiesPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
-                className="input-styled pl-10"
+                className="input-styled input-icon"
                 placeholder="搜索活动名称或介绍"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
@@ -212,17 +212,19 @@ function ActivityCard({ a }: { a: ActivityItem }) {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
         <div className="absolute top-4 left-4 flex gap-2">
-          <span className="px-3 py-1 rounded-full bg-white/90 backdrop-blur-sm text-ink-800 text-xs font-semibold shadow-lg">
+          <span className="px-3 py-1 rounded-full chip-frost backdrop-blur-sm text-xs font-semibold shadow-lg">
             {catLabel}
           </span>
         </div>
         <div className="absolute top-4 right-4">
-          <span className={`px-3 py-1 rounded-full text-white text-xs font-semibold shadow-lg ${
-            status.label === '已报名' ? 'bg-emerald-500' :
-            status.label === '候补中' ? 'bg-gold-500' :
-            status.label === '满员候补' ? 'bg-rose-500' :
-            status.label === '已结束' ? 'bg-ink-400' :
-            'bg-primary-500'
+          {/* 状态角标是 12px 半粗体,白字压 500 档只有 2.2~4.3:1。按色调深一档,
+              金色反过来用「墨字压金」——gold 系再深就成了棕色,不如换前景色。 */}
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold shadow-lg ${
+            status.label === '已报名' ? 'bg-emerald-700 text-white' :
+            status.label === '候补中' ? 'bg-gold-500 text-ink-950' :
+            status.label === '满员候补' ? 'bg-rose-600 text-white' :
+            status.label === '已结束' ? 'bg-ink-600 text-white' :
+            'bg-primary-600 text-white'
           }`}>
             {status.label}
           </span>

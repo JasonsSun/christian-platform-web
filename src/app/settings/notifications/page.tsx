@@ -270,7 +270,7 @@ export default function NotificationSettingsPage() {
               <p className="font-medium text-primary-800">已绑定</p>
               <p className="text-sm text-primary-600 mt-0.5">openid {bind.openidMasked}</p>
             </div>
-            <button onClick={unbind} disabled={pending} className="btn-secondary text-sm py-2 px-4">
+            <button onClick={unbind} disabled={pending} className="btn-secondary btn-sm text-sm px-4">
               解除绑定
             </button>
           </div>
@@ -284,7 +284,7 @@ export default function NotificationSettingsPage() {
             {!bind?.wechatEnabled && (
               <a
                 href={`/api/v1/wechat/callback?demo=1&scene=${qr.scene}`}
-                className="btn-secondary text-sm py-2 px-4"
+                className="btn-secondary btn-sm text-sm px-4"
               >
                 模拟扫码完成绑定
               </a>

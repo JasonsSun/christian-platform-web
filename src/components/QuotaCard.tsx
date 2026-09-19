@@ -130,10 +130,10 @@ export default function QuotaCard({ data, compact = false }: { data: QuotaData; 
 
 function LimitBox({ title, main, sub }: { title: string; main: string; sub: string }) {
   return (
-    <div className="rounded-xl bg-white/70 border border-ink-100 px-3 py-2.5">
-      <div className="text-xs text-ink-500">{title}</div>
-      <div className="text-sm font-semibold text-ink-900 mt-0.5">{main}</div>
-      <div className="text-[11px] text-ink-400 mt-0.5">{sub}</div>
+    <div className="rounded-xl bg-ui-surface border border-ui-border px-3 py-2.5">
+      <div className="text-xs text-ui-muted">{title}</div>
+      <div className="text-sm font-semibold text-ui-text mt-0.5">{main}</div>
+      <div className="text-[11px] text-ui-muted mt-0.5">{sub}</div>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { formatDateTime, countdown } from '@/lib/format';
+import { useEscape } from '@/lib/a11y';
 import type { ActivityItem } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
 import Portal from '@/components/Portal';
@@ -65,6 +66,15 @@ export default function ActivityDetailPage() {
   const [geoMsg, setGeoMsg] = useState('');
   const [geocoding, setGeocoding] = useState(false);
   const [savingLoc, setSavingLoc] = useState(false);
+
+  // Esc 退出弹层，判据与遮罩点击一致：请求进行中不许关
+  useEscape(cancelOpen || qrOpen, () => {
+    if (qrOpen) {
+      if (!qrAction.pending) setQrOpen(false);
+    } else if (!busy) {
+      setCancelOpen(false);
+    }
+  });
 
   async function locateByAddress() {
     const q = geoQuery.trim() || `${a.city} ${a.location}`.trim();
@@ -250,9 +260,9 @@ export default function ActivityDetailPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <div className="absolute bottom-5 left-6 right-6">
-          <span className="px-3 py-1 rounded-full bg-white/90 text-ink-800 text-xs font-semibold mr-2">{a.category}</span>
+          <span className="px-3 py-1 rounded-full chip-frost text-xs font-semibold mr-2">{a.category}</span>
           {a.registered && (
-            <span className="px-3 py-1 rounded-full bg-gold-400 text-white text-xs font-semibold">
+            <span className="px-3 py-1 rounded-full bg-gold-400 text-ink-950 text-xs font-semibold">
               {a.myStatus === 'waitlist' ? '候补中' : '已报名'}
             </span>
           )}

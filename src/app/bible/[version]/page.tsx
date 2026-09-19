@@ -99,7 +99,7 @@ export default function VersionBooks() {
                           {b.chaptersAvailable.length > 0 ? (
                             <Link
                               href={`/bible/${version}/${b.id}/${b.chaptersAvailable[0]}`}
-                              className="btn-primary px-4 py-2 text-sm"
+                              className="btn-primary btn-sm px-4 text-sm"
                             >
                               开始阅读
                             </Link>

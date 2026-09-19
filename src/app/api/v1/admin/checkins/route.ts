@@ -3,6 +3,7 @@ import { q, one } from '@/server/db';
 import { ok, withApi, notFound } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
 import { requireModeratorModule } from '@/server/moderation';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,7 @@ export const GET = withApi(async (req: NextRequest) => {
         capacity: act.capacity, startAt: act.start_at,
       },
       attendees: attendees.map((r: any) => ({
-        id: r.id, displayName: r.display_name, username: r.username, avatarColor: r.avatar_color,
+        id: r.id, displayName: r.display_name, username: r.username, avatarColor: whiteSafeColor(r.avatar_color),
         city: r.city, church: r.church, checkedAt: r.checked_at,
       })),
       total: Number(count?.c || 0),

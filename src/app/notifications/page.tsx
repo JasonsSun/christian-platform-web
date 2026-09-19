@@ -73,7 +73,7 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-3">
           <h1 className="font-display text-2xl font-bold text-ink-900">通知中心</h1>
           {unreadCount > 0 && (
-            <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-rose-500 text-white text-xs font-semibold">
+            <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-rose-600 text-white text-xs font-semibold">
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
@@ -81,14 +81,14 @@ export default function NotificationsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.push('/settings/notifications')}
-            className="btn-secondary text-sm py-2 px-4"
+            className="btn-secondary btn-sm text-sm px-4"
           >
             提醒设置
           </button>
           <button
             onClick={markAll}
             disabled={pending || unreadCount === 0}
-            className="btn-secondary text-sm py-2 px-4 disabled:opacity-50"
+            className="btn-secondary btn-sm text-sm px-4 disabled:opacity-50"
           >
             {pending ? '处理中…' : '全部已读'}
           </button>

@@ -21,7 +21,7 @@ export default function SpeechMiniCard({ raised = false }: { raised?: boolean })
   return (
     <div
       data-testid="speech-mini-card"
-      className="fixed z-[56] right-4 md:right-6 w-[19rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-ink-200 bg-white/95 backdrop-blur-md shadow-card-hover overflow-hidden"
+      className="fixed z-[56] right-4 md:right-6 w-[19rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-ink-200 bg-ui-surface backdrop-blur-md shadow-card-hover overflow-hidden"
       style={{ bottom }}
     >
       <div className="flex items-center gap-3 px-3 py-2.5">

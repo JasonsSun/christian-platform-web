@@ -138,7 +138,7 @@ export default function MessagesPage() {
                   title="离线"
                 />
                 {c.unread > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-semibold flex items-center justify-center">
                     {c.unread > 99 ? '99+' : c.unread}
                   </span>
                 )}

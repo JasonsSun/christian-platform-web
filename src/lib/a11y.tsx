@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -107,4 +108,21 @@ export function useA11y(): A11yState {
   const ctx = useContext(A11yContext);
   if (!ctx) throw new Error('useA11y must be used within <AccessibilityProvider>');
   return ctx;
+}
+
+/**
+ * Esc 关闭弹层。站里所有遮罩层都支持点空白处关闭，键盘用户却没有等价出口，
+ * 这里补上：active=false 时不挂监听，回调走 ref 以免 onClose 内联箭头导致反复重订阅。
+ */
+export function useEscape(active: boolean, onClose: () => void) {
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [active]);
 }

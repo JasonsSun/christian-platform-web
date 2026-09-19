@@ -23,7 +23,7 @@ export default function NetworkBanner() {
   if (!offline) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-white text-center text-sm py-2 px-4">
+    <div className="fixed top-0 left-0 right-0 z-[100] bg-amber-500 text-ink-950 text-center text-sm py-2 px-4">
       当前网络不可用，操作将在恢复网络后重试
     </div>
   );

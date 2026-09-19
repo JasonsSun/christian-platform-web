@@ -4,6 +4,7 @@ import { ok, withApi, readJson, HttpError, notFound, clientIp } from '@/server/h
 import { requireRole, UserRow } from '@/server/auth';
 import { audit, notify, emit, dispatchOutbox } from '@/server/services';
 import { requireModeratorModule } from '@/server/moderation';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,13 +51,13 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
       id: group.owner_id,
       displayName: group.owner_name || '',
       username: group.owner_username || '',
-      avatarColor: group.owner_color || '',
+      avatarColor: whiteSafeColor(group.owner_color || ''),
     },
     members: members.map((m) => ({
       id: m.id,
       username: m.username,
       displayName: m.display_name,
-      avatarColor: m.avatar_color,
+      avatarColor: whiteSafeColor(m.avatar_color),
       city: m.city,
       status: m.status,
       role: m.role,

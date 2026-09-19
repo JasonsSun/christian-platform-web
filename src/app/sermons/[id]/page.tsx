@@ -137,7 +137,7 @@ export default function SermonDetailPage({ params }: { params: { id: string } })
           onClick={toggleLike}
           disabled={busy}
           className={`px-4 py-2 rounded-full font-medium transition ${
-            isLiked ? 'bg-rose-500 text-white' : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
+            isLiked ? 'bg-rose-600 text-white' : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
           }`}
           aria-pressed={isLiked}
         >

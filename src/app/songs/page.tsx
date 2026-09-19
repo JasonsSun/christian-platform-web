@@ -173,18 +173,18 @@ export default function SongsPage() {
         {/* 主题歌单入口 */}
         <Link
           href="/songs/collections"
-          className="group mb-6 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 p-4 shadow-glow text-white hover:opacity-95 transition-opacity"
+          className="group mb-6 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 p-4 shadow-glow text-ink-950 hover:opacity-95 transition-opacity"
         >
           <div className="flex items-center gap-3 min-w-0">
             <span className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">🎵</span>
             <div className="min-w-0">
               <p className="font-display text-base font-bold">主题歌单</p>
-              <p className="text-xs text-white/85 truncate">按场景找歌 · 灵修 · 安慰 · 敬拜 · 救恩 · 节期…</p>
+              <p className="text-xs text-ink-950/80 truncate">按场景找歌 · 灵修 · 安慰 · 敬拜 · 救恩 · 节期…</p>
             </div>
           </div>
           <span className="flex-shrink-0 inline-flex items-center gap-1 text-sm font-semibold">
             去逛逛
-            <span className="text-white/80 group-hover:translate-x-0.5 transition-transform">›</span>
+            <span className="text-ink-950/70 group-hover:translate-x-0.5 transition-transform">›</span>
           </span>
         </Link>
 
@@ -196,7 +196,7 @@ export default function SongsPage() {
               onClick={() => setTab(t.id)}
               className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
                 tab === t.id
-                  ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-white shadow-lg shadow-gold-500/30'
+                  ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-ink-950 shadow-lg shadow-gold-500/30'
                   : 'bg-white text-ink-600 hover:bg-ink-50 border border-ink-200 hover:border-gold-300'
               }`}
             >
@@ -220,7 +220,7 @@ export default function SongsPage() {
                     onClick={() => setCategory(c.name === '全部' ? '' : c.name)}
                     className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
                       active
-                        ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-white shadow-lg shadow-gold-500/30'
+                        ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-ink-950 shadow-lg shadow-gold-500/30'
                         : 'bg-white text-ink-600 hover:bg-ink-50 border border-ink-200 hover:border-gold-300'
                     }`}
                   >
@@ -235,7 +235,7 @@ export default function SongsPage() {
               <button
                 onClick={() => setSort('hot')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  sort === 'hot' ? 'bg-gold-500 text-white' : 'text-ink-500 hover:text-gold-600'
+                  sort === 'hot' ? 'bg-gold-500 text-ink-950' : 'text-ink-500 hover:text-gold-600'
                 }`}
               >
                 热门
@@ -243,7 +243,7 @@ export default function SongsPage() {
               <button
                 onClick={() => setSort('new')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                  sort === 'new' ? 'bg-gold-500 text-white' : 'text-ink-500 hover:text-gold-600'
+                  sort === 'new' ? 'bg-gold-500 text-ink-950' : 'text-ink-500 hover:text-gold-600'
                 }`}
               >
                 最新
@@ -383,7 +383,7 @@ export default function SongsPage() {
                 </div>
                 <h3 className="font-display text-xl font-bold text-ink-900 mb-2">还没有收藏的诗歌</h3>
                 <p className="text-ink-500 mb-4">在诗歌详情页点击收藏，让喜爱的诗歌常伴左右</p>
-                <Link href="/songs" className="btn-primary inline-block px-6 py-2 text-sm">去逛逛诗歌</Link>
+                <Link href="/songs" className="btn-primary btn-sm inline-block px-6 text-sm">去逛逛诗歌</Link>
               </div>
             )}
             {!favLoading && !favError && favItems.length > 0 && (

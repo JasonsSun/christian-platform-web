@@ -458,11 +458,13 @@ function PlayerBar() {
     cardDrag.current = null;
   }
 
-  // 播放器出现时为页面底部留出空间,避免悬浮卡片遮挡右下角内容
+  // 播放器出现时为页面底部留出空间,避免悬浮卡片遮挡右下角内容。
+  // 条件必须跟着「有没有曲目」走：写在挂载时无条件 add，等于给全站每一页都常驻
+  // 128px(桌面)/176px(移动) 的底部空档——没放歌的登录页也会凭空多出一截滚动。
   useEffect(() => {
-    document.documentElement.classList.add('has-player');
+    document.documentElement.classList.toggle('has-player', !!p.current);
     return () => document.documentElement.classList.remove('has-player');
-  }, []);
+  }, [p.current]);
 
   // 歌单打开时把当前曲目滚动到可视区域
   useEffect(() => {
@@ -501,7 +503,7 @@ function PlayerBar() {
           className="fixed z-[60] right-4 md:right-6 max-w-[min(20rem,calc(100vw-2rem))] max-h-[50vh] overflow-auto glass rounded-2xl shadow-card-hover p-3"
           style={{ bottom: 'calc(7.5rem + env(safe-area-inset-bottom))' }}
         >
-          <div className="flex items-center justify-between px-1 pb-2 sticky top-0 bg-white/80 backdrop-blur-sm -mx-1 px-1 pt-1">
+          <div className="flex items-center justify-between px-1 pb-2 sticky top-0 bg-ui-surface backdrop-blur-sm -mx-1 px-1 pt-1">
             <span className="text-sm font-semibold text-ink-800">歌单（{p.tracks.length}）</span>
             <button onClick={() => setOpenList(false)} className="text-ink-400 hover:text-ink-700 text-sm">收起</button>
           </div>
@@ -548,7 +550,7 @@ function PlayerBar() {
         onPointerMove={onCardPointerMove}
         onPointerUp={() => { cardDrag.current = null; }}
         onPointerCancel={() => { cardDrag.current = null; }}
-        className="fixed z-[55] w-[19rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-ink-200 bg-white/95 backdrop-blur-md shadow-card-hover overflow-hidden cursor-grab active:cursor-grabbing select-none touch-none"
+        className="fixed z-[55] w-[19rem] max-w-[calc(100vw-2rem)] rounded-2xl border border-ink-200 bg-ui-surface backdrop-blur-md shadow-card-hover overflow-hidden cursor-grab active:cursor-grabbing select-none touch-none"
         style={pos ? { left: pos.x, top: pos.y } : { right: '1rem', bottom }}
       >
         {/* 顶部细进度条 */}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { apiForm } from '@/lib/api';
 import Portal from '@/components/Portal';
+import { useEscape } from '@/lib/a11y';
 
 /**
  * 投稿赞美诗歌弹窗：可只填歌词、可附带音频文件、也可只给一个"这首在哪儿能听到
@@ -36,6 +37,9 @@ export default function SubmitSongModal({
   const [listenSource, setListenSource] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // 组件由父级条件渲染，挂载即代表已打开
+  useEscape(true, onClose);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -113,8 +117,9 @@ export default function SubmitSongModal({
             <label className="block text-sm font-medium text-ink-700 mb-1">歌词 *</label>
             <textarea value={lyrics} onChange={(e) => setLyrics(e.target.value)} rows={6} placeholder="粘贴或输入歌词…" className="input-styled w-full" />
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
+          {/* 手机上三列会把「原调」挤到 100px 出头，占位文字都放不下，故竖排。 */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-2">
               <label className="block text-sm font-medium text-ink-700 mb-1">和弦谱（可选）</label>
               <textarea value={chords} onChange={(e) => setChords(e.target.value)} rows={4}
                 placeholder={'用 [和弦] 标记，例如：\n[C]Amazing [G]grace how [Am]sweet the [F]sound'}
@@ -134,7 +139,7 @@ export default function SubmitSongModal({
           </div>
 
           {audio && (
-            <div className="rounded-2xl bg-gold-50/70 border border-gold-200 p-4 space-y-3">              <div>
+            <div className="rounded-2xl bg-gold-50 border border-gold-200 p-4 space-y-3">              <div>
                 <label className="block text-sm font-medium text-ink-700 mb-1.5">这段音频是 *</label>
                 <div className="flex gap-2">
                   {([
@@ -147,7 +152,7 @@ export default function SubmitSongModal({
                       onClick={() => setAudioKind(o.id)}
                       className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition ${
                         audioKind === o.id
-                          ? 'bg-gold-500 text-white shadow'
+                          ? 'bg-gold-500 text-ink-950 shadow'
                           : 'bg-white text-ink-600 border border-ink-200 hover:border-gold-300'
                       }`}
                     >
@@ -175,7 +180,7 @@ export default function SubmitSongModal({
           )}
 
           {/* 没有音频也能帮上忙:登记一个外部人声版的收听入口 */}
-          <div className="rounded-2xl bg-ink-50/70 border border-ink-100 p-4 space-y-3">
+          <div className="rounded-2xl bg-ui-rail border border-ui-border p-4 space-y-3">
             <div>
               <label className="block text-sm font-medium text-ink-700 mb-1">
                 也可以只登记：这首歌的人声版在哪儿能听到？

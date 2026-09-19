@@ -138,7 +138,7 @@ export default function AdminMessagesPage() {
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-ink-800 truncate">{c.peer.displayName}</span>
                       {c.unread > 0 ? (
-                        <span className="ml-auto text-[10px] rounded-full bg-rose-500 text-white px-1.5 py-0.5">
+                        <span className="ml-auto text-[10px] rounded-full bg-rose-600 text-white px-1.5 py-0.5">
                           {c.unread}
                         </span>
                       ) : null}
@@ -221,7 +221,7 @@ export default function AdminMessagesPage() {
 
                 <div className="border-t border-ink-100 p-3 flex gap-2">
                   <input
-                    className="flex-1 rounded-xl border border-ink-200 px-3 py-2 text-sm"
+                    className="input-styled flex-1 text-sm"
                     placeholder="输入消息…"
                     value={text}
                     onChange={(e) => setText(e.target.value)}

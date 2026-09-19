@@ -6,6 +6,7 @@ import { mapActivity } from '@/server/mappers';
 import { audit } from '@/server/services';
 import { assertCanCancelActivity, cancelActivity } from '@/server/activities';
 import { str } from '@/server/sanitize';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,7 +49,7 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
       id: p.id,
       username: p.username,
       displayName: p.display_name,
-      avatarColor: p.avatar_color,
+      avatarColor: whiteSafeColor(p.avatar_color),
       city: p.city,
       status: p.status,
       joinedAt: p.joined_at,

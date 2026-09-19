@@ -310,7 +310,7 @@ export default function AdminSongsPage() {
                               <>
                                 <span className="text-xs text-ink-500 ml-2">演唱者与授权说明</span>
                                 <input
-                                  className="input-styled text-xs py-1 flex-1 min-w-[240px]"
+                                  className="input-styled input-sm text-xs flex-1 min-w-[240px]"
                                   placeholder="演唱：光盐诗班 / 已获教会授权"
                                   value={editor.credit}
                                   onChange={(e) => setEditor({ ...editor, credit: e.target.value })}
@@ -325,14 +325,14 @@ export default function AdminSongsPage() {
                           <>
                             <span className="text-xs text-ink-500">人声试听链接</span>
                             <input
-                              className="input-styled text-xs py-1 flex-1 min-w-[260px]"
+                              className="input-styled input-sm text-xs flex-1 min-w-[260px]"
                               placeholder="https://…（留空并保存＝清除）"
                               value={editor.listenUrl}
                               onChange={(e) => setEditor({ ...editor, listenUrl: e.target.value })}
                             />
                             <span className="text-xs text-ink-500 ml-2">来源名</span>
                             <input
-                              className="input-styled text-xs py-1 w-[150px]"
+                              className="input-styled input-sm text-xs w-[150px]"
                               placeholder="B站 / 网易云"
                               value={editor.listenSource}
                               onChange={(e) => setEditor({ ...editor, listenSource: e.target.value })}
@@ -342,7 +342,7 @@ export default function AdminSongsPage() {
                         <div className="flex items-center gap-2 w-full mt-2 pt-2 border-t border-primary-200">
                           <span className="text-xs text-ink-500">和弦谱</span>
                           <textarea
-                            className="input-styled text-xs py-1 flex-1 min-w-[260px] font-mono"
+                            className="input-styled input-sm text-xs flex-1 min-w-[260px] font-mono"
                             rows={2}
                             placeholder="用 [和弦] 标记，例如：[C]Amazing [G]grace"
                             value={editor.chords}
@@ -350,7 +350,7 @@ export default function AdminSongsPage() {
                           />
                           <span className="text-xs text-ink-500 ml-2">原调</span>
                           <input
-                            className="input-styled text-xs py-1 w-[90px]"
+                            className="input-styled input-sm text-xs w-[90px]"
                             placeholder="如 C / Am"
                             value={editor.originalKey}
                             maxLength={8}

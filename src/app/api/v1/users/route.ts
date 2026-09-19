@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { one, q } from '@/server/db';
 import { ok, withApi, num } from '@/server/http';
 import { currentUser, UserRow } from '@/server/auth';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,7 +59,7 @@ export const GET = withApi(async (req: NextRequest) => {
   return ok({
     items: rows.map((r) => ({
       id: r.id, username: r.username, displayName: r.display_name, role: r.role,
-      avatarColor: r.avatar_color, bio: r.bio, city: r.city, church: r.church,
+      avatarColor: whiteSafeColor(r.avatar_color), bio: r.bio, city: r.city, church: r.church,
       createdAt: r.created_at, followers: Number(r.followers), contents: Number(r.contents),
       following: !!r.following, friendStatus: viewer ? (r.friendStatus || 'none') : 'none',
     })),

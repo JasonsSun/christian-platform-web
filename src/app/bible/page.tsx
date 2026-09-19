@@ -337,7 +337,7 @@ export default function BibleHome() {
                     <Link
                       key={i}
                       href={`/bible/${t.version}/${t.bookId}/${t.chapter}`}
-                      className="block bg-white/70 hover:bg-white rounded-xl px-3 py-2 border border-ink-100 hover:border-primary-200 transition-all text-sm font-medium text-primary-700"
+                      className="block bg-ui-surface hover:bg-white rounded-xl px-3 py-2 border border-ink-100 hover:border-primary-200 transition-all text-sm font-medium text-primary-700"
                     >
                       {t.bookName} 第 {t.chapter} 章
                       <span className="text-ink-400 font-normal ml-1">›</span>
@@ -373,7 +373,7 @@ export default function BibleHome() {
                   <Link
                     key={i}
                     href={`/bible/${it.version}/${it.bookId}/${it.chapter}`}
-                    className="flex items-center justify-between gap-2 bg-white/70 hover:bg-white rounded-xl px-3 py-2 border border-ink-100 hover:border-primary-200 transition-all"
+                    className="flex items-center justify-between gap-2 bg-ui-surface hover:bg-white rounded-xl px-3 py-2 border border-ink-100 hover:border-primary-200 transition-all"
                   >
                     <span className="text-sm font-medium text-ink-800 truncate">
                       {it.bookName} 第 {it.chapter} 章
@@ -411,7 +411,7 @@ export default function BibleHome() {
                 {bm.items.slice(0, 6).map((it) => (
                   <div
                     key={it.id}
-                    className="flex items-center gap-2 bg-white/70 hover:bg-white rounded-xl px-3 py-2 border border-ink-100 hover:border-primary-200 transition-all"
+                    className="flex items-center gap-2 bg-ui-surface hover:bg-white rounded-xl px-3 py-2 border border-ink-100 hover:border-primary-200 transition-all"
                   >
                     <Link
                       href={`/bible/${it.version}/${it.bookId}/${it.chapter}`}
@@ -433,7 +433,7 @@ export default function BibleHome() {
                       onClick={() => deleteBookmark(it.id)}
                       disabled={deletingId === it.id}
                       title="删除这条书签/笔记"
-                      className="flex-shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg text-ink-300 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                      className="flex-shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg text-ink-500 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
                     >
                       {deletingId === it.id ? (
                         <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3a9 9 0 109 9" /></svg>
@@ -627,7 +627,7 @@ export default function BibleHome() {
 
 function Stat({ value, label }: { value: number; label: string }) {
   return (
-    <div className="bg-white/60 rounded-xl py-2 border border-ink-100">
+    <div className="bg-ui-surface rounded-xl py-2 border border-ink-100">
       <div className="font-display text-xl font-bold text-primary-700">{value}</div>
       <div className="text-[11px] text-ink-400 mt-0.5">{label}</div>
     </div>

@@ -42,15 +42,15 @@ function ContentCard({ item }: { item: ContentItem }) {
           <span>{timeAgo(item.publishedAt || item.createdAt)}</span>
           <span className="flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-            {item.likeCount}
+            <span className="sr-only">点赞</span>{item.likeCount}
           </span>
           <span className="flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h8M8 14h6m-6 6h8a2 2 0 002-2V8l-4-4H8a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-            {item.commentCount}
+            <span className="sr-only">评论</span>{item.commentCount}
           </span>
           <span className="flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-            {item.viewCount}
+            <span className="sr-only">阅读</span>{item.viewCount}
           </span>
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function UserProfilePage() {
                         disabled={blockAction.pending}
                         title={data.blocked ? '取消屏蔽' : '屏蔽该用户'}
                         className={`px-4 py-2.5 text-sm rounded-xl font-medium transition-all disabled:opacity-60 ${
-                          data.blocked ? 'bg-rose-500/90 text-white hover:bg-rose-500' : 'bg-white/10 text-white/90 border border-white/25 hover:bg-white/20'
+                          data.blocked ? 'bg-rose-600/90 text-white hover:bg-rose-600' : 'bg-white/10 text-white/90 border border-white/25 hover:bg-white/20'
                         }`}
                       >
                         {blockAction.pending ? '…' : data.blocked ? '已屏蔽' : '屏蔽'}

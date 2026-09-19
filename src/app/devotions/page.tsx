@@ -291,7 +291,7 @@ export default function DevotionsPage() {
             ) : (
               <button
                 onClick={() => setDraft({ ...EMPTY_DRAFT })}
-                className="w-full mb-6 flex items-center gap-3 rounded-2xl border-2 border-dashed border-primary-200 bg-white/60 hover:bg-white hover:border-primary-400 px-5 py-4 text-left transition-colors group"
+                className="w-full mb-6 flex items-center gap-3 rounded-2xl border-2 border-dashed border-primary-200 bg-ui-surface hover:bg-white hover:border-primary-400 px-5 py-4 text-left transition-colors group"
               >
                 <span className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center text-xl flex-shrink-0 group-hover:bg-primary-100">
                   ＋

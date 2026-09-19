@@ -86,7 +86,7 @@ function ReviewCard({
           />
           <div className="flex gap-2 mt-2">
             <button
-              className="btn-gold text-sm px-3 py-1.5"
+              className="btn-gold btn-sm text-sm px-3"
               disabled={deciding}
               onClick={() => {
                 onDecide('reject', reason.trim() || undefined);
@@ -96,7 +96,7 @@ function ReviewCard({
             >
               确认驳回
             </button>
-            <button className="btn-secondary text-sm px-3 py-1.5" disabled={deciding} onClick={() => setRejecting(false)}>
+            <button className="btn-secondary btn-sm text-sm px-3" disabled={deciding} onClick={() => setRejecting(false)}>
               取消
             </button>
           </div>
@@ -104,7 +104,7 @@ function ReviewCard({
       ) : (
         <div className="flex gap-2 mt-4">
           <button
-            className="btn-primary text-sm px-3 py-1.5"
+            className="btn-primary btn-sm text-sm px-3"
             disabled={deciding}
             onClick={() => onDecide('approve')}
           >

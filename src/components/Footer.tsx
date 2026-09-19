@@ -1,13 +1,19 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { useModuleFilter } from '@/lib/useSiteModules';
+import { isBareRoute } from '@/lib/bareRoutes';
 
 export default function Footer() {
   const { t } = useI18n();
+  const pathname = usePathname();
   // 已下线模块的入口不展示
   const { isOff } = useModuleFilter();
+  // 页脚有 ~600px 高：留在登录页里会让表单刚看完就是一片深色装饰，
+  // 更关键的是它随异步内容上下推动，是首屏跳动的主要来源之一。
+  if (isBareRoute(pathname)) return null;
   return (
     <footer className="relative bg-gradient-to-br from-ink-950 via-ink-900 to-primary-950 text-white overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-400/50 to-transparent" />

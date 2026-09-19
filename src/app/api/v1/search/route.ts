@@ -4,6 +4,7 @@ import { ok, withApi, HttpError } from '@/server/http';
 import { mapContent, mapSong, mapActivity, mapGroup } from '@/server/mappers';
 import { bookById } from '@/server/bible';
 import { ftAvailable, ensureFulltextIndex } from '@/server/searchCap';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -145,7 +146,7 @@ export const GET = withApi(async (req: NextRequest) => {
     })),
     users: users.map((u) => ({
       id: u.id, username: u.username, displayName: u.display_name,
-      avatarColor: u.avatar_color, city: u.city, church: u.church,
+      avatarColor: whiteSafeColor(u.avatar_color), city: u.city, church: u.church,
     })),
     media: media.map((m) => ({
       id: m.id, title: m.title || m.file_name || '未命名媒体',

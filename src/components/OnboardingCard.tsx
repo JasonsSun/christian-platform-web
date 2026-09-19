@@ -60,7 +60,7 @@ export default function OnboardingCard() {
                 }`}
               >
                 <span className={`mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${
-                  s.done ? 'bg-emerald-500 text-white' : 'bg-ink-100 text-ink-400'
+                  s.done ? 'bg-emerald-700 text-white' : 'bg-ink-100 text-ink-400'
                 }`}>
                   {s.done ? '✓' : ''}
                 </span>

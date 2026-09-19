@@ -94,7 +94,7 @@ export default function GovernanceTeam() {
                   <Link
                     key={a.id}
                     href={`/u/${a.username}`}
-                    className="flex items-center gap-2 rounded-xl bg-white/70 px-2.5 py-1.5 hover:bg-white transition"
+                    className="flex items-center gap-2 rounded-xl bg-ui-surface px-2.5 py-1.5 hover:bg-white transition"
                   >
                     <Avatar m={a} size={26} />
                     <span className="text-sm text-ink-800">{a.displayName}</span>

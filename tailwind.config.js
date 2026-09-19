@@ -57,6 +57,18 @@ module.exports = {
           900: '#1f2339',
           950: '#131625',
         },
+        // 浮层表面令牌：值来自 globals.css 的 --ui-*，随 data-theme 自动换色。
+        // 不支持 /50 这类透明度写法（var 里没有通道拆分），需要透明度请直接写进变量。
+        ui: {
+          surface: 'var(--ui-surface)',
+          rail: 'var(--ui-rail)',
+          hover: 'var(--ui-hover)',
+          border: 'var(--ui-border)',
+          text: 'var(--ui-text)',
+          muted: 'var(--ui-muted)',
+          accent: 'var(--ui-accent)',
+          'accent-soft': 'var(--ui-accent-soft)',
+        },
       },
       // 字体
       // 字体栈全部走本地系统字体，不依赖 Google Fonts（境内不可达会阻塞首屏）

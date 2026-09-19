@@ -76,14 +76,14 @@ function RequestRow({
             <button
               onClick={() => onHandle(r, 'accept')}
               disabled={working}
-              className="btn-primary px-4 py-2 text-sm disabled:opacity-60"
+              className="btn-primary btn-sm px-4 text-sm disabled:opacity-60"
             >
               {busy === `accept:${r.id}` ? '处理中…' : '接受'}
             </button>
             <button
               onClick={() => onHandle(r, 'decline')}
               disabled={working}
-              className="btn-secondary px-4 py-2 text-sm disabled:opacity-60"
+              className="btn-secondary btn-sm px-4 text-sm disabled:opacity-60"
             >
               {busy === `decline:${r.id}` ? '处理中…' : '忽略'}
             </button>
@@ -288,15 +288,15 @@ export default function FriendsPage() {
                   <div className="flex flex-col gap-2 self-center">
                     {u.friendStatus === 'friends' ? (
                       <>
-                        <span className="btn-secondary px-3 py-1.5 text-sm text-center opacity-70">已加好友</span>
-                        <Link href={`/messages/${u.id}`} className="btn-primary px-3 py-1.5 text-sm text-center">私信</Link>
+                        <span className="btn-secondary btn-sm px-3 text-sm text-center opacity-70">已加好友</span>
+                        <Link href={`/messages/${u.id}`} className="btn-primary btn-sm px-3 text-sm text-center">私信</Link>
                       </>
                     ) : u.friendStatus === 'pending_sent' ? (
-                      <span className="btn-secondary px-3 py-1.5 text-sm text-center opacity-70">已发送</span>
+                      <span className="btn-secondary btn-sm px-3 text-sm text-center opacity-70">已发送</span>
                     ) : u.friendStatus === 'pending_received' ? (
-                      <Link href="/friends?tab=requests" className="btn-gold px-3 py-1.5 text-sm text-center">待你确认</Link>
+                      <Link href="/friends?tab=requests" className="btn-gold btn-sm px-3 text-sm text-center">待你确认</Link>
                     ) : (
-                      <button onClick={() => sendRequest(u)} disabled={busy === `add:${u.id}`} className="btn-primary px-3 py-1.5 text-sm disabled:opacity-60">
+                      <button onClick={() => sendRequest(u)} disabled={busy === `add:${u.id}`} className="btn-primary btn-sm px-3 text-sm disabled:opacity-60">
                         {busy === `add:${u.id}` ? '发送中…' : '加好友'}
                       </button>
                     )}
@@ -332,7 +332,7 @@ export default function FriendsPage() {
                     <p className="text-xs text-ink-400 mt-1">互为好友 · {f.followers} 粉丝</p>
                   </div>
                   <div className="flex flex-col gap-2 self-center">
-                    <Link href={`/messages/${f.id}`} className="btn-primary px-3 py-1.5 text-sm text-center">私信</Link>
+                    <Link href={`/messages/${f.id}`} className="btn-primary btn-sm px-3 text-sm text-center">私信</Link>
                     <button onClick={() => removeFriend(f)} disabled={busy === `del:${f.id}`} className="px-3 py-1 text-xs text-ink-500 hover:text-rose-600 disabled:opacity-60">
                       {busy === `del:${f.id}` ? '处理中…' : '取消好友'}
                     </button>

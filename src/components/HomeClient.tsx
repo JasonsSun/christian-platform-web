@@ -162,9 +162,11 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
                 )}
               </div>
 
-              <div className="mt-8 flex flex-wrap gap-4 pt-6 border-t border-white/10 justify-center lg:justify-start">
+              {/* 六个快捷入口原本只有 20px 高，手机上够不到 44px。改成用 py-3 撑出热区，
+                  同时把上方的 mt/pt 各减 12px 顶掉内边距，整块高度一帧未变。 */}
+              <div className="mt-5 flex flex-wrap gap-4 pt-3 border-t border-white/10 justify-center lg:justify-start">
                 {[['nav.bible', '/bible'], ['nav.plans', '/plans'], ['nav.songs', '/songs'], ['nav.activities', '/activities'], ['nav.groups', '/groups'], ['nav.sermons', '/sermons']].filter(([, href]) => !isOff(href as string)).map(([labelKey, href]) => (
-                  <Link key={href} href={href} className="text-white/70 hover:text-white transition-colors font-medium text-sm md:text-base">
+                  <Link key={href} href={href} className="px-1 -mx-1 py-3 text-white/70 hover:text-white transition-colors font-medium text-sm md:text-base">
                     {t(labelKey)}
                   </Link>
                 ))}
@@ -215,7 +217,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
                 )}
                 <div className="mt-6 pt-6 border-t border-ink-200 flex items-center justify-between text-sm">
                   <span className="text-ink-500">{t('home.communityNote')}</span>
-                  <Link href="/community" className="text-primary-600 font-medium hover:underline">{t('home.communityLink')}</Link>
+                  <Link href="/community" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 font-medium hover:underline">{t('home.communityLink')}</Link>
                 </div>
               </div>
             </div>
@@ -282,7 +284,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
                 placeholder={t('home.searchPlaceholder')}
                 className="w-full pl-4 pr-28 py-3 rounded-xl border-2 border-ink-200 bg-ink-50/50 text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-100 transition-all"
               />
-              <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 btn-primary px-4 py-1.5 text-sm">{t('home.search')}</button>
+              <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 h-11 btn-primary btn-sm px-4 text-sm">{t('home.search')}</button>
             </form>
             <div className="flex flex-wrap gap-2">
               {recents.length > 0 ? recents.map((q) => (
@@ -307,12 +309,12 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-display text-2xl md:text-3xl font-bold text-ink-900">{t('home.featured')}</h2>
-              <Link href="/community" className="text-primary-600 font-medium hover:underline text-sm">{t('home.viewAll')}</Link>
+              <Link href="/community" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 font-medium hover:underline text-sm">{t('home.viewAll')}</Link>
             </div>
             {loading ? (
               <div className="space-y-4">
                 {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-28 rounded-2xl bg-white/70 animate-pulse" />
+                  <div key={i} className="h-28 rounded-2xl bg-ui-surface animate-pulse" />
                 ))}
               </div>
             ) : (
@@ -349,7 +351,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
             <div className="bg-white rounded-2xl p-5 shadow-soft">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-bold text-ink-900">{t('home.recentEvents')}</h3>
-                <Link href="/activities" className="text-primary-600 text-sm hover:underline">{t('home.allEvents')}</Link>
+                <Link href="/activities" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 text-sm hover:underline">{t('home.allEvents')}</Link>
               </div>
               <div className="space-y-3">
                 {(data?.activities || []).map((a) => (
@@ -370,7 +372,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
             <div className="bg-white rounded-2xl p-5 shadow-soft">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-bold text-ink-900">{t('home.hotSongs')}</h3>
-                <Link href="/songs" className="text-primary-600 text-sm hover:underline">{t('home.allSongs')}</Link>
+                <Link href="/songs" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 text-sm hover:underline">{t('home.allSongs')}</Link>
               </div>
               <div className="space-y-3">
                 {(data?.songs || []).map((s) => (
@@ -388,7 +390,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
             <div className="bg-white rounded-2xl p-5 shadow-soft">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-display font-bold text-ink-900">{t('home.prayerWall')}</h3>
-                <Link href="/prayers" className="text-primary-600 text-sm hover:underline">{t('home.goPray')}</Link>
+                <Link href="/prayers" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 text-sm hover:underline">{t('home.goPray')}</Link>
               </div>
               <div className="space-y-3">
                 {(data?.prayers || []).map((p) => (
@@ -411,7 +413,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
               <h2 className="font-display text-2xl md:text-3xl font-bold text-ink-900">{t('home.groups')}</h2>
               <p className="text-ink-500 mt-1 text-sm">{t('home.groupsSub')}</p>
             </div>
-            <Link href="/groups" className="text-primary-600 font-medium hover:underline text-sm hidden sm:inline">{t('home.allGroups')}</Link>
+            <Link href="/groups" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 font-medium hover:underline text-sm hidden sm:inline">{t('home.allGroups')}</Link>
           </div>
           {loading ? (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -443,7 +445,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
             </div>
           )}
           <div className="sm:hidden mt-4 text-center">
-            <Link href="/groups" className="text-primary-600 font-medium hover:underline text-sm">{t('home.allGroups')}</Link>
+            <Link href="/groups" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 font-medium hover:underline text-sm">{t('home.allGroups')}</Link>
           </div>
         </div>
       </section>
@@ -457,7 +459,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
               <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink-900">{t('home.media')}</h2>
               <p className="text-ink-500 mt-1 text-sm">{t('home.mediaSub')}</p>
               </div>
-              <Link href="/media" className="text-primary-600 text-sm hover:underline">{t('home.allMedia')}</Link>
+              <Link href="/media" className="text-primary-600 whitespace-nowrap py-1.5 -my-1.5 text-sm hover:underline">{t('home.allMedia')}</Link>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
               {av.map((m) => (
@@ -469,7 +471,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
                         <img loading="lazy" src={m.posterUrl} alt={m.title} className="w-full h-full object-cover opacity-90" />
                       ) : null}
                       <span className="absolute inset-0 flex items-center justify-center">
-                        <span className="w-14 h-14 rounded-full bg-black/45 text-white flex items-center justify-center text-xl backdrop-blur-sm">▶</span>
+                        <span className="w-14 h-14 rounded-full bg-black/60 text-white flex items-center justify-center text-xl backdrop-blur-sm">▶</span>
                       </span>
                       {m.durationSec ? (
                         <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/70 text-white text-[11px]">
@@ -488,7 +490,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
                       className="w-full relative bg-gradient-to-br from-primary-500 to-primary-800 flex flex-col items-center justify-center gap-2 group"
                       style={{ height: 176 }}
                     >
-                      <span className="w-14 h-14 rounded-full bg-white/95 text-primary-700 flex items-center justify-center text-xl shadow-card group-hover:scale-110 transition">
+                      <span className="w-14 h-14 rounded-full bg-ui-surface text-primary-700 flex items-center justify-center text-xl shadow-card group-hover:scale-110 transition">
                         {player.isCurrent(m.id) && player.playing ? '❚❚' : '▶'}
                       </span>
                       <span className="text-xs text-white/85">

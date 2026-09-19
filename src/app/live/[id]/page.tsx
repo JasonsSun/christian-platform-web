@@ -314,18 +314,20 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
   if (error) return <ErrorBox message={error} onRetry={reload} />;
   if (!room) return <div className="max-w-3xl mx-auto px-4 py-20 text-center text-ink-400">直播间不存在</div>;
 
+  /* 底色与文字成对：bg-ink-300/400/500 + text-white 在白底上是浅紫配白字，
+     深色主题又不在白名单里，两头都读不出来。失效态统一走中性 chip。 */
   const badge = room.cancelled
-    ? { text: '已取消', cls: 'bg-ink-400 text-white' }
+    ? { text: '已取消', cls: 'bg-ink-100 text-ink-600 border border-ink-200' }
     : room.expired
-      ? { text: '已过期', cls: 'bg-ink-500 text-white' }
+      ? { text: '已过期', cls: 'bg-ink-100 text-ink-600 border border-ink-200' }
       : room.reviewStatus === 'rejected'
-        ? { text: '未通过审核', cls: 'bg-rose-500 text-white' }
+        ? { text: '未通过审核', cls: 'bg-rose-50 text-rose-700 border border-rose-200' }
         : room.reviewStatus === 'pending'
-          ? { text: '待审核', cls: 'bg-amber-400 text-white' }
+          ? { text: '待审核', cls: 'bg-amber-50 text-amber-700 border border-amber-200' }
           : room.live
-            ? { text: '● 直播中', cls: 'bg-rose-500 text-white' }
+            ? { text: '● 直播中', cls: 'bg-rose-600 text-white' }
             : room.status === 'ended'
-              ? { text: '已结束', cls: 'bg-ink-300 text-white' }
+              ? { text: '已结束', cls: 'bg-ink-100 text-ink-600 border border-ink-200' }
               : { text: '预告', cls: 'bg-ink-700/80 text-white/90' };
 
   const ownerCancelable = isOwner && room.status === 'created' && !room.cancelled && !room.expired;
@@ -569,7 +571,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                   <div
                     className={`max-w-[80%] px-3 py-1.5 text-sm break-words whitespace-pre-wrap ${
                       mine
-                        ? 'bg-sky-500 text-white rounded-2xl rounded-br-sm'
+                        ? 'bg-sky-700 text-white rounded-2xl rounded-br-sm'
                         : 'bg-ink-100 text-ink-800 rounded-2xl rounded-bl-sm'
                     }`}
                   >

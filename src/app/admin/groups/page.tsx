@@ -191,7 +191,7 @@ export default function AdminGroupsPage() {
         查看团契/群组成员、动态与负责人；对违规群组可直接解散（无需等团长操作）
       </p>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
         <StatCard title="群组总数" value={data?.total ?? '—'} />
         <StatCard title="本页成员合计" value={totalMembers} />
         <StatCard title="本页动态合计" value={totalPosts} />

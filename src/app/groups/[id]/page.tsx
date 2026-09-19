@@ -8,6 +8,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
+import { useEscape } from '@/lib/a11y';
 import { timeAgo } from '@/lib/format';
 import type { Author, GroupItem } from '@/lib/types';
 import RichText from '@/components/RichText';
@@ -127,6 +128,15 @@ export default function GroupDetailPage() {
 
   /** 团长独自一人时：唯一选项「退出并解散」，弹框二次确认 */
   const soloExitOpen = ownerExitOpen && !!data && data.memberCount <= 1;
+
+  // Esc 退出弹层，判据与遮罩点击一致：请求进行中不许关
+  useEscape(ownerExitOpen || announcementOpen, () => {
+    if (ownerExitOpen) {
+      if (!exitAction.pending) setOwnerExitOpen(false);
+    } else if (!announcementSaving) {
+      setAnnouncementOpen(false);
+    }
+  });
 
   const confirmSoloDissolve = useCallback(async () => {
     if (!data) return;

@@ -4,6 +4,7 @@ import { ok, withApi, HttpError, notFound, readJson } from '@/server/http';
 import { requireRole } from '@/server/auth';
 import { notify } from '@/server/services';
 import { MODULE_ORDER } from '@/lib/moderationModules';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,7 +49,7 @@ export const GET = withApi(async (req: NextRequest) => {
       id: u.id,
       username: u.username,
       displayName: u.display_name || u.username,
-      avatarColor: u.avatar_color || '#4f6df5',
+      avatarColor: whiteSafeColor(u.avatar_color || '#4f6df5'),
       role: u.role,
       // 管理员天然覆盖全部模块，前端据此渲染「👑 管理员」角标
       scopes: u.role === 'admin' ? [...MODULE_ORDER] : (scopeMap.get(u.id) || []),
@@ -63,7 +64,7 @@ export const GET = withApi(async (req: NextRequest) => {
     if (!cur) {
       const p = dir.get(peerId);
       conv.set(peerId, {
-        peer: p || { id: peerId, username: '', displayName: '已退出管理团队', avatarColor: '#9ca3af', role: 'member', scopes: [] },
+        peer: p || { id: peerId, username: '', displayName: '已退出管理团队', avatarColor: whiteSafeColor('#9ca3af'), role: 'member', scopes: [] },
         lastMessage: m.body,
         lastAt: m.created_at,
         unread: unreadInc,

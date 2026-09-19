@@ -7,6 +7,42 @@
    浏览器构建 CSSOM 时会先等它超时，导致首屏样式延迟生效、控制台报字体加载失败。
    现改为系统字体栈：不发起任何外部字体请求，境内首屏零阻塞，离线/弱网同样可用。 */
 
+/* 浮层表面令牌（surface tokens）
+   全局主题覆盖靠 [data-theme] 重写 .bg-white / .text-ink-* 等精确类名，
+   但渐变（bg-gradient-to-*）与带透明度的变体（bg-ink-50/70）不在覆盖名单里，
+   于是深色/护眼下会出现「浅渐变轨道 + 被改浅的文字」这种同色叠加、什么都看不见。
+   浮层（目录菜单、偏好弹层等）一律改用下面这组变量，由主题直接换值。 */
+:root {
+  --ui-surface: #ffffff;
+  --ui-rail: #f7f8fc;
+  --ui-hover: #eef1fb;
+  --ui-border: #e9ecf5;
+  --ui-text: #2d3350;
+  --ui-muted: #6b73a0;
+  --ui-accent: #3d52d9;
+  --ui-accent-soft: rgba(79, 109, 245, 0.09);
+}
+[data-theme="dark"] {
+  --ui-surface: #171b22;
+  --ui-rail: #12161d;
+  --ui-hover: #1e232c;
+  --ui-border: #262c37;
+  --ui-text: #e6e8ef;
+  --ui-muted: #9aa0ad;
+  --ui-accent: #aab8ff;
+  --ui-accent-soft: rgba(99, 134, 255, 0.14);
+}
+[data-theme="sepia"] {
+  --ui-surface: #fbf4e6;
+  --ui-rail: #f4e9d3;
+  --ui-hover: #ece1c8;
+  --ui-border: #e6d8bd;
+  --ui-text: #4a3f2f;
+  --ui-muted: #85744f;
+  --ui-accent: #86692f;
+  --ui-accent-soft: rgba(184, 134, 11, 0.12);
+}
+
 /* 基础样式重置 */
 * {
   box-sizing: border-box;
@@ -279,6 +315,58 @@ html, body {
            hover:border-primary-300;
   }
 
+  /* 带前置图标的输入框。别在 .input-styled 上再写 pl-10：本文件的组件类写在
+     @layer utilities 里，而这个块排在 @tailwind utilities 之后，同优先级下会反过来
+     盖掉 pl-10，图标和占位符就叠在一起了。左内边距交给这个类。 */
+  .input-icon {
+    padding-left: 2.75rem;
+  }
+
+  /* 认证页字段收紧版：.input-styled 的 py-3 + 16px 字号是为全站后台表单定的，
+     放进登录卡里三行就吃掉半屏。这里只改上下内边距和圆角，左右、边框、焦点环、
+     配色全部沿用原类（只写上下两侧，是为了不和左右方向的 padding 工具类抢优先级）。
+     注意字号只在中大屏才缩：iOS 聚焦 font-size < 16px 的输入框会把整页放大，
+     那一下缩放比字段本身显眼得多，正是手机上最难受的一次「跳」。 */
+  .input-field {
+    padding-top: 0.5625rem;
+    padding-bottom: 0.5625rem;
+    border-radius: 0.6875rem;
+  }
+  @media (min-width: 768px) {
+    .input-field { font-size: 0.9375rem; }
+  }
+
+  /* 右侧带按钮（显示/隐藏密码）的输入框留白。同理不能用 pr-16 工具类：
+     它排在 .input-styled 之前，会被后者的 px-4 盖掉，文字会钻到按钮底下。 */
+  .input-suffix {
+    padding-right: 3.5rem;
+  }
+
+  /* 登录 / 注册两种模式共用同一块表单高度。注册比登录多出「昵称」「邮箱」，
+     不占位的话点「注册」整页被撑长、点回「登录」又缩回去——用户说的「跳动」
+     就是这一下。占位区取注册态的自然高度（实测 480 / 桌面 455），登录态少出来的
+     那 54px 由表单里的 mt-auto 统一推到提交按钮上方，按钮和卡片底栏因此钉死在
+     同一行。380px 以下「用户名 + 昵称」并排会挤到 100px 出头，改回竖排多出一行，
+     占位高度也跟着放大一档。 */
+  .auth-form {
+    min-height: 35.5rem;
+  }
+  @media (min-width: 380px) {
+    .auth-form { min-height: 30.0625rem; }
+  }
+  /* 768px 以上没有 40px 触摸热区那条规则，注册态矮 20px，占位跟着收一档。 */
+  @media (min-width: 768px) {
+    .auth-form { min-height: 28.75rem; }
+  }
+
+  /* 封面照片之上的磨砂标签：底色和文字必须成对写死。
+     用 bg-white/90 + text-ink-800 时，深色主题只压亮 text-ink-800，
+     白底不动，结果就是白底白字。 */
+  .chip-frost {
+    background: rgba(255, 255, 255, 0.9);
+    color: #2d3350;
+  }
+
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
            font-semibold text-white
@@ -302,9 +390,15 @@ html, body {
            active:translate-y-0;
   }
 
+  /* 金色主按钮的标签一律用近墨的 ink-950，不用 white：
+     from-gold-500/400 是站内最亮的色块，白字压上去实测只有 1.66~2.15:1，
+     16px 半粗等于看不清（充值、投稿、创建小组这些主入口全在这儿）。
+     墨色压金是 8.4~10.8:1，而且 hover 档 from-gold-600/500 仍留 5.6 以上。
+     ink-950 不在深色/护眼的文字白名单里，三种主题下都是同一个深色，
+     正好配这块三种主题都不改色的实心金。 */
   .btn-gold {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl
-           font-semibold text-white
+           font-semibold text-ink-950
            bg-gradient-to-r from-gold-500 to-gold-400
            shadow-lg shadow-gold-500/25
            transition-all duration-300 ease-out
@@ -340,6 +434,25 @@ html, body {
     height: 1px;
     background: linear-gradient(90deg, transparent, #c2d4ff, transparent);
   }
+
+  /* 紧凑档：后台筛选条、配额数字表单这类密集排布用的。
+     站点上直接写 py-1 / px-2.5 是无效的——本文件的组件类都在 @layer utilities 块里
+     且排在 @tailwind utilities 之后，同优先级下反过来盖掉工具类，所以 .input-styled
+     的 px-4 py-3 始终赢。收紧只能走这种同层后缀，声明在原类之后。
+     和 .input-field 一样只写上下两侧：左右内边距留给 .input-icon 这类方向性规则，
+     用 padding 简写会把它们的 padding-left 一起抹掉。字号也不碰，站点上的
+     text-xs / text-sm 本来就能生效（组件类没定义字号），抢过来反而把它们压平。 */
+  .input-sm {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+    border-radius: 0.5rem;
+  }
+
+  .btn-sm {
+    padding-top: 0.375rem;
+    padding-bottom: 0.375rem;
+    border-radius: 0.5rem;
+  }
 }
 
 /* 非模态提示条（Notice）入场动画 */
@@ -365,6 +478,122 @@ html, body {
   html { -webkit-text-size-adjust: 100%; }
   button, a { -webkit-tap-highlight-color: transparent; }
   input, textarea, select { font-size: 16px; } /* 防止 iOS 聚焦时页面缩放 */
+
+  /* 卡片里「查看全部 / 加入小组 / 分享」这类小控件实测只有 20~32px 高，拇指点不准。
+     给块级和弹性布局的它们补到 40px 热区（内容本身不高，只是被 padding 撑开，
+     居中由各自的 items-center 负责，不改字号也不换行）。
+     刻意不碰行内 a：给一句话里的「服务条款」这类行内链接加 min-height 会把整行
+     行高撑开，比难点更难看（行内链接改用它自己的办法，见下一段）。
+     按钮里排除绝对定位的（输入框内的「显示/隐藏」、浮层
+     关闭叉）和自带 h-* 高度的（工具栏图标键），这两类撑高会顶歪对齐。 */
+  a.block, a.flex, a.inline-flex,
+  button:not([class*="absolute"]):not([class*="h-"]) {
+    min-height: 40px;
+  }
+
+  /* 行内文字链接（「查看全部」「← 返回」「忘记密码」、好友列表里的昵称）实测只有
+     20~21px 高，比上面那批还难点中，却又不能用 min-height：行内元素上它不生效，
+     改成块级又会把一句话里的链接拆行。也不打算用「padding + 负 margin」：这些规则不在
+     @layer 里，会盖掉链接自带的 p-5/py-2 内边距（实测整张卡片链接矮掉 24px），
+     负 margin 还会把页脚那排链接往上拽 16px。所以继续用 ::after 借命中区：
+     行内盒设 position: relative 不产生布局变化，inset 纵向 -8px 把 21px 补到 37px。
+     排除项都是实测踩到的：flex/block/absolute/fixed 另有各自的办法（见上两段），
+     btn- 与 after: 已经占用 ::after（首页「开始读经」的流光扫过就是 .btn-shimmer::after），
+     p-/gap- 一类是卡片、头像行这类复合控件，本身高度早就够了，不该再往外借。 */
+  a:not([class*="flex"]):not([class*="block"]):not([class*="grid"]):not([class*="absolute"]):not([class*="fixed"]):not([class*="btn-"]):not([class*="p-"]):not([class*="after:"]):not(.skip-link) {
+    position: relative;
+  }
+  a:not([class*="flex"]):not([class*="block"]):not([class*="grid"]):not([class*="absolute"]):not([class*="fixed"]):not([class*="btn-"]):not([class*="p-"]):not([class*="after:"]):not(.skip-link)::after {
+    content: "";
+    position: absolute;
+    inset: -8px 0;
+    pointer-events: auto;
+  }
+
+  /* 上一段刻意跳过自带 h-* 的控件，因为撑高会顶歪工具栏对齐。但迷你播放器的圆形
+     键（w-8 h-8 = 32px）和设置里的开关（w-12 h-6/h-7 = 24~28px）恰好是手机上点得
+     最多的一类，热区不够就是点不准。所以换个办法：可视尺寸一点不动，只用 ::after
+     把命中区向外撑到 40px 以上。开关只需纵向补，故左右收一点。 */
+  button[class~="w-8"][class~="h-8"]:not([class*="absolute"]):not([class*="fixed"]),
+  button[class~="w-12"][class~="h-6"],
+  button[class~="w-12"][class~="h-7"] {
+    position: relative;
+  }
+  button[class~="w-8"][class~="h-8"]:not([class*="absolute"]):not([class*="fixed"])::after,
+  button[class~="w-12"][class~="h-6"]::after,
+  button[class~="w-12"][class~="h-7"]::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    pointer-events: auto;
+  }
+  button[class~="w-12"][class~="h-6"]::after,
+  button[class~="w-12"][class~="h-7"]::after {
+    inset: -8px -4px;
+  }
+
+  /* 读经页顶部的字号分段键 36×32，四颗挤在 gap-1（4px）的胶囊里，横向一借就互相盖住，
+     所以只纵向补到 40。 */
+  button[class~="w-9"][class~="h-8"] {
+    position: relative;
+  }
+  button[class~="w-9"][class~="h-8"]::after {
+    content: "";
+    position: absolute;
+    inset: -6px 0;
+    pointer-events: auto;
+  }
+
+  /* 读经页每一节都有三个绝对定位的 p-1.5 小键（节号、收藏、笔记），实测 28×28，
+     一首诗篇就是五百多个，手机上几乎点不中。同样只借命中区，补到 40×32。
+     纵向只借 6px 而不是 8px：键本身是 top-2（离节行顶 8px），6px 正落在本节自己的
+     留白里，既不侵入上一节也不侵入下一节——这些键点了是直接改书签的，越界点错代价大。
+     横向只借 2px：右侧「收藏/笔记」两键边边相接（right-2 与 right-9），多借就互相盖住。
+     这里刻意不补 position: relative —— 它们本就是 absolute（即已自带定位上下文），
+     而这条规则不在 @layer 里，一旦写了 position 就会把 .absolute 顶掉，整节排版全乱。 */
+  .read-page button[class*="absolute"]::after {
+    content: "";
+    position: absolute;
+    inset: -6px -2px;
+    pointer-events: auto;
+  }
+}
+
+/* 主内容区至少占满一屏。
+   实测 /me 的 CLS 0.249、/upload 0.239、/feedback 0.236，罪魁祸首都不是页面自己，
+   而是异步数据到位后把 <Footer> 从首屏中间往下推：页脚是大块元素，位移面积权重极高。
+   让它一开始就落在折叠线以下，后续长高就只是滚轮里的事，不再算作跳动。 */
+#main-content {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* 认证页外壳：登录/注册/找回密码这类页面不渲染导航、标签栏和页脚（见 lib/bareRoutes），
+   但 layout 里 <main> 仍为它们留了内边距（移动 pt-16 pb-20、桌面 pt-20）。
+   这里按「视口减去那圈内边距」给高度，主按钮必然落在折叠线之上，
+   而不是被顶到半屏以下、要滚动才能点到。 */
+.auth-shell {
+  min-height: calc(100vh - 9rem);
+  min-height: calc(100dvh - 9rem);
+}
+@media (min-width: 768px) {
+  .auth-shell {
+    min-height: calc(100vh - 5rem);
+    min-height: calc(100dvh - 5rem);
+  }
+}
+
+/* 那圈内边距本来就是给固定导航让位的，导航在这几页不渲染，留着就是顶部一条
+   64~80px 的死空白（左半边渐变面板被顶下来，看着像页面没对齐）。用 :has 摘掉，
+   省得把 pathname 从 server layout 一路传到各处；不支持 :has 的浏览器退回上面
+   那组「视口减去内边距」的高度，同样铺满一屏。 */
+#main-content:has(> .auth-shell) {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+#main-content:has(> .auth-shell) .auth-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* ===== 圣经阅读优化样式 ===== */
@@ -464,15 +693,18 @@ article.font-serif {
 .read-page[data-read-theme="sepia"] .border-ink-100 { border-color: #e0d1b3 !important; }
 .read-page[data-read-theme="sepia"] .border-primary-100 { border-color: rgba(184,134,11,0.30) !important; }
 .read-page[data-read-theme="sepia"] .border-primary-400 { border-color: rgba(184,134,11,0.45) !important; }
-.read-page[data-read-theme="sepia"] .text-ink-900 { color: #5b4a32 !important; }
-.read-page[data-read-theme="sepia"] .text-ink-800 { color: #4a3f2f !important; }
-.read-page[data-read-theme="sepia"] .text-ink-700 { color: #6b5a3f !important; }
-.read-page[data-read-theme="sepia"] .text-ink-600 { color: #85744f !important; }
-.read-page[data-read-theme="sepia"] .text-ink-500 { color: #9b8a6c !important; }
-.read-page[data-read-theme="sepia"] .text-ink-400 { color: #a4936f !important; }
-.read-page[data-read-theme="sepia"] .text-ink-300 { color: #bda878 !important; }
-.read-page[data-read-theme="sepia"] .text-primary-600 { color: #9a7b3f !important; }
-.read-page[data-read-theme="sepia"] .text-primary-700 { color: #86692f !important; }
+/* 羊皮纸墨阶：原先 900 比 800 还浅（阶序反了），且整档偏亮，12~14px 的次要文字
+   （text-ink-400/500）落在卡片上只有 3.5:1，读起来发灰。整档压深一级，
+   让 500/600 都站上 4.5，400 也抬到 4.4 附近（羊皮纸底最深只能到这儿，再深就不是护眼色了）。 */
+.read-page[data-read-theme="sepia"] .text-ink-900 { color: #3a3020 !important; }
+.read-page[data-read-theme="sepia"] .text-ink-800 { color: #483c27 !important; }
+.read-page[data-read-theme="sepia"] .text-ink-700 { color: #564830 !important; }
+.read-page[data-read-theme="sepia"] .text-ink-600 { color: #635335 !important; }
+.read-page[data-read-theme="sepia"] .text-ink-500 { color: #6f5f42 !important; }
+.read-page[data-read-theme="sepia"] .text-ink-400 { color: #75643f !important; }
+.read-page[data-read-theme="sepia"] .text-ink-300 { color: #94805f !important; }
+.read-page[data-read-theme="sepia"] .text-primary-600 { color: #7d6127 !important; }
+.read-page[data-read-theme="sepia"] .text-primary-700 { color: #6f5421 !important; }
 .read-page[data-read-theme="sepia"] .read-verse:hover { background: rgba(184,134,11,0.06) !important; }
 
 /* 读经顶部进度条 */
@@ -538,6 +770,13 @@ article.font-serif {
   background: rgba(255, 250, 240, 0.80);
   border: 1px solid rgba(184, 134, 11, 0.18);
 }
+/* 护眼下玻璃层原本只有 .glass 被覆盖，.glass-tech / .card-tech 仍是白色半透明，
+   叠在羊皮纸底上等于没有面板（移动端底部导航栏最明显） */
+[data-theme="sepia"] .glass-tech,
+[data-theme="sepia"] .card-tech {
+  background: rgba(251, 244, 230, 0.86);
+  border-color: rgba(184, 134, 11, 0.20);
+}
 
 /* —— 卡片 / 表面 —— */
 [data-theme="dark"] .bg-white { background-color: #171b22 !important; border-color: #2a2f3a !important; }
@@ -552,6 +791,104 @@ article.font-serif {
 [data-theme="dark"] .bg-gray-50 { background-color: #1a1f2b !important; }
 [data-theme="dark"] .bg-gray-100 { background-color: #1e293b !important; }
 [data-theme="dark"] .bg-amber-50 { background-color: #2a2410 !important; }
+
+/* —— 状态色配套 ——
+   底色一旦在白名单里被压暗，配套的边框和「深色系」文字必须一起换，
+   否则会出现 bg-amber-50(已压暗) + text-amber-800(仍是深棕) 这种深底深字。 */
+[data-theme="dark"] .bg-amber-100 { background-color: #2f2812 !important; }
+[data-theme="dark"] .bg-gold-50 { background-color: rgba(245, 158, 11, 0.10) !important; }
+[data-theme="dark"] .bg-gold-100 { background-color: rgba(245, 158, 11, 0.16) !important; }
+[data-theme="dark"] .border-amber-200,
+[data-theme="dark"] .border-gold-200,
+[data-theme="dark"] .border-gold-300 { border-color: rgba(245, 158, 11, 0.30) !important; }
+[data-theme="dark"] .text-amber-600,
+[data-theme="dark"] .text-gold-600 { color: #fbbf24 !important; }
+[data-theme="dark"] .text-amber-700,
+[data-theme="dark"] .text-amber-800,
+[data-theme="dark"] .text-amber-900,
+[data-theme="dark"] .text-gold-700,
+[data-theme="dark"] .text-gold-800 { color: #fcd34d !important; }
+[data-theme="dark"] .text-primary-500,
+[data-theme="dark"] .text-primary-800 { color: #aab8ff !important; }
+[data-theme="dark"] .text-emerald-700,
+[data-theme="dark"] .text-emerald-800 { color: #6ee7b7 !important; }
+[data-theme="dark"] .text-rose-700,
+[data-theme="dark"] .text-rose-800 { color: #fda4af !important; }
+[data-theme="dark"] .bg-rose-50 { background-color: rgba(244, 63, 94, 0.10) !important; }
+[data-theme="dark"] .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.10) !important; }
+[data-theme="dark"] .border-rose-200 { border-color: rgba(244, 63, 94, 0.30) !important; }
+[data-theme="dark"] .border-emerald-200 { border-color: rgba(16, 185, 129, 0.30) !important; }
+
+/* 徽章/标签色族（emerald / rose / sky / violet …）：同上，底色、文字、边框三件一套。
+   少写一件就会「浅底 + 浅字」（例：bg-emerald-100 没压暗 + text-emerald-700 压亮）。 */
+[data-theme="dark"] .bg-emerald-100 { background-color: rgba(16, 185, 129, 0.16) !important; }
+[data-theme="dark"] .bg-rose-100 { background-color: rgba(244, 63, 94, 0.16) !important; }
+[data-theme="dark"] .bg-purple-100 { background-color: rgba(168, 85, 247, 0.16) !important; }
+[data-theme="dark"] .bg-violet-50 { background-color: rgba(139, 92, 246, 0.12) !important; }
+[data-theme="dark"] .bg-sky-50 { background-color: rgba(14, 165, 233, 0.12) !important; }
+[data-theme="dark"] .bg-sky-100 { background-color: rgba(14, 165, 233, 0.16) !important; }
+[data-theme="dark"] .bg-green-50 { background-color: rgba(34, 197, 94, 0.12) !important; }
+[data-theme="dark"] .bg-red-50 { background-color: rgba(239, 68, 68, 0.12) !important; }
+[data-theme="dark"] .text-emerald-500,
+[data-theme="dark"] .text-emerald-600 { color: #34d399 !important; }
+[data-theme="dark"] .text-rose-500,
+[data-theme="dark"] .text-rose-600 { color: #fb7185 !important; }
+[data-theme="dark"] .text-purple-700,
+[data-theme="dark"] .text-violet-700 { color: #c4b5fd !important; }
+[data-theme="dark"] .text-sky-700 { color: #7dd3fc !important; }
+[data-theme="dark"] .text-green-700 { color: #86efac !important; }
+[data-theme="dark"] .text-red-700 { color: #fca5a5 !important; }
+[data-theme="dark"] .border-emerald-100,
+[data-theme="dark"] .border-emerald-300 { border-color: rgba(16, 185, 129, 0.28) !important; }
+[data-theme="dark"] .border-rose-100,
+[data-theme="dark"] .border-rose-300 { border-color: rgba(244, 63, 94, 0.28) !important; }
+[data-theme="dark"] .border-red-200 { border-color: rgba(239, 68, 68, 0.28) !important; }
+[data-theme="dark"] .border-sky-200 { border-color: rgba(14, 165, 233, 0.28) !important; }
+[data-theme="dark"] .border-violet-200 { border-color: rgba(139, 92, 246, 0.28) !important; }
+
+/* 带透明度写法（bg-ink-50/60、text-primary-600/80 …）：Tailwind 生成的是另一个类名，
+   上面的 .bg-ink-50 精确选择器命中不了，于是淡底面板在深色下仍是白的。
+   这里用「结尾带斜杠」的子串匹配一次性覆盖所有 /10 /50 /80 变体：
+   class*="bg-ink-50/" 不会误伤 bg-ink-500/90，所以不需要再加 :not() 排除。 */
+[data-theme="dark"] [class*="bg-primary-50/"] { background-color: rgba(99, 134, 255, 0.10) !important; }
+[data-theme="dark"] [class*="bg-ink-50/"] { background-color: rgba(255, 255, 255, 0.05) !important; }
+[data-theme="dark"] [class*="bg-ink-100/"] { background-color: rgba(255, 255, 255, 0.07) !important; }
+[data-theme="dark"] [class*="bg-amber-50/"],
+[data-theme="dark"] [class*="bg-amber-100/"],
+[data-theme="dark"] [class*="bg-gold-50/"],
+[data-theme="dark"] [class*="bg-gold-100/"] { background-color: rgba(245, 158, 11, 0.10) !important; }
+[data-theme="dark"] [class*="bg-rose-50/"],
+[data-theme="dark"] [class*="bg-pink-50/"] { background-color: rgba(244, 63, 94, 0.10) !important; }
+[data-theme="dark"] [class*="bg-emerald-50/"] { background-color: rgba(16, 185, 129, 0.10) !important; }
+[data-theme="dark"] [class*="text-primary-500/"],
+[data-theme="dark"] [class*="text-primary-600/"],
+[data-theme="dark"] [class*="text-primary-700/"],
+[data-theme="dark"] [class*="text-primary-800/"] { color: #aab8ff !important; }
+[data-theme="dark"] [class*="text-amber-600/"],
+[data-theme="dark"] [class*="text-gold-600/"],
+[data-theme="dark"] [class*="text-gold-700/"] { color: #fbbf24 !important; }
+[data-theme="dark"] [class*="text-rose-600/"] { color: #fb7185 !important; }
+[data-theme="dark"] [class*="text-emerald-600/"],
+[data-theme="dark"] [class*="text-emerald-700/"] { color: #6ee7b7 !important; }
+[data-theme="dark"] [class*="border-ink-100/"],
+[data-theme="dark"] [class*="border-ink-200/"] { border-color: #2a2f3a !important; }
+[data-theme="dark"] [class*="border-amber-200/"],
+[data-theme="dark"] [class*="border-gold-200/"],
+[data-theme="dark"] [class*="border-gold-300/"] { border-color: rgba(245, 158, 11, 0.30) !important; }
+
+/* 悬停态底色（hover:bg-white / hover:bg-ink-50 …，共 180+ 处）：
+   静态底色被压暗了，鼠标一划过去又翻回白底，配着已经压亮的字就是一片空白。
+   这里给「悬停=比所在表面亮一档」的等价值，深色下才有可点的反馈。 */
+[data-theme="dark"] .hover\:bg-white:hover,
+[data-theme="dark"] .hover\:bg-ink-50:hover { background-color: #1e232c !important; }
+[data-theme="dark"] .hover\:bg-ink-100:hover { background-color: #232936 !important; }
+[data-theme="dark"] .hover\:bg-ink-200:hover { background-color: #2a3140 !important; }
+[data-theme="dark"] .hover\:bg-primary-50:hover { background-color: rgba(99, 134, 255, 0.12) !important; }
+[data-theme="dark"] .hover\:bg-primary-100:hover { background-color: rgba(99, 134, 255, 0.18) !important; }
+[data-theme="dark"] .hover\:bg-gold-50:hover,
+[data-theme="dark"] .hover\:bg-gold-100:hover,
+[data-theme="dark"] .hover\:bg-amber-100:hover { background-color: rgba(245, 158, 11, 0.12) !important; }
+[data-theme="dark"] input.focus\:bg-white:focus { background-color: #1c2029 !important; }
 
 /* —— 文字 —— */
 [data-theme="dark"] .text-ink-900 { color: #f1efe9 !important; }
@@ -575,6 +912,8 @@ article.font-serif {
 [data-theme="dark"] .border-ink-200 { border-color: #2a2f3a !important; }
 [data-theme="dark"] .border-ink-100 { border-color: #222732 !important; }
 [data-theme="dark"] .border-primary-100 { border-color: rgba(99, 134, 255, 0.30) !important; }
+[data-theme="dark"] .border-primary-200 { border-color: rgba(99, 134, 255, 0.40) !important; }
+[data-theme="dark"] .border-primary-300 { border-color: rgba(99, 134, 255, 0.55) !important; }
 [data-theme="dark"] .border-primary-400 { border-color: rgba(99, 134, 255, 0.45) !important; }
 [data-theme="dark"] .border-stone-200 { border-color: #334155 !important; }
 [data-theme="dark"] .border-slate-200 { border-color: #334155 !important; }
@@ -587,6 +926,58 @@ article.font-serif {
 [data-theme="dark"] .input-styled { background-color: #1c2029 !important; color: #e6e8ef !important; border-color: #2a2f3a !important; }
 [data-theme="dark"] .input-styled::placeholder { color: #8b91a0 !important; }
 
+/* 没走 .input-styled、直接用 bg-white/95 之类工具类拼出来的输入框：
+   白名单按类名重写，够不到带透明度后缀的写法，深色下就是白底 + 被压亮的字。
+   只限 input/textarea，避免误伤导航栏那种故意叠在深色底上的 bg-white/10 玻璃层。 */
+[data-theme="dark"] input[class*="bg-white/"],
+[data-theme="dark"] textarea[class*="bg-white/"] {
+  background-color: rgba(28, 32, 41, 0.92) !important;
+  color: #e6e8ef !important;
+  border-color: #2a2f3a !important;
+}
+[data-theme="dark"] input[class*="bg-white/"]::placeholder,
+[data-theme="dark"] textarea[class*="bg-white/"]::placeholder { color: #8b91a0 !important; }
+
+/* —— 中性底与「贴在彩色底上的小白点」 ——
+   bg-ink-200/300 在浅色下是分隔线、进度槽、开关的未启用轨道，深色下白名单没有它们，
+   于是开关变成「浅紫轨道 + 深色滑块」，看着像坏了。统一压成深灰槽。 */
+[data-theme="dark"] .bg-ink-200 { background-color: #2a3140 !important; }
+[data-theme="dark"] .bg-ink-300 { background-color: #3a4252 !important; }
+
+/* .bg-white 的白名单把白底压成卡片色，这对滑块/脉冲点/勾选点是反的——它们本来就
+   该是亮的，压暗后等于在彩色轨道上抹了一道黑洞。按「span + rounded-full + bg-white」
+   精确命中这一类前景小圆点；bg-white/25 这类带透明度后缀的写法 token 不同，不受影响。 */
+[data-theme="dark"] span.rounded-full.bg-white { background-color: #f2f4fa !important; }
+
+/* 徽章墙银牌/铜牌用的 slate、yellow 两档不在白名单里，深色下仍是刺眼的浅色块，
+   而 bronze 走 amber 已经正确压暗，三档并排时最显眼。补齐成对的下暗底和上亮字。 */
+[data-theme="dark"] .bg-slate-200 { background-color: #2a3140 !important; }
+[data-theme="dark"] .text-slate-700 { color: #cbd5e1 !important; }
+[data-theme="dark"] .bg-yellow-100 { background-color: rgba(234, 179, 8, 0.16) !important; }
+[data-theme="dark"] .text-yellow-800 { color: #fcd34d !important; }
+
+/* —— 分段切换器（登录 / 注册）——
+   轨道用 bg-ink-100、选中块用 bg-white，浅色下对比没问题；深色下两条各自的规则
+   把它们压成 #1c2029 和 #171b22，而卡片本身就是 #171b22 —— 选中块和卡片同色，
+   等于没有选中态。底色和文字必须成对写死，和偏好弹层那次是同一类问题。 */
+.seg-track { background: #f1f3f9; }
+.seg-thumb {
+  background: #ffffff;
+  color: #2f3f9e;
+  box-shadow: 0 1px 2px rgba(19, 24, 66, 0.14);
+}
+[data-theme="dark"] .seg-track { background: #212836; }
+[data-theme="dark"] .seg-thumb {
+  background: #3d4a6b;
+  color: #e3e9ff;
+  box-shadow: none;
+}
+[data-theme="sepia"] .seg-track { background: #e7dbc2; }
+[data-theme="sepia"] .seg-thumb {
+  background: #fffaf0;
+  color: #8a5a12;
+}
+
 /* —— 滚动条 —— */
 [data-theme="dark"] ::-webkit-scrollbar-track { background: #161a23; }
 [data-theme="dark"] ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #3d52d9 0%, #2a3a9e 100%); }
@@ -594,22 +985,154 @@ article.font-serif {
 /* —— 护眼（羊皮纸）语义色 —— */
 [data-theme="sepia"] .bg-white { background-color: #fbf4e6 !important; border-color: #e6d8bd !important; }
 [data-theme="sepia"] .bg-ink-50 { background-color: #f5ecd8 !important; }
+[data-theme="sepia"] [class*="bg-ink-50/"] { background-color: rgba(184, 134, 11, 0.06) !important; }
 [data-theme="sepia"] .bg-ink-100 { background-color: #ece1c8 !important; }
+/* 开关的「关」轨和进度条底原先在羊皮纸上仍是冷灰（ink-200/300 只有暗色补过），
+   暖纸中间横着一条蓝灰，一眼就能看出来。收进同一档暖砂。 */
+[data-theme="sepia"] .bg-ink-200 { background-color: #e6d9bf !important; }
+[data-theme="sepia"] .bg-ink-300 { background-color: #d8c8a8 !important; }
 [data-theme="sepia"] .bg-primary-50 { background-color: rgba(184, 134, 11, 0.10) !important; }
 [data-theme="sepia"] .bg-primary-100 { background-color: rgba(184, 134, 11, 0.16) !important; }
-[data-theme="sepia"] .text-ink-900 { color: #5b4a32 !important; }
-[data-theme="sepia"] .text-ink-800 { color: #4a3f2f !important; }
-[data-theme="sepia"] .text-ink-700 { color: #6b5a3f !important; }
-[data-theme="sepia"] .text-ink-600 { color: #85744f !important; }
-[data-theme="sepia"] .text-ink-500 { color: #9b8a6c !important; }
-[data-theme="sepia"] .text-ink-400 { color: #a4936f !important; }
-[data-theme="sepia"] .text-primary-600 { color: #9a7b3f !important; }
-[data-theme="sepia"] .text-primary-700 { color: #86692f !important; }
+/* 与 .read-page 那份保持同一档墨阶，理由见上；另外补上原先没人管的 ink-300
+   （话题卡里 18 处「·」分隔符，原样落在羊皮纸上是 1.47:1 的冷灰，等于看不见）。 */
+[data-theme="sepia"] .text-ink-900 { color: #3a3020 !important; }
+[data-theme="sepia"] .text-ink-800 { color: #483c27 !important; }
+[data-theme="sepia"] .text-ink-700 { color: #564830 !important; }
+[data-theme="sepia"] .text-ink-600 { color: #635335 !important; }
+[data-theme="sepia"] .text-ink-500 { color: #6f5f42 !important; }
+[data-theme="sepia"] .text-ink-400 { color: #75643f !important; }
+[data-theme="sepia"] .text-ink-300 { color: #94805f !important; }
+/* 羊皮纸上的蓝色链接（原先 #9a7b3f / #86692f 实测 3.53 / 4.53）比正文还浅，
+   小字号根本读不动。压深到同一暖褐区间的 5.16 / 6.28。 */
+[data-theme="sepia"] .text-primary-600 { color: #7d6127 !important; }
+[data-theme="sepia"] .text-primary-700 { color: #6f5421 !important; }
+/* 徽章墙的中性 chip 写的是 slate（只有暗色补过）：羊皮纸底上会露出一块冷灰，
+   跟整页的暖调对不上。收进墨阶，顺带把对比从 8.40 的冷灰换成同档的暖灰。 */
+[data-theme="sepia"] .bg-slate-200 { background-color: #ece1c8 !important; }
+[data-theme="sepia"] .text-slate-700 { color: #5c4c35 !important; }
 [data-theme="sepia"] .border-ink-200 { border-color: #e6d8bd !important; }
 [data-theme="sepia"] .border-ink-100 { border-color: #e0d1b3 !important; }
 [data-theme="sepia"] .border-primary-100 { border-color: rgba(184, 134, 11, 0.30) !important; }
 [data-theme="sepia"] .divide-ink-200 > * + * { border-color: #e6d8bd !important; }
 [data-theme="sepia"] .input-styled { background-color: #fbf4e6 !important; color: #4a3f2f !important; border-color: #e6d8bd !important; }
+/* 羊皮纸上的蓝色链接（primary-600/700 实测 3.53 / 4.53）比正文还浅，小字号根本读不动。
+   压深到同一暖褐区间的 5.32 / 6.28，仍是「可点的深色」，不再和正文糊成一片。 */
+[data-theme="sepia"] .text-primary-600 { color: #7d6127 !important; }
+[data-theme="sepia"] .text-primary-700 { color: #6f5421 !important; }
+
+/* —— 浅色主题里唯一的对比度窟窿 ——
+   两套暗色都各自重排过墨阶，浅色却直接用 tailwind.config 里的原色，而 ink 这组是从
+   「深色底上的层级」设计的：ink-400 #9ba3c4 落在白卡上只有 2.49:1，ink-500 #6b73a0
+   4.25:1，都够不着正文小字的 4.5。这两个 token 全站是「次要文字/时间戳/占位提示」，
+   恰恰是人最需要看清的那批小字。只动 .text-，不碰 bg-ink-400（活动状态点）和
+   border-ink-400（悬停描边），它们要的是色块层级，不是可读性。 */
+[data-theme="light"] .text-ink-400 { color: #626a95 !important; }
+[data-theme="light"] .text-ink-500 { color: #565f8c !important; }
+
+/* —— 装饰性浅色彩带（gradient wash）——
+   from-primary-50 / to-gold-50 这类淡底渐变写的是 background-image，
+   上面的 [data-theme] 白名单按类名重写 background-color，根本够不着它，
+   于是深色/护眼下变成「浅渐变彩带 + 已被压暗的文字」——和文字同色，什么都看不见。
+   这里不改 background-image（会丢掉组件自己选的 to-r / to-br 方向），
+   只替换 Tailwind 自己填的 --tw-gradient-* 变量，方向与写法都不用动。
+   必须排除 -500：[class*="from-primary-50"] 会连带命中 from-primary-500，
+   那是实心渐变按钮，压成半透明就直接消失。 */
+[data-theme="dark"] [class*="from-primary-50"]:not([class*="from-primary-500"]) {
+  --tw-gradient-from: rgba(99, 134, 255, 0.16) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(99, 134, 255, 0.05) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="from-primary-100"] {
+  --tw-gradient-from: rgba(99, 134, 255, 0.24) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(99, 134, 255, 0.06) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="from-gold-50"]:not([class*="from-gold-500"]) {
+  --tw-gradient-from: rgba(245, 158, 11, 0.14) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(245, 158, 11, 0.04) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="from-gold-100"] {
+  --tw-gradient-from: rgba(245, 158, 11, 0.22) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(245, 158, 11, 0.05) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="from-rose-50"]:not([class*="from-rose-500"]) {
+  --tw-gradient-from: rgba(244, 63, 94, 0.16) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(244, 63, 94, 0.05) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="from-ink-50"]:not([class*="from-ink-500"]) {
+  --tw-gradient-from: rgba(255, 255, 255, 0.06) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(255, 255, 255, 0.02) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="to-primary-50"]:not([class*="to-primary-500"]) {
+  --tw-gradient-to: rgba(99, 134, 255, 0.05) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="to-primary-100"] {
+  --tw-gradient-to: rgba(99, 134, 255, 0.10) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="to-gold-50"]:not([class*="to-gold-500"]) {
+  --tw-gradient-to: rgba(245, 158, 11, 0.05) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="to-gold-100"] {
+  --tw-gradient-to: rgba(245, 158, 11, 0.08) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="to-rose-50"]:not([class*="to-rose-500"]) {
+  --tw-gradient-to: rgba(244, 63, 94, 0.05) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="to-pink-50"]:not([class*="to-pink-500"]) {
+  --tw-gradient-to: rgba(236, 72, 153, 0.07) var(--tw-gradient-to-position) !important;
+}
+[data-theme="dark"] [class*="to-ink-100"] {
+  --tw-gradient-to: rgba(255, 255, 255, 0.02) var(--tw-gradient-to-position) !important;
+}
+/* via-white 的 stops 里直接写死了 #fff，不重写成从→到的两段式，中间会出现一条白带 */
+[data-theme="dark"] [class*="via-white"],
+[data-theme="sepia"] [class*="via-white"] {
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+[data-theme="sepia"] [class*="from-primary-50"]:not([class*="from-primary-500"]) {
+  --tw-gradient-from: rgba(184, 134, 11, 0.10) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(184, 134, 11, 0.02) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="from-primary-100"] {
+  --tw-gradient-from: rgba(184, 134, 11, 0.16) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(184, 134, 11, 0.03) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="from-gold-50"]:not([class*="from-gold-500"]) {
+  --tw-gradient-from: rgba(184, 134, 11, 0.12) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(184, 134, 11, 0.02) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="from-gold-100"] {
+  --tw-gradient-from: rgba(184, 134, 11, 0.18) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(184, 134, 11, 0.03) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="from-rose-50"]:not([class*="from-rose-500"]) {
+  --tw-gradient-from: rgba(190, 84, 60, 0.12) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(190, 84, 60, 0.02) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="from-ink-50"]:not([class*="from-ink-500"]) {
+  --tw-gradient-from: rgba(120, 100, 60, 0.08) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(120, 100, 60, 0.02) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="to-primary-50"]:not([class*="to-primary-500"]) {
+  --tw-gradient-to: rgba(184, 134, 11, 0.03) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="to-primary-100"] {
+  --tw-gradient-to: rgba(184, 134, 11, 0.06) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="to-gold-50"]:not([class*="to-gold-500"]) {
+  --tw-gradient-to: rgba(184, 134, 11, 0.04) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="to-gold-100"] {
+  --tw-gradient-to: rgba(184, 134, 11, 0.07) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="to-rose-50"]:not([class*="to-rose-500"]) {
+  --tw-gradient-to: rgba(190, 84, 60, 0.03) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="to-pink-50"]:not([class*="to-pink-500"]) {
+  --tw-gradient-to: rgba(190, 84, 60, 0.04) var(--tw-gradient-to-position) !important;
+}
+[data-theme="sepia"] [class*="to-ink-100"] {
+  --tw-gradient-to: rgba(120, 100, 60, 0.03) var(--tw-gradient-to-position) !important;
+}
 
 /* ======================================================================
    无障碍（Accessibility）：字体缩放 / 高对比 / 减少动效 / 键盘可达

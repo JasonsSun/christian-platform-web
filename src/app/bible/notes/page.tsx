@@ -177,7 +177,7 @@ export default function BibleNotesPage() {
                     .slice()
                     .sort((a, b) => a.verse - b.verse)
                     .map((it) => (
-                      <div key={it.id} className="flex items-start gap-3 rounded-xl bg-white/70 hover:bg-white px-3 py-2 border border-ink-100 transition-all">
+                      <div key={it.id} className="flex items-start gap-3 rounded-xl bg-ui-surface hover:bg-white px-3 py-2 border border-ink-100 transition-all">
                         <Link
                           href={`/bible/cuv/${g.bookId}/${g.chapter}`}
                           className="flex-shrink-0 font-semibold text-primary-600 text-sm pt-0.5"
@@ -196,7 +196,7 @@ export default function BibleNotesPage() {
                           onClick={() => del(it.id)}
                           disabled={deletingId === it.id}
                           title="删除这条高亮 / 笔记"
-                          className="flex-shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg text-ink-300 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
+                          className="flex-shrink-0 w-7 h-7 inline-flex items-center justify-center rounded-lg text-ink-500 hover:text-rose-500 hover:bg-rose-50 transition-colors disabled:opacity-50"
                         >
                           {deletingId === it.id ? (
                             <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">

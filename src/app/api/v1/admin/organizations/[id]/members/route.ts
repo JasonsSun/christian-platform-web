@@ -4,6 +4,7 @@ import { ok, withApi, readJson, HttpError, notFound, clientIp } from '@/server/h
 import { UserRow } from '@/server/auth';
 import { requireModeratorModule } from '@/server/moderation';
 import { audit, notify } from '@/server/services';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +47,7 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
         username: u.username,
         displayName: u.display_name,
         email: u.email,
-        avatarColor: u.avatar_color,
+        avatarColor: whiteSafeColor(u.avatar_color),
       })),
     });
   }
@@ -69,7 +70,7 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
       username: r.username,
       displayName: r.display_name,
       email: r.email,
-      avatarColor: r.avatar_color,
+      avatarColor: whiteSafeColor(r.avatar_color),
       role: r.role,
       joinedAt: r.joined_at,
     })),

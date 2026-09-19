@@ -6,6 +6,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
+import { useEscape } from '@/lib/a11y';
 import { READING_PLANS } from '@/lib/readingPlans';
 import Portal from '@/components/Portal';
 
@@ -67,6 +68,10 @@ export default function GroupPlans({
   } | null>(null);
 
   const items = data?.items ?? [];
+
+  useEscape(!!progressOpen, () => {
+    if (!progressAction.pending) setProgressOpen(null);
+  });
 
   const refresh = useCallback(
     (next: GroupPlanItem[]) =>
@@ -144,7 +149,7 @@ export default function GroupPlans({
             {isOwner && (
               <button
                 onClick={() => setAdding((v) => !v)}
-                className="btn-primary px-4 py-2 text-sm"
+                className="btn-primary btn-sm px-4 text-sm"
               >
                 {adding ? '取消' : '添加共读计划'}
               </button>
@@ -176,7 +181,7 @@ export default function GroupPlans({
                 <button
                   onClick={submitAdd}
                   disabled={addAction.pending}
-                  className="btn-gold px-4 py-2 text-sm ml-auto"
+                  className="btn-gold btn-sm px-4 text-sm ml-auto"
                 >
                   {addAction.pending ? '添加中…' : '确定添加'}
                 </button>
@@ -245,7 +250,7 @@ export default function GroupPlans({
                         </button>
                         <button
                           onClick={() => openProgress(it.planId)}
-                          className="text-sm px-3 py-1.5 rounded-xl btn-primary"
+                          className="text-sm px-3 rounded-xl btn-primary btn-sm"
                         >
                           查看进度榜
                         </button>
@@ -254,7 +259,7 @@ export default function GroupPlans({
                       <button
                         onClick={() => toggleJoin(it.planId, true)}
                         disabled={joinAction.pending}
-                        className="text-sm px-3 py-1.5 rounded-xl btn-gold"
+                        className="text-sm px-3 rounded-xl btn-gold btn-sm"
                       >
                         加入共读
                       </button>

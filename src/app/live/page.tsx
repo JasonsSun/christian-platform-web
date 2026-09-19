@@ -57,13 +57,15 @@ export default function LiveListPage() {
 
   const rooms = data?.rooms || [];
 
-  /** 状态徽标优先级:取消 > 过期 > 待审 > 直播中 > 预告 */
+  /** 状态徽标优先级:取消 > 过期 > 待审 > 直播中 > 预告
+   *  底色与文字必须成对：bg-ink-300/400/500 配 text-white 在白底上是浅紫配白字，
+   *  深色主题又完全不在白名单里，两头都读不出来。失效态统一走中性 chip 写法。 */
   function badgeOf(r: LiveRoom) {
-    if (r.cancelled) return { text: '已取消', cls: 'bg-ink-400 text-white' };
-    if (r.expired) return { text: '已过期', cls: 'bg-ink-500 text-white' };
-    if (r.reviewStatus === 'pending') return { text: '待审核', cls: 'bg-amber-400 text-white' };
-    if (r.live) return { text: '● 直播中', cls: 'bg-rose-500 text-white' };
-    if (r.status === 'ended') return { text: '已结束', cls: 'bg-ink-300 text-white' };
+    if (r.cancelled) return { text: '已取消', cls: 'bg-ink-100 text-ink-600 border border-ink-200' };
+    if (r.expired) return { text: '已过期', cls: 'bg-ink-100 text-ink-600 border border-ink-200' };
+    if (r.reviewStatus === 'pending') return { text: '待审核', cls: 'bg-amber-50 text-amber-700 border border-amber-200' };
+    if (r.live) return { text: '● 直播中', cls: 'bg-rose-600 text-white' };
+    if (r.status === 'ended') return { text: '已结束', cls: 'bg-ink-100 text-ink-600 border border-ink-200' };
     return { text: '预告', cls: 'bg-ink-700/80 text-white/90' };
   }
 

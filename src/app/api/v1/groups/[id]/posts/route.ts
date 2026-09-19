@@ -3,6 +3,7 @@ import { exec, newId, one, q, ts } from '@/server/db';
 import { ok, withApi, notFound, forbidden, readJson, HttpError } from '@/server/http';
 import { requireUser } from '@/server/auth';
 import { dispatchOutbox, emit } from '@/server/services';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,6 @@ export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
   const r = rows[0];
   return ok({
     id: r.id, body: r.body, createdAt: r.created_at,
-    user: { id: r.user_id, username: r.username, displayName: r.display_name, avatarColor: r.avatar_color },
+    user: { id: r.user_id, username: r.username, displayName: r.display_name, avatarColor: whiteSafeColor(r.avatar_color) },
   }, 201);
 });

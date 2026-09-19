@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useApi, useAction } from '@/lib/useApi';
 import { api, apiPost, apiDelete, qs } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useEscape } from '@/lib/a11y';
 import { type SpeechItem } from '@/lib/useSpeech';
 import { useHostedSpeech } from '@/lib/speechHost';
 import { splitVerse, hasNotes, stripNotes } from '@/lib/verseText';
@@ -85,6 +86,7 @@ export default function ReadChapter() {
     return (globalTheme as ReadTheme) || 'light';
   });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  useEscape(settingsOpen, () => setSettingsOpen(false));
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [autoNextChapter, setAutoNextChapter] = useState(false);
@@ -966,7 +968,7 @@ export default function ReadChapter() {
                 disabled={!user || bookmarkAction.pending || bmLoading}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
                   chapterBookmarked
-                    ? 'bg-gold-500 border-gold-500 text-white shadow-gold-500/30'
+                    ? 'bg-gold-500 border-gold-600 text-ink-950 shadow-gold-500/30'
                     : 'bg-white border-ink-200 text-ink-700 hover:border-gold-400 hover:text-gold-600'
                 } ${!user ? 'opacity-60 cursor-not-allowed' : ''}`}
                 title={chapterBookmarked ? '取消整章书签' : '收藏整章'}
@@ -1228,7 +1230,7 @@ export default function ReadChapter() {
                       title="点击点亮本节；正在朗读时从本节续读"
                       className={`absolute left-4 top-2 w-7 h-7 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
                         speaking
-                          ? 'bg-amber-500 text-white scale-110 shadow-md'
+                          ? 'bg-amber-500 text-ink-950 scale-110 shadow-md'
                           : targeted
                             ? 'bg-primary-600 text-white'
                             : 'text-amber-600/70 group-hover:text-amber-700 group-hover:bg-amber-100'
@@ -1299,7 +1301,7 @@ export default function ReadChapter() {
                       className={`absolute right-2 top-2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-amber-100 ${
                         vb 
                           ? 'opacity-100 text-amber-500' 
-                          : 'text-ink-300 hover:text-amber-500'
+                          : 'text-ink-500 hover:text-amber-500'
                       } ${!user ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                       title={vb ? '取消本节书签' : '收藏本节'}
                     >
@@ -1319,7 +1321,7 @@ export default function ReadChapter() {
                       className={`absolute right-9 top-2 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-primary-100 ${
                         noteEditing === v.verse
                           ? 'opacity-100 text-primary-600'
-                          : 'text-ink-300 hover:text-primary-600'
+                          : 'text-ink-500 hover:text-primary-600'
                       } ${!user ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                       title="写笔记"
                     >
@@ -1362,13 +1364,13 @@ export default function ReadChapter() {
                         <button
                           disabled={bookmarkAction.pending}
                           onClick={() => saveNote(v.verse)}
-                          className="btn-primary text-xs py-1.5 px-3"
+                          className="btn-primary btn-sm text-xs px-3"
                         >
                           {bookmarkAction.pending ? '保存中…' : '保存笔记'}
                         </button>
                         <button
                           onClick={() => { setNoteEditing(null); setNoteDraft(''); }}
-                          className="btn-ghost text-xs py-1.5 px-3"
+                          className="btn-ghost btn-sm text-xs px-3"
                         >
                           取消
                         </button>
@@ -1376,7 +1378,7 @@ export default function ReadChapter() {
                           <button
                             onClick={() => deleteVerseNote(v.verse)}
                             disabled={bookmarkAction.pending}
-                            className="btn-ghost text-xs py-1.5 px-3 text-rose-500 hover:bg-rose-50"
+                            className="btn-ghost btn-sm text-xs px-3 text-rose-500 hover:bg-rose-50"
                           >
                             删除笔记
                           </button>

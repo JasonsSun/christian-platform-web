@@ -3,6 +3,7 @@ import { q, one } from '@/server/db';
 import { num } from '@/server/http';
 import { ok, withApi } from '@/server/http';
 import { requireUser, UserRow } from '@/server/auth';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +22,7 @@ function mapPeer(r: any): Peer {
     id: r.uid,
     displayName: r.display_name,
     username: r.username,
-    avatarColor: r.avatar_color,
+    avatarColor: whiteSafeColor(r.avatar_color),
     city: r.city || '',
     church: r.church || '',
     bio: r.bio || '',

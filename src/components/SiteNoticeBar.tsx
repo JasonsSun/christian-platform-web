@@ -36,7 +36,7 @@ export default function SiteNoticeBar() {
       className={`w-full px-4 py-2 text-center text-sm ${
         s.maintenance
           ? 'bg-amber-100 text-amber-900 border-b border-amber-200'
-          : 'bg-primary-50 text-primary-800 border-b border-primary-100'
+          : 'bg-ui-accent-soft text-ui-accent border-b border-ui-border'
       }`}
     >
       {s.maintenance ? '维护中 · ' : ''}

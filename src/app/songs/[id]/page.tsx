@@ -51,7 +51,7 @@ function VocalWantedCard({ song, onSubmit }: { song: SongDetail; onSubmit: () =>
         </a>
         <button
           onClick={onSubmit}
-          className="px-4 py-2 rounded-xl bg-gold-500 hover:bg-gold-400 text-white text-sm font-medium transition-colors"
+          className="px-4 py-2 rounded-xl bg-gold-500 hover:bg-gold-400 text-ink-950 text-sm font-medium transition-colors"
         >
           上传我演唱的版本
         </button>
@@ -168,7 +168,7 @@ export default function SongDetailPage() {
           <>
             {/* 头部信息 */}
             <section className="mb-10 text-center">
-              <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-white shadow-gold mb-5 relative">
+              <div className="w-24 h-24 mx-auto rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center text-ink-950 shadow-gold mb-5 relative">
                 <IconMusicNote className="w-12 h-12" strokeWidth={1.3} />
                 <span className="absolute inset-0 rounded-2xl bg-gold-400/20 blur-xl -z-10" />
               </div>
@@ -291,14 +291,14 @@ export default function SongDetailPage() {
                       href={`/songs/${r.id}`}
                       className="group flex items-center gap-4 p-3 md:p-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/25 transition-all duration-300"
                     >
-                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-gold-100 to-gold-200 text-gold-700 group-hover:from-gold-400 group-hover:to-gold-500 group-hover:text-white transition-colors">
+                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-gold-100 to-gold-200 text-gold-700 group-hover:from-gold-400 group-hover:to-gold-500 group-hover:text-ink-950 transition-colors">
                         <IconMusicNote className="w-5 h-5 md:w-6 md:h-6" strokeWidth={1.6} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-white truncate group-hover:text-gold-300 transition-colors">{r.title}</h3>
                         <p className="text-white/60 text-sm truncate mt-0.5">{r.author}</p>
                       </div>
-                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 group-hover:bg-gold-500 group-hover:text-white transition-all duration-300 flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/60 group-hover:bg-gold-500 group-hover:text-ink-950 transition-all duration-300 flex-shrink-0">
                         <IconPlay className="w-4 h-4 ml-0.5" />
                       </div>
                     </Link>

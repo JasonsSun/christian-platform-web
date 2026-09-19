@@ -271,7 +271,7 @@ export default function TopicDetailPage() {
                             {(item.author?.displayName || item.author?.username || '?').slice(0, 1)}
                           </span>
                           <span className="text-ink-700 font-medium">{item.author?.displayName}</span>
-                          <span className="text-ink-300">·</span>
+                          <span className="text-ink-400">·</span>
                           <span>{timeAgo(item.publishedAt || item.createdAt)}</span>
                           <div className="ml-auto flex items-center gap-4">
                             <span className="flex items-center gap-1">
@@ -283,7 +283,7 @@ export default function TopicDetailPage() {
                                   d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                                 />
                               </svg>
-                              {item.likeCount}
+                              <span className="sr-only">点赞</span>{item.likeCount}
                             </span>
                             <span className="flex items-center gap-1">
                               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -294,7 +294,7 @@ export default function TopicDetailPage() {
                                   d="M8 10h8M8 14h6m-6 6h8a2 2 0 002-2V8l-4-4H8a2 2 0 00-2 2v12a2 2 0 002 2z"
                                 />
                               </svg>
-                              {item.commentCount}
+                              <span className="sr-only">评论</span>{item.commentCount}
                             </span>
                           </div>
                         </div>

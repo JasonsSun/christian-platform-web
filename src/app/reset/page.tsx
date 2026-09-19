@@ -50,7 +50,7 @@ function ResetInner() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center py-20">
+    <div className="auth-shell relative overflow-hidden flex items-center justify-center py-10 sm:py-14">
       <div className="absolute inset-0 bg-animated-gradient" />
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 -left-20 w-72 h-72 bg-gold-400/20 rounded-full blur-3xl animate-float" />
@@ -99,7 +99,7 @@ function ResetInner() {
                 <label className="block text-sm font-medium text-ink-700 mb-1.5">新密码</label>
                 <div className="relative">
                   <input
-                    className="input-styled"
+                    className="input-styled input-field"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="至少 6 位"
                     value={password}
@@ -119,7 +119,7 @@ function ResetInner() {
               <div>
                 <label className="block text-sm font-medium text-ink-700 mb-1.5">确认新密码</label>
                 <input
-                  className="input-styled"
+                  className="input-styled input-field"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="再输入一次"
                   value={confirm}
@@ -148,9 +148,27 @@ function ResetInner() {
   );
 }
 
+/** Suspense 占位：连背景一起给，否则水合前是一屏空白、水合后整页材料「闪」出来。 */
+function ResetSkeleton() {
+  return (
+    <div className="auth-shell relative overflow-hidden flex items-center justify-center py-10 sm:py-14">
+      <div className="absolute inset-0 bg-animated-gradient" />
+      <div className="relative z-10 max-w-md w-full mx-4">
+        <div className="glass rounded-3xl p-8 md:p-10 shadow-card-hover space-y-4">
+          <div className="h-8 w-44 mx-auto rounded-lg bg-ink-100" />
+          <div className="h-4 w-52 mx-auto rounded bg-ink-100" />
+          <div className="h-[52px] rounded-xl bg-ink-100" />
+          <div className="h-[52px] rounded-xl bg-ink-100" />
+          <div className="h-[52px] rounded-xl bg-primary-100" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-ink-400">加载中…</div>}>
+    <Suspense fallback={<ResetSkeleton />}>
       <ResetInner />
     </Suspense>
   );

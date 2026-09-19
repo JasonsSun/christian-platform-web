@@ -146,11 +146,11 @@ export default function AdminNotificationsPage() {
               </button>
               <span className="text-sm text-ink-600">{f.enabled ? '启用（会实际发出）' : '停用（保留配置但不发出）'}</span>
               <div className="ml-auto flex gap-2">
-                <button onClick={onCancel} className="btn-secondary text-sm py-1.5 px-4">取消</button>
+                <button onClick={onCancel} className="btn-secondary btn-sm text-sm px-4">取消</button>
                 <button
                   onClick={onSave}
                   disabled={busy === key || !f.code.trim() || !f.titleTpl.trim()}
-                  className="btn-primary text-sm py-1.5 px-4 disabled:opacity-50"
+                  className="btn-primary btn-sm text-sm px-4 disabled:opacity-50"
                 >
                   {busy === key ? '保存中…' : isNew ? '新增模板' : '保存'}
                 </button>
@@ -167,7 +167,7 @@ export default function AdminNotificationsPage() {
       <SectionTitle>通知中心</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">通知模板、渠道与收发统计</p>
 
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
         <StatCard title="通知总数" value={data?.totals.total ?? '—'} />
         <StatCard title="未读" value={data?.totals.unread ?? 0} />
         <StatCard title="模板数" value={data?.totals.templates ?? 0} />
@@ -186,7 +186,7 @@ export default function AdminNotificationsPage() {
               <div className="font-medium text-ink-700">通知模板<span className="ml-2 text-xs text-ink-400">共 {templates.length} 个</span></div>
               <button
                 onClick={() => { setEditing(null); setDraft(null); setForm(form ? null : { ...EMPTY_FORM }); tip(''); }}
-                className="btn-primary text-sm py-1.5 px-4"
+                className="btn-primary btn-sm text-sm px-4"
               >
                 {form ? '收起' : '+ 新增模板'}
               </button>
@@ -230,14 +230,14 @@ export default function AdminNotificationsPage() {
                               setDraft({ code: t.code, channel: t.channel, titleTpl: t.titleTpl, bodyTpl: t.bodyTpl, enabled: t.enabled });
                               tip('');
                             }}
-                            className="btn-secondary text-xs py-1 px-3"
+                            className="btn-secondary btn-sm text-xs px-3"
                           >
                             {editing === t.id ? '收起' : '编辑'}
                           </button>
                           <button
                             onClick={() => toggle(t)}
                             disabled={busy === t.id}
-                            className="btn-secondary text-xs py-1 px-3 disabled:opacity-50"
+                            className="btn-secondary btn-sm text-xs px-3 disabled:opacity-50"
                           >
                             {t.enabled ? '停用' : '启用'}
                           </button>
@@ -259,7 +259,7 @@ export default function AdminNotificationsPage() {
                               确认删除模板「{t.code}」（{channelLabel(t.channel)}）？删除后此编码的通知将回退为默认文案。
                             </span>
                             <div className="ml-auto flex gap-2">
-                              <button onClick={() => setConfirmDel('')} className="btn-secondary text-xs py-1 px-3">取消</button>
+                              <button onClick={() => setConfirmDel('')} className="btn-secondary btn-sm text-xs px-3">取消</button>
                               <button
                                 onClick={() => remove(t.id)}
                                 disabled={busy === t.id}

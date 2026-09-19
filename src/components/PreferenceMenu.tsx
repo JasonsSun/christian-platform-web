@@ -27,7 +27,9 @@ function Seg<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div className="flex gap-1 rounded-lg bg-ink-100 p-0.5" role="group">
+    /* 轨道用 ui-rail、选中药丸用 ui-surface：三套主题下 surface 都比 rail 更「抬升」，
+       选中态靠明度差成立。（旧写法 bg-ink-100 + bg-white 在深色下会反过来——药丸比轨道更暗，看不出选中） */
+    <div className="flex gap-1 rounded-lg bg-ui-rail p-0.5" role="group">
       {options.map((o) => (
         <button
           key={o.value}
@@ -36,8 +38,8 @@ function Seg<T extends string>({
           aria-pressed={value === o.value}
           className={`flex-1 whitespace-nowrap px-2 py-1.5 rounded-md text-xs font-medium transition-colors ${
             value === o.value
-              ? 'bg-white text-primary-600 shadow-sm'
-              : 'text-ink-500 hover:text-ink-700'
+              ? 'bg-ui-surface text-ui-accent shadow-sm'
+              : 'text-ui-muted hover:text-ui-text'
           }`}
         >
           {o.label}
@@ -50,7 +52,7 @@ function Seg<T extends string>({
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[64px_1fr] items-center gap-2">
-      <span className="text-xs text-ink-500 whitespace-nowrap">{label}</span>
+      <span className="text-xs text-ui-muted whitespace-nowrap">{label}</span>
       {children}
     </div>
   );
@@ -63,7 +65,7 @@ function Toggle({ on, label, onClick }: { on: boolean; label: string; onClick: (
       onClick={onClick}
       aria-pressed={on}
       className={`w-full py-1.5 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap ${
-        on ? 'border-primary-500 bg-primary-50 text-primary-600' : 'border-ink-200 text-ink-600 hover:bg-ink-100'
+        on ? 'border-ui-accent bg-ui-accent-soft text-ui-accent' : 'border-ui-border text-ui-muted hover:bg-ui-hover hover:text-ui-text'
       }`}
     >
       {label}
@@ -116,7 +118,7 @@ export default function PreferenceMenu({
     <div
       className={`${
         inline ? 'mt-2 w-full' : 'absolute right-0 mt-2 w-72'
-      } bg-white rounded-2xl shadow-card border border-ink-100 p-4 space-y-3 z-50 text-ink-800`}
+      } bg-ui-surface rounded-2xl shadow-card border border-ui-border p-4 space-y-3 z-50 text-ui-text`}
       role="dialog"
       aria-label={t('pref.settings')}
       data-guard="preference-menu"

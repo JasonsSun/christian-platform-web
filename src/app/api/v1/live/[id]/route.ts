@@ -4,6 +4,7 @@ import { requireUser, findUserById } from '@/server/auth';
 import { getRoom, publicRoomView, countViewers, listMessages } from '@/server/live';
 import { isPathLive, hlsPlayUrl, rtmpPushUrl } from '@/server/mediamtx';
 import { q } from '@/server/db';
+import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -35,7 +36,7 @@ export const GET = withApi(async (req: NextRequest, ctx: any) => {
     viewerCount: vc,
     messages,
     live,
-    owner: owner ? { id: owner.id, displayName: owner.display_name, avatarColor: owner.avatar_color } : undefined,
+    owner: owner ? { id: owner.id, displayName: owner.display_name, avatarColor: whiteSafeColor(owner.avatar_color) } : undefined,
   });
   return ok({ ...view, reminded, reminderCount });
 });

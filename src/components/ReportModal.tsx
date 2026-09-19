@@ -7,6 +7,7 @@ import { useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import Portal from '@/components/Portal';
+import { useEscape } from '@/lib/a11y';
 
 const REASONS = [
   { value: 'spam', label: '垃圾广告' },
@@ -39,6 +40,8 @@ export default function ReportModal({ open, onClose, contentId, onSubmitted }: P
   const action = useAction();
   const [reason, setReason] = useState('spam');
   const [detail, setDetail] = useState('');
+
+  useEscape(open, onClose);
 
   if (!open) return null;
 
@@ -127,12 +130,12 @@ export default function ReportModal({ open, onClose, contentId, onSubmitted }: P
               </div>
               {action.error && <p className="text-xs text-rose-500">{action.error}</p>}
               <div className="flex gap-2 pt-1">
-                <button type="button" onClick={onClose} className="btn-secondary flex-1 text-sm py-2">取消</button>
+                <button type="button" onClick={onClose} className="btn-secondary btn-sm flex-1 text-sm">取消</button>
                 <button
                   type="button"
                   onClick={submit}
                   disabled={action.pending}
-                  className="btn-primary flex-1 text-sm py-2 disabled:opacity-70"
+                  className="btn-primary btn-sm flex-1 text-sm disabled:opacity-70"
                 >
                   {action.pending ? '提交中…' : '提交'}
                 </button>
