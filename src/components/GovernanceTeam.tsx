@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { StaffBadges } from './ModeratorBadge';
 import { ADMIN_BADGE, type ModuleKey } from '@/lib/moderationModules';
+import { Glyph, IconShield } from '@/components/icons';
 
 /**
  * 平台治理团队公示（社区页）。
@@ -62,7 +63,7 @@ export default function GovernanceTeam() {
   return (
     <div className="bg-white rounded-3xl p-5 md:p-7 shadow-soft border border-ink-100">
       <div className="flex items-center gap-2 mb-1.5">
-        <span className="text-2xl">🛡️</span>
+        <IconShield className="w-6 h-6 text-primary-600" strokeWidth={1.6} />
         <h2 className="font-display text-xl md:text-2xl font-bold text-ink-900">平台治理团队</h2>
       </div>
       <p className="text-sm text-ink-500 mb-5">
@@ -113,8 +114,8 @@ export default function GovernanceTeam() {
                 style={{ borderTopColor: m.color, borderTopWidth: 3 }}
               >
                 <div className="flex items-center gap-2 mb-1.5">
-                  <span className="text-lg" aria-hidden>
-                    {m.icon}
+                  <span className="inline-flex" aria-hidden>
+                    <Glyph glyph={m.icon} className="w-5 h-5" strokeWidth={1.7} style={{ color: m.color }} />
                   </span>
                   <h3 className="font-semibold text-ink-900">{m.fullLabel}</h3>
                 </div>

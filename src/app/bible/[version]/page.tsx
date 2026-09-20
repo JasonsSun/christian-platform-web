@@ -56,13 +56,13 @@ export default function VersionBooks() {
         {error && <p className="text-rose-600 text-sm mb-6">加载失败：{error}</p>}
 
         {loading ? (
-          <div className="space-y-12 animate-pulse">
+          <div className="space-y-12">
             {[0, 1].map((s) => (
               <div key={s}>
-                <div className="h-8 w-40 bg-ink-100 rounded-lg mb-6" />
+                <div className="h-8 w-40 bg-ink-100 rounded-lg mb-6 skeleton-sheen" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="h-28 bg-ink-100 rounded-2xl" />
+                    <div key={i} className="h-28 bg-ink-100 rounded-2xl skeleton-sheen" />
                   ))}
                 </div>
               </div>
@@ -86,13 +86,13 @@ export default function VersionBooks() {
               {sec.groups.map((g) => (
                 <div key={g.category} className="mb-8">
                   <h3 className="text-sm font-semibold text-primary-700 mb-3">{g.category}</h3>
-                  <div className="space-y-4">
+                  <div data-reveal-group className="space-y-4">
                     {g.books.map((b) => (
                       <div key={b.id} className="bg-white rounded-2xl p-5 shadow-soft border border-ink-100">
                         <div className="flex items-center justify-between mb-3">
                           <div>
                             <h4 className="font-display font-semibold text-ink-900">{b.name}</h4>
-                            <p className="text-xs text-ink-400 mt-0.5">
+                            <p className="num text-xs text-ink-400 mt-0.5">
                               {b.chapters} 章 · 已收录 {b.chaptersAvailable.length} 章
                             </p>
                           </div>
@@ -114,7 +114,7 @@ export default function VersionBooks() {
                               <Link
                                 key={ch}
                                 href={`/bible/${version}/${b.id}/${ch}`}
-                                className="w-9 h-9 rounded-lg bg-primary-50 hover:bg-primary-100 text-primary-700 text-sm font-medium flex items-center justify-center transition-colors"
+                                className="num w-11 h-11 rounded-lg bg-primary-50 hover:bg-primary-100 text-primary-700 text-sm font-medium flex items-center justify-center transition-colors"
                               >
                                 {ch}
                               </Link>

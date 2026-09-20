@@ -6,6 +6,18 @@ import { useRouter } from 'next/navigation';
 import { qs, apiPost, apiDelete, clearApiCache } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { Skeleton } from '@/components/Skeleton';
+import {
+  Glyph,
+  IconBell,
+  IconBellOff,
+  IconBookOpen,
+  IconCalendar,
+  IconChevronRight,
+  IconDownload,
+  IconFire,
+  IconMapPin,
+  IconSparkles,
+} from '@/components/icons';
 
 interface CalActivity {
   id: string;
@@ -52,6 +64,14 @@ const LEAD_LABEL: Record<number, string> = {
   1440: '开始前 1 天',
   4320: '开始前 3 天',
 };
+
+/** 本月统计卡的静态配置：抽出来是为了让骨架态和落地态渲染同一套 DOM，只有数值不同。 */
+const MONTH_STATS = [
+  { key: 'activities', label: '本月活动', icon: IconCalendar, tone: 'bg-primary-50 text-primary-700' },
+  { key: 'activeDays', label: '有安排的天数', icon: IconSparkles, tone: 'bg-sky-50 text-sky-700' },
+  { key: 'checkins', label: '我的打卡', icon: IconFire, tone: 'bg-emerald-50 text-emerald-700' },
+  { key: 'planDays', label: '读经完成', icon: IconBookOpen, tone: 'bg-gold-50 text-gold-700' },
+] as const;
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const todayStr = () => {
@@ -159,24 +179,24 @@ export default function CalendarPage() {
           <div className="card-tech rounded-2xl p-4 mb-5 flex flex-wrap items-center gap-3">
             <button
               onClick={() => setMonth((m) => shiftMonth(m, -1))}
-              className="w-9 h-9 rounded-xl border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-600 transition-colors"
+              className="w-11 h-11 md:w-9 md:h-9 inline-flex items-center justify-center rounded-xl border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-600 transition-colors"
               aria-label="上个月"
             >
-              ‹
+              <IconChevronRight className="w-4 h-4 rotate-180" strokeWidth={1.8} />
             </button>
             <h2 className="font-display text-xl font-bold text-ink-900 min-w-[110px] text-center">
               {month.replace('-', ' 年 ')} 月
             </h2>
             <button
               onClick={() => setMonth((m) => shiftMonth(m, 1))}
-              className="w-9 h-9 rounded-xl border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-600 transition-colors"
+              className="w-11 h-11 md:w-9 md:h-9 inline-flex items-center justify-center rounded-xl border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-600 transition-colors"
               aria-label="下个月"
             >
-              ›
+              <IconChevronRight className="w-4 h-4" strokeWidth={1.8} />
             </button>
             <button
               onClick={goToday}
-              className="px-3.5 py-1.5 rounded-xl text-sm border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-600 transition-colors"
+              className="px-3.5 py-1.5 min-h-[44px] md:min-h-0 rounded-xl text-sm border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-600 transition-colors"
             >
               回到今天
             </button>
@@ -194,30 +214,48 @@ export default function CalendarPage() {
               {/* 订阅到系统日历：站外也能收到提醒，无需登录在线 */}
               <a
                 href="/api/v1/calendar/ics"
-                className="inline-flex items-center px-3 py-1.5 rounded-xl text-xs border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] md:min-h-0 rounded-xl text-xs border border-ink-200 text-ink-600 hover:border-primary-400 hover:text-primary-700 transition-colors"
                 title="下载 .ics 订阅到手机/电脑日历"
               >
-                📆 订阅日历
+                <IconDownload className="w-3.5 h-3.5" strokeWidth={1.8} />
+                订阅日历
               </a>
             </div>
           </div>
 
-          {data && data.summary && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-              {[
-                { label: '本月活动', value: data.summary.activities, icon: '📅' },
-                { label: '有安排的天数', value: data.summary.activeDays, icon: '✨' },
-                { label: '我的打卡', value: data.summary.checkins, icon: '🔥' },
-                { label: '读经完成', value: data.summary.planDays, icon: '📖' },
-              ].map((s) => (
-                <div key={s.label} className="card-tech rounded-2xl p-4">
-                  <div className="text-xl mb-1">{s.icon}</div>
-                  <div className="font-display text-2xl font-bold text-ink-900">{s.value}</div>
+          {/* 统计卡此前只在数据落地后挂载，把下方月历整体下推 134px（桌面 CLS 0.0386）。
+              图标/文案/骨架都来自静态配置，所以加载态与落地态高度完全一致。 */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            {MONTH_STATS.map((s) => {
+              const Icon = s.icon;
+              const value = data?.summary?.[s.key];
+              return (
+                <div key={s.key} className="card-tech rounded-2xl p-4">
+                  <div className="mb-1 flex h-7 items-center">
+                    <span
+                      className={`inline-flex h-7 w-7 items-center justify-center rounded-lg border border-ink-100 ${s.tone}`}
+                      aria-hidden
+                    >
+                      <Icon className="h-4 w-4" strokeWidth={1.8} />
+                    </span>
+                  </div>
+                  <div className="font-display text-2xl font-bold text-ink-900">
+                    {value === undefined ? (
+                      <span
+                        className="skeleton-sheen inline-block h-6 w-9 rounded-md bg-ink-950/10 align-middle"
+                        aria-hidden
+                      />
+                    ) : (
+                      <b data-count className="num">
+                        {value}
+                      </b>
+                    )}
+                  </div>
                   <div className="text-xs text-ink-500">{s.label}</div>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
 
           {error && (
             <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm mb-5">{error}</div>
@@ -268,10 +306,12 @@ export default function CalendarPage() {
                             </span>
                             <div className="mt-1 space-y-0.5">
                               {hasAct && (
-                                <div className="truncate text-[10px] leading-tight px-1 py-0.5 rounded bg-primary-50 text-primary-700">
-                                  {reminded ? '🔔 ' : ''}
-                                  {d.activities[0].cover ? `${d.activities[0].cover} ` : ''}
-                                  {d.activities[0].title}
+                                <div className="flex items-center gap-0.5 truncate text-[10px] leading-tight px-1 py-0.5 rounded bg-primary-50 text-primary-700">
+                                  {reminded && <IconBell className="w-2.5 h-2.5 shrink-0" strokeWidth={2} />}
+                                  {!!d.activities[0].cover && (
+                                    <Glyph glyph={d.activities[0].cover} className="w-2.5 h-2.5 shrink-0" />
+                                  )}
+                                  <span className="min-w-0 truncate">{d.activities[0].title}</span>
                                 </div>
                               )}
                               {d.activities.length > 1 && (
@@ -316,7 +356,14 @@ export default function CalendarPage() {
                         >
                           <Link href={`/activities/${a.id}`} className="block">
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="text-lg">{a.cover || '📅'}</span>
+                              {/* 封面是数据库里的 emoji：走 Glyph 换成同一套线性图标，
+                                  映射表里没有的仍按原样回退，不会丢信息。 */}
+                              <span
+                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-700"
+                                aria-hidden
+                              >
+                                <Glyph glyph={a.cover || '📅'} className="h-3.5 w-3.5" />
+                              </span>
                               <span className="text-xs px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 border border-primary-100">
                                 {CATEGORY_LABEL[a.category] || a.category}
                               </span>
@@ -324,7 +371,10 @@ export default function CalendarPage() {
                             </div>
                             <div className="text-sm font-medium text-ink-900 truncate">{a.title}</div>
                             {a.location && (
-                              <div className="text-xs text-ink-400 mt-0.5 truncate">📍 {a.location}</div>
+                              <div className="flex items-center gap-1 text-xs text-ink-400 mt-0.5 min-w-0">
+                                <IconMapPin className="w-3 h-3 shrink-0" strokeWidth={1.8} />
+                                <span className="truncate">{a.location}</span>
+                              </div>
                             )}
                           </Link>
 
@@ -333,19 +383,24 @@ export default function CalendarPage() {
                             <button
                               onClick={() => setOpenFor(open ? null : a.id)}
                               disabled={busy === a.id}
-                              className={`text-[11px] px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+                              className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 min-h-[44px] md:min-h-0 rounded-lg border transition-colors disabled:opacity-50 ${
                                 st
                                   ? 'border-gold-300 bg-gold-50 text-gold-700'
                                   : 'border-ink-200 text-ink-500 hover:border-primary-300 hover:text-primary-700'
                               }`}
                             >
-                              {st ? `🔔 ${LEAD_LABEL[st.leadMinutes] || '已订阅'}` : '🔕 提醒我'}
+                              {st ? (
+                                <IconBell className="w-3 h-3 shrink-0" strokeWidth={2} />
+                              ) : (
+                                <IconBellOff className="w-3 h-3 shrink-0" strokeWidth={2} />
+                              )}
+                              {st ? LEAD_LABEL[st.leadMinutes] || '已订阅' : '提醒我'}
                             </button>
                             {st && (
                               <button
                                 onClick={() => cancelReminder(a.id)}
                                 disabled={busy === a.id}
-                                className="text-[11px] text-ink-400 hover:text-rose-600 transition-colors disabled:opacity-50"
+                                className="text-[11px] px-2 min-h-[44px] md:min-h-0 text-ink-400 hover:text-rose-600 transition-colors disabled:opacity-50"
                               >
                                 取消
                               </button>
@@ -353,13 +408,13 @@ export default function CalendarPage() {
                           </div>
 
                           {open && (
-                            <div className="mt-2 flex flex-wrap gap-1">
+                            <div className="mt-2 flex flex-wrap gap-1.5">
                               {LEAD_OPTIONS.map((l) => (
                                 <button
                                   key={l}
                                   onClick={() => setReminder(a.id, l)}
                                   disabled={busy === a.id}
-                                  className={`text-[11px] px-2 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+                                  className={`text-[11px] px-2.5 py-1 min-h-[44px] md:min-h-0 rounded-lg border transition-colors disabled:opacity-50 ${
                                     st?.leadMinutes === l
                                       ? 'border-primary-400 bg-primary-50 text-primary-700'
                                       : 'border-ink-200 text-ink-600 hover:border-primary-300'
@@ -377,7 +432,15 @@ export default function CalendarPage() {
                 )}
 
                 {cur && cur.activities.length === 0 && (
-                  <p className="text-sm text-ink-400 py-4">这一天没有安排的活动</p>
+                  <div className="py-5 text-center">
+                    <span
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-dashed border-ink-200 text-ink-300"
+                      aria-hidden
+                    >
+                      <IconCalendar className="h-5 w-5" strokeWidth={1.5} />
+                    </span>
+                    <p className="text-sm text-ink-500 mt-2.5">这一天没有安排的活动</p>
+                  </div>
                 )}
 
                 {data?.loggedIn === false && (
@@ -395,7 +458,7 @@ export default function CalendarPage() {
                     <ul className="space-y-1.5">
                       {myReminders.slice(0, 6).map((r) => (
                         <li key={r.id} className="flex items-center gap-2 text-[11px] text-ink-500">
-                          <span className="flex-shrink-0">🔔</span>
+                          <IconBell className="w-3 h-3 shrink-0 text-gold-600" strokeWidth={1.8} />
                           <Link href={`/activities/${r.id}`} className="truncate hover:text-primary-700">
                             {r.date.slice(5)} {r.startTime} · {r.title}
                           </Link>

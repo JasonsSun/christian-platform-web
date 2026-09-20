@@ -13,6 +13,17 @@ import { Danmaku } from '@/components/Danmaku';
 import { LiveGuide } from '@/components/LiveGuide';
 import { Loading, ErrorBox } from '@/components/ui';
 import ShareButton from '@/components/ShareButton';
+import {
+  IconAlert,
+  IconBell,
+  IconCheck,
+  IconClose,
+  IconEye,
+  IconFilm,
+  IconHourglass,
+  IconLink,
+  IconLock,
+} from '@/components/icons';
 
 interface ChatMsg { id: string; roomId: string; userId: string | null; displayName: string; avatarColor: string | null; content: string; createdAt: string; }
 interface LiveRoom {
@@ -349,7 +360,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               <HlsPlayer src={room.hlsUrl || null} poster={room.coverUrl} live={room.status === 'live'} />
             ) : room.live && !canWatchLive ? (
               <div className="relative aspect-video bg-ink-900/90 rounded-xl flex flex-col items-center justify-center text-center px-6">
-                <span className="text-5xl mb-3" aria-hidden="true">🔒</span>
+                <IconLock className="w-14 h-14 mb-3 text-white/70" strokeWidth={1.4} />
                 <p className="text-white/90 font-medium">无权限观看直播</p>
                 <p className="text-white/50 text-sm mt-1">仅主播本人与超管可观看进行中的直播;回放视频所有人可看。</p>
               </div>
@@ -393,7 +404,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               href={`/media/${room.recordingMediaId}`}
               className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors"
             >
-              📼 观看回放视频
+              <IconFilm className="w-4 h-4 shrink-0" strokeWidth={1.8} /> 观看回放视频
             </Link>
           )}
 
@@ -408,7 +419,10 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
             <div className="flex items-center gap-2">
               <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${badge.cls}`}>{badge.text}</span>
               {room.status === 'live' && (
-                <span className="text-xs text-ink-500">👁 {Math.max(viewerCount, room.viewerCount)}</span>
+                <span className="text-xs text-ink-500 inline-flex items-center gap-1">
+                  <IconEye className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+                  {Math.max(viewerCount, room.viewerCount)}
+                </span>
               )}
               <ShareButton
                 title={`直播 · ${room.title}`}
@@ -425,7 +439,17 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                   reminded ? 'bg-primary-50 border-primary-300 text-primary-700' : 'bg-white border-ink-200 text-ink-700 hover:border-primary-400 hover:text-primary-600'
                 }`}
               >
-                {reminded ? '✓ 已预约' : '🔔 预约开播提醒'}
+                {reminded ? (
+                  <>
+                    <IconCheck className="w-4 h-4 shrink-0" strokeWidth={2.2} />
+                    <span>已预约</span>
+                  </>
+                ) : (
+                  <>
+                    <IconBell className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+                    <span>预约开播提醒</span>
+                  </>
+                )}
                 {typeof room.reminderCount === 'number' && room.reminderCount > 0 ? (
                   <span className="text-xs opacity-70">· {room.reminderCount} 人已约</span>
                 ) : null}
@@ -445,14 +469,18 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
             </div>
           ) : null}
           {room.reviewStatus === 'pending' && !room.cancelled ? (
-            <div className="rounded-xl px-4 py-3 bg-amber-50/80 border border-amber-200 text-sm text-amber-700">
-              ⏳ 直播间审核中{(isOwner || isStaff) ? '' : ',通过前暂不对外展示'},通过后即可开播。
+            <div className="rounded-xl px-4 py-3 bg-amber-50/80 border border-amber-200 text-sm text-amber-700 flex items-start gap-2">
+              <IconHourglass className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={1.8} />
+              <span>直播间审核中{(isOwner || isStaff) ? '' : ',通过前暂不对外展示'},通过后即可开播。</span>
             </div>
           ) : null}
           {room.reviewStatus === 'rejected' && !room.cancelled ? (
-            <div role="alert" className="rounded-xl px-4 py-3 bg-rose-50/80 border border-rose-200 text-sm text-rose-700">
-              ✕ 审核未通过{room.reviewNote ? `:${room.reviewNote}` : ''}。
-              {isStaff && <Link href="/admin/live" className="ml-2 underline">去管理后台处理</Link>}
+            <div role="alert" className="rounded-xl px-4 py-3 bg-rose-50/80 border border-rose-200 text-sm text-rose-700 flex items-start gap-2">
+              <IconClose className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2} />
+              <span>
+                审核未通过{room.reviewNote ? `:${room.reviewNote}` : ''}。
+                {isStaff && <Link href="/admin/live" className="ml-2 underline">去管理后台处理</Link>}
+              </span>
             </div>
           ) : null}
 
@@ -469,7 +497,10 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               {canManage && (
                 <div className="flex items-center gap-2 flex-wrap">
                   {room.live && (
-                    <span className="text-sm text-ink-700 font-medium">🔗 直播间链接</span>
+                    <span className="text-sm text-ink-700 font-medium inline-flex items-center gap-1.5">
+                      <IconLink className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+                      直播间链接
+                    </span>
                   )}
                   {room.status !== 'ended' && !room.cancelled && (
                     room.live
@@ -477,7 +508,10 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                       : <button className="btn-primary" disabled={pending || !!startBlock} onClick={startLive}>开始直播</button>
                   )}
                   {startBlock && room.status !== 'ended' && !room.cancelled && (
-                    <p role="alert" className="text-xs text-rose-600 w-full">⚠ {startBlock}</p>
+                    <p role="alert" className="text-xs text-rose-600 w-full flex items-center gap-1">
+                      <IconAlert className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
+                      <span>{startBlock}</span>
+                    </p>
                   )}
                   {room.reviewStatus === 'pending' && room.reviewVideoId && (
                     <div className="w-full text-sm space-y-2 border-t border-ink-100 pt-3">
@@ -498,10 +532,10 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                   )}
                   {room.recordEnabled && room.status === 'ended' && (
                     room.recordingMediaId
-                      ? <Link href={`/media/${room.recordingMediaId}`} className="btn-secondary text-sm">📼 查看录像</Link>
+                      ? <Link href={`/media/${room.recordingMediaId}`} className="btn-secondary text-sm"><IconFilm className="w-4 h-4 shrink-0" strokeWidth={1.8} />查看录像</Link>
                       : recordTimeout
                         ? <span className="text-xs text-ink-400">本次未生成录像（服务端未录制或时长过短），可在管理台手动上传回放</span>
-                        : <span className="text-xs text-amber-700">⏳ 录像生成中,自动刷新…</span>
+                        : <span className="text-xs text-amber-700 inline-flex items-center gap-1"><IconHourglass className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />录像生成中,自动刷新…</span>
                   )}
                   {room.recordEnabled && room.status !== 'ended' && (
                     <span className="text-xs text-ink-400">本场已开启保存录像,结束后自动入库审核</span>

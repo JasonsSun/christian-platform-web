@@ -292,7 +292,7 @@ export default function Guards() {
         'position:fixed;inset:0;z-index:2147483647;background:#0f1533;color:#e8ecff;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;';
       el.innerHTML = `
         <div style="max-width:520px">
-          <div style="font-size:44px;margin-bottom:14px">🛡️</div>
+          <div style="font-size:44px;margin-bottom:14px"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;margin:0 auto"><path d="M12 3.5l7 2.6v5.4c0 4.3-2.9 7.6-7 9-4.1-1.4-7-4.7-7-9V6.1l7-2.6z"/><path d="M9.2 12.2l2 2 3.6-3.9"/></svg></div>
           <div style="font-size:20px;font-weight:700;margin-bottom:10px">已启用内容保护</div>
           <div style="font-size:14px;line-height:1.8;opacity:.85">
             为保障平台内容与隐私安全，本站点不支持通过开发者工具查看源码。<br/>

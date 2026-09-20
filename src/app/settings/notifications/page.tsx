@@ -6,6 +6,7 @@ import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import DailyReminderSettings from '@/components/DailyReminderSettings';
+import { IconBell, IconChat, IconChatDots, IconMail } from '@/components/icons';
 
 type Digest = 'realtime' | 'daily' | 'off';
 
@@ -43,11 +44,11 @@ type BindState = {
   pending: { token: string; scene: string; expiresAt: string } | null;
 };
 
-const CHANNELS: { key: keyof Pick<Prefs, 'inapp' | 'email' | 'wechat' | 'sms'>; label: string; desc: string; icon: string }[] = [
-  { key: 'inapp', label: '站内通知', desc: '回到站点即可看到，无门槛', icon: '🔔' },
-  { key: 'email', label: '邮件', desc: '零成本兜底，需配置 SMTP', icon: '✉️' },
-  { key: 'wechat', label: '微信', desc: '服务号模板消息，需先绑定', icon: '💬' },
-  { key: 'sms', label: '短信', desc: '付费通道，仅活动强提醒使用', icon: '📱' },
+const CHANNELS: { key: keyof Pick<Prefs, 'inapp' | 'email' | 'wechat' | 'sms'>; label: string; desc: string; icon: JSX.Element }[] = [
+  { key: 'inapp', label: '站内通知', desc: '回到站点即可看到，无门槛', icon: <IconBell className="w-5 h-5" strokeWidth={1.6} /> },
+  { key: 'email', label: '邮件', desc: '零成本兜底，需配置 SMTP', icon: <IconMail className="w-5 h-5" strokeWidth={1.6} /> },
+  { key: 'wechat', label: '微信', desc: '服务号模板消息，需先绑定', icon: <IconChatDots className="w-5 h-5" strokeWidth={1.6} /> },
+  { key: 'sms', label: '短信', desc: '付费通道，仅活动强提醒使用', icon: <IconChat className="w-5 h-5" strokeWidth={1.6} /> },
 ];
 
 export default function NotificationSettingsPage() {
@@ -172,7 +173,7 @@ export default function NotificationSettingsPage() {
           const unavailable = c.key !== 'inapp' && !meta?.available;
           return (
             <div key={c.key} className="bg-white rounded-2xl border border-ink-100 shadow-soft p-4 flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-ink-100 flex items-center justify-center text-xl flex-shrink-0">{c.icon}</div>
+              <div className="w-11 h-11 rounded-xl bg-ink-100 text-ink-500 flex items-center justify-center flex-shrink-0">{c.icon}</div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <h2 className="font-semibold text-ink-900">{c.label}</h2>

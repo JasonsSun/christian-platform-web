@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { apiGet, apiDelete } from '@/lib/api';
 import { downloadText, safeFilename } from '@/lib/download';
+import { IconBookOpen, IconChevronRight } from '@/components/icons';
 
 type BmItem = {
   id: string;
@@ -101,7 +102,7 @@ export default function BibleNotesPage() {
         <div className="flex items-center justify-between mb-6 gap-3">
           <div className="min-w-0">
             <h1 className="font-display text-2xl md:text-3xl font-bold text-ink-900">我的灵修笔记</h1>
-            <p className="text-sm text-ink-500 mt-1">
+            <p className="num text-sm text-ink-500 mt-1">
               共 {items.length} 处高亮 · {noteCount} 条笔记（跨设备同步）
             </p>
           </div>
@@ -110,14 +111,14 @@ export default function BibleNotesPage() {
               <button
                 onClick={exportMarkdown}
                 title="把全部高亮与笔记导出为 Markdown 文件"
-                className="px-3 py-2 rounded-xl text-sm font-medium text-ink-600 bg-white border border-ink-200 hover:border-primary-300 hover:text-primary-700 transition-colors"
+                className="inline-flex items-center min-h-[2.75rem] px-4 py-2 rounded-xl text-sm font-medium text-ink-600 bg-white border border-ink-200 hover:border-primary-300 hover:text-primary-700 transition-colors"
               >
                 导出 Markdown
               </button>
             )}
             <Link
               href="/bible"
-              className="px-3 py-2 rounded-xl text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors"
+              className="inline-flex items-center min-h-[2.75rem] px-4 py-2 rounded-xl text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 transition-colors"
             >
               返回圣经
             </Link>
@@ -127,17 +128,20 @@ export default function BibleNotesPage() {
         {/* 灵修日记入口：笔记是读经时的领受，日记是更完整的默想，彼此呼应 */}
         <Link
           href="/devotions"
-          className="group mb-6 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-primary-500 to-primary-700 px-4 py-3 text-white shadow-glow hover:opacity-95 transition-opacity"
+          data-spot
+          className="group spot mb-6 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-primary-500 to-primary-700 px-4 py-3 text-white shadow-glow hover:opacity-95 transition-opacity"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <span className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-lg flex-shrink-0">📖</span>
+            <span className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+              <IconBookOpen className="w-5 h-5 text-white" strokeWidth={1.7} />
+            </span>
             <div className="min-w-0">
               <p className="font-display text-sm font-bold">灵修日记</p>
               {/* 半透明白落在 primary-500 那端实测只有 4.08，11px 小字过不了 AA */}
               <p className="text-[11px] text-white truncate">把读经的领受写下来，回看神一路的带领</p>
             </div>
           </div>
-          <span className="flex-shrink-0 text-sm font-semibold text-white/90 group-hover:translate-x-0.5 transition-transform">›</span>
+          <IconChevronRight className="w-4 h-4 shrink-0 text-white/90 group-hover:translate-x-0.5 transition-transform" />
         </Link>
 
         {!user && !authLoading ? (
@@ -150,7 +154,7 @@ export default function BibleNotesPage() {
         ) : loading ? (
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="glass rounded-2xl p-5 h-20 animate-pulse border border-white/40" />
+              <div key={i} className="glass rounded-2xl p-5 h-20 skeleton-sheen border border-white/40" />
             ))}
           </div>
         ) : error ? (
@@ -161,17 +165,17 @@ export default function BibleNotesPage() {
             <p className="text-ink-400 text-sm mt-1">在读经时，把鼠标移到节号旁的 ＋ 即可标记高亮、写下领受。</p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div data-reveal-group className="space-y-5">
             {groups.map((g) => (
               <div key={g.key} className="glass rounded-2xl p-5 shadow-card border border-white/40">
                 <div className="flex items-center justify-between mb-3">
                   <Link
                     href={`/bible/cuv/${g.bookId}/${g.chapter}`}
-                    className="font-display text-lg font-bold text-ink-900 hover:text-primary-700"
+                    className="num font-display text-lg font-bold text-ink-900 hover:text-primary-700"
                   >
                     {g.bookName} 第 {g.chapter} 章
                   </Link>
-                  <span className="text-xs text-ink-400">{g.items.length} 处</span>
+                  <span className="num text-xs text-ink-400">{g.items.length} 处</span>
                 </div>
                 <div className="space-y-2">
                   {g.items

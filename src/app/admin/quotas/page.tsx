@@ -6,7 +6,7 @@ import { apiPatch, apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { formatSize } from '@/lib/format';
-import { AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox, RoleBadge } from '../_components';
+import { AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox, RoleBadge, PageHead, Toolbar, AdminSelect, TableShell, Th, TableSkeleton } from '../_components';
 
 interface Policy {
   level: number; name: string; minScore: number;
@@ -101,10 +101,11 @@ export default function AdminQuotasPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">成长与配额</SectionTitle>
-      <p className="text-sm text-ink-500 -mt-2 mb-6">
-        按「在线时长 / 使用次数 / 内容贡献 / 违规」计算信任分并自动分级，等级越高可上传的视频越长、文件越大、每日次数越多。
-      </p>
+      <PageHead
+        eyebrow="系统 · 配额"
+        title="成长与配额"
+        sub="按「在线时长 / 使用次数 / 内容贡献 / 违规」计算信任分并自动分级，等级越高可上传的视频越长、文件越大、每日次数越多。"
+      />
 
       {loading && !data ? <Loading /> : null}
       {error ? <ErrorBox message={error} onRetry={reload} /> : null}
@@ -236,12 +237,17 @@ export default function AdminQuotasPage() {
                     onKeyDown={(e) => { if (e.key === 'Enter') { setKw(kwInput); setPage(1); } }}
                   />
                 </div>
-                <select className="input-styled input-sm select-inline text-sm" aria-label="按成长等级筛选" value={level} onChange={(e) => { setLevel(e.target.value); setPage(1); }}>
-                  <option value="">全部等级</option>
-                  {data.policies.map((p) => <option key={p.level} value={p.level}>L{p.level} {p.name}</option>)}
-                </select>
-                <button onClick={() => { setKw(kwInput); setPage(1); }} className="btn-primary btn-sm text-sm px-4">搜索</button>
-                <button onClick={() => recompute()} disabled={pending} className="btn-secondary btn-sm text-sm px-4 disabled:opacity-50">
+                <AdminSelect
+                  value={level}
+                  label="按成长等级筛选"
+                  onChange={(v) => { setLevel(v); setPage(1); }}
+                  options={[
+                    { value: '', label: '全部等级' },
+                    ...data.policies.map((p) => ({ value: String(p.level), label: `L${p.level} ${p.name}` })),
+                  ]}
+                />
+                <button onClick={() => { setKw(kwInput); setPage(1); }} className="btn-primary btn-sm min-h-11 lg:min-h-0 text-sm px-4">搜索</button>
+                <button onClick={() => recompute()} disabled={pending} className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-sm px-4 disabled:opacity-50">
                   全部重算
                 </button>
               </div>
@@ -305,10 +311,10 @@ export default function AdminQuotasPage() {
 
             {!data.users.length ? <Empty label="没有匹配的用户画像" /> : null}
 
-            <div className="flex items-center gap-3 mt-4 text-sm">
-              <button className="btn-secondary disabled:opacity-40" disabled={page <= 1} onClick={() => setPage(page - 1)}>上一页</button>
-              <span className="text-ink-500">第 {page} 页 / 共 {Math.max(1, Math.ceil(data.total / pageSize))} 页</span>
-              <button className="btn-secondary disabled:opacity-40" disabled={page * pageSize >= data.total} onClick={() => setPage(page + 1)}>下一页</button>
+            <div className="flex items-center gap-3 mt-4 text-sm flex-wrap">
+              <button className="btn-secondary btn-sm min-h-11 lg:min-h-0 disabled:opacity-40" disabled={page <= 1} onClick={() => setPage(page - 1)}>上一页</button>
+              <span className="num text-ink-500">第 {page} 页 / 共 {Math.max(1, Math.ceil(data.total / pageSize))} 页</span>
+              <button className="btn-secondary btn-sm min-h-11 lg:min-h-0 disabled:opacity-40" disabled={page * pageSize >= data.total} onClick={() => setPage(page + 1)}>下一页</button>
             </div>
           </div>
         </>

@@ -7,12 +7,13 @@ import { useAuth } from '@/lib/auth';
 import { formatSize } from '@/lib/format';
 import { useApi } from '@/lib/useApi';
 import QuotaCard, { fmtDuration, QuotaData } from '@/components/QuotaCard';
+import { IconCheck, IconDocument, IconFilm, IconImage, IconLock, IconMusicNote } from '@/components/icons';
 
 const KINDS = [
-  { key: 'image', label: '图片', accept: '.jpg,.jpeg,.png,.webp,.gif', icon: '🖼️' },
-  { key: 'audio', label: '音乐', accept: '.mp3,.wav,.m4a,.aac,.ogg,.flac', icon: '🎵' },
-  { key: 'video', label: '视频', accept: '.mp4,.mov,.webm,.mkv,.avi', icon: '🎬' },
-  { key: 'doc', label: '资料', accept: '.pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.xls,.xlsx', icon: '📄' },
+  { key: 'image', label: '图片', accept: '.jpg,.jpeg,.png,.webp,.gif', icon: IconImage },
+  { key: 'audio', label: '音乐', accept: '.mp3,.wav,.m4a,.aac,.ogg,.flac', icon: IconMusicNote },
+  { key: 'video', label: '视频', accept: '.mp4,.mov,.webm,.mkv,.avi', icon: IconFilm },
+  { key: 'doc', label: '资料', accept: '.pdf,.doc,.docx,.ppt,.pptx,.txt,.md,.xls,.xlsx', icon: IconDocument },
 ];
 
 interface Result {
@@ -109,7 +110,9 @@ export default function UploadPage() {
   if (!user) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-4">🔒</div>
+        <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center mx-auto mb-4">
+          <IconLock className="w-8 h-8 text-ink-500" strokeWidth={1.6} />
+        </div>
         <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
         <p className="text-ink-500 mb-6">登录后即可上传图片、音乐、视频与资料</p>
         <Link href="/login" className="btn-primary">去登录</Link>
@@ -136,7 +139,10 @@ export default function UploadPage() {
               kind === k.key ? 'bg-primary-600 text-white shadow-card' : 'bg-ink-100 text-ink-600 hover:bg-ink-200'
             }`}
           >
-            {k.icon} {k.label}
+            <span className="inline-flex items-center gap-1.5">
+              <k.icon className="w-4 h-4" strokeWidth={1.8} />
+              {k.label}
+            </span>
           </button>
         ))}
       </div>
@@ -169,7 +175,9 @@ export default function UploadPage() {
             className="hidden"
             onChange={(e) => pick(e.target.files?.[0] || null)}
           />
-          <div className="text-4xl mb-3">{active.icon}</div>
+          <div className="flex items-center justify-center mb-3">
+            <active.icon className="w-10 h-10 text-primary-500" strokeWidth={1.5} />
+          </div>
           {file ? (
             <>
               <div className="font-medium text-ink-900">{file.name}</div>
@@ -219,7 +227,7 @@ export default function UploadPage() {
       {result ? (
         <div className="mt-6 glass rounded-2xl p-6 shadow-soft border border-emerald-100">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-emerald-600 text-lg">✓</span>
+            <IconCheck className="w-6 h-6 text-emerald-600" strokeWidth={2} />
             <span className="font-medium text-ink-900">上传成功,已进入审核队列</span>
             <span className="ml-auto px-2.5 py-0.5 rounded-full bg-gold-100 text-gold-800 text-xs">待审核</span>
           </div>

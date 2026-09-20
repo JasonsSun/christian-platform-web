@@ -18,6 +18,15 @@ import BadgeWall from '@/components/BadgeWall';
 import type { ContentItem, ActivityItem, GroupItem, SongItem, MediaItem } from '@/lib/types';
 import dynamic from 'next/dynamic';
 import { SkeletonGrid, ErrorBlock, EmptyBlock } from './_panels/shared';
+import {
+  IconArrowRight,
+  IconBookOpen,
+  IconChurch,
+  IconLock,
+  IconMapPin,
+  IconPencil,
+  IconWallet,
+} from '@/components/icons';
 import { MyContents } from './_panels/MyContents';
 import { MyActivities } from './_panels/MyActivities';
 import { MyGroups } from './_panels/MyGroups';
@@ -29,7 +38,8 @@ import { MyFavorites } from './_panels/MyFavorites';
  * 低频面板已拆到 ./_panels/*(下划线开头,不会被 App Router 当成路由),这里按需加载:
  * 切到哪个 tab 才下载哪块。高频的「内容/草稿/收藏/活动/团契」仍留在首屏。
  */
-const PanelLoading = () => <div className="text-center py-12 text-ink-400">正在加载…</div>;
+/* 占位与真面板同为 2 列卡片栅格：原来是一行「正在加载…」，面板下载完整块往下顶。 */
+const PanelLoading = () => <SkeletonGrid />;
 
 const MyGrowth = dynamic(() => import('./_panels/Growth').then((m) => m.MyGrowth), { loading: () => <PanelLoading /> });
 const MyContentFavorites = dynamic(() => import('./_panels/ContentFavs').then((m) => m.MyContentFavorites), { loading: () => <PanelLoading /> });
@@ -101,16 +111,52 @@ export default function MePage() {
   }
 
   if (authLoading) {
-    return <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center text-ink-400">加载中…</div>;
+    return (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* 骨架与真卡同一套 DOM（头像 / 昵称 / @用户名 / 标签行 / 按钮行 / 五格统计），
+            之前少了下面三行，数据落地把整页往下顶 134px（桌面 CLS 0.0228）。 */}
+        <div className="glass card-tech rounded-3xl p-6 sm:p-8">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+            <div className="skeleton-sheen w-[88px] h-[88px] rounded-full bg-ink-100 flex-shrink-0" />
+            <div className="flex-1 text-center sm:text-left">
+              <div className="skeleton-sheen h-8 w-40 rounded-lg bg-ink-100 mx-auto sm:mx-0" />
+              <div className="skeleton-sheen h-5 w-24 rounded bg-ink-100 mt-1 mx-auto sm:mx-0" />
+              <div className="flex flex-wrap gap-2 justify-center sm:justify-start mt-3">
+                <span className="skeleton-sheen h-7 w-20 rounded-full bg-ink-100" />
+                <span className="skeleton-sheen h-7 w-24 rounded-full bg-ink-100" />
+              </div>
+              <div className="flex gap-3 mt-4 justify-center sm:justify-start">
+                <span className="skeleton-sheen h-10 w-24 rounded-xl bg-ink-100" />
+                <span className="skeleton-sheen h-10 w-24 rounded-xl bg-ink-100" />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-ui-surface rounded-2xl p-3 border border-ink-100 text-center">
+                <div className="skeleton-sheen h-8 w-8 rounded mx-auto bg-ink-100" />
+                <div className="skeleton-sheen h-4 w-10 rounded mt-1 mx-auto bg-ink-100" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-6"><SkeletonGrid /></div>
+      </div>
+    );
   }
 
   if (!user) {
     return (
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-4">🔒</div>
-        <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
-        <p className="text-ink-500 mb-6">登录后即可查看和管理你的个人中心</p>
-        <button onClick={() => router.push('/login')} className="btn-primary">去登录</button>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="max-w-md mx-auto bg-white card-tech rounded-3xl border border-ink-100 px-6 py-10 text-center">
+          <span className="w-14 h-14 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-4">
+            <IconLock className="w-7 h-7" strokeWidth={1.6} />
+          </span>
+          <div className="eyebrow justify-center mb-1.5">需要登录</div>
+          <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
+          <p className="text-ink-500 mb-6 text-sm">登录后即可查看和管理你的个人中心</p>
+          <button onClick={() => router.push('/login')} className="btn-primary">去登录</button>
+        </div>
       </div>
     );
   }
@@ -118,7 +164,7 @@ export default function MePage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* 资料卡 */}
-      <div className="glass rounded-3xl p-6 sm:p-8 shadow-card">
+      <div className="glass card-tech rounded-3xl p-6 sm:p-8">
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
           <div className="relative group">
             <Avatar name={user.displayName} color={user.avatarColor} size={88} avatarUrl={user.avatarUrl} />
@@ -137,8 +183,18 @@ export default function MePage() {
                 <h1 className="font-display text-2xl font-bold text-ink-900">{user.displayName}</h1>
                 <p className="text-ink-500 text-sm mt-1">@{user.username}</p>
                 <div className="flex flex-wrap gap-2 justify-center sm:justify-start mt-3 text-sm">
-                  {user.city && <span className="px-3 py-1 rounded-full bg-primary-50 text-primary-600">📍 {user.city}</span>}
-                  {user.church && <span className="px-3 py-1 rounded-full bg-gold-50 text-gold-700">⛪ {user.church}</span>}
+                  {user.city && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 text-primary-700">
+                      <IconMapPin className="w-4 h-4 flex-shrink-0" strokeWidth={1.6} />
+                      {user.city}
+                    </span>
+                  )}
+                  {user.church && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-50 text-gold-700">
+                      <IconChurch className="w-4 h-4 flex-shrink-0" strokeWidth={1.6} />
+                      {user.church}
+                    </span>
+                  )}
                 </div>
                 {user.bio && <p className="text-ink-600 mt-3 whitespace-pre-wrap">{user.bio}</p>}
                 <div className="flex gap-3 mt-4 justify-center sm:justify-start">
@@ -159,7 +215,8 @@ export default function MePage() {
           </div>
         </div>
 
-        {/* 统计卡 */}
+        {/* 统计卡（不进 data-reveal-group：这五块自己带 hover 描边，
+            浮现组会给子元素压上 transition-delay，那点余量全落在悬停手感上） */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6">
           <Stat label="内容" value={user.stats?.contents ?? 0} />
           <Stat label="粉丝" value={user.stats?.followers ?? 0} />
@@ -185,74 +242,79 @@ export default function MePage() {
       <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Link
           href="/devotions"
-          className="group flex items-center gap-3 rounded-2xl bg-white p-4 shadow-soft border border-ink-100 hover:border-primary-300 hover:shadow-card-hover transition-all"
+          data-spot
+          className="group spot flex items-center gap-3 rounded-2xl bg-white p-4 card-tech border border-ink-100 hover:border-primary-300 transition-colors"
         >
-          <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 text-primary-700 flex items-center justify-center text-xl flex-shrink-0 group-hover:from-primary-500 group-hover:to-primary-700 group-hover:text-white transition-colors">
-            📖
+          <span className="w-11 h-11 rounded-xl bg-primary-50 text-primary-700 flex items-center justify-center flex-shrink-0 group-hover:bg-primary-600 group-hover:text-white transition-colors">
+            <IconBookOpen className="w-[22px] h-[22px]" strokeWidth={1.6} />
           </span>
           <span className="min-w-0">
             <span className="block font-semibold text-ink-900 text-sm">灵修日记</span>
             <span className="block text-xs text-ink-500 mt-0.5 truncate">默想、祷告与感恩，仅自己可见</span>
           </span>
+          <IconArrowRight className="w-4 h-4 ml-auto text-ink-300 group-hover:text-primary-600 group-hover:translate-x-0.5 transition-all" strokeWidth={1.6} />
         </Link>
         <Link
           href="/bible/notes"
-          className="group flex items-center gap-3 rounded-2xl bg-white p-4 shadow-soft border border-ink-100 hover:border-gold-300 hover:shadow-card-hover transition-all"
+          data-spot
+          className="group spot flex items-center gap-3 rounded-2xl bg-white p-4 card-tech border border-ink-100 hover:border-gold-300 transition-colors"
         >
-          <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-100 to-gold-200 text-gold-700 flex items-center justify-center text-xl flex-shrink-0 group-hover:from-gold-400 group-hover:to-gold-600 group-hover:text-ink-950 transition-colors">
-            ✎
+          <span className="w-11 h-11 rounded-xl bg-gold-50 text-gold-700 flex items-center justify-center flex-shrink-0 group-hover:bg-gold-500 group-hover:text-white transition-colors">
+            <IconPencil className="w-[22px] h-[22px]" strokeWidth={1.6} />
           </span>
           <span className="min-w-0">
             <span className="block font-semibold text-ink-900 text-sm">读经笔记与高亮</span>
             <span className="block text-xs text-ink-500 mt-0.5 truncate">回看经文亮光，可导出 Markdown</span>
           </span>
+          <IconArrowRight className="w-4 h-4 ml-auto text-ink-300 group-hover:text-gold-600 group-hover:translate-x-0.5 transition-all" strokeWidth={1.6} />
         </Link>
       </div>
 
-      {/* 账户与数据 */}
+      {/* 账户与数据。这一排是主操作，不降到 28px 的 .btn-chip（那档字号 12px、
+          内边距写死在组件类里，压不回 44px 热区），统一沿用 px-5 py-2.5 的同款规格。 */}
       <div className="mt-6 flex flex-col items-center gap-3">
         <div className="flex flex-wrap gap-3 justify-center">
-          <Link href="/feed" className="px-5 py-2.5 rounded-xl text-primary-600 border border-primary-200 hover:bg-primary-50 text-sm font-medium transition-colors">关注动态</Link>
-          <a href="/api/v1/me/export" download className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 text-sm font-medium transition-colors">导出我的数据</a>
+          <Link href="/feed" className="px-5 py-2.5 rounded-xl text-primary-700 bg-primary-50 border border-primary-200 hover:bg-primary-100 text-sm font-medium transition-colors">关注动态</Link>
+          <a href="/api/v1/me/export" download className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 text-sm font-medium transition-colors">导出我的数据</a>
           <button
             onClick={() => setShowPwdModal(true)}
-            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 text-sm font-medium transition-colors"
+            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 text-sm font-medium transition-colors"
           >
             修改密码
           </button>
           <Link
             href="/settings/sessions"
-            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 text-sm font-medium transition-colors"
+            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 text-sm font-medium transition-colors"
           >
             登录设备
           </Link>
           <Link
             href="/settings/two-factor"
-            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 text-sm font-medium transition-colors"
+            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 text-sm font-medium transition-colors"
           >
             双因素认证
           </Link>
           <Link
             href="/settings/oauth"
-            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 text-sm font-medium transition-colors"
+            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 text-sm font-medium transition-colors"
           >
             第三方账号
           </Link>
           <Link
             href="/settings/privacy"
-            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 text-sm font-medium transition-colors"
+            className="px-5 py-2.5 rounded-xl text-ink-600 border border-ink-200 hover:bg-ink-50 hover:border-ink-300 text-sm font-medium transition-colors"
           >
             私信隐私
           </Link>
           <button
             onClick={async () => { await logout(); router.push('/'); }}
-            className="px-5 py-2.5 rounded-xl text-rose-600 border border-rose-200 hover:bg-rose-50 text-sm font-medium transition-colors"
+            className="px-5 py-2.5 rounded-xl text-rose-700 border border-rose-200 hover:bg-rose-50 hover:border-rose-300 text-sm font-medium transition-colors"
           >
             退出登录
           </button>
           <button
             onClick={() => setShowDeleteModal(true)}
-            className="px-5 py-2.5 rounded-xl text-ink-400 border border-ink-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-sm transition-colors"
+            className="px-5 py-2.5 rounded-xl text-ink-500 border border-ink-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 text-sm font-medium transition-colors"
           >
             注销账号
           </button>
@@ -335,39 +397,53 @@ export default function MePage() {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="bg-ui-surface rounded-2xl p-3 text-center border border-ink-100 hover:border-primary-200 transition-colors">
-      <div className="font-display text-2xl font-bold text-ink-900">{value}</div>
-      <div className="text-xs text-ink-500 mt-0.5">{label}</div>
+      <div data-count className="num font-display text-2xl font-bold text-ink-900">{value}</div>
+      <div className="eyebrow mt-1 justify-center">{label}</div>
     </div>
   );
 }
 
 function QuotaCompact() {
   const { data } = useApi<QuotaData>('/me/quota', []);
-  if (!data) return null;
-  const p = data.policy;
+  const p = data?.policy;
+  if (!data || !p) {
+    // 与真卡同高（p-5 + 44 图标行 + mt-4 + h-2 进度条）：返回 null 会把下方所有内容上移 108px。
+    return (
+      <div className="glass card-tech rounded-2xl p-5 mt-6" aria-hidden>
+        <div className="flex items-center gap-3">
+          <span className="skeleton-sheen w-11 h-11 rounded-xl bg-ink-100 shrink-0" />
+          <span className="flex-1 space-y-2">
+            <span className="skeleton-sheen block h-4 w-40 rounded bg-ink-100" />
+            <span className="skeleton-sheen block h-3 w-28 rounded bg-ink-100" />
+          </span>
+        </div>
+        <div className="mt-4 h-2 rounded-full bg-ink-100" />
+      </div>
+    );
+  }
   const usedPct = p.totalBytes > 0 ? Math.min(100, Math.round((data.usage.totalBytes / p.totalBytes) * 100)) : 0;
   const barColor = usedPct > 85 ? 'bg-rose-500' : 'bg-primary-600';
 
   return (
-    <div className="glass rounded-2xl p-5 shadow-soft mt-6">
+    <div className="glass card-tech rounded-2xl p-5 mt-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-gold-400 to-gold-500 flex items-center justify-center text-white text-lg flex-shrink-0">
-            📦
+          <div className="w-11 h-11 rounded-xl bg-gold-50 text-gold-700 flex items-center justify-center flex-shrink-0">
+            <IconWallet className="w-[22px] h-[22px]" strokeWidth={1.6} />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-display font-bold text-ink-900">L{data.level} · {data.levelName}</span>
-              <span className="text-xs text-ink-500">信任分 {data.trustScore}</span>
+              <span className="text-xs text-ink-500">信任分 <span className="num">{data.trustScore}</span></span>
             </div>
             <div className="text-xs text-ink-400 mt-0.5">
-              已用存储 {formatSize(data.usage.totalBytes)} / {formatSize(p.totalBytes)}
+              已用存储 <span className="num">{formatSize(data.usage.totalBytes)}</span> / <span className="num">{formatSize(p.totalBytes)}</span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-4 text-sm">
           <div className="text-center">
-            <div className="font-semibold text-ink-900">{data.usage.todayCount}<span className="text-ink-400 text-xs">/{p.dailyUploads}</span></div>
+            <div className="num font-semibold text-ink-900">{data.usage.todayCount}<span className="text-ink-400 text-xs">/{p.dailyUploads}</span></div>
             <div className="text-xs text-ink-500">今日上传</div>
           </div>
           <button
@@ -375,9 +451,10 @@ function QuotaCompact() {
               const el = document.querySelector('[data-tab="growth"]') as HTMLElement | null;
               el?.click();
             }}
-            className="text-primary-600 hover:text-primary-700 text-sm font-medium whitespace-nowrap"
+            className="group/growth inline-flex items-center gap-1 text-primary-700 hover:text-primary-800 text-sm font-medium whitespace-nowrap"
           >
-            详情 →
+            详情
+            <IconArrowRight className="w-4 h-4 transition-transform group-hover/growth:translate-x-0.5" strokeWidth={1.6} />
           </button>
         </div>
       </div>
@@ -415,7 +492,8 @@ function EditForm({ form, setForm, onCancel, onDone }: {
       <input className="input-styled" aria-label="教会" placeholder="教会" value={form.church} onChange={(e) => setForm({ ...form, church: e.target.value })} />
       <textarea className="input-styled min-h-[80px]" aria-label="个人简介" placeholder="个人简介" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
       <datalist id="cities">{CITIES.map((c) => <option key={c} value={c} />)}</datalist>
-      {error && <p role="alert" className="text-sm text-rose-600">{error}</p>}
+      {/* 常显等高：保存失败时不会把下面的按钮和整张资料卡往下顶 */}
+      <p role="alert" aria-hidden={!error || undefined} className={`text-sm min-h-[20px] ${error ? 'text-rose-700' : 'text-transparent'}`}>{error}</p>
       <div className="flex gap-3">
         <button type="button" onClick={onCancel} className="btn-secondary flex-1">取消</button>
         <button type="submit" disabled={pending} className="btn-primary flex-1 disabled:opacity-70">{pending ? '保存中…' : '保存'}</button>
@@ -453,8 +531,9 @@ function PasswordModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
 
   return (
     <Portal>
-    <div ref={dlgRef} data-guard="pwd-modal" role="dialog" aria-modal="true" aria-labelledby={titleId} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }} onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+    <div ref={dlgRef} data-guard="pwd-modal" role="dialog" aria-modal="true" aria-labelledby={titleId} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/50 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white card-tech rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="eyebrow mb-1">账号安全</div>
         <h3 id={titleId} className="font-display text-xl font-bold text-ink-900 mb-1">修改密码</h3>
         <p className="text-sm text-ink-500 mb-5">修改成功后需重新登录，其他设备将全部退出</p>
         <form onSubmit={submit} className="space-y-3">
@@ -473,7 +552,8 @@ function PasswordModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
             className="input-styled" type="password" placeholder="再次输入新密码" value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" required
           />
-          {error && <p className="text-sm text-rose-600">{error}</p>}
+          {/* 常显等高：报错时弹层本身不会因为浮层居中而上下重新定位 */}
+          <p role="alert" aria-hidden={!error || undefined} className={`text-sm min-h-[20px] ${error ? 'text-rose-700' : 'text-transparent'}`}>{error}</p>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">取消</button>
             <button type="submit" disabled={pending} className="btn-primary flex-1 disabled:opacity-70">{pending ? '提交中…' : '确认修改'}</button>
@@ -510,8 +590,9 @@ function DeleteAccountModal({ onClose, onDone }: { onClose: () => void; onDone: 
 
   return (
     <Portal>
-    <div ref={dlgRef} data-guard="delete-account-modal" role="dialog" aria-modal="true" aria-labelledby={titleId} className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.55)' }} onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+    <div ref={dlgRef} data-guard="delete-account-modal" role="dialog" aria-modal="true" aria-labelledby={titleId} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-900/60 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white card-tech rounded-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="eyebrow mb-1">不可恢复</div>
         <h3 id={titleId} className="font-display text-xl font-bold text-rose-700 mb-1">注销账号</h3>
         <p className="text-sm text-ink-500 mb-4">此操作不可恢复，请谨慎操作</p>
         <ul className="text-sm text-ink-600 space-y-1.5 mb-4 pl-5 list-disc">
@@ -534,7 +615,7 @@ function DeleteAccountModal({ onClose, onDone }: { onClose: () => void; onDone: 
             className="input-styled" type="password" placeholder="输入当前密码确认" value={password}
             onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required
           />
-          {error && <p className="text-sm text-rose-600">{error}</p>}
+          <p role="alert" aria-hidden={!error || undefined} className={`text-sm min-h-[20px] ${error ? 'text-rose-700' : 'text-transparent'}`}>{error}</p>
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">取消</button>
             <button type="submit" disabled={pending || !password || !confirmed} className="flex-1 px-4 py-2 rounded-xl bg-rose-600 text-white font-medium hover:bg-rose-700 disabled:opacity-50 transition-colors">

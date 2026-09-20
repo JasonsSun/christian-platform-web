@@ -15,6 +15,7 @@ import RichText from '@/components/RichText';
 import Portal from '@/components/Portal';
 import GroupPlans from '@/components/GroupPlans';
 import GroupChat from '@/components/GroupChat';
+import { Glyph, IconArrowLeft, IconBroadcast, IconUsers } from '@/components/icons';
 
 interface Member {
   id: string;
@@ -197,15 +198,30 @@ export default function GroupDetailPage() {
   }, [data, announcementDraft, notice, setData]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-ink-400">加载中…</div>;
+    return (
+      <div className="min-h-screen py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+          <div className="h-32 rounded-3xl bg-ink-100 skeleton-sheen" />
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 h-72 rounded-3xl bg-ink-100 skeleton-sheen" />
+            <div className="h-72 rounded-3xl bg-ink-100 skeleton-sheen" />
+          </div>
+        </div>
+      </div>
+    );
   }
   if (error || !data) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-ink-500">
-        <p>{error || '团契不存在'}</p>
-        <Link href="/groups" className="btn-secondary">
-          返回团契列表
-        </Link>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
+        <div className="bg-white rounded-3xl border border-dashed border-ink-200 px-8 py-10 text-center max-w-sm w-full">
+          <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-400 items-center justify-center mb-3">
+            <IconUsers className="w-6 h-6" strokeWidth={1.6} />
+          </span>
+          <p className="text-ink-500 text-sm mb-5">{error || '团契不存在'}</p>
+          <Link href="/groups" className="btn-secondary">
+            返回团契列表
+          </Link>
+        </div>
       </div>
     );
   }
@@ -222,18 +238,19 @@ export default function GroupDetailPage() {
           <div className="absolute bottom-0 left-10 w-64 h-64 bg-gold-400/15 rounded-full blur-3xl" />
         </div>
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/groups" className="text-white/80 text-sm hover:text-white">
-            ← 返回团契列表
+          <Link href="/groups" className="inline-flex items-center gap-1.5 text-white/80 hover:text-white text-sm min-h-[44px] transition-colors">
+            <IconArrowLeft className="w-4 h-4" strokeWidth={1.6} />
+            返回团契列表
           </Link>
-          <div className="mt-4 flex items-start gap-4">
-            <div className="w-20 h-20 rounded-3xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-5xl flex-shrink-0 border border-white/25">
-              {data.cover || '👥'}
+          <div className="mt-2 flex items-start gap-4">
+            <div className="w-20 h-20 rounded-3xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white flex-shrink-0 border border-white/25">
+              <Glyph glyph={data.cover || '👥'} className="w-9 h-9" />
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">{data.name}</h1>
               <p className="text-white/80 mt-2 text-sm leading-relaxed">{data.description}</p>
               <div className="flex items-center gap-3 mt-3 text-white/70 text-sm">
-                <span>{data.memberCount} 成员</span>
+                <span><span className="num font-semibold text-white/90">{data.memberCount}</span> 成员</span>
                 <span>·</span>
                 <span>{data.city || '线上'}</span>
                 {data.category && (
@@ -247,7 +264,7 @@ export default function GroupDetailPage() {
             <button
               onClick={toggleJoin}
               disabled={joinAction.pending}
-              className={`px-5 py-2.5 rounded-xl text-sm font-semibold flex-shrink-0 transition-all ${
+              className={`px-5 py-2.5 min-h-[44px] rounded-xl text-sm font-semibold flex-shrink-0 transition-colors ${
                 isMember ? 'bg-white/15 text-white border border-white/30 hover:bg-white/25' : 'btn-gold'
               }`}
             >
@@ -262,9 +279,9 @@ export default function GroupDetailPage() {
         <section className="py-4">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             {data.announcement ? (
-              <div className="relative rounded-2xl bg-gold-50 border border-gold-200 px-5 py-4">
+              <div data-spot className="spot relative rounded-2xl bg-gold-50 border border-gold-200 px-5 py-4">
                 <div className="flex items-start gap-3">
-                  <span className="text-xl flex-shrink-0">📢</span>
+                  <IconBroadcast className="w-5 h-5 text-gold-600 flex-shrink-0 mt-0.5" strokeWidth={1.6} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-xs font-semibold text-gold-700">群公告</span>
@@ -284,7 +301,7 @@ export default function GroupDetailPage() {
                       setAnnouncementDraft(data.announcement || '');
                       setAnnouncementOpen(true);
                     }}
-                    className="absolute top-3 right-3 text-xs text-gold-600 hover:text-gold-800 transition"
+                    className="absolute top-3 right-3 text-xs text-gold-600 hover:text-gold-800 px-2.5 py-2 rounded-lg transition-colors"
                   >
                     编辑
                   </button>
@@ -299,7 +316,7 @@ export default function GroupDetailPage() {
                       setAnnouncementDraft('');
                       setAnnouncementOpen(true);
                     }}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition"
+                    className="text-xs px-3.5 py-2 min-h-[36px] rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors font-medium"
                   >
                     发布群公告
                   </button>
@@ -314,8 +331,11 @@ export default function GroupDetailPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-3 gap-6">
           {/* 动态流 */}
           <div className="md:col-span-2 space-y-4">
-            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-soft border border-ink-100">
-              <h2 className="font-display text-xl font-bold text-ink-900 mb-4">团契动态</h2>
+            <div data-spot className="spot bg-white rounded-3xl p-5 md:p-6 shadow-soft border border-ink-100">
+              <div className="flex items-center gap-2.5 mb-4">
+                <span aria-hidden="true" className="h-5 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary-500 to-gold-500" />
+                <h2 className="font-display text-lg md:text-xl font-bold text-ink-900">团契动态</h2>
+              </div>
               {postError && (
                 <div className="rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3 mb-4">
                   {postError}
@@ -331,7 +351,7 @@ export default function GroupDetailPage() {
                     className="input-styled"
                     onKeyDown={(e) => e.key === 'Enter' && submitPost()}
                   />
-                  <button onClick={submitPost} disabled={postAction.pending} className="btn-primary px-5 flex-shrink-0">
+                  <button onClick={submitPost} disabled={postAction.pending} className="btn-primary px-5 min-h-[44px] flex-shrink-0">
                     发布
                   </button>
                 </div>
@@ -341,11 +361,13 @@ export default function GroupDetailPage() {
               {postAction.error && <p className="text-rose-600 text-sm mb-3">{postAction.error}</p>}
 
               {data.posts.length === 0 && (
-                <p className="text-center py-6 text-ink-400 text-sm">还没有动态，来发布第一条吧～</p>
+                <div className="rounded-2xl border border-dashed border-ink-200 px-6 py-10 text-center">
+                  <p className="text-ink-400 text-sm">还没有动态，来发布第一条吧～</p>
+                </div>
               )}
-              <div className="space-y-4">
+              <div data-reveal-group className="space-y-4">
                 {data.posts.map((p) => (
-                  <div key={p.id} className="flex gap-3 p-4 rounded-2xl bg-ink-50/60 border border-ink-100">
+                  <div key={p.id} data-spot className="spot flex gap-3 p-4 rounded-2xl bg-ink-50/60 border border-ink-100 transition-colors hover:border-ink-200">
                     <Avatar user={p.user} size={36} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -362,10 +384,13 @@ export default function GroupDetailPage() {
 
           {/* 成员列表 */}
           <div className="space-y-4">
-            <div className="bg-white rounded-3xl p-5 md:p-6 shadow-soft border border-ink-100">
-              <h2 className="font-display text-xl font-bold text-ink-900 mb-4">
-                成员 <span className="text-ink-400 text-base">({data.members.length})</span>
-              </h2>
+            <div data-spot className="spot bg-white rounded-3xl p-5 md:p-6 shadow-soft border border-ink-100">
+              <div className="flex items-center gap-2.5 mb-4">
+                <span aria-hidden="true" className="h-5 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary-500 to-gold-500" />
+                <h2 className="font-display text-lg md:text-xl font-bold text-ink-900">
+                  成员 <span className="num text-ink-400 text-base font-semibold">({data.members.length})</span>
+                </h2>
+              </div>
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {data.members.map((m) => (
                   <div key={m.id} className="flex items-center gap-3">
@@ -426,7 +451,7 @@ export default function GroupDetailPage() {
                       type="button"
                       disabled={exitAction.pending}
                       onClick={() => setOwnerExitOpen(false)}
-                      className="flex-1 py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition"
+                      className="flex-1 py-2.5 min-h-[44px] rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition-colors"
                     >
                       取消
                     </button>
@@ -434,7 +459,7 @@ export default function GroupDetailPage() {
                       type="button"
                       disabled={exitAction.pending}
                       onClick={confirmSoloDissolve}
-                      className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition disabled:opacity-50"
+                      className="flex-1 py-2.5 min-h-[44px] rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition-colors disabled:opacity-50"
                     >
                       {exitAction.pending ? '处理中…' : '退出并解散'}
                     </button>
@@ -453,7 +478,7 @@ export default function GroupDetailPage() {
                       type="button"
                       disabled={exitAction.pending}
                       onClick={() => exitAsOwner('transfer')}
-                      className="w-full text-left rounded-xl border border-ink-200 hover:border-primary-400 hover:bg-primary-50/50 p-4 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-full text-left rounded-xl border border-ink-200 hover:border-primary-400 hover:bg-primary-50/50 p-4 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <div className="font-semibold text-ink-900 text-sm">推荐：移交团长并退出</div>
                       <div className="text-xs text-ink-500 mt-1">
@@ -465,7 +490,7 @@ export default function GroupDetailPage() {
                       type="button"
                       disabled={exitAction.pending}
                       onClick={() => exitAsOwner('dissolve')}
-                      className="w-full text-left rounded-xl border border-rose-200 hover:border-rose-400 hover:bg-rose-50 p-4 transition disabled:opacity-40"
+                      className="w-full text-left rounded-xl border border-rose-200 hover:border-rose-400 hover:bg-rose-50 p-4 transition-colors disabled:opacity-40"
                     >
                       <div className="font-semibold text-rose-700 text-sm">解散整个团契</div>
                       <div className="text-xs text-ink-500 mt-1">
@@ -478,7 +503,7 @@ export default function GroupDetailPage() {
                     type="button"
                     disabled={exitAction.pending}
                     onClick={() => setOwnerExitOpen(false)}
-                    className="mt-4 w-full py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition"
+                    className="mt-4 w-full py-2.5 min-h-[44px] rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition-colors"
                   >
                     {exitAction.pending ? '处理中…' : '取消'}
                   </button>
@@ -522,7 +547,7 @@ export default function GroupDetailPage() {
                   type="button"
                   disabled={announcementSaving}
                   onClick={() => setAnnouncementOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition"
+                  className="flex-1 py-2.5 min-h-[44px] rounded-xl border border-ink-200 text-ink-600 text-sm hover:bg-ink-50 transition-colors"
                 >
                   取消
                 </button>

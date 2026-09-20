@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { listRecent, clearRecent, type RecentItem } from '@/lib/watchHistory';
 import { formatTime } from '@/lib/player';
+import { IconFilm, IconMusicNote } from '@/components/icons';
 
 function timeAgo(at: number) {
   const diff = Date.now() - at;
@@ -60,8 +61,10 @@ export default function RecentPlays({ limit = 8 }: { limit?: number }) {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img loading="lazy" decoding="async" src={it.poster} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-3xl">
-                    {it.kind === 'video' ? '🎬' : '🎵'}
+                  <div className="w-full h-full flex items-center justify-center text-white/45">
+                    {it.kind === 'video'
+                      ? <IconFilm className="h-8 w-8" strokeWidth={1.4} />
+                      : <IconMusicNote className="h-8 w-8" strokeWidth={1.4} />}
                   </div>
                 )}
                 <div className="absolute inset-x-0 bottom-0 h-1 bg-black/40">

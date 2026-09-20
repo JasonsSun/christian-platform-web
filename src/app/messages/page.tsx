@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
+import { IconMail, IconSearch } from '@/components/icons';
 import type { Conversation } from '@/lib/types';
 
 function Avatar({ name, color, size = 48 }: { name: string; color: string; size?: number }) {
@@ -107,7 +108,9 @@ export default function MessagesPage() {
 
       {!loading && !error && items.length === 0 && (
         <div className="text-center py-16 bg-white rounded-2xl border border-ink-100 shadow-soft">
-          <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">✉️</div>
+          <div className="w-16 h-16 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center mx-auto mb-3">
+            <IconMail className="w-7 h-7" strokeWidth={1.6} />
+          </div>
           <h2 className="font-display text-lg font-bold text-ink-900 mb-1">还没有会话</h2>
           <p className="text-ink-500 mb-5">去发现弟兄姊妹，发起你的第一次聊天吧</p>
           <Link href="/friends" className="btn-primary">发现用户</Link>
@@ -116,7 +119,9 @@ export default function MessagesPage() {
 
       {!loading && !error && items.length > 0 && filtered.length === 0 && (
         <div className="text-center py-16 bg-white rounded-2xl border border-ink-100 shadow-soft">
-          <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">🔍</div>
+          <div className="w-16 h-16 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center mx-auto mb-3">
+            <IconSearch className="w-7 h-7" strokeWidth={1.6} />
+          </div>
           <p className="text-ink-500">没有找到匹配「{keyword}」的会话</p>
         </div>
       )}

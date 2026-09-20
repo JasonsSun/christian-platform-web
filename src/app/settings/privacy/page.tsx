@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { apiPatch } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { IconArrowRight, IconBellOff, IconBroadcast, IconUsers } from '@/components/icons';
 
 type DmPolicy = 'everyone' | 'followers' | 'none';
 
@@ -15,16 +16,16 @@ type MePayload = {
   allowDm?: DmPolicy;
 };
 
-const OPTIONS: { key: DmPolicy; label: string; desc: string; icon: string }[] = [
-  { key: 'everyone', label: '所有人', desc: '任何已登录用户都可以给你发私信', icon: '🌐' },
-  { key: 'followers', label: '仅我的粉丝', desc: '只有关注了你的人才能发私信，陌生人需先关注', icon: '👥' },
-  { key: 'none', label: '不接受私信', desc: '关闭私信入口，任何人都无法主动给你发消息', icon: '🔕' },
+const OPTIONS: { key: DmPolicy; label: string; desc: string; icon: JSX.Element }[] = [
+  { key: 'everyone', label: '所有人', desc: '任何已登录用户都可以给你发私信', icon: <IconBroadcast className="w-5 h-5" strokeWidth={1.6} /> },
+  { key: 'followers', label: '仅我的粉丝', desc: '只有关注了你的人才能发私信，陌生人需先关注', icon: <IconUsers className="w-5 h-5" strokeWidth={1.6} /> },
+  { key: 'none', label: '不接受私信', desc: '关闭私信入口，任何人都无法主动给你发消息', icon: <IconBellOff className="w-5 h-5" strokeWidth={1.6} /> },
 ];
 
 export default function PrivacySettingsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const { data, loading, reload } = useApi<MePayload>(user ? '/auth/me' : null, [user?.id]);
+  const { data, reload } = useApi<MePayload>(user ? '/auth/me' : null, [user?.id]);
   const { run, pending } = useAction();
   const [current, setCurrent] = useState<DmPolicy | null>(null);
   const [toast, setToast] = useState<string>('');
@@ -50,7 +51,7 @@ export default function PrivacySettingsPage() {
   if (!user) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
+        <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
         <p className="text-ink-500 mb-6">登录后管理你的隐私设置</p>
         <button onClick={() => router.push('/login')} className="btn-primary">去登录</button>
       </div>
@@ -68,14 +69,7 @@ export default function PrivacySettingsPage() {
         </div>
       )}
 
-      {loading && !current && (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="bg-white rounded-2xl h-20 animate-pulse border border-ink-100" />
-          ))}
-        </div>
-      )}
-
+      {/* 选项列表本身是静态的，只有选中态要等接口；再叠一层骨架会把下面的区块顶上去 264px */}
       <section className="space-y-3">
         {OPTIONS.map((o) => {
           const on = current === o.key;
@@ -88,7 +82,7 @@ export default function PrivacySettingsPage() {
                 on ? 'border-primary-300 ring-2 ring-primary-100' : 'border-ink-100 hover:border-ink-200'
               }`}
             >
-              <div className="w-11 h-11 rounded-xl bg-ink-100 flex items-center justify-center text-xl flex-shrink-0">{o.icon}</div>
+              <div className="w-11 h-11 rounded-xl bg-ink-100 text-ink-500 flex items-center justify-center flex-shrink-0">{o.icon}</div>
               <div className="min-w-0 flex-1">
                 <h2 className="font-semibold text-ink-900">{o.label}</h2>
                 <p className="text-sm text-ink-500 mt-0.5">{o.desc}</p>
@@ -110,8 +104,9 @@ export default function PrivacySettingsPage() {
         <p className="text-sm text-ink-500 mb-4">
           在任意用户主页点击「屏蔽」即可将其加入黑名单。被屏蔽者无法给你发私信，也不会出现在你的关注流与公开推荐中。
         </p>
-        <Link href="/settings/blocked" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-          查看我的屏蔽列表 →
+        <Link href="/settings/blocked" className="inline-flex items-center gap-1.5 min-h-[44px] md:min-h-0 text-sm text-primary-600 hover:text-primary-700 font-medium">
+          查看我的屏蔽列表
+          <IconArrowRight className="w-3.5 h-3.5" strokeWidth={1.8} />
         </Link>
       </section>
     </div>

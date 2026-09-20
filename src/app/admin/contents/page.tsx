@@ -9,7 +9,7 @@ import { timeAgo } from '@/lib/format';
 import { CONTENT_TYPE_LABEL } from '@/lib/labels';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import Portal from '@/components/Portal';
-import { AdminLayout, Badge, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, AdminSelect, Pagination, AccessState } from '../_components';
 
 interface ContentRow {
   id: string;
@@ -99,20 +99,31 @@ export default function AdminContentsPage() {
   }
 
   if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
-  if (!user) return <AdminLayout><Empty label="请先登录" /></AdminLayout>;
-  if (!canSee) return <AdminLayout><Empty label="无权限访问（需要内容模块审核员或管理员）" /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="内容总视图只对管理员与审核员开放，请先用管理账号登录。" href="/login" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要内容模块审核员或管理员账号，才能查看与操作全站内容。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>
-      <div className="flex items-start justify-between gap-4 mb-1">
-        <h1 className="font-display text-2xl font-bold text-ink-900">内容管理</h1>
-        <Link href="/admin/reviews" className="text-sm text-primary-600 hover:underline flex-shrink-0 py-3 -my-3">
-          去审核队列 →
-        </Link>
-      </div>
-      <p className="text-ink-500 text-sm mb-5">
-        全站内容的总视图：搜索、按状态与类型筛选、批量上下架与删除。写操作都会记入审计日志。
-      </p>
+      <PageHead
+        eyebrow="内容 · 治理"
+        title="内容管理"
+        sub="全站内容的总视图：搜索、按状态与类型筛选、批量上下架与删除。写操作都会记入审计日志。"
+        actions={
+          <Link href="/admin/reviews" className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-xs">
+            去审核队列
+          </Link>
+        }
+      />
 
       {/* 状态页签 */}
       <div className="flex flex-wrap gap-2 mb-4 border-b border-ink-200">
@@ -120,20 +131,21 @@ export default function AdminContentsPage() {
           <button
             key={t.key}
             onClick={() => { setStatus(t.key); setPage(1); setSelected([]); }}
-            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
+            aria-current={status === t.key ? 'page' : undefined}
+            className={`min-h-11 lg:min-h-0 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
               status === t.key ? 'border-primary-500 text-primary-700' : 'border-transparent text-ink-500 hover:text-ink-700'
             }`}
           >
             {t.label}
             {t.key !== 'all' && counts[t.key] ? (
-              <span className="ml-1.5 text-xs text-ink-400">{counts[t.key]}</span>
+              <span className="num ml-1.5 text-xs text-ink-400">{counts[t.key]}</span>
             ) : null}
           </button>
         ))}
       </div>
 
       {/* 筛选栏 */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <Toolbar>
         <form
           className="flex gap-2 flex-1 min-w-[240px]"
           onSubmit={(e) => { e.preventDefault(); setPage(1); setSearch(kw.trim()); }}
@@ -143,60 +155,57 @@ export default function AdminContentsPage() {
             value={kw}
             onChange={(e) => setKw(e.target.value)}
             placeholder="搜索标题 / 正文 / 标签 / 作者"
-            className="input-styled input-sm flex-1"
+            className="input-styled input-sm min-h-11 lg:min-h-0 flex-1"
           />
-          <button type="submit" className="btn-secondary btn-sm text-xs flex-shrink-0">搜索</button>
+          <button type="submit" className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-xs flex-shrink-0">搜索</button>
           {search && (
-            <button type="button" className="btn-secondary btn-sm text-xs flex-shrink-0" onClick={() => { setKw(''); setSearch(''); setPage(1); }}>
+            <button type="button" className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-xs flex-shrink-0" onClick={() => { setKw(''); setSearch(''); setPage(1); }}>
               清空
             </button>
           )}
         </form>
-        <select
+        <AdminSelect
           value={type}
-          aria-label="按内容类型筛选"
-          onChange={(e) => { setType(e.target.value); setPage(1); setSelected([]); }}
-          className="input-styled input-sm select-inline"
-        >
-          <option value="all">全部类型</option>
-          {Object.entries(TYPE_LABEL).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
-      </div>
+          label="按内容类型筛选"
+          onChange={(v) => { setType(v); setPage(1); setSelected([]); }}
+          options={[
+            { value: 'all', label: '全部类型' },
+            ...Object.entries(TYPE_LABEL).map(([value, label]) => ({ value, label })),
+          ]}
+        />
+      </Toolbar>
 
       {/* 批量操作条 */}
       {selected.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-4 px-4 py-3 rounded-xl bg-primary-50 border border-primary-100">
-          <span className="text-sm font-semibold text-primary-700">已选 {selected.length} 条</span>
-          <button onClick={() => doBulk('published')} disabled={bulk.pending} className="btn-primary btn-sm text-xs disabled:opacity-70">批量上架</button>
-          <button onClick={() => doBulk('rejected')} disabled={bulk.pending} className="btn-secondary btn-sm text-xs disabled:opacity-70">批量下架</button>
-          <button onClick={() => doBulk('pending_review')} disabled={bulk.pending} className="btn-secondary btn-sm text-xs disabled:opacity-70">退回待审</button>
+          <span className="text-sm font-semibold text-primary-700">已选 <span className="num">{selected.length}</span> 条</span>
+          <button onClick={() => doBulk('published')} disabled={bulk.pending} className="btn-primary btn-sm min-h-11 lg:min-h-0 text-xs disabled:opacity-70">批量上架</button>
+          <button onClick={() => doBulk('rejected')} disabled={bulk.pending} className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-xs disabled:opacity-70">批量下架</button>
+          <button onClick={() => doBulk('pending_review')} disabled={bulk.pending} className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-xs disabled:opacity-70">退回待审</button>
           <button onClick={() => setPendingDelete(selected)} disabled={bulk.pending} className="btn-chip btn-chip-danger">删除 {selected.length} 条</button>
-          <button onClick={() => setSelected([])} className="text-xs text-ink-500 ml-auto">取消选择</button>
+          <button onClick={() => setSelected([])} className="min-h-11 lg:min-h-0 text-xs text-ink-500 ml-auto">取消选择</button>
           {bulk.error && <p role="alert" className="w-full text-xs text-rose-600">{bulk.error}</p>}
         </div>
       )}
 
       {/* 刷新时不再整块换成「加载中…」：表格被抹成一行字再弹回来，读到的行全丢了 */}
-      {loading && !data && <Loading />}
+      {loading && !data && <TableSkeleton rows={8} cols={8} />}
       {error && <ErrorBox message={error} onRetry={reload} />}
       {data && !loading && items.length === 0 && (
-        <Empty label="没有符合条件的内容" hint="换个状态页签，或清空搜索词再试" />
+        <Empty icon="search" label="没有符合条件的内容" hint="换个状态页签，或清空搜索词再试" />
       )}
 
       {!!data && items.length > 0 && (
         <>
-          <div className={`bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden transition-opacity ${loading ? 'opacity-60' : ''}`}>
+          <TableShell busy={loading}>
             {/* 窄屏下让表格横向滚动，而不是把 8 列压成 14px 宽的竖排（探针实测 390px 下
                 作者列 14px、标题列 28px，一个名字换 3~6 行）。min-w 按固定列宽合计 648px
                 再加标题的 180px 取的，和 /admin/users 同一套写法。 */}
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[920px] text-sm">
+            <table className="w-full min-w-[920px] text-sm">
               <caption className="sr-only">内容管理</caption>
-              <thead className="bg-ink-50 text-ink-600 text-xs">
+              <thead className="bg-ink-50 text-ink-600">
                 <tr className="whitespace-nowrap">
-                  <th scope="col" className="w-10 px-3 py-2.5">
+                  <th scope="col" className="w-10 px-3 py-3">
                     <input
                       aria-label="全选本页内容"
                       type="checkbox"
@@ -205,13 +214,13 @@ export default function AdminContentsPage() {
                       onChange={() => setSelected(allChecked ? [] : items.map((i) => i.id))}
                     />
                   </th>
-                  <th scope="col" className="text-left px-3 py-2.5 font-medium">标题</th>
-                  <th scope="col" className="text-left px-3 py-2.5 font-medium w-24">作者</th>
-                  <th scope="col" className="text-left px-3 py-2.5 font-medium w-20">类型</th>
-                  <th scope="col" className="text-left px-3 py-2.5 font-medium w-24">状态</th>
-                  <th scope="col" className="text-right px-3 py-2.5 font-medium w-44">数据</th>
-                  <th scope="col" className="text-left px-3 py-2.5 font-medium w-24">时间</th>
-                  <th scope="col" className="text-right px-3 py-2.5 font-medium w-32">操作</th>
+                  <Th>标题</Th>
+                  <Th className="w-24">作者</Th>
+                  <Th className="w-20">类型</Th>
+                  <Th className="w-24">状态</Th>
+                  <Th className="w-44 text-right">数据</Th>
+                  <Th className="w-24">时间</Th>
+                  <Th className="w-32 text-right">操作</Th>
                 </tr>
               </thead>
               <tbody>
@@ -229,7 +238,7 @@ export default function AdminContentsPage() {
                           <span key={t} className="px-1.5 py-0.5 rounded bg-ink-100 text-ink-600 text-[11px]">{t}</span>
                         ))}
                         {c.openReports > 0 && (
-                          <span className="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 text-[11px] font-medium">
+                          <span className="num px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 text-[11px] font-medium">
                             {c.openReports} 条未处理举报
                           </span>
                         )}
@@ -248,7 +257,7 @@ export default function AdminContentsPage() {
                     </td>
                     {/* 数字前挂 emoji 在表格里既花又容易掉字（不同系统字体没有同一颗眼睛），
                         改写成「浏览 20 · 点赞 0」，读屏也不用再补 sr-only */}
-                    <td className="px-3 py-3 text-right text-xs text-ink-500 whitespace-nowrap">
+                    <td className="num px-3 py-3 text-right text-xs text-ink-500 whitespace-nowrap">
                       浏览 {c.viewCount} · 点赞 {c.likeCount} · 评论 {c.commentCount}
                     </td>
                     <td className="px-3 py-3 text-xs text-ink-400 whitespace-nowrap">{timeAgo(c.createdAt)}</td>
@@ -264,17 +273,9 @@ export default function AdminContentsPage() {
                 ))}
               </tbody>
             </table>
-            </div>
-          </div>
+          </TableShell>
 
-          {/* 分页 */}
-          <div className="flex items-center justify-between gap-3 mt-4 text-sm flex-wrap">
-            <span className="text-ink-500">共 {total} 条 · 第 {page}/{totalPages} 页</span>
-            <div className="flex gap-2">
-              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn-secondary btn-sm text-xs disabled:opacity-50">上一页</button>
-              <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="btn-secondary btn-sm text-xs disabled:opacity-50">下一页</button>
-            </div>
-          </div>
+          <Pagination total={total} page={page} pageSize={pageSize} onPage={setPage} />
         </>
       )}
 

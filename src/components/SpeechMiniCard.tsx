@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSpeechSession } from '@/lib/speechSession';
 import BackplayToggle from '@/components/BackplayToggle';
+import { IconBookOpen, IconClose, IconPause, IconPlay } from '@/components/icons';
 
 /**
  * 全站悬浮「朗读卡」。
@@ -35,7 +36,7 @@ export default function SpeechMiniCard({ raised = false }: { raised?: boolean })
               <span className="w-[3px] bg-white h-2 animate-pulse" style={{ animationDelay: '300ms' }} />
             </span>
           ) : (
-            '📖'
+            <IconBookOpen className="w-6 h-6" strokeWidth={1.6} />
           )}
         </div>
 
@@ -65,7 +66,7 @@ export default function SpeechMiniCard({ raised = false }: { raised?: boolean })
             title={s.state === 'playing' ? '暂停朗读' : '继续朗读'}
             className="w-10 h-10 rounded-full bg-primary-600 text-white shadow-card hover:bg-primary-700 flex items-center justify-center disabled:opacity-50"
           >
-            {s.state === 'playing' ? '❚❚' : '▶'}
+            {s.state === 'playing' ? <IconPause className="w-4 h-4" /> : <IconPlay className="w-4 h-4 ml-0.5" />}
           </button>
           <button
             type="button"
@@ -73,7 +74,7 @@ export default function SpeechMiniCard({ raised = false }: { raised?: boolean })
             title="停止朗读"
             className="w-8 h-8 rounded-full text-ink-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center"
           >
-            ✕
+            <IconClose className="w-4 h-4" strokeWidth={2} />
           </button>
         </div>
       </div>

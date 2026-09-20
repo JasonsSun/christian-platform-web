@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { type SpeechItem } from '@/lib/useSpeech';
 import { useHostedSpeech } from '@/lib/speechHost';
+import { IconAlert, IconPlay, IconSpeaker } from '@/components/icons';
 
 /**
  * 文章朗读（内容与经文共用同一套朗读引擎）。
@@ -90,15 +91,16 @@ export default function ArticleReader({ title, body }: { title: string; body: st
         <button
           type="button"
           onClick={() => speech.useServerVoice()}
-          className="px-3 py-2 rounded-xl text-xs text-ink-500 border border-ink-200 hover:border-primary-300 hover:text-primary-600"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs text-ink-500 border border-ink-200 hover:border-primary-300 hover:text-primary-600"
           title="本机缺少中文语音时浏览器朗读会完全无声，点此改用服务器合成"
         >
-          🔊 没声音？改用在线语音
+          <IconSpeaker className="w-3.5 h-3.5" strokeWidth={1.8} />
+          没声音？改用在线语音
         </button>
       )}
 
       {speech.ttsMode === 'server' && !speech.ttsLoading && (
-        <span className="px-3 py-2 rounded-xl text-xs text-ink-400">
+        <span className="px-3 py-2 rounded-xl text-xs text-ink-500">
           当前使用在线语音（服务器合成，需联网）
         </span>
       )}
@@ -107,14 +109,18 @@ export default function ArticleReader({ title, body }: { title: string; body: st
         <button
           type="button"
           onClick={speech.clientPlay}
-          className="px-3 py-2 rounded-xl bg-primary-600 text-white text-xs font-medium hover:bg-primary-700"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-600 text-white text-xs font-medium hover:bg-primary-700"
         >
-          ▶ 点此播放
+          <IconPlay className="w-3 h-3" />
+          点此播放
         </button>
       )}
 
       {speech.ttsError && !speech.clientReady && (
-        <span className="text-xs text-rose-600">⚠ 语音合成暂不可用，请稍后重试</span>
+        <span className="inline-flex items-center gap-1 text-xs text-rose-600">
+          <IconAlert className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+          语音合成暂不可用，请稍后重试
+        </span>
       )}
     </div>
   );

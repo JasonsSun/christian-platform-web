@@ -6,6 +6,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useGoLogin } from '@/lib/nav';
+import { Glyph, IconCalendar, IconCheck } from '@/components/icons';
 
 type PlanListItem = {
   id: string;
@@ -81,7 +82,8 @@ export default function PlansPage() {
             </button>
           ) : null}
           <h1 className="font-display text-2xl md:text-3xl font-bold text-ink-900 flex items-center gap-2">
-            <span aria-hidden>📅</span> 读经计划
+            <IconCalendar className="w-6 h-6 md:w-7 md:h-7 text-primary-500" strokeWidth={1.6} />
+            读经计划
           </h1>
           <p className="text-ink-500 mt-1 text-sm">选一个计划，每天读一点，坚持打卡，把神的话藏在心里。</p>
         </div>
@@ -102,8 +104,8 @@ export default function PlansPage() {
                     className="text-left bg-white rounded-2xl p-5 shadow-soft card-hover border border-ink-100"
                   >
                     <div className="flex items-start gap-3 mb-3">
-                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${p.accent} flex items-center justify-center text-2xl shrink-0`}>
-                        <span aria-hidden>{p.emoji}</span>
+                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${p.accent} text-white flex items-center justify-center shrink-0`}>
+                        <Glyph glyph={p.emoji} className="w-6 h-6" />
                       </div>
                       <div className="min-w-0">
                         <h2 className="font-semibold text-ink-900">{p.title}</h2>
@@ -123,7 +125,7 @@ export default function PlansPage() {
                     <div className="flex items-center justify-between text-xs text-ink-400">
                       <span>已读 {p.doneDays}/{p.days} 天</span>
                       {p.enrolled
-                        ? <span className="text-emerald-600 font-medium">已加入 ✓</span>
+                        ? <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">已加入<IconCheck className="w-3.5 h-3.5" strokeWidth={2.2} /></span>
                         : <span className="text-primary-600 font-medium">{p.percent}%</span>}
                     </div>
                   </button>
@@ -144,7 +146,7 @@ export default function PlansPage() {
             <div className="bg-white rounded-2xl p-5 md:p-6 shadow-soft border border-ink-100 mb-6">
               <div className="flex items-center justify-between gap-4 mb-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-2xl" aria-hidden>{detail.plan.emoji}</span>
+                  <Glyph glyph={detail.plan.emoji} className="w-6 h-6 text-primary-600 shrink-0" />
                   <div className="min-w-0">
                     <h2 className="font-display text-lg font-bold text-ink-900 truncate">{detail.plan.title}</h2>
                     <p className="text-xs text-ink-400">{detail.plan.subtitle}</p>
@@ -193,7 +195,7 @@ export default function PlansPage() {
                   <span className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
                     d.done ? 'bg-emerald-700 text-white' : 'bg-ink-50 text-ink-600'
                   }`}>
-                    {d.done ? '✓' : d.day}
+                    {d.done ? <IconCheck className="w-5 h-5" strokeWidth={2.2} /> : d.day}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="text-sm font-medium text-ink-800">第 {d.day} 天</div>

@@ -6,7 +6,7 @@ import { useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { formatDate } from '@/lib/format';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, SectionTitle, StatCard, Badge, Loading, TableSkeleton, Empty, ErrorBox, PageHead, Toolbar, AdminSelect } from '../_components';
 
 interface MediaFile {
   id: string; fileName: string; title: string; mimeType: string; kind: string; extension: string;
@@ -122,10 +122,9 @@ export default function AdminMediaPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">媒体中心</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">上传审核、文件、转码任务、失败任务与回收站</p>
+      <PageHead eyebrow="内容 · 媒体" title="媒体中心" sub="上传审核、文件、转码任务、失败任务与回收站" />
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6" data-reveal-group>
         <StatCard title="文件总数" value={t?.files ?? '—'} hint={`占用 ${fmtSize(t?.bytes || 0)}`} />
         <StatCard title="待审核" value={t?.pendingReview ?? 0} />
         <StatCard title="转码中" value={t?.transcoding ?? 0} />
@@ -133,35 +132,50 @@ export default function AdminMediaPage() {
         <StatCard title="回收站" value={t?.trashed ?? 0} />
       </div>
 
-      <div className="flex flex-wrap gap-2 sm:gap-3 mb-4">
-        <input className="input-styled input-sm flex-1 min-w-[200px]" aria-label="搜索标题 / 文件名" placeholder="搜索标题 / 文件名" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select className="input-styled input-sm select-inline" aria-label="按审核状态筛选" value={reviewStatus} onChange={(e) => setReviewStatus(e.target.value)}>
-          <option value="">全部审核状态</option>
-          <option value="pending">待审核</option>
-          <option value="approved">已通过</option>
-          <option value="rejected">已驳回</option>
-        </select>
-        <select className="input-styled input-sm select-inline" aria-label="按媒体类型筛选" value={kind} onChange={(e) => setKind(e.target.value)}>
-          <option value="">全部类型</option>
-          {Object.entries(KIND_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-        <select className="input-styled input-sm select-inline" aria-label="按处理状态筛选" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">全部状态</option>
-          {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
-        </select>
-      </div>
+      <Toolbar>
+        <input className="input-styled input-sm min-h-11 lg:min-h-0 flex-1 min-w-[200px]" aria-label="搜索标题 / 文件名" placeholder="搜索标题 / 文件名" value={q} onChange={(e) => setQ(e.target.value)} />
+        <AdminSelect
+          value={reviewStatus}
+          label="按审核状态筛选"
+          onChange={setReviewStatus}
+          options={[
+            { value: '', label: '全部审核状态' },
+            { value: 'pending', label: '待审核' },
+            { value: 'approved', label: '已通过' },
+            { value: 'rejected', label: '已驳回' },
+          ]}
+        />
+        <AdminSelect
+          value={kind}
+          label="按媒体类型筛选"
+          onChange={setKind}
+          options={[
+            { value: '', label: '全部类型' },
+            ...Object.entries(KIND_LABEL).map(([value, label]) => ({ value, label })),
+          ]}
+        />
+        <AdminSelect
+          value={status}
+          label="按处理状态筛选"
+          onChange={setStatus}
+          options={[
+            { value: '', label: '全部状态' },
+            ...Object.entries(STATUS_MAP).map(([value, v]) => ({ value, label: v.label })),
+          ]}
+        />
+      </Toolbar>
 
       {msg ? <div role="status" className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
 
       {loading && !data ? (
-        <Loading />
+        <TableSkeleton cols={7} />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
       ) : !data || items.length === 0 ? (
         <Empty label="暂无文件" hint="换个关键词，或把审核状态 / 类型 / 处理状态改回「全部」再试" />
       ) : (
-        <div className={`glass rounded-2xl overflow-hidden shadow-soft transition-opacity ${refreshing ? 'opacity-60' : ''}`}>
-          <div className="overflow-x-auto">
+        <div className={`glass rounded-2xl overflow-hidden shadow-soft hair-top transition-opacity duration-300 ${refreshing ? 'opacity-60' : ''}`}>
+          <div className="overflow-x-auto scroll-slim">
             {/* 「操作」列改成 .btn-chip 后自然宽度涨到约 1150，
                 给它一个 min-w 兜底：窄屏横向滚动，而不是把格子压到换行 */}
             <table className="w-full min-w-[1150px] text-sm">

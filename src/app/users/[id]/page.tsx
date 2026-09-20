@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { formatDate, timeAgo } from '@/lib/format';
 import BadgeWall from '@/components/BadgeWall';
 import type { Author, ContentItem } from '@/lib/types';
+import { Glyph, IconPencil } from '@/components/icons';
 
 type UserProfile = {
   id: string;
@@ -31,8 +32,8 @@ function ContentCard({ item }: { item: ContentItem }) {
   return (
     <Link href={`/contents/${item.id}`} className="card-hover bg-white rounded-2xl p-5 border border-ink-100 shadow-soft hover:shadow-card-hover flex gap-4">
       {item.cover ? (
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-3xl flex-shrink-0">
-          {item.cover}
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center flex-shrink-0">
+          <Glyph glyph={item.cover} className="w-8 h-8 text-primary-700" strokeWidth={1.4} />
         </div>
       ) : null}
       <div className="flex-1 min-w-0">
@@ -234,7 +235,7 @@ export default function UserProfilePage() {
             {tab === 'activities' ? (
               data.contents.length === 0 ? (
                 <div className="bg-white rounded-2xl p-12 shadow-soft border border-ink-100 text-center">
-                  <div className="text-5xl mb-4">📝</div>
+                  <div className="w-16 h-16 mb-4 rounded-2xl bg-primary-50 text-primary-600 grid place-items-center mx-auto"><IconPencil className="w-8 h-8" strokeWidth={1.4} /></div>
                   <h2 className="font-display text-xl font-bold text-ink-900 mb-2">还没有发布的内容</h2>
                   <p className="text-ink-500">TA 暂时没有公开的内容</p>
                 </div>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePlayer } from '@/lib/player';
 import { audioTypeMeta, VOCAL_WANTED_HINT, vocalListenTarget } from '@/lib/audioType';
-import { IconMusicNote, IconPlay, IconPause, IconEye } from '@/components/icons';
+import { IconMusicNote, IconPlay, IconPause, IconEye, IconMicWave, IconHeadphones } from '@/components/icons';
 import type { SongItem } from '@/lib/types';
 
 /**
@@ -15,7 +15,7 @@ export default function SongCard({
   onRequestVocal,
 }: {
   s: SongItem;
-  /** 传入后，非人声曲目会显示「🎤 我来投稿」入口 */
+  /** 传入后，非人声曲目会显示「我来投稿」入口 */
   onRequestVocal?: (title: string) => void;
 }) {
   const player = usePlayer();
@@ -64,7 +64,8 @@ export default function SongCard({
                 title={VOCAL_WANTED_HINT}
                 className="relative z-10 hover:underline truncate py-1.5 -my-1.5"
               >
-                🎤 我来投稿
+                <IconMicWave className="w-3.5 h-3.5 inline-block align-[-3px] mr-1" strokeWidth={1.8} />
+                我来投稿
               </button>
             )}
             {/* 站外链接用 button 而不是 <a>：它要盖在铺满式链接之上，两套链接嵌套是非法 HTML */}
@@ -82,7 +83,8 @@ export default function SongCard({
               }
               className="relative z-10 hover:underline truncate py-1.5 -my-1.5"
             >
-              🎧 {listen.verified ? '在线听人声版' : '找人声版'}
+              <IconHeadphones className="w-3.5 h-3.5 inline-block align-[-3px] mr-1" strokeWidth={1.8} />
+              {listen.verified ? '在线听人声版' : '找人声版'}
             </button>
           </span>
         )}

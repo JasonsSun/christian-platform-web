@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { apiPatch, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
-import { AdminLayout, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, AdminSelect, Loading, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
 
 interface TagRow {
   name: string;
@@ -52,30 +52,37 @@ export default function AdminTagsPage() {
 
   return (
     <AdminLayout>
-      <h1 className="font-display text-2xl font-bold text-ink-900 mb-1">标签管理</h1>
-      <p className="text-ink-500 text-sm mb-5">
-        内容标签没有独立表，这里按全站内容聚合统计。重命名 / 合并 / 删除会直接改写相关内容的标签字段。
-      </p>
+      <PageHead
+        eyebrow="内容 · 治理"
+        title="标签管理"
+        sub="内容标签没有独立表，这里按全站内容聚合统计。重命名 / 合并 / 删除会直接改写相关内容的标签字段。"
+        actions={<button className="btn-secondary btn-sm min-h-11 lg:min-h-0" onClick={reload}>刷新</button>}
+      />
 
-      <div className="flex flex-wrap gap-2 mb-4 max-w-xl">
-        <form className="flex gap-2 flex-1 min-w-[220px]" onSubmit={(e) => { e.preventDefault(); setSearch(kw.trim()); }}>
-          <input aria-label="搜索标签名称" value={kw} onChange={(e) => setKw(e.target.value)} placeholder="搜索标签" className="input-styled flex-1" />
-          <button type="submit" className="btn-secondary text-sm">搜索</button>
-          {search && <button type="button" onClick={() => { setKw(''); setSearch(''); }} className="btn-secondary text-sm">清空</button>}
+      <Toolbar>
+        <form className="flex flex-1 min-w-[13rem] sm:min-w-[15rem] gap-2 items-stretch sm:items-center" onSubmit={(e) => { e.preventDefault(); setSearch(kw.trim()); }}>
+          <input aria-label="搜索标签名称" value={kw} onChange={(e) => setKw(e.target.value)} placeholder="搜索标签" className="input-styled input-sm min-h-11 lg:min-h-0 flex-1 min-w-0" />
+          <button type="submit" className="btn-secondary text-sm min-h-11 lg:min-h-0 shrink-0">搜索</button>
+          {search && <button type="button" onClick={() => { setKw(''); setSearch(''); }} className="btn-secondary text-sm min-h-11 lg:min-h-0 shrink-0">清空</button>}
         </form>
-        <select aria-label="标签排序方式" value={sort} onChange={(e) => setSort(e.target.value as 'count' | 'name')} className="input-styled input-sm select-inline">
-          <option value="count">按使用量</option>
-          <option value="name">按名称</option>
-        </select>
-      </div>
+        <AdminSelect
+          label="标签排序方式"
+          value={sort}
+          onChange={(v) => setSort(v as 'count' | 'name')}
+          options={[
+            { value: 'count', label: '按使用量' },
+            { value: 'name', label: '按名称' },
+          ]}
+        />
+      </Toolbar>
 
       {selected.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-4 px-4 py-3 rounded-xl bg-primary-50 border border-primary-100">
-          <span className="text-sm font-semibold text-primary-700">已选 {selected.length} 个标签</span>
-          <button onClick={() => { setOp('rename'); }} className="btn-secondary text-xs">重命名（单个）</button>
-          <button onClick={() => { setOp('merge'); }} className="btn-secondary text-xs">合并为一个</button>
-          <button onClick={() => { setOp('delete'); }} className="btn-secondary text-xs text-rose-600 border-rose-200">删除</button>
-          <button onClick={() => setSelected([])} className="text-xs text-ink-500 ml-auto">取消选择</button>
+          <span className="num text-sm font-semibold text-primary-700">已选 {selected.length} 个标签</span>
+          <button onClick={() => { setOp('rename'); }} className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-xs">重命名（单个）</button>
+          <button onClick={() => { setOp('merge'); }} className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-xs">合并为一个</button>
+          <button onClick={() => { setOp('delete'); }} className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-xs text-rose-600 border-rose-200">删除</button>
+          <button onClick={() => setSelected([])} className="min-h-11 lg:min-h-0 px-2 text-xs text-ink-500 ml-auto">取消选择</button>
         </div>
       )}
 
@@ -117,12 +124,14 @@ export default function AdminTagsPage() {
         </div>
       )}
 
-      {loading && <Loading />}
+      {loading && <Loading rows={3} />}
       {error && <ErrorBox message={error} onRetry={reload} />}
-      {!loading && !error && items.length === 0 && <Empty label="还没有任何标签" />}
+      {!loading && !error && items.length === 0 && (
+        <Empty icon="search" label="还没有任何标签" hint="内容发布时带上标签，这里就会出现统计与批量改写入口" />
+      )}
 
       {!loading && !error && items.length > 0 && (
-        <div className="bg-white rounded-2xl border border-ink-100 shadow-soft p-5">
+        <div className="hair-top bg-white rounded-2xl border border-ink-100 shadow-soft p-4 sm:p-5">
           <div className="flex flex-wrap gap-2">
             {items.map((t) => {
               const on = selected.includes(t.name);
@@ -132,18 +141,19 @@ export default function AdminTagsPage() {
                   key={t.name}
                   onClick={() => toggle(t.name)}
                   title={`${t.name}：${t.total} 篇内容（${t.published} 篇已发布）`}
-                  className={`px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors ${
+                  aria-pressed={on}
+                  className={`min-h-11 lg:min-h-0 px-3.5 lg:px-3 py-1.5 rounded-full border whitespace-nowrap transition-colors ${
                     on ? 'bg-primary-600 text-white border-primary-600' : 'bg-ink-50 text-ink-700 border-ink-200 hover:border-primary-300'
                   }`}
                   style={{ fontSize: `${w}px` }}
                 >
                   {t.name}
-                  <span className={`ml-1.5 text-[11px] ${on ? 'text-white/80' : 'text-ink-400'}`}>{t.total}</span>
+                  <span className={`num ml-1.5 text-[11px] ${on ? 'text-white/80' : 'text-ink-400'}`}>{t.total}</span>
                 </button>
               );
             })}
           </div>
-          <p className="text-xs text-ink-400 mt-4">共 {data?.total ?? items.length} 个标签（最多展示 500 个）</p>
+          <p className="num text-xs text-ink-400 mt-4">共 {data?.total ?? items.length} 个标签（最多展示 500 个）</p>
         </div>
       )}
     </AdminLayout>

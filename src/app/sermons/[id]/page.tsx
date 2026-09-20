@@ -8,6 +8,15 @@ import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { useNotice } from '@/lib/notice';
 import { HlsPlayer } from '@/components/HlsPlayer';
+import {
+  IconArrowLeft,
+  IconMicWave,
+  IconBookOpen,
+  IconCalendar,
+  IconPlay,
+  IconHeart,
+  IconHeadphones,
+} from '@/components/icons';
 
 interface Sermon {
   id: string;
@@ -87,7 +96,10 @@ export default function SermonDetailPage({ params }: { params: { id: string } })
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <Link href="/sermons" className="text-sm text-primary-600 hover:underline mb-4 inline-block">← {convert(t('nav.sermons'))}</Link>
+      <Link href="/sermons" className="mb-4 inline-flex items-center gap-1.5 text-sm text-primary-600 hover:underline">
+        <IconArrowLeft className="w-4 h-4" strokeWidth={2} />
+        {convert(t('nav.sermons'))}
+      </Link>
 
       {data.seriesTitle ? (
         <div className="text-sm text-ink-400 mb-1">系列：{convert(data.seriesTitle)}</div>
@@ -95,16 +107,37 @@ export default function SermonDetailPage({ params }: { params: { id: string } })
 
       <h1 className="font-display text-3xl font-bold text-ink-900 mb-3">{titleEl}</h1>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-500 mb-5">
-        {data.speaker ? <span>🗣 {convert(data.speaker)}</span> : null}
+      <div className="num flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-500 mb-5">
+        {data.speaker ? (
+          <span className="inline-flex items-center gap-1">
+            <IconMicWave className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+            {convert(data.speaker)}
+          </span>
+        ) : null}
         {data.scripture ? (
-          <Link href={`/search?q=${encodeURIComponent(data.scripture)}`} className="text-primary-600 hover:underline">
-            📖 {convert(data.scripture)}
+          <Link
+            href={`/search?q=${encodeURIComponent(data.scripture)}`}
+            className="inline-flex items-center gap-1 text-primary-600 hover:underline"
+          >
+            <IconBookOpen className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+            {convert(data.scripture)}
           </Link>
         ) : null}
-        {data.preachedAt ? <span>📅 {data.preachedAt}</span> : null}
-        <span>▶ {data.viewCount} 次播放</span>
-        <span>♥ {data.likeCount}</span>
+        {data.preachedAt ? (
+          <span className="inline-flex items-center gap-1">
+            <IconCalendar className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+            {data.preachedAt}
+          </span>
+        ) : null}
+        <span className="inline-flex items-center gap-1">
+          <IconPlay className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+          {data.viewCount} 次播放
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <IconHeart className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+          <span className="sr-only">点赞</span>
+          {data.likeCount}
+        </span>
       </div>
 
       {/* 媒体播放 */}
@@ -113,10 +146,14 @@ export default function SermonDetailPage({ params }: { params: { id: string } })
           {data.mediaType === 'audio' ? (
             <div className="glass rounded-2xl p-5 shadow-soft">
               <div className="flex items-center gap-3 mb-3">
-                <span className="text-3xl">🎧</span>
+                <span className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-600 to-primary-800 text-white flex items-center justify-center flex-shrink-0">
+                  <IconHeadphones className="w-5 h-5" strokeWidth={1.7} />
+                </span>
                 <div>
                   <div className="font-medium text-ink-900">音频讲道</div>
-                  {fmtDur(data.durationSec) ? <div className="text-xs text-ink-400">时长 {fmtDur(data.durationSec)}</div> : null}
+                  {fmtDur(data.durationSec) ? (
+                    <div className="num text-xs text-ink-400">时长 {fmtDur(data.durationSec)}</div>
+                  ) : null}
                 </div>
               </div>
               {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
@@ -136,14 +173,15 @@ export default function SermonDetailPage({ params }: { params: { id: string } })
         <button
           onClick={toggleLike}
           disabled={busy}
-          className={`px-4 py-2 rounded-full font-medium transition ${
+          className={`inline-flex items-center gap-1.5 min-h-[2.75rem] px-5 py-2 rounded-full font-medium transition ${
             isLiked ? 'bg-rose-600 text-white' : 'bg-ink-100 text-ink-700 hover:bg-ink-200'
           }`}
           aria-pressed={isLiked}
         >
-          {isLiked ? '♥ 已点赞' : '♡ 点赞'}
+          <IconHeart className="w-4 h-4" strokeWidth={1.9} fill={isLiked ? 'currentColor' : 'none'} />
+          {isLiked ? '已点赞' : '点赞'}
         </button>
-        <span className="text-sm text-ink-400">{data.likeCount} 人点赞</span>
+        <span className="num text-sm text-ink-400">{data.likeCount} 人点赞</span>
       </div>
 
       {/* 简介 */}

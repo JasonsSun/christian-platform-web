@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import type { SongItem } from '@/lib/types';
+import { IconMusicNote } from '@/components/icons';
 import { SkeletonGrid, ErrorBlock, EmptyBlock } from './shared';
 
 /** 我收藏的诗歌(个人中心高频 tab,从 me/page.tsx 抽出,静态引入保留首屏) */
@@ -19,11 +20,11 @@ export function MyFavorites() {
         <Link
           key={s.id}
           href={`/songs/${s.id}`}
-          className="bg-white rounded-2xl p-4 border border-ink-100 card-hover"
+          className="bg-white card-tech rounded-2xl p-4 border border-ink-100"
         >
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold-500 to-gold-400 flex items-center justify-center text-xl flex-shrink-0">
-              🎵
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold-500 to-gold-400 text-white flex items-center justify-center flex-shrink-0">
+              <IconMusicNote className="w-5 h-5" strokeWidth={1.6} />
             </div>
             <div className="min-w-0">
               <h3 className="font-semibold text-ink-900 truncate">{s.title}</h3>

@@ -6,8 +6,24 @@ import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { qs } from '@/lib/api';
 import { formatDate } from '@/lib/format';
+import { activityCategoryLabel, groupCategoryLabel } from '@/lib/labels';
 import type { ContentItem, SongItem, ActivityItem, GroupItem } from '@/lib/types';
 import { SearchSectionSkeleton } from '@/components/Skeleton';
+import {
+  IconBookOpen,
+  IconCalendar,
+  IconClock,
+  IconFilm,
+  IconFire,
+  IconHandshake,
+  IconInbox,
+  IconMicWave,
+  IconMusicNote,
+  IconPray,
+  IconSearch,
+  IconSparkles,
+  IconUser,
+} from '@/components/icons';
 
 type SearchUser = { id: string; username: string; displayName: string; avatarColor: string; city: string; church: string };
 type VerseHit = { bookId: string; bookName: string; chapter: number; verse: number; text: string };
@@ -70,11 +86,11 @@ function clearHistory() {
   }
 }
 
-function SectionTitle({ icon, title, total, href }: { icon: string; title: string; total: number; href: string }) {
+function SectionTitle({ icon, title, total, href }: { icon: JSX.Element; title: string; total: number; href: string }) {
   return (
     <div className="flex items-center justify-between mb-4">
       <h2 className="font-display text-lg md:text-xl font-bold text-ink-900 flex items-center gap-2">
-        <span>{icon}</span>
+        {icon}
         {title}
         <span className="text-sm font-normal text-ink-400">({total})</span>
       </h2>
@@ -168,7 +184,7 @@ function SearchInner() {
             <div className="bg-white rounded-2xl p-6 shadow-soft border border-ink-100">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-lg font-bold text-ink-900 flex items-center gap-2">
-                  <span>🕐</span>搜索历史
+                  <IconClock className="w-5 h-5 text-primary-500" strokeWidth={1.6} />搜索历史
                 </h2>
                 <button onClick={handleClearHistory} className="text-sm text-ink-400 hover:text-rose-600 transition-colors">
                   清空
@@ -191,7 +207,7 @@ function SearchInner() {
 
           <div className="bg-white rounded-2xl p-6 shadow-soft border border-ink-100">
             <h2 className="font-display text-lg font-bold text-ink-900 flex items-center gap-2 mb-4">
-              <span>🔥</span>热门搜索
+              <IconFire className="w-5 h-5 text-primary-500" strokeWidth={1.6} />热门搜索
             </h2>
             <div className="flex flex-wrap gap-2">
               {HOT_SEARCHES.map((h, i) => (
@@ -212,7 +228,9 @@ function SearchInner() {
           </div>
 
           <div className="bg-gradient-to-br from-primary-50 to-gold-50 rounded-2xl p-8 text-center border border-ink-100">
-            <div className="text-5xl mb-3">🔍</div>
+            <div className="flex justify-center mb-3 text-primary-500">
+              <IconSearch className="w-12 h-12" strokeWidth={1.4} />
+            </div>
             <h2 className="font-display text-xl font-bold text-ink-900 mb-2">全站搜索</h2>
             <p className="text-ink-500">输入关键词，在圣经、诗歌、内容、活动、团契与用户中探索属灵资源</p>
           </div>
@@ -235,7 +253,7 @@ function SearchInner() {
           {/* 经文 */}
           {data.verses.length > 0 && (
             <section>
-              <SectionTitle icon="📖" title="经文" total={data.verses.length} href={`/bible?q=${enc}`} />
+              <SectionTitle icon={<IconBookOpen className="w-5 h-5 text-primary-500" strokeWidth={1.6} />} title="经文" total={data.verses.length} href={`/bible?q=${enc}`} />
               <div className="space-y-3">
                 {data.verses.slice(0, 6).map((v, i) => (
                   <Link key={i} href={`/bible/cuv/${v.bookId}/${v.chapter}`} className="block bg-white rounded-2xl p-5 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
@@ -250,11 +268,11 @@ function SearchInner() {
           {/* 诗歌 */}
           {data.songs.length > 0 && (
             <section>
-              <SectionTitle icon="🎵" title="诗歌" total={data.songs.length} href={`/songs?q=${enc}`} />
+              <SectionTitle icon={<IconMusicNote className="w-5 h-5 text-gold-600" strokeWidth={1.6} />} title="诗歌" total={data.songs.length} href={`/songs?q=${enc}`} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.songs.slice(0, 6).map((s) => (
                   <Link key={s.id} href={`/songs/${s.id}`} className="group bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-gold-200 hover:shadow-card-hover transition-all flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold-100 to-gold-200 flex items-center justify-center text-gold-700 text-lg flex-shrink-0">♪</div>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold-100 to-gold-200 flex items-center justify-center text-gold-700 flex-shrink-0"><IconMusicNote className="w-5 h-5" strokeWidth={1.6} /></div>
                     <div className="flex-1 min-w-0">
                       <h4 className="font-semibold text-ink-900 truncate group-hover:text-gold-600">{s.title}</h4>
                       <p className="text-xs text-ink-500 truncate">{s.author}{s.category ? ` · ${s.category}` : ''}</p>
@@ -268,7 +286,7 @@ function SearchInner() {
           {/* 内容 */}
           {data.contents.length > 0 && (
             <section>
-              <SectionTitle icon="✨" title="内容" total={data.contents.length} href={`/community?q=${enc}`} />
+              <SectionTitle icon={<IconSparkles className="w-5 h-5 text-primary-500" strokeWidth={1.6} />} title="内容" total={data.contents.length} href={`/community?q=${enc}`} />
               <div className="space-y-3">
                 {data.contents.slice(0, 6).map((c) => (
                   <Link key={c.id} href={`/community/${c.id}`} className="flex gap-4 bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
@@ -287,12 +305,12 @@ function SearchInner() {
           {/* 活动 */}
           {data.activities.length > 0 && (
             <section>
-              <SectionTitle icon="📅" title="活动" total={data.activities.length} href={`/activities?q=${enc}`} />
+              <SectionTitle icon={<IconCalendar className="w-5 h-5 text-primary-500" strokeWidth={1.6} />} title="活动" total={data.activities.length} href={`/activities?q=${enc}`} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.activities.slice(0, 6).map((a) => (
                   <Link key={a.id} href={`/activities/${a.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
                     <h4 className="font-semibold text-ink-900 truncate">{a.title}</h4>
-                    <p className="text-xs text-ink-500 mt-1">{a.category} · {a.city || a.location}</p>
+                    <p className="text-xs text-ink-500 mt-1">{activityCategoryLabel(a.category)} · {a.city || a.location}</p>
                   </Link>
                 ))}
               </div>
@@ -302,12 +320,12 @@ function SearchInner() {
           {/* 团契 */}
           {data.groups.length > 0 && (
             <section>
-              <SectionTitle icon="🤝" title="团契" total={data.groups.length} href={`/groups?q=${enc}`} />
+              <SectionTitle icon={<IconHandshake className="w-5 h-5 text-primary-500" strokeWidth={1.6} />} title="团契" total={data.groups.length} href={`/groups?q=${enc}`} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.groups.slice(0, 6).map((g) => (
                   <Link key={g.id} href={`/groups/${g.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
                     <h4 className="font-semibold text-ink-900 truncate">{g.name}</h4>
-                    <p className="text-xs text-ink-500 mt-1">{g.category} · {g.memberCount} 位成员</p>
+                    <p className="text-xs text-ink-500 mt-1">{groupCategoryLabel(g.category)} · {g.memberCount} 位成员</p>
                   </Link>
                 ))}
               </div>
@@ -317,7 +335,7 @@ function SearchInner() {
           {/* 用户 */}
           {data.users.length > 0 && (
             <section>
-              <SectionTitle icon="👤" title="用户" total={data.users.length} href={`/friends?q=${enc}`} />
+              <SectionTitle icon={<IconUser className="w-5 h-5 text-primary-500" strokeWidth={1.6} />} title="用户" total={data.users.length} href={`/friends?q=${enc}`} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.users.slice(0, 6).map((u) => (
                   <Link key={u.id} href={`/me/${u.id}`} className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
@@ -337,7 +355,7 @@ function SearchInner() {
           {/* 讲道 */}
           {(data.sermons?.length ?? 0) > 0 && (
             <section>
-              <SectionTitle icon="🎙️" title="讲道" total={data.sermons.length} href={`/sermons?q=${enc}`} />
+              <SectionTitle icon={<IconMicWave className="w-5 h-5 text-primary-500" strokeWidth={1.6} />} title="讲道" total={data.sermons.length} href={`/sermons?q=${enc}`} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.sermons.slice(0, 6).map((s) => (
                   <Link key={s.id} href={`/sermons/${s.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
@@ -354,7 +372,7 @@ function SearchInner() {
           {/* 媒体 */}
           {(data.media?.length ?? 0) > 0 && (
             <section>
-              <SectionTitle icon="🎬" title="媒体" total={data.media.length} href={`/media?q=${enc}`} />
+              <SectionTitle icon={<IconFilm className="w-5 h-5 text-primary-500" strokeWidth={1.6} />} title="媒体" total={data.media.length} href={`/media?q=${enc}`} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.media.slice(0, 6).map((m) => (
                   <Link key={m.id} href={`/media/${m.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
@@ -372,7 +390,7 @@ function SearchInner() {
           {/* 代祷 */}
           {(data.prayers?.length ?? 0) > 0 && (
             <section>
-              <SectionTitle icon="🙏" title="代祷" total={data.prayers.length} href={`/prayers?q=${enc}`} />
+              <SectionTitle icon={<IconPray className="w-5 h-5 text-primary-500" strokeWidth={1.6} />} title="代祷" total={data.prayers.length} href={`/prayers?q=${enc}`} />
               <div className="space-y-3">
                 {data.prayers.slice(0, 5).map((p) => (
                   <Link key={p.id} href="/prayers" className="block bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
@@ -392,7 +410,9 @@ function SearchInner() {
             (data.sermons?.length ?? 0) === 0 && (data.media?.length ?? 0) === 0 &&
             (data.prayers?.length ?? 0) === 0 && (
               <div className="bg-white rounded-2xl p-12 shadow-soft border border-ink-100 text-center">
-                <div className="text-5xl mb-4">📭</div>
+                <div className="flex justify-center mb-4 text-ink-400">
+                  <IconInbox className="w-12 h-12" strokeWidth={1.4} />
+                </div>
                 <h3 className="font-display text-xl font-bold text-ink-900 mb-2">没有找到「{q}」</h3>
                 <p className="text-ink-500 mb-6">换个关键词试试，或浏览下方的热门搜索</p>
                 <div className="flex flex-wrap gap-2 justify-center">

@@ -346,7 +346,7 @@ export default function CommandPalette() {
         aria-hidden
       />
       <div className="relative w-full max-w-xl animate-slide-up">
-        <div className="glass-tech rounded-3xl shadow-2xl overflow-hidden border border-white/15">
+        <div className="glass-tech rounded-3xl shadow-pop overflow-hidden border border-white/15">
           {/* 顶部辉光线 */}
           <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-400 to-transparent" />
 
@@ -387,7 +387,7 @@ export default function CommandPalette() {
                 return (
                   <div key={item.id}>
                     {showGroup && (
-                      <div className="px-5 pt-3 pb-1 text-[11px] font-semibold tracking-wider text-ink-400 uppercase">
+                      <div className="eyebrow px-5 pt-3 pb-1">
                         {item.group}
                       </div>
                     )}
@@ -400,8 +400,9 @@ export default function CommandPalette() {
                       data-idx={idx}
                       onMouseEnter={() => setActive(idx)}
                       onClick={() => go(item.href)}
-                      className={`w-full flex items-center gap-3 px-5 py-2.5 text-left transition-colors ${
-                        isActive ? 'bg-primary-50' : 'hover:bg-ink-50'
+                      className={`w-full min-h-[44px] flex items-center gap-3 px-5 py-2.5 text-left transition-colors ${
+                        // 选中条用 inset 阴影画：换成 border-left 会把整行文字推右 2px
+                        isActive ? 'bg-primary-50 shadow-[inset_2px_0_0_var(--ui-accent)]' : 'hover:bg-ink-50'
                       }`}
                     >
                       <span

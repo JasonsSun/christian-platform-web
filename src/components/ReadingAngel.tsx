@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { IconHeart, IconSparkles } from '@/components/icons';
 
 export interface ReadingAngelProps {
   /** 朗读状态：playing 时才指读，其余（idle/paused）趴着休息 */
@@ -340,9 +341,9 @@ export default function ReadingAngel({
         )}
         {cheer && (
           <div className="sparks">
-            <span>✨</span>
-            <span>💛</span>
-            <span>✨</span>
+            <span><IconSparkles /></span>
+            <span><IconHeart /></span>
+            <span><IconSparkles /></span>
           </div>
         )}
       </div>
@@ -437,10 +438,18 @@ export default function ReadingAngel({
           left: 50%;
           top: 8px;
           font-size: 11px;
+          color: #f59e0b;
           animation: spark 1.1s ease-out forwards;
+        }
+        /* emoji 换成线性图标后不再跟着 font-size 走，尺寸改由 svg 规则控制 */
+        .sparks svg {
+          display: block;
+          width: 11px;
+          height: 11px;
         }
         .sparks span:nth-child(1) { animation-delay: 0s; margin-left: -20px; }
         .sparks span:nth-child(2) { animation-delay: 0.12s; margin-left: -4px; font-size: 13px; }
+        .sparks span:nth-child(2) svg { width: 13px; height: 13px; color: #fbbf24; }
         .sparks span:nth-child(3) { animation-delay: 0.24s; margin-left: 12px; }
         @keyframes floaty {
           0%, 100% { transform: translateY(0); }

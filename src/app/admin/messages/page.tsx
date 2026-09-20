@@ -5,7 +5,7 @@ import { useApi } from '@/lib/useApi';
 import { apiGet, apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { scrollBehavior } from '@/lib/motion';
-import { AdminLayout, SectionTitle, Loading, ErrorBox, Empty } from '../_components';
+import { AdminLayout, SectionTitle, Loading, ErrorBox, Empty, PageHead } from '../_components';
 import { StaffBadges } from '@/components/ModeratorBadge';
 
 /**
@@ -113,10 +113,11 @@ export default function AdminMessagesPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">管理消息</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">
-        管理员与审核员之间的内部沟通渠道。普通成员既不显示入口，也无法访问此接口。
-      </p>
+      <PageHead
+        eyebrow="协作 · 消息"
+        title="管理消息"
+        sub="管理员与审核员之间的内部沟通渠道。普通成员既不显示入口，也无法访问此接口。"
+      />
 
       {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft grid md:grid-cols-[260px_1fr] min-h-[520px]">

@@ -7,6 +7,16 @@ import { useAuth } from '@/lib/auth';
 import { formatDate, formatSize } from '@/lib/format';
 import { usePlayer, formatTime } from '@/lib/player';
 import RecentPlays from '@/components/RecentPlays';
+import {
+  IconMusicNote,
+  IconDocument,
+  IconFilm,
+  IconImage,
+  IconFolder,
+  IconPlay,
+  IconPause,
+  IconUpload,
+} from '@/components/icons';
 import type { MediaItem } from '@/lib/types';
 
 const KINDS = [
@@ -25,9 +35,17 @@ const SOURCES = [
   { key: 'live', label: '直播回放' },
 ];
 
-function TypeIcon({ kind }: { kind: string }) {
-  const map: Record<string, string> = { score: '🎼', doc: '📄', audio: '🎵', video: '🎬', image: '🖼️' };
-  return <span>{map[kind] || '📁'}</span>;
+const KIND_ICON: Record<string, typeof IconMusicNote> = {
+  score: IconMusicNote,
+  doc: IconDocument,
+  audio: IconMusicNote,
+  video: IconFilm,
+  image: IconImage,
+};
+
+function TypeIcon({ kind, className = 'w-12 h-12' }: { kind: string; className?: string }) {
+  const Cmp = KIND_ICON[kind] || IconFolder;
+  return <Cmp className={className} strokeWidth={1.3} />;
 }
 
 export default function MediaPage() {
@@ -55,7 +73,7 @@ export default function MediaPage() {
           <p className="text-ink-500 mt-1 text-sm">图片、音乐、视频、曲谱与资料，全部经审核后展示</p>
         </div>
         {user ? (
-          <Link href="/upload" className="btn-primary">＋ 上传文件</Link>
+          <Link href="/upload" className="btn-primary"><IconUpload className="w-4 h-4" strokeWidth={1.9} /> 上传文件</Link>
         ) : (
           <Link href="/login" className="btn-secondary">登录后上传</Link>
         )}
@@ -68,12 +86,13 @@ export default function MediaPage() {
           <button
             key={k.key || 'all'}
             onClick={() => setKind(k.key)}
-            className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition ${
+            aria-pressed={kind === k.key}
+            className={`inline-flex items-center min-h-[2.75rem] px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition ${
               kind === k.key ? 'bg-primary-600 text-white shadow-card' : 'bg-ink-100 text-ink-600 hover:bg-ink-200'
             }`}
           >
             {k.label}
-            <span className="ml-1 text-xs opacity-70">{k.key ? countOf(k.key) : data?.total ?? 0}</span>
+            <span className="num ml-1 text-xs opacity-70">{k.key ? countOf(k.key) : data?.total ?? 0}</span>
           </button>
         ))}
       </div>
@@ -84,14 +103,15 @@ export default function MediaPage() {
           <button
             key={s.key || 'src-all'}
             onClick={() => setSource(s.key)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition border ${
+            aria-pressed={source === s.key}
+            className={`inline-flex items-center min-h-[2.75rem] px-4 py-1.5 rounded-full text-xs font-medium transition border ${
               source === s.key
                 ? 'bg-gold-500/15 border-gold-500 text-gold-800'
                 : 'bg-white border-ink-200 text-ink-500 hover:border-ink-300'
             }`}
           >
             {s.label}
-            <span className="ml-1 opacity-90">{s.key ? countSource(s.key) : ''}</span>
+            <span className="num ml-1 opacity-90">{s.key ? countSource(s.key) : ''}</span>
           </button>
         ))}
         <input
@@ -110,7 +130,7 @@ export default function MediaPage() {
               })), 0)}
             className="btn-gold whitespace-nowrap"
           >
-            ▶ 播放全部音乐
+            <IconPlay className="w-4 h-4" strokeWidth={2} /> 播放全部音乐
           </button>
         ) : null}
       </div>
@@ -124,7 +144,7 @@ export default function MediaPage() {
           暂无已审核通过的媒体
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div data-reveal-group className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {items.map((m) => (
             <div key={m.id} className="glass rounded-2xl overflow-hidden shadow-soft card-hover flex flex-col">
               <div className="relative bg-ink-100 flex items-center justify-center" style={{ height: 172 }}>
@@ -138,7 +158,9 @@ export default function MediaPage() {
                       className="w-full h-full object-cover bg-black"
                     />
                     <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <span className="w-12 h-12 rounded-full bg-black/60 text-white flex items-center justify-center text-lg backdrop-blur-sm">▶</span>
+                      <span className="w-12 h-12 rounded-full bg-black/60 text-white flex items-center justify-center backdrop-blur-sm">
+                        <IconPlay className="w-5 h-5" strokeWidth={1.8} />
+                      </span>
                     </span>
                   </Link>
                 ) : m.kind === 'audio' ? (
@@ -151,8 +173,14 @@ export default function MediaPage() {
                     title="在线播放"
                     aria-label={`播放 ${m.title}`}
                   >
-                    <span className="w-12 h-12 rounded-full bg-primary-600 text-white flex items-center justify-center text-lg shadow-card group-hover:scale-110 transition">▶</span>
-                    <span className="text-xs text-ink-500">
+                    <span className="w-12 h-12 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-card group-hover:scale-110 transition">
+                      {player.isCurrent(m.id) && player.playing ? (
+                        <IconPause className="w-5 h-5" strokeWidth={1.8} />
+                      ) : (
+                        <IconPlay className="w-5 h-5 ml-0.5" strokeWidth={1.8} />
+                      )}
+                    </span>
+                    <span className="num text-xs text-ink-500">
                       {m.durationSec ? formatTime(m.durationSec) : '点击播放'}
                     </span>
                   </button>
@@ -163,7 +191,7 @@ export default function MediaPage() {
                   </Link>
                 ) : (
                   <Link href={`/media/${m.id}`} className="w-full h-full flex flex-col items-center justify-center" aria-label={`查看 ${m.title}`}>
-                    <div className="text-5xl mb-2"><TypeIcon kind={m.kind} /></div>
+                    <TypeIcon kind={m.kind} className="w-12 h-12 mb-2 text-ink-500" />
                     <div className="text-xs text-ink-500 uppercase">{m.extension}</div>
                   </Link>
                 )}
@@ -177,7 +205,7 @@ export default function MediaPage() {
                   </span>
                 )}
                 {m.durationSec ? (
-                  <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/65 text-white text-[11px]">
+                  <span className="num absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/65 text-white text-[11px]">
                     {formatTime(m.durationSec)}
                   </span>
                 ) : null}
@@ -185,13 +213,13 @@ export default function MediaPage() {
               <div className="p-4 flex-1 flex flex-col">
                 <div className="font-medium text-ink-900 line-clamp-1" title={m.title}>{m.title}</div>
                 <div className="text-xs text-ink-400 mt-1 line-clamp-1">{m.fileName}</div>
-                <div className="flex items-center justify-between mt-3 text-xs text-ink-500">
+                <div className="num flex items-center justify-between mt-3 text-xs text-ink-500">
                   <span>{formatSize(m.sizeBytes)}</span>
                   <span>{formatDate(m.createdAt)}</span>
                 </div>
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-xs text-ink-400">{m.owner || '匿名'}</span>
-                  <a href={m.url} download={m.fileName} aria-label={`下载 ${m.fileName || m.title}`} className="inline-flex items-center px-2 py-1.5 -my-1.5 text-xs text-primary-600 hover:underline">下载</a>
+                  <a href={m.url} download={m.fileName} aria-label={`下载 ${m.fileName || m.title}`} className="inline-flex items-center min-h-[2.75rem] px-2 text-xs text-primary-600 hover:underline">下载</a>
                 </div>
               </div>
             </div>

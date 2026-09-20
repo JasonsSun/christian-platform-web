@@ -15,6 +15,7 @@ import { moduleOfPath } from '@/lib/siteModules';
 import { useDisabledModules } from '@/lib/useSiteModules';
 import { COMMAND_PALETTE_EVENT } from '@/components/CommandPalette';
 import { isBareRoute } from '@/lib/bareRoutes';
+import { IconShare } from '@/components/icons';
 
 const topLinks = [
   { href: '/', key: 'nav.home' },
@@ -322,7 +323,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
       }`}
     >
       <div className="max-w-7xl xl:max-w-[1400px] 2xl:max-w-[1520px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-16 md:h-20">
+        <div className="relative flex items-center h-16 md:h-20">
           <Link href="/" className="flex items-center gap-2 group shrink-0">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
               isScrolled
@@ -359,7 +360,10 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
             </div>
           </div>
 
-          <div className="hidden xl:flex items-center gap-1 shrink-0">
+          {/* 右侧工具区脱离文档流：登录态解析完成后这里会从「登录/注册」换成「后台/通知/头像」，
+              宽度一变，居中导航就被重新推位（实测整条 nav Δ31px）。绝对定位后宽度不再参与 flex，
+              抖动从根上消失；xl 以上正文区最宽 236px，与工具区（≤384px）留白充足，不会叠字。 */}
+          <div className="hidden xl:flex items-center gap-1 shrink-0 absolute right-0 top-1/2 -translate-y-1/2 min-w-[21.5rem] justify-end">
             {/* 全局命令面板入口 */}
             <button
               type="button"
@@ -424,7 +428,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                     </span>
                   </button>
                   {menuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-card border border-ink-100 py-2 overflow-hidden">
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-pop border border-ink-100 py-2 overflow-hidden">
                       <Link href="/me" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.profile')}</Link>
                       {!moduleOff('/community/create') && <Link href="/community/create" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.createContent')}</Link>}
                       {!moduleOff('/messages') && <Link href="/messages" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.messages')}</Link>}
@@ -512,7 +516,8 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
             </div>
 
             <MenuRow onClick={() => { setShareOpen(true); setIsMobileMenuOpen(false); }}>
-              📤 {t('nav.shareSystem')}
+              <IconShare className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+              {t('nav.shareSystem')}
             </MenuRow>
 
             <div className="divider-gradient my-2" />
@@ -569,7 +574,7 @@ function MenuRow({ children, onClick }: { children: ReactNode; onClick: () => vo
     <button
       type="button"
       onClick={onClick}
-      className="block w-full text-left px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap"
+      className="flex items-center gap-2 w-full text-left px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap"
     >
       {children}
     </button>

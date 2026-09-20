@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiPatch } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
-import { AdminLayout, SectionTitle, Loading, ErrorBox, Badge } from '../_components';
+import { AdminLayout, Loading, ErrorBox, Badge, PageHead, Panel } from '../_components';
 
 /**
  * 支付配置(仅管理员)
@@ -87,30 +87,31 @@ export default function AdminPaymentsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">支付配置</SectionTitle>
-      <p className="-mt-3 mb-4 text-sm text-ink-500">
-        商户密钥加密存储于数据库，<span className="text-ink-700">优先于 .env</span>；保存后即时生效，无需重启服务。
-      </p>
+      <PageHead
+        eyebrow="运营 · 支付"
+        title="支付配置"
+        sub={<>商户密钥加密存储于数据库，<span className="text-ink-700">优先于 .env</span>；保存后即时生效，无需重启服务。</>}
+      />
 
-      <div className="mb-6 flex items-center gap-2 rounded-2xl bg-ink-50 px-4 py-3 text-sm">
+      <div className="mb-6 flex flex-wrap items-center gap-2 glass rounded-2xl px-4 py-3 text-sm shadow-soft hair-top">
         <span className="text-ink-600">线上支付总闸：</span>
         {data?.onlineEnabled ? <Badge tone="green">已开启</Badge> : <Badge tone="gray">已关闭（仅线下转账）</Badge>}
-        <Link href="/admin/settings" className="ml-auto text-primary-700 hover:underline">
-          去系统设置调整总闸 →
+        <Link href="/admin/settings" className="btn-secondary btn-sm min-h-11 lg:min-h-0 ml-auto">
+          去系统设置调整总闸
         </Link>
       </div>
 
-      {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
-        <div className="space-y-6">
+      {loading && !data ? <Loading rows={3} /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
+        <div className="space-y-6" data-reveal-group>
           {groups.map((g) => {
             const meta = GROUP_META[g];
             return (
-              <div key={g} className="glass rounded-2xl p-5 shadow-soft">
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="font-medium text-ink-900">{meta?.title || g}</span>
-                  <Badge tone="primary">{fields.filter((f) => f.group === g).length} 项</Badge>
-                </div>
-                {meta?.desc ? <p className="mb-3 text-xs text-ink-500 leading-relaxed">{meta.desc}</p> : null}
+              <Panel
+                key={g}
+                title={meta?.title || g}
+                aside={<Badge tone="primary">{fields.filter((f) => f.group === g).length} 项</Badge>}
+              >
+                {meta?.desc ? <p className="-mt-1 mb-3 text-xs text-ink-500 leading-relaxed">{meta.desc}</p> : null}
                 {meta?.warn ? (
                   <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">{meta.warn}</p>
                 ) : null}
@@ -123,7 +124,7 @@ export default function AdminPaymentsPage() {
                     const fieldId = `pay-${f.key}`;
                     return (
                       <div key={f.key}>
-                        <div className="mb-1 flex items-center gap-2">
+                        <div className="mb-1 flex items-center gap-2 flex-wrap">
                           <label htmlFor={fieldId} className="text-sm text-ink-700">{f.label}</label>
                           {f.set ? <Badge tone="green">已配置</Badge> : <Badge tone="gray">未配置</Badge>}
                           {willClear ? <Badge tone="red">将清空</Badge> : null}
@@ -135,7 +136,7 @@ export default function AdminPaymentsPage() {
                           <input
                             id={fieldId}
                             name={f.key}
-                            className="input-styled flex-1 font-mono text-sm"
+                            className="input-styled min-h-11 lg:min-h-0 flex-1 min-w-0 font-mono text-sm"
                             type={f.secret && !reveal[f.key] ? 'password' : 'text'}
                             value={willClear ? '' : val}
                             placeholder={f.secret ? (f.set ? '已配置（留空保持不变）' : '未配置') : '未配置'}
@@ -147,7 +148,9 @@ export default function AdminPaymentsPage() {
                             <>
                               <button
                                 type="button"
-                                className="btn-chip"
+                                className="btn-chip shrink-0"
+                                aria-pressed={!!reveal[f.key]}
+                                aria-label={reveal[f.key] ? `隐藏 ${f.label}` : `显示 ${f.label}`}
                                 onClick={() => setReveal((p) => ({ ...p, [f.key]: !p[f.key] }))}
                               >
                                 {reveal[f.key] ? '隐藏' : '显示'}
@@ -155,7 +158,7 @@ export default function AdminPaymentsPage() {
                               {f.set ? (
                                 <button
                                   type="button"
-                                  className="btn-chip btn-chip-danger"
+                                  className="btn-chip btn-chip-danger shrink-0"
                                   onClick={() => setVal(f.key, CLEAR)}
                                 >
                                   清空
@@ -169,12 +172,12 @@ export default function AdminPaymentsPage() {
                     );
                   })}
                 </div>
-              </div>
+              </Panel>
             );
           })}
 
-          <div className="flex items-center gap-3">
-            <button onClick={save} disabled={busy || !dirty} className="btn-primary disabled:opacity-50">
+          <div className="flex items-center gap-3 flex-wrap">
+            <button onClick={save} disabled={busy || !dirty} className="btn-primary min-h-11 lg:min-h-0 disabled:opacity-50">
               {busy ? '保存中…' : '保存更改'}
             </button>
             {dirty ? <span className="text-sm text-gold-700">有未保存的更改</span> : null}

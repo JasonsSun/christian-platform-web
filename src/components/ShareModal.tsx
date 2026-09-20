@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import Portal from '@/components/Portal';
+import { IconCheck, IconShare } from '@/components/icons';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 
 /** 生成分享卡片图所需数据（经文/诗歌/金句） */
@@ -358,7 +359,7 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
         </button>
 
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-lg" aria-hidden="true">📤</span>
+          <IconShare className="w-5 h-5 text-primary-600" strokeWidth={1.8} />
           <h2 id={titleId} className="font-display text-lg font-bold text-ink-900">推荐给朋友</h2>
         </div>
         <p className="text-sm text-ink-500 mb-4">选择一种方式，把圣约社区分享给主内肢体</p>
@@ -442,10 +443,14 @@ export default function ShareModal({ open, onClose, url, title, text, card }: Pr
               onClick={copy}
               className="w-full btn-primary flex items-center justify-center gap-2"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              {copied ? '已复制 ✓' : '复制链接'}
+              {copied
+                ? <IconCheck className="w-4 h-4" strokeWidth={2.4} />
+                : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                )}
+              {copied ? '已复制' : '复制链接'}
             </button>
             <button
               type="button"

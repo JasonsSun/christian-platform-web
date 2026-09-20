@@ -9,6 +9,8 @@ import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
 import type { GroupItem, ListResult } from '@/lib/types';
+import { Glyph, IconCheck, IconSearch, IconUsers } from '@/components/icons';
+import { groupCategoryLabel } from '@/lib/labels';
 
 const SCOPE_TABS = [
   { id: 'all', label: '全部团契' },
@@ -23,15 +25,6 @@ const CATEGORIES = [
   { value: 'service', label: '服务' },
   { value: 'hobby', label: '兴趣' },
 ];
-
-const CATEGORY_LABEL: Record<string, string> = {
-  fellowship: '青年团契',
-  study: '读经',
-  prayer: '祷告',
-  service: '服务',
-  hobby: '兴趣',
-  worship: '敬拜',
-};
 
 const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南京'];
 
@@ -127,6 +120,7 @@ export default function GroupsPage() {
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <div>
+            <div className="eyebrow mb-1.5"><span className="text-gold-200/90">FELLOWSHIP</span></div>
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">团契</h1>
             <p className="text-white/80 mt-1 text-sm">找到属灵的家，彼此扶持同行</p>
           </div>
@@ -140,7 +134,7 @@ export default function GroupsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* 创建表单 */}
           {showForm && (
-            <div className="bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 mb-6 space-y-4">
+            <div className="glow-edge bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 mb-6 space-y-4">
               <h2 className="font-display text-xl font-bold text-ink-900">创建新团契</h2>
               {formError && (
                 <div id="group-create-error" role="alert" className="rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3">
@@ -195,13 +189,13 @@ export default function GroupsPage() {
                       key={e}
                       onClick={() => setForm({ ...form, cover: e })}
                       aria-pressed={form.cover === e}
-                      className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all ${
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
                         form.cover === e
-                          ? 'bg-primary-100 border-2 border-primary-500'
-                          : 'bg-ink-50 border-2 border-transparent hover:border-primary-200'
+                          ? 'bg-primary-100 border-2 border-primary-500 text-primary-700'
+                          : 'bg-ink-50 border-2 border-transparent text-ink-500 hover:border-primary-200'
                       }`}
                     >
-                      {e}
+                      <Glyph glyph={e} className="w-5 h-5" />
                     </button>
                   ))}
                 </div>
@@ -229,7 +223,7 @@ export default function GroupsPage() {
                     key={t.id}
                     onClick={() => setScope(t.id as 'all' | 'mine')}
                     aria-pressed={scope === t.id}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                    className={`px-4 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors ${
                       scope === t.id
                         ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-lg shadow-primary-500/25'
                         : 'text-ink-600 hover:text-primary-700'
@@ -240,15 +234,17 @@ export default function GroupsPage() {
                 ))}
               </div>
               <div className="ml-auto flex items-center gap-2 text-sm text-ink-500">
-                {!loading && `共 ${data?.total ?? groups.length} 个团契`}
+                {!loading && (
+                  <>
+                    共 <span className="num font-semibold text-ink-700">{data?.total ?? groups.length}</span> 个团契
+                  </>
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="relative">
-                <svg className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+                <IconSearch className="w-4 h-4 text-ink-400 absolute left-3 top-1/2 -translate-y-1/2" strokeWidth={1.6} />
                 <input
                   name="q"
                   aria-label="搜索团契名称或简介"
@@ -275,28 +271,44 @@ export default function GroupsPage() {
           {loading && (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl p-5 border border-ink-100 animate-pulse h-44" />
+                <div key={i} className="bg-white rounded-2xl p-5 border border-ink-100 shadow-soft min-h-[176px] space-y-3">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-ink-100 skeleton-sheen flex-shrink-0" />
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <div className="h-4 w-2/3 bg-ink-100 rounded skeleton-sheen" />
+                      <div className="h-3 w-1/3 bg-ink-100 rounded skeleton-sheen" />
+                    </div>
+                  </div>
+                  <div className="h-3 w-full bg-ink-100 rounded skeleton-sheen" />
+                  <div className="h-3 w-4/5 bg-ink-100 rounded skeleton-sheen" />
+                </div>
               ))}
             </div>
           )}
           {error && <div role="alert" className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm">{error}</div>}
           {!loading && !error && groups.length === 0 && (
-            <div className="bg-white rounded-2xl p-10 text-center text-ink-400 border border-ink-100">
-              {scope === 'mine' ? '你还没有加入任何团契' : '没有找到团契，点击右上角创建吧～'}
+            <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-ink-200">
+              <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-400 items-center justify-center mb-3">
+                <IconUsers className="w-6 h-6" strokeWidth={1.6} />
+              </span>
+              <p className="text-ink-400 text-sm">
+                {scope === 'mine' ? '你还没有加入任何团契' : '没有找到团契，点击右上角创建吧～'}
+              </p>
             </div>
           )}
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <div data-reveal-group className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {groups.map((g) => {
-              const catLabel = CATEGORY_LABEL[g.category] || g.category || '团契';
+              const catLabel = groupCategoryLabel(g.category);
               return (
                 <div
                   key={g.id}
-                  className="card-hover bg-white rounded-2xl p-5 border border-ink-100 shadow-soft hover:shadow-card-hover flex flex-col"
+                  data-spot
+                  className="spot card-hover bg-white rounded-2xl p-5 border border-ink-100 shadow-soft flex flex-col"
                 >
                   <Link href={`/groups/${g.id}`} className="flex items-center gap-4 mb-3">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-3xl flex-shrink-0">
-                      {g.cover || '👥'}
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white flex-shrink-0">
+                      <Glyph glyph={g.cover || '👥'} className="w-6 h-6" />
                     </div>
                     <div className="min-w-0">
                       <h2 className="font-display font-bold text-ink-900 truncate">{g.name}</h2>
@@ -307,16 +319,12 @@ export default function GroupsPage() {
 
                   <div className="flex items-center gap-3 mb-4">
                     <span className="flex items-center gap-1 text-sm text-ink-500">
-                      <svg className="w-4 h-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                      {g.memberCount} 成员
+                      <IconUsers className="w-4 h-4 text-primary-500" strokeWidth={1.6} />
+                      <span className="num">{g.memberCount}</span> 成员
                     </span>
                     {g.joined ? (
                       <span className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                        </svg>
+                        <IconCheck className="w-3.5 h-3.5" strokeWidth={1.6} />
                         已加入
                       </span>
                     ) : (

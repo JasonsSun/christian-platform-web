@@ -6,13 +6,35 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { formatSize } from '@/lib/format';
 import QuotaCard from '@/components/QuotaCard';
+import { IconCheck } from '@/components/icons';
+import { SkeletonGrid } from './shared';
+
+/** 签到卡加载态：按真实卡片的行高占位，数据回填时不会有位移 */
+function CheckinSkeleton() {
+  return (
+    <div className="glass card-tech rounded-2xl p-5" role="status" aria-label="加载中">
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-2">
+          <div className="h-6 w-24 rounded bg-ink-100 skeleton-sheen" />
+          <div className="h-4 w-44 rounded bg-ink-100 skeleton-sheen" />
+        </div>
+        <div className="h-12 w-28 rounded-xl bg-ink-100 skeleton-sheen flex-shrink-0" />
+      </div>
+      <div className="mt-4 grid grid-cols-7 sm:grid-cols-10 gap-1.5">
+        {Array.from({ length: 28 }).map((_, i) => (
+          <div key={i} className="h-7 rounded-md bg-ink-100 skeleton-sheen" />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function CheckinCard() {
   const { data, loading, reload } = useApi<any>('/me/growth', []);
   const { run, pending } = useAction();
   const { success, error: toastError } = useNotice();
 
-  if (loading) return <div className="glass rounded-2xl p-5 shadow-soft text-sm text-ink-400">加载签到状态…</div>;
+  if (loading) return <CheckinSkeleton />;
   if (!data) return null;
 
   const c = data.checkin || {};
@@ -32,16 +54,21 @@ function CheckinCard() {
   }
 
   return (
-    <div className="glass rounded-2xl p-5 shadow-soft">
+    <div className="glass card-tech rounded-2xl p-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h3 className="font-display text-lg font-bold text-ink-900">每日签到</h3>
           <p className="text-xs text-ink-500 mt-0.5">
-            连续 <b className="text-primary-600">{c.streak ?? 0}</b> 天 · 累计 {c.totalDays ?? 0} 天 · 最长 {c.longestStreak ?? 0} 天
+            连续 <b className="num text-primary-700">{c.streak ?? 0}</b> 天 · 累计 <span className="num">{c.totalDays ?? 0}</span> 天 · 最长 <span className="num">{c.longestStreak ?? 0}</span> 天
           </p>
         </div>
         <button onClick={checkin} disabled={pending || c.checked} className="btn-primary disabled:opacity-60">
-          {c.checked ? '今日已签到 ✓' : pending ? '签到中…' : '立即签到'}
+          {c.checked ? (
+            <>
+              今日已签到
+              <IconCheck className="w-4 h-4" strokeWidth={2} />
+            </>
+          ) : pending ? '签到中…' : '立即签到'}
         </button>
       </div>
 
@@ -50,11 +77,11 @@ function CheckinCard() {
           <div
             key={g.d}
             title={g.d}
-            className={`h-7 rounded-md text-[11px] flex items-center justify-center border ${
+            className={`h-7 rounded-md text-[11px] flex items-center justify-center border transition-colors ${
               g.on ? 'bg-primary-600 text-white border-primary-600' : 'bg-ui-surface text-ink-400 border-ink-100'
             }`}
           >
-            {g.d.slice(-2)}
+            <span className="num">{g.d.slice(-2)}</span>
           </div>
         ))}
       </div>
@@ -93,16 +120,16 @@ function InviteCard() {
   }
 
   return (
-    <div className="glass rounded-2xl p-5 shadow-soft">
+    <div className="glass card-tech rounded-2xl p-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h3 className="font-display text-lg font-bold text-ink-900">邀请好友</h3>
           <p className="text-xs text-ink-500 mt-0.5">
-            已邀请 <b className="text-primary-600">{data.invitedCount ?? 0}</b> 人 · 好友注册后双方各得成长奖励
+            已邀请 <b className="num text-primary-700">{data.invitedCount ?? 0}</b> 人 · 好友注册后双方各得成长奖励
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1.5 rounded-lg bg-ink-100 font-mono text-sm tracking-widest text-ink-800">{data.code}</span>
+          <span className="num px-3 py-1.5 rounded-lg bg-ink-100 font-mono text-sm tracking-widest text-ink-800">{data.code}</span>
           <button onClick={() => copy(data.url)} className="btn-primary">复制邀请链接</button>
         </div>
       </div>
@@ -115,8 +142,13 @@ export function MyGrowth() {
   const { data, loading, reload } = useApi<any>('/me/quota?refresh=1', []);
   const { run, pending } = useAction();
 
-  if (loading) return <div className="text-center py-12 text-ink-400">正在计算你的成长画像…</div>;
-  if (!data) return <div className="text-center py-12 text-ink-400">暂无画像数据</div>;
+  if (loading) return <SkeletonGrid />;
+  if (!data)
+    return (
+      <div className="text-center py-12 rounded-2xl border border-dashed border-ink-200 bg-white">
+        <p className="text-ink-500">暂无画像数据</p>
+      </div>
+    );
 
   const p = data.profile || {};
   const hours = Math.floor((p.onlineSeconds || 0) / 3600);
@@ -152,24 +184,24 @@ export function MyGrowth() {
       <InviteCard />
       <QuotaCard data={data} />
 
-      <div className="glass rounded-2xl p-5 shadow-soft">
+      <div className="glass card-tech rounded-2xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-display text-lg font-bold text-ink-900">我的画像指标</h3>
-          <button onClick={recompute} disabled={pending} className="text-sm text-primary-600 hover:text-primary-700 disabled:opacity-60">
+          <button onClick={recompute} disabled={pending} className="btn-chip disabled:opacity-60">
             {pending ? '计算中…' : '重新计算'}
           </button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {metrics.map((m) => (
-            <div key={m.label} className="rounded-xl bg-ui-surface border border-ink-100 px-3 py-2.5">
-              <div className="text-sm font-semibold text-ink-900">{m.value}</div>
+            <div key={m.label} className="rounded-xl bg-ui-surface border border-ink-100 px-3 py-2.5 transition-colors hover:border-ink-300">
+              <div className="num text-sm font-semibold text-ink-900">{m.value}</div>
               <div className="text-xs text-ink-500 mt-0.5">{m.label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="glass rounded-2xl p-5 shadow-soft">
+      <div className="glass card-tech rounded-2xl p-5">
         <h3 className="font-display text-lg font-bold text-ink-900 mb-3">如何提升上传额度</h3>
         <ul className="text-sm text-ink-600 space-y-2 list-disc pl-5">
           <li>保持在线：每累计 10 分钟 +1 分（上限 25 分）</li>
@@ -178,11 +210,11 @@ export function MyGrowth() {
           <li>发布内容：每篇已发布 +3 分（上限 15 分）</li>
           <li>上传通过审核的媒体：每个 +1 分（上限 10 分）</li>
           <li>活动签到、结交朋友、获得点赞也会累积少量分值</li>
-          <li className="text-rose-600">内容被驳回 -2 分 / 次，被判定违规 -8 分 / 次</li>
+          <li className="text-rose-700">内容被驳回 -2 分 / 次，被判定违规 -8 分 / 次</li>
         </ul>
         {data.next ? (
           <div className="mt-4 rounded-xl bg-gold-50 border border-gold-100 px-4 py-3 text-sm text-gold-800">
-            再获得 <b>{data.next.gap}</b> 分即可升级为「{data.next.name}」：{data.next.gains}
+            再获得 <b className="num">{data.next.gap}</b> 分即可升级为「{data.next.name}」：{data.next.gains}
           </div>
         ) : (
           <div className="mt-4 rounded-xl bg-gold-50 border border-gold-100 px-4 py-3 text-sm text-gold-800">

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiGet, apiPost } from '@/lib/api';
+import { IconAlert, IconCheckCircle, IconLock } from '@/components/icons';
 
 function ResetInner() {
   const params = useSearchParams();
@@ -50,7 +51,9 @@ function ResetInner() {
   }
 
   return (
-    <div className="auth-shell relative overflow-hidden flex items-center justify-center py-10 sm:py-14">
+    /* 同 forgot：顶部对齐，四种状态（校验中 / 链接无效 / 表单 / 成功）下面再配一块
+       恒定高度的舞台区，卡片因此自始至终不高也不矮，只有背景带在动。 */
+    <div className="auth-shell relative overflow-hidden flex items-start justify-center py-10 sm:py-14 lg:pt-[max(3.5rem,12vh)]">
       <div className="absolute inset-0 bg-animated-gradient" />
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 -left-20 w-72 h-72 bg-gold-400/20 rounded-full blur-3xl animate-float" />
@@ -58,30 +61,43 @@ function ResetInner() {
       </div>
 
       <div className="relative z-10 max-w-md w-full mx-4">
-        <div className="glass rounded-3xl p-8 md:p-10 shadow-card-hover">
+        <div className="glass card-tech rounded-3xl p-8 md:p-10">
           <div className="text-center mb-8">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center mx-auto mb-4 shadow-glow">
-              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0-1.105.895-2 2-2s2 .895 2 2v1h-4v-1zm-6 4h12v6H6v-6zm4-6V7a2 2 0 114 0v2" />
-              </svg>
+              <IconLock className="w-8 h-8 text-white" strokeWidth={1.6} />
             </div>
+            <div className="eyebrow justify-center mb-1.5">账号安全</div>
             <h1 className="font-display text-3xl font-bold text-ink-900 mb-2">设置新密码</h1>
             <p className="text-ink-500">
               {done ? '密码已更新，正在前往登录页' : '请输入你的新密码'}
             </p>
           </div>
 
+          <div className="min-h-[19rem]">
           {done ? (
-            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 px-5 py-4">
-              <p className="text-emerald-800 font-semibold mb-1">重置成功</p>
+            <div className="rounded-2xl bg-emerald-50 border border-emerald-200 px-5 py-4 text-left">
+              <p className="text-emerald-800 font-semibold mb-1 flex items-center gap-2">
+                <IconCheckCircle className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.6} />
+                重置成功
+              </p>
               <p className="text-emerald-700 text-sm">出于安全考虑，你已登出所有设备，请用新密码重新登录。</p>
             </div>
           ) : checking ? (
-            <div className="text-center text-ink-400 py-6">正在校验链接…</div>
+            /* 骨架式的呼吸行而不是「正在校验链接…」一行字：换成真表单时这块整体涨开，
+               行数对得上就只是每一行点亮，看不到整块跳。 */
+            <div className="space-y-4" role="status" aria-label="正在校验链接">
+              <div className="skeleton-sheen h-[66px] rounded-xl bg-ink-100" />
+              <div className="skeleton-sheen h-[66px] rounded-xl bg-ink-100" />
+              <div className="skeleton-sheen h-[46px] rounded-xl bg-ink-100" />
+              <div className="skeleton-sheen h-[54px] rounded-xl bg-primary-100" />
+            </div>
           ) : !valid ? (
             <div className="text-center">
               <div role="alert" className="rounded-2xl bg-rose-50 border border-rose-200 px-5 py-4 text-left mb-6">
-                <p className="text-rose-800 font-semibold mb-1">链接无效或已过期</p>
+                <p className="text-rose-800 font-semibold mb-1 flex items-center gap-2">
+                  <IconAlert className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.6} />
+                  链接无效或已过期
+                </p>
                 <p className="text-rose-700 text-sm">
                   重置链接仅能使用一次，且 30 分钟内有效。请重新申请一封邮件。
                 </p>
@@ -101,7 +117,7 @@ function ResetInner() {
                   <input
                     id="reset-password"
                     name="new-password"
-                    className="input-styled input-field"
+                    className="input-styled input-field input-suffix"
                     type={showPassword ? 'text' : 'password'}
                     placeholder="至少 6 位"
                     value={password}
@@ -112,7 +128,9 @@ function ResetInner() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600"
+                    aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                    aria-pressed={showPassword}
+                    className="absolute right-2.5 inset-y-1 flex items-center px-2 rounded-md text-xs font-medium text-ink-400 hover:text-ink-600"
                   >
                     {showPassword ? '隐藏' : '显示'}
                   </button>
@@ -134,41 +152,52 @@ function ResetInner() {
                 />
               </div>
 
-              {error && (
-                <div
-                  role="alert"
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm"
-                >
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {error}
-                </div>
-              )}
+              {/* 常显等高的错误槽：报「太短 / 不一致 / 服务端拒绝」时按钮不往下走。 */}
+              <div
+                role="alert"
+                aria-hidden={!error || undefined}
+                className={`flex items-center gap-2 min-h-[46px] px-4 py-3 rounded-xl border text-sm transition-colors duration-200 ${
+                  error ? 'bg-rose-50 border-rose-200 text-rose-700' : 'border-transparent text-transparent'
+                }`}
+              >
+                <IconAlert className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.6} />
+                {error || ' '}
+              </div>
 
               <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 disabled:opacity-70">
                 {loading ? '提交中…' : '确认重置'}
               </button>
             </form>
           )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-/** Suspense 占位：连背景一起给，否则水合前是一屏空白、水合后整页材料「闪」出来。 */
+/** Suspense 占位：连背景一起给，否则水合前是一屏空白、水合后整页材料「闪」出来。
+    结构逐行对齐真卡片（图标 / eyebrow / 标题 / 副标 + 同一块舞台区），水合那一下不涨不落。 */
 function ResetSkeleton() {
   return (
-    <div className="auth-shell relative overflow-hidden flex items-center justify-center py-10 sm:py-14">
+    <div className="auth-shell relative overflow-hidden flex items-start justify-center py-10 sm:py-14 lg:pt-[max(3.5rem,12vh)]">
       <div className="absolute inset-0 bg-animated-gradient" />
       <div className="relative z-10 max-w-md w-full mx-4">
-        <div className="glass rounded-3xl p-8 md:p-10 shadow-card-hover space-y-4">
-          <div className="h-8 w-44 mx-auto rounded-lg bg-ink-100" />
-          <div className="h-4 w-52 mx-auto rounded bg-ink-100" />
-          <div className="h-[52px] rounded-xl bg-ink-100" />
-          <div className="h-[52px] rounded-xl bg-ink-100" />
-          <div className="h-[52px] rounded-xl bg-primary-100" />
+        <div className="glass card-tech rounded-3xl p-8 md:p-10">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 rounded-2xl bg-ink-100 mx-auto mb-4" />
+            <div className="eyebrow justify-center mb-1.5">
+              <span className="h-[18px] w-20 rounded bg-ink-100" />
+            </div>
+            <div className="h-9 w-44 mx-auto rounded-lg bg-ink-100" />
+            <div className="h-6 w-52 mx-auto rounded bg-ink-100 mt-2" />
+          </div>
+          <div className="min-h-[19rem] space-y-4">
+            <div className="skeleton-sheen h-[66px] rounded-xl bg-ink-100" />
+            <div className="skeleton-sheen h-[66px] rounded-xl bg-ink-100" />
+            <div className="skeleton-sheen h-[46px] rounded-xl bg-ink-100" />
+            <div className="skeleton-sheen h-[54px] rounded-xl bg-primary-100" />
+          </div>
         </div>
       </div>
     </div>

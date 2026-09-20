@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useConfirmNav } from '@/lib/confirm';
 import { useNotice } from '@/lib/notice';
 import { timeAgo } from '@/lib/format';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, SectionTitle, StatCard, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, Pagination } from '../_components';
 
 interface PrayerRow {
   id: string;
@@ -102,67 +102,71 @@ export default function AdminPrayersPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">代祷墙管理</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">
-        巡查并移除违规违法内容。默认按发布时间倒序，「长文」档用于优先排查广告与灌水。
-      </p>
+      <PageHead
+        eyebrow="社交 · 代祷"
+        title="代祷墙管理"
+        sub="巡查并移除违规违法内容。默认按发布时间倒序，「长文」档用于优先排查广告与灌水。"
+      />
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6" data-reveal-group>
         <StatCard title="代祷总数" value={stats?.total ?? '—'} />
         <StatCard title="已蒙应允" value={stats?.answered ?? '—'} />
-        <StatCard title="长文（≥300字）" value={stats?.longBody ?? '—'} />
+        <StatCard title="长文（≥300字）" value={stats?.longBody ?? '—'} accent={(stats?.longBody ?? 0) > 0} />
       </div>
 
       {/* 筛选 */}
-      <div className="flex flex-wrap items-center gap-2 mb-5">
+      <Toolbar>
         {SCOPES.map((s) => (
           <button
             key={s.key}
             onClick={() => { setScope(s.key); setPage(1); }}
-            className={`px-3.5 py-1.5 rounded-full text-sm transition-colors ${
+            aria-pressed={scope === s.key}
+            className={`min-h-11 lg:min-h-0 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors ${
               scope === s.key ? 'bg-primary-600 text-white' : 'bg-ink-50 text-ink-600 hover:bg-ink-100'
             }`}
           >
             {s.label}
           </button>
         ))}
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2 flex-wrap">
           <input
             aria-label="搜索代祷内容 / 发布人"
             value={kw}
             onChange={(e) => setKw(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { setQ(kw.trim()); setPage(1); } }}
             placeholder="搜索内容 / 发布人…"
-            className="input-styled input-sm text-sm w-56"
+            className="input-styled input-sm min-h-11 lg:min-h-0 text-sm w-56"
           />
-          <button onClick={() => { setQ(kw.trim()); setPage(1); }} className="btn-secondary btn-sm text-sm px-4">
+          <button onClick={() => { setQ(kw.trim()); setPage(1); }} className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-sm px-4">
             搜索
           </button>
           {q && (
             <button
               onClick={() => { setKw(''); setQ(''); setPage(1); }}
-              className="text-sm text-ink-500 hover:text-ink-700"
+              className="min-h-11 lg:min-h-0 text-sm text-ink-500 hover:text-ink-700"
             >
               清除
             </button>
           )}
         </div>
-      </div>
+      </Toolbar>
 
-      {loading && items.length === 0 ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
+      {loading && items.length === 0 ? (
+        <TableSkeleton cols={6} />
+      ) : error ? <ErrorBox message={error} onRetry={reload} /> : (
         <>
-          <div className="glass rounded-2xl overflow-hidden shadow-soft">
-            {items.length === 0 ? <Empty label={q ? `没有匹配「${q}」的代祷` : '暂无代祷'} /> : (
+          <TableShell busy={loading}>
+            {items.length === 0 ? <div className="p-4"><Empty label={q ? `没有匹配「${q}」的代祷` : '暂无代祷'} /></div> : (
               <table className="w-full text-sm">
                 <caption className="sr-only">代祷墙管理</caption>
                 <thead className="bg-ink-50 text-ink-600">
                   <tr>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">发布人</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">内容</th>
-                    <th scope="col" className="text-center px-4 py-3 font-medium">阿们</th>
-                    <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium whitespace-nowrap">时间</th>
-                    <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
+                    <Th>发布人</Th>
+                    <Th>内容</Th>
+                    <Th className="text-center">阿们</Th>
+                    <Th className="text-center">状态</Th>
+                    <Th className="whitespace-nowrap">时间</Th>
+                    <Th className="text-right">操作</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -207,24 +211,24 @@ export default function AdminPrayersPage() {
                 </tbody>
               </table>
             )}
-          </div>
+          </TableShell>
 
           {total > PAGE_SIZE && (
             <div className="flex items-center justify-center gap-3 mt-5 text-sm">
               <button
                 onClick={() => setPage((n) => Math.max(1, n - 1))}
                 disabled={page <= 1 || loading}
-                className="btn-secondary btn-sm px-4 disabled:opacity-40"
+                className="btn-secondary btn-sm min-h-11 lg:min-h-0 px-4 disabled:opacity-40"
               >
                 上一页
               </button>
-              <span className="text-ink-500">
+              <span className="num text-ink-500">
                 第 {page} / {Math.max(1, Math.ceil(total / PAGE_SIZE))} 页 · 共 {total} 条
               </span>
               <button
                 onClick={() => setPage((n) => n + 1)}
                 disabled={page >= Math.ceil(total / PAGE_SIZE) || loading}
-                className="btn-secondary btn-sm px-4 disabled:opacity-40"
+                className="btn-secondary btn-sm min-h-11 lg:min-h-0 px-4 disabled:opacity-40"
               >
                 下一页
               </button>

@@ -6,17 +6,23 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { apiGet, tokenStore } from '@/lib/api';
 import { safeNext } from '@/lib/nav';
+import {
+  IconAlert,
+  IconBookOpen,
+  IconCross,
+  IconMusicNote,
+  IconUsers,
+} from '@/components/icons';
 
-/** 统一错误提示条（登录/注册/2FA 复用） */
+/** 统一错误提示条（登录/注册/2FA 复用）。高度恒定 42px：2FA 那一步给它留了
+    同高的常显槽，主表单则正好落进 mt-auto 让出的余量里，两种情况下按钮都不位移。 */
 function ErrorBox({ message }: { message: string }) {
   return (
     <div
       role="alert"
-      className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm"
+      className="flex items-start gap-2.5 px-4 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm"
     >
-      <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
+      <IconAlert className="w-[18px] h-[18px] flex-shrink-0 mt-px" strokeWidth={1.6} />
       <span>{message}</span>
     </div>
   );
@@ -27,29 +33,17 @@ const FEATURES: { title: string; desc: string; icon: JSX.Element }[] = [
   {
     title: '每日读经 · 灵修计划',
     desc: '按卷按章推进，进度与打卡一目了然',
-    icon: (
-      <svg className="w-4.5 h-4.5" width={18} height={18} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-      </svg>
-    ),
+    icon: <IconBookOpen className="w-[18px] h-[18px]" strokeWidth={1.6} />,
   },
   {
     title: '团契相交 · 彼此代祷',
     desc: '小组、代祷墙、私信，与弟兄姐妹同行',
-    icon: (
-      <svg className="w-4.5 h-4.5" width={18} height={18} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
+    icon: <IconUsers className="w-[18px] h-[18px]" strokeWidth={1.6} />,
   },
   {
     title: '敬拜诗歌 · 直播聚会',
     desc: '诗歌库、讲道回放与直播，随时亲近神',
-    icon: (
-      <svg className="w-4.5 h-4.5" width={18} height={18} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-      </svg>
-    ),
+    icon: <IconMusicNote className="w-[18px] h-[18px]" strokeWidth={1.6} />,
   },
 ];
 
@@ -65,9 +59,7 @@ function LoginSkeleton() {
         <div className="max-w-md">
           <div className="flex items-center gap-3 mb-10">
             <span className="w-12 h-12 rounded-2xl bg-white/12 border border-white/25 flex items-center justify-center">
-              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v18m9-9H3" />
-              </svg>
+              <IconCross className="w-7 h-7 text-white" strokeWidth={1.8} />
             </span>
             <span className="font-display text-xl xl:text-2xl font-bold">圣约社区</span>
           </div>
@@ -80,10 +72,14 @@ function LoginSkeleton() {
       <div className="flex-1 flex flex-col items-center px-4 sm:px-8 pt-8 pb-12 sm:pt-14 lg:pt-[max(3.5rem,12vh)] lg:pb-14">
         <div className="h-[68px] lg:hidden" />
         <div className="w-full max-w-[430px]">
-          <div className="bg-white rounded-3xl border border-ink-100 shadow-[0_24px_60px_-24px_rgba(19,24,66,0.3)] p-7 sm:p-9">
-            <div className="mb-6 space-y-2.5">
+          <div className="bg-white card-tech rounded-3xl border border-ink-100 p-7 sm:p-9">
+            {/* 与真表单的 eyebrow / h1 / 副标逐行同高，水合换过去时卡片不涨不落 */}
+            <div className="mb-6">
+              <div className="eyebrow mb-2">
+                <span className="h-[18px] w-24 rounded bg-ink-100" />
+              </div>
               <div className="h-8 w-40 rounded-lg bg-ink-100" />
-              <div className="h-4 w-56 rounded bg-ink-100" />
+              <div className="h-5 w-56 rounded bg-ink-100 mt-1.5" />
             </div>
             <div className="h-11 rounded-2xl bg-ink-100 mb-6" />
             {/* 沿用 .auth-form + 同款 mt-auto：骨架和真表单占同一块高度、
@@ -291,9 +287,7 @@ function LoginInner() {
 
         <Link href="/" className="relative z-10 inline-flex items-center gap-3 w-fit">
           <span className="w-12 h-12 rounded-2xl bg-white/12 border border-white/25 flex items-center justify-center shadow-[0_0_28px_rgba(79,109,245,0.4)]">
-            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v18m9-9H3" />
-            </svg>
+            <IconCross className="w-7 h-7 text-white" strokeWidth={1.8} />
           </span>
           <span className="leading-tight">
             <span className="block font-display text-xl xl:text-2xl font-bold">圣约社区</span>
@@ -335,9 +329,7 @@ function LoginInner() {
       <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-8 pt-8 pb-12 sm:pt-14 lg:pt-[max(3.5rem,12vh)] lg:pb-14">
         <Link href="/" className="lg:hidden mb-5 self-center inline-flex items-center gap-2.5">
           <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-glow">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v18m9-9H3" />
-            </svg>
+            <IconCross className="w-5 h-5 text-white" strokeWidth={1.8} />
           </span>
           {/* 手机上用横排小字标：竖排那版连图带字 118px，正好把「注册」态的提交按钮顶到首屏外 */}
           <span className="leading-tight">
@@ -347,8 +339,12 @@ function LoginInner() {
         </Link>
 
         <div className="w-full max-w-[430px]">
-          <div className="bg-white rounded-3xl border border-ink-100 shadow-[0_24px_60px_-24px_rgba(19,24,66,0.3)] p-7 sm:p-9">
+          {/* card-tech 换掉原来那枚写死 rgba 的投影：三主题各自跟随 --el/--edge。
+              glow-edge 不写 is-active —— 让发丝描边只在真正开始填表（focus-within）时才亮，
+              这是这张卡唯一的一处光，指针柔光就不再加了。 */}
+          <div className="bg-white card-tech glow-edge rounded-3xl border border-ink-100 p-7 sm:p-9">
             <div className="mb-6">
+              <div className="eyebrow mb-2">圣约社区</div>
               <h1 className="font-display text-2xl sm:text-[1.75rem] font-bold text-ink-900">
                 {twoFaTicket ? '双因素验证' : mode === 'login' ? '欢迎回来' : '创建账号'}
               </h1>
@@ -424,7 +420,13 @@ function LoginInner() {
                   {loading ? '验证中…' : '验证并登录'}
                 </button>
 
-                {error && <ErrorBox message={error} />}
+                {/* 这一步没有 mt-auto 的余量可吃（.auth-form 的占位高度是按两行主表单
+                    定的，这里内容远矮于它），整列又被 justify-center 居中去填那块余量：
+                    错误条一旦出现在按钮下方，等于在中心线以下多出 42px，标题、输入框、
+                    按钮会一起往上挪。所以槽位常显、高度恒定为 ErrorBox 本身的 42px。 */}
+                <div className="h-[42px] flex items-start">
+                  {error && <div className="w-full"><ErrorBox message={error} /></div>}
+                </div>
 
                 <button
                   type="button"

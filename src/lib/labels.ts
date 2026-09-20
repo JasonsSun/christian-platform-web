@@ -186,3 +186,35 @@ export function eventTypeLabel(type?: string | null): string {
   if (!type) return '-';
   return EVENT_TYPE_LABEL[type] || type;
 }
+
+/** 活动分类：与 /activities 列表页的分类筛选保持一致 */
+export const ACTIVITY_CATEGORY_LABEL: Record<string, string> = {
+  worship: '崇拜',
+  fellowship: '团契',
+  retreat: '退修会',
+  training: '培训',
+  service: '服务',
+  prayer: '祷告',
+  study: '查经',
+  other: '其他',
+};
+
+export function activityCategoryLabel(category?: string | null): string {
+  return ACTIVITY_CATEGORY_LABEL[category || ''] || '活动';
+}
+
+/** 团契分类：与 /groups 的分类筛选保持一致 */
+export const GROUP_CATEGORY_LABEL: Record<string, string> = {
+  fellowship: '青年团契',
+  youth: '青年团契',
+  study: '读经',
+  bible: '读经',
+  prayer: '祷告',
+  service: '服务',
+  hobby: '兴趣',
+  worship: '敬拜',
+};
+
+export function groupCategoryLabel(category?: string | null): string {
+  return GROUP_CATEGORY_LABEL[category || ''] || '团契';
+}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { apiPatch } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
-import { AdminLayout, SectionTitle, Loading, ErrorBox, Badge } from '../_components';
+import { AdminLayout, Loading, ErrorBox, Badge, PageHead, Panel } from '../_components';
 
 interface SettingItem {
   key: string; value: string; label: string; group: string; updatedAt: string;
@@ -55,28 +55,31 @@ export default function AdminSettingsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">系统设置</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">上传、通知、搜索、维护模式等运行配置</p>
+      <PageHead
+        eyebrow="系统 · 配置"
+        title="系统设置"
+        sub="上传、通知、搜索、维护模式等运行配置"
+      />
 
-      {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
-        <div className="space-y-6">
+      {loading && !data ? <Loading rows={3} /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
+        <div className="space-y-6" data-reveal-group>
           {groups.map((g) => (
-            <div key={g} className="glass rounded-2xl p-5 shadow-soft">
-              <div className="mb-4 flex items-center gap-2">
-                <span className="font-medium text-ink-900">{GROUP_LABEL[g] || g}</span>
-                <Badge tone="primary">{items.filter((i) => i.group === g).length} 项</Badge>
-              </div>
-              {GROUP_HINT[g] ? <p className="mb-3 text-xs text-ink-500 leading-relaxed">{GROUP_HINT[g]}</p> : null}
+            <Panel
+              key={g}
+              title={GROUP_LABEL[g] || g}
+              aside={<Badge tone="primary">{items.filter((i) => i.group === g).length} 项</Badge>}
+            >
+              {GROUP_HINT[g] ? <p className="-mt-1 mb-4 text-xs text-ink-500 leading-relaxed">{GROUP_HINT[g]}</p> : null}
               <div className="space-y-3">
                 {items.filter((i) => i.group === g).map((it) => {
                   const isBool = it.value === 'true' || it.value === 'false';
                   // 设置项 key 全局唯一，直接充当控件 id，避免在 map 里写重复的字面量 id
                   const fieldId = `setting-${it.key}`;
                   return (
-                    <div key={it.key} className="flex items-center gap-4">
-                      <div className="w-56 flex-shrink-0">
+                    <div key={it.key} className="flex flex-wrap lg:flex-nowrap items-center gap-2 lg:gap-4">
+                      <div className="w-full lg:w-56 lg:flex-shrink-0 min-w-0">
                         <label htmlFor={isBool ? undefined : fieldId} className="block text-sm text-ink-700">{it.label || it.key}</label>
-                        <div className="font-mono text-xs text-ink-400">{it.key}</div>
+                        <div className="font-mono text-xs text-ink-400 break-all">{it.key}</div>
                       </div>
                       {isBool ? (
                         <button
@@ -86,7 +89,7 @@ export default function AdminSettingsPage() {
                           aria-label={it.label || it.key}
                           onClick={() => set(it.key, draft[it.key] === 'true' ? 'false' : 'true')}
                           /* after: 只撑命中区不改视觉尺寸：开关本身 24px 高，手机上按不准 */
-                          className={`relative w-12 h-6 rounded-full transition after:absolute after:-inset-y-2 after:-inset-x-1 after:content-[''] ${draft[it.key] === 'true' ? 'bg-primary-600' : 'bg-ink-300'}`}
+                          className={`relative w-12 h-6 shrink-0 rounded-full transition after:absolute after:-inset-y-2.5 after:-inset-x-1 after:content-[''] ${draft[it.key] === 'true' ? 'bg-primary-600' : 'bg-ink-300'}`}
                         >
                           <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${draft[it.key] === 'true' ? 'left-6' : 'left-0.5'}`} />
                         </button>
@@ -94,7 +97,7 @@ export default function AdminSettingsPage() {
                         <input
                           aria-label={it.label || it.key}
                           id={fieldId}
-                          className="input-styled flex-1"
+                          className="input-styled min-h-11 lg:min-h-0 flex-1"
                           value={draft[it.key] ?? ''}
                           onChange={(e) => set(it.key, e.target.value)}
                         />
@@ -103,11 +106,11 @@ export default function AdminSettingsPage() {
                   );
                 })}
               </div>
-            </div>
+            </Panel>
           ))}
 
-          <div className="flex items-center gap-3">
-            <button onClick={save} disabled={busy || !dirty} className="btn-primary disabled:opacity-50">
+          <div className="flex items-center gap-3 flex-wrap">
+            <button onClick={save} disabled={busy || !dirty} className="btn-primary min-h-11 lg:min-h-0 disabled:opacity-50">
               {busy ? '保存中…' : '保存更改'}
             </button>
             {dirty ? <span className="text-sm text-gold-700">有未保存的更改</span> : null}

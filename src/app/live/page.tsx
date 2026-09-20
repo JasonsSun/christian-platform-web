@@ -8,6 +8,16 @@ import { useNotice } from '@/lib/notice';
 import { apiPost, qs } from '@/lib/api';
 import { Loading, Empty, ErrorBox } from '@/components/ui';
 import { MediaUploader } from '@/components/MediaUploader';
+import {
+  IconPlus,
+  IconBroadcast,
+  IconCheck,
+  IconFilm,
+  IconEye,
+  IconHourglass,
+  IconClose,
+  IconBell,
+} from '@/components/icons';
 import type { LiveRoom } from '@/lib/types';
 
 export default function LiveListPage() {
@@ -78,7 +88,7 @@ export default function LiveListPage() {
         </div>
         {user && (
           <button className="btn-primary" onClick={() => setShowCreate((v) => !v)}>
-            {showCreate ? '收起' : '＋ 创建直播'}
+            {showCreate ? '收起' : <><IconPlus className="w-4 h-4" strokeWidth={2.2} /> 创建直播</>}
           </button>
         )}
       </div>
@@ -86,7 +96,7 @@ export default function LiveListPage() {
       {user && showCreate && (
         <div className="glass rounded-2xl p-5 sm:p-6 mt-5">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg" aria-hidden="true">📡</span>
+            <IconBroadcast className="w-5 h-5 text-primary-600" strokeWidth={1.7} />
             <h2 className="font-display font-bold text-ink-900">创建直播间</h2>
           </div>
 
@@ -105,7 +115,10 @@ export default function LiveListPage() {
               </p>
               {reviewVideoId ? (
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-3">
-                  <span className="text-sm text-emerald-700 flex items-center gap-2">✓ 已上传审核视频，可随直播间一并提交</span>
+                  <span className="text-sm text-emerald-700 flex items-center gap-2">
+                    <IconCheck className="w-4 h-4 shrink-0" strokeWidth={2.2} />
+                    已上传审核视频，可随直播间一并提交
+                  </span>
                   <button
                     type="button"
                     className="btn-ghost text-xs"
@@ -234,7 +247,7 @@ export default function LiveListPage() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img loading="lazy" decoding="async" src={r.posterUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-white/40 text-4xl">🎬</span>
+                  <IconFilm className="w-10 h-10 text-white/40" strokeWidth={1.4} />
                 )}
               </div>
               <div className="p-4">
@@ -262,14 +275,15 @@ export default function LiveListPage() {
                   {r.coverUrl ? (
                     <img loading="lazy" decoding="async" src={r.coverUrl} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-white/40 text-4xl">📡</span>
+                    <IconBroadcast className="w-10 h-10 text-white/40" strokeWidth={1.4} />
                   )}
                   <span className={`absolute top-3 left-3 px-2 py-0.5 rounded-full text-xs font-semibold ${b.cls}`}>
                     {b.text}
                   </span>
                   {r.live && (
-                    <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-xs bg-black/60 text-white/90">
-                      👁 {r.viewerCount}
+                    <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-xs bg-black/60 text-white/90 flex items-center gap-1">
+                      <IconEye className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+                      {r.viewerCount}
                     </span>
                   )}
                 </div>
@@ -284,13 +298,22 @@ export default function LiveListPage() {
                     <p className="text-xs text-ink-400 mt-1">取消原因:{r.cancelReason}</p>
                   ) : null}
                   {isOwner && r.reviewStatus === 'pending' && !r.cancelled ? (
-                    <p className="text-xs text-amber-700 mt-1">⏳ 等待管理员审核，通过后即可开播</p>
+                    <p className="text-xs text-amber-700 mt-1 flex items-center gap-1">
+                      <IconHourglass className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+                      等待管理员审核，通过后即可开播
+                    </p>
                   ) : null}
                   {isOwner && r.reviewStatus === 'rejected' && !r.cancelled ? (
-                    <p className="text-xs text-rose-600 mt-1">✕ 审核未通过{r.reviewNote ? `:${r.reviewNote}` : ''}</p>
+                    <p className="text-xs text-rose-600 mt-1 flex items-center gap-1">
+                      <IconClose className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
+                      <span>审核未通过{r.reviewNote ? `:${r.reviewNote}` : ''}</span>
+                    </p>
                   ) : null}
                   {typeof r.reminderCount === 'number' && r.reminderCount > 0 ? (
-                    <p className="text-xs text-primary-600 mt-1">🔔 {r.reminderCount} 人已预约</p>
+                    <p className="text-xs text-primary-600 mt-1 flex items-center gap-1">
+                      <IconBell className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+                      <span>{r.reminderCount} 人已预约</span>
+                    </p>
                   ) : null}
                 </div>
               </Link>

@@ -7,13 +7,22 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { timeAgo } from '@/lib/format';
+import {
+  IconAlert,
+  IconBookOpen,
+  IconChatDots,
+  IconLightbulb,
+  IconLock,
+  IconSparkles,
+} from '@/components/icons';
 
+// 类型只用于按钮上的线性图标，提交给后端的仍是 value
 const CATEGORIES = [
-  { value: 'idea', label: '功能建议', icon: '💡' },
-  { value: 'bug', label: '问题反馈', icon: '🐞' },
-  { value: 'content', label: '内容相关', icon: '📖' },
-  { value: 'ux', label: '使用体验', icon: '🎨' },
-  { value: 'other', label: '其他', icon: '💬' },
+  { value: 'idea', label: '功能建议', icon: IconLightbulb },
+  { value: 'bug', label: '问题反馈', icon: IconAlert },
+  { value: 'content', label: '内容相关', icon: IconBookOpen },
+  { value: 'ux', label: '使用体验', icon: IconSparkles },
+  { value: 'other', label: '其他', icon: IconChatDots },
 ];
 
 const CATEGORY_LABEL: Record<string, string> = Object.fromEntries(CATEGORIES.map((c) => [c.value, c.label]));
@@ -79,7 +88,9 @@ export default function FeedbackPage() {
   if (!user) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-4">🔒</div>
+        <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center mx-auto mb-4">
+          <IconLock className="w-8 h-8 text-ink-500" strokeWidth={1.6} />
+        </div>
         <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
         <p className="text-ink-500 mb-6">登录后即可给平台提建议，我们会认真阅读每一条</p>
         <Link href="/login" className="btn-primary inline-block">去登录</Link>
@@ -109,8 +120,10 @@ export default function FeedbackPage() {
                   : 'border-ink-200 text-ink-600 hover:bg-ink-50'
               }`}
             >
-              <span className="mr-1" aria-hidden="true">{c.icon}</span>
-              {c.label}
+              <span className="inline-flex items-center gap-1.5">
+                <c.icon className="w-4 h-4" strokeWidth={1.8} />
+                {c.label}
+              </span>
             </button>
           ))}
         </div>

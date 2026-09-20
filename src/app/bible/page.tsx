@@ -7,6 +7,15 @@ import { qs, apiDelete, apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useHostedSpeech } from '@/lib/speechHost';
 import { timeAgo, formatDate } from '@/lib/format';
+import {
+  IconSpeaker,
+  IconPause,
+  IconCheckCircle,
+  IconImage,
+  IconInbox,
+  IconBookOpen,
+  IconChevronRight,
+} from '@/components/icons';
 import type { BibleMeta, BibleBook } from '@/lib/types';
 
 type GroupedBook = BibleBook & { readable: boolean };
@@ -192,7 +201,7 @@ export default function BibleHome() {
             <svg className="w-4 h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
-            <span className="text-white/80 text-sm font-medium">
+            <span className="num text-white/80 text-sm font-medium">
               {versions.length} 种译本 · {data?.books.length ?? 66} 卷书
             </span>
           </div>
@@ -235,8 +244,10 @@ export default function BibleHome() {
             )}
           </form>
 
-          {lastRead && (
-            <div className="mt-5 flex justify-center">
+          {/* 槽位高度恒定：历史记录、本地兜底记录、登录态解析三者的到达时机都不一样，
+              跟着内容一起出现会把整页往下推 64px（实测 /bible 桌面端 CLS 0.068 全在这一行）。 */}
+          <div className="mt-5 h-11 flex items-start justify-center">
+            {lastRead ? (
               <Link
                 href={`/bible/${lastRead.version || 'cuv'}/${lastRead.bookId}/${lastRead.chapter}`}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm border border-white/30 text-white text-sm font-medium transition-colors"
@@ -244,8 +255,10 @@ export default function BibleHome() {
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z" /></svg>
                 继续阅读 {lastRead.bookName || lastRead.bookId} 第 {lastRead.chapter} 章
               </Link>
-            </div>
-          )}
+            ) : (loggedIn && hLoading) ? (
+              <div className="skeleton-sheen h-11 w-60 max-w-full rounded-full bg-white/10" aria-hidden />
+            ) : null}
+          </div>
         </div>
       </section>
 
@@ -279,27 +292,46 @@ export default function BibleHome() {
                     <div className="flex flex-wrap items-center gap-2 mt-3">
                       <button
                         onClick={() => (todaySpeech.state === 'playing' ? todaySpeech.stop() : todaySpeech.start())}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-ink-950/10 text-ink-950 text-sm font-medium hover:bg-ink-950/15 transition-colors"
+                        className="inline-flex items-center gap-1.5 min-h-[2.75rem] px-4 py-1.5 rounded-full bg-ink-950/10 text-ink-950 text-sm font-medium hover:bg-ink-950/15 transition-colors"
                       >
-                        {todaySpeech.state === 'playing' ? '⏸ 停止' : '🔊 朗读'}
+                        {todaySpeech.state === 'playing' ? (
+                          <>
+                            <IconPause className="w-4 h-4" strokeWidth={2} /> 停止
+                          </>
+                        ) : (
+                          <>
+                            <IconSpeaker className="w-4 h-4" strokeWidth={1.9} /> 朗读
+                          </>
+                        )}
                       </button>
                       <button
                         onClick={checkInToday}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-ink-950/10 text-ink-950 text-sm font-medium hover:bg-ink-950/15 transition-colors"
+                        className="inline-flex items-center gap-1.5 min-h-[2.75rem] px-4 py-1.5 rounded-full bg-ink-950/10 text-ink-950 text-sm font-medium hover:bg-ink-950/15 transition-colors"
                       >
-                        ✅ 打卡
+                        <IconCheckCircle className="w-4 h-4" strokeWidth={1.9} /> 打卡
                       </button>
                       <button
                         onClick={shareVerseImage}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-ink-950/10 text-ink-950 text-sm font-medium hover:bg-ink-950/15 transition-colors"
+                        className="inline-flex items-center gap-1.5 min-h-[2.75rem] px-4 py-1.5 rounded-full bg-ink-950/10 text-ink-950 text-sm font-medium hover:bg-ink-950/15 transition-colors"
                       >
-                        🖼️ 分享图
+                        <IconImage className="w-4 h-4" strokeWidth={1.9} /> 分享图
                       </button>
                     </div>
                     {checkinMsg && <p className="text-ink-950/90 text-xs mt-2">{checkinMsg}</p>}
                   </>
                 ) : (
-                  <p className="text-ink-950/90">今日经文加载中…</p>
+                  // 占位高度要和「经文 + 出处 + 三个操作」的真实结构对齐：
+                  // 之前这里只有一行提示文字，数据回来时整张卡从 246px 撑到 326px，
+                  // 下面所有版块被推下去 62px —— /bible 桌面端 CLS 0.13 全来自这一处。
+                  <div className="space-y-2" aria-hidden>
+                    <div className="skeleton-sheen h-6 rounded-full bg-ink-950/10" />
+                    <div className="skeleton-sheen h-5 w-2/5 rounded-full bg-ink-950/10" />
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <div className="skeleton-sheen h-11 w-24 rounded-full bg-ink-950/10" />
+                      <div className="skeleton-sheen h-11 w-24 rounded-full bg-ink-950/10" />
+                      <div className="skeleton-sheen h-11 w-28 rounded-full bg-ink-950/10" />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -332,16 +364,17 @@ export default function BibleHome() {
                   <Stat value={plan.totalChapters} label="已读章数" />
                   <Stat value={plan.librarySize} label="文库规模" />
                 </div>
-                <p className="text-xs text-ink-400 mb-2">今日计划（{plan.today.length} 段）</p>
+                <p className="num text-xs text-ink-400 mb-2">今日计划（{plan.today.length} 段）</p>
                 <div className="space-y-2">
                   {plan.today.map((t, i) => (
                     <Link
                       key={i}
                       href={`/bible/${t.version}/${t.bookId}/${t.chapter}`}
-                      className="block bg-ui-surface hover:bg-white rounded-xl px-3 py-2 border border-ink-100 hover:border-primary-200 transition-all text-sm font-medium text-primary-700"
+                      data-spot
+                      className="spot group flex items-center justify-between gap-2 bg-ui-surface hover:bg-white rounded-xl px-3 py-2.5 border border-ink-100 hover:border-primary-200 transition-all text-sm font-medium text-primary-700"
                     >
-                      {t.bookName} 第 {t.chapter} 章
-                      <span className="text-ink-400 font-normal ml-1">›</span>
+                      <span className="num truncate">{t.bookName} 第 {t.chapter} 章</span>
+                      <IconChevronRight className="w-4 h-4 shrink-0 text-ink-400 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   ))}
                 </div>
@@ -376,10 +409,10 @@ export default function BibleHome() {
                     href={`/bible/${it.version}/${it.bookId}/${it.chapter}`}
                     className="flex items-center justify-between gap-2 bg-ui-surface hover:bg-white rounded-xl px-3 py-2 border border-ink-100 hover:border-primary-200 transition-all"
                   >
-                    <span className="text-sm font-medium text-ink-800 truncate">
+                    <span className="num text-sm font-medium text-ink-800 truncate">
                       {it.bookName} 第 {it.chapter} 章
                     </span>
-                    <span className="text-[11px] text-ink-400 flex-shrink-0">
+                    <span className="num text-[11px] text-ink-400 flex-shrink-0">
                       {formatDate(it.readDate) || timeAgo(it.readAt)}
                     </span>
                   </Link>
@@ -485,7 +518,7 @@ export default function BibleHome() {
                   setVersion(v.id);
                   setSearchQ('');
                 }}
-                className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
+                className={`inline-flex items-center min-h-[2.75rem] px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
                   active
                     ? 'bg-gradient-to-r from-primary-700 to-primary-600 text-white shadow-lg shadow-primary-500/30'
                     : 'bg-white text-ink-600 hover:bg-ink-50 border border-ink-200 hover:border-primary-300'
@@ -548,22 +581,25 @@ export default function BibleHome() {
             {sLoading && <VerseSkeleton />}
             {!sLoading && sData && sData.items.length === 0 && (
               <div className="bg-white rounded-2xl p-12 shadow-soft border border-ink-100 text-center">
-                <div className="text-5xl mb-4">📭</div>
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600 flex items-center justify-center">
+                  <IconInbox className="w-8 h-8" strokeWidth={1.5} />
+                </div>
                 <p className="text-ink-500">当前译本没有找到包含「{searchQ}」的经文</p>
               </div>
             )}
             {!sLoading && sData && sData.items.length > 0 && (
               <>
-                <p className="text-sm text-ink-500 mb-4">共 {sData.total} 处匹配</p>
-                <div className="space-y-3">
+                <p className="num text-sm text-ink-500 mb-4">共 {sData.total} 处匹配</p>
+                <div data-reveal-group className="space-y-3">
                   {sData.items.map((it, i) => (
                     <Link
                       key={i}
                       href={`/bible/${it.version}/${it.bookId}/${it.chapter}`}
-                      className="block bg-white rounded-2xl p-5 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all"
+                      data-spot
+                      className="spot block bg-white rounded-2xl p-5 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all"
                     >
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-semibold text-primary-700">{it.bookName} {it.chapter}:{it.verse}</span>
+                        <span className="num text-sm font-semibold text-primary-700">{it.bookName} {it.chapter}:{it.verse}</span>
                       </div>
                       <p className="text-ink-700 font-serif leading-relaxed line-clamp-3">{it.text}</p>
                     </Link>
@@ -576,7 +612,9 @@ export default function BibleHome() {
           <BookSkeleton />
         ) : sections.every((s) => s.groups.length === 0) ? (
           <div className="bg-white rounded-2xl p-12 shadow-soft border border-ink-100 text-center">
-            <div className="text-5xl mb-4">📖</div>
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 text-primary-600 flex items-center justify-center">
+              <IconBookOpen className="w-8 h-8" strokeWidth={1.5} />
+            </div>
             <h2 className="font-display text-xl font-bold text-ink-900 mb-2">没有找到匹配的书卷</h2>
             <p className="text-ink-500">试试更换关键词，或<button onClick={() => setBookFilter('')} className="text-primary-600 hover:underline font-medium">清除筛选</button></p>
           </div>
@@ -598,18 +636,19 @@ export default function BibleHome() {
               {sec.groups.map((g) => (
                 <div key={g.category} className="mb-8">
                   <h2 className="text-sm font-semibold text-primary-700 mb-3">{g.category}</h2>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  <div data-reveal-group className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     {g.books.map((b) => (
                       <Link
                         key={b.id}
                         href={`/bible/${activeVersion}/${b.id}`}
-                        className="group bg-white rounded-2xl p-4 shadow-soft hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 border border-ink-100 hover:border-primary-200"
+                        data-spot
+                        className="spot group bg-white rounded-2xl p-4 shadow-soft hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 border border-ink-100 hover:border-primary-200"
                       >
                         <div className="font-display font-semibold text-ink-900 group-hover:text-primary-600 transition-colors">
                           {b.name}
                         </div>
                         <div className="flex items-center justify-between mt-2">
-                          <span className="text-xs text-ink-400">{b.chapters} 章</span>
+                          <span className="num text-xs text-ink-400">{b.chapters} 章</span>
                           {b.readable ? (
                             <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">可读</span>
                           ) : (
@@ -632,7 +671,7 @@ export default function BibleHome() {
 function Stat({ value, label }: { value: number; label: string }) {
   return (
     <div className="bg-ui-surface rounded-xl py-2 border border-ink-100">
-      <div className="font-display text-xl font-bold text-primary-700">{value}</div>
+      <div data-count className="num font-display text-xl font-bold text-primary-700">{value}</div>
       <div className="text-[11px] text-ink-400 mt-0.5">{label}</div>
     </div>
   );
@@ -640,23 +679,23 @@ function Stat({ value, label }: { value: number; label: string }) {
 
 function PlanSkeleton() {
   return (
-    <div className="animate-pulse space-y-3">
+    <div className="space-y-3">
       <div className="grid grid-cols-3 gap-2">
-        <div className="h-12 bg-ink-100 rounded-xl" />
-        <div className="h-12 bg-ink-100 rounded-xl" />
-        <div className="h-12 bg-ink-100 rounded-xl" />
+        <div className="h-12 bg-ink-100 rounded-xl skeleton-sheen" />
+        <div className="h-12 bg-ink-100 rounded-xl skeleton-sheen" />
+        <div className="h-12 bg-ink-100 rounded-xl skeleton-sheen" />
       </div>
-      <div className="h-9 bg-ink-100 rounded-xl" />
-      <div className="h-9 bg-ink-100 rounded-xl" />
+      <div className="h-9 bg-ink-100 rounded-xl skeleton-sheen" />
+      <div className="h-9 bg-ink-100 rounded-xl skeleton-sheen" />
     </div>
   );
 }
 
 function ListSkeleton() {
   return (
-    <div className="animate-pulse space-y-2">
+    <div className="space-y-2">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="h-9 bg-ink-100 rounded-xl" />
+        <div key={i} className="h-9 bg-ink-100 rounded-xl skeleton-sheen" />
       ))}
     </div>
   );
@@ -664,13 +703,13 @@ function ListSkeleton() {
 
 function BookSkeleton() {
   return (
-    <div className="space-y-12 animate-pulse">
+    <div className="space-y-12">
       {[0, 1].map((s) => (
         <div key={s}>
-          <div className="h-8 w-40 bg-ink-100 rounded-lg mb-6" />
+          <div className="h-8 w-40 bg-ink-100 rounded-lg mb-6 skeleton-sheen" />
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="h-20 bg-ink-100 rounded-2xl" />
+              <div key={i} className="h-20 bg-ink-100 rounded-2xl skeleton-sheen" />
             ))}
           </div>
         </div>
@@ -681,9 +720,9 @@ function BookSkeleton() {
 
 function VerseSkeleton() {
   return (
-    <div className="space-y-3 animate-pulse">
+    <div className="space-y-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="h-24 bg-ink-100 rounded-2xl" />
+        <div key={i} className="h-24 bg-ink-100 rounded-2xl skeleton-sheen" />
       ))}
     </div>
   );

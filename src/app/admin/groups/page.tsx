@@ -8,7 +8,7 @@ import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { formatDate } from '@/lib/format';
 import {
-  AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox,
+  AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar,
 } from '../_components';
 
 interface AdminGroup {
@@ -186,10 +186,11 @@ export default function AdminGroupsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">群组管理</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">
-        查看团契/群组成员、动态与负责人；对违规群组可直接解散（无需等团长操作）
-      </p>
+      <PageHead
+        eyebrow="社交 · 小组"
+        title="群组管理"
+        sub="查看团契/群组成员、动态与负责人；对违规群组可直接解散（无需等团长操作）"
+      />
 
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
         <StatCard title="群组总数" value={data?.total ?? '—'} />

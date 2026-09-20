@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { apiPost } from '@/lib/api';
+import { IconAlert, IconArrowLeft, IconCheckCircle, IconKey } from '@/components/icons';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -29,7 +30,10 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="auth-shell relative overflow-hidden flex items-center justify-center py-10 sm:py-14">
+    /* 顶部对齐而不是垂直居中：这张卡没有 .auth-form 那样的占位高度，出错或发出邮件
+       时高度都会变，居中的话整张卡会往上顶 —— 和登录页一样是用户说的「跳」。钉住上沿
+       后内容只向下生长，标题、邮箱框的位置始终不动。 */
+    <div className="auth-shell relative overflow-hidden flex items-start justify-center py-10 sm:py-14 lg:pt-[max(3.5rem,12vh)]">
       <div className="absolute inset-0 bg-animated-gradient" />
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 -left-20 w-72 h-72 bg-gold-400/20 rounded-full blur-3xl animate-float" />
@@ -37,13 +41,12 @@ export default function ForgotPasswordPage() {
       </div>
 
       <div className="relative z-10 max-w-md w-full mx-4">
-        <div className="glass rounded-3xl p-8 md:p-10 shadow-card-hover">
+        <div className="glass card-tech rounded-3xl p-8 md:p-10">
           <div className="text-center mb-8">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center mx-auto mb-4 shadow-glow">
-              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
+              <IconKey className="w-8 h-8 text-white" strokeWidth={1.6} />
             </div>
+            <div className="eyebrow justify-center mb-1.5">账号安全</div>
             <h1 className="font-display text-3xl font-bold text-ink-900 mb-2">找回密码</h1>
             <p className="text-ink-500">输入注册邮箱，我们会发送重置链接给你</p>
           </div>
@@ -51,7 +54,10 @@ export default function ForgotPasswordPage() {
           {sent ? (
             <div className="text-center">
               <div className="rounded-2xl bg-emerald-50 border border-emerald-200 px-5 py-4 text-left mb-6">
-                <p className="text-emerald-800 font-semibold mb-1">邮件已发送</p>
+                <p className="text-emerald-800 font-semibold mb-1 flex items-center gap-2">
+                  <IconCheckCircle className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.6} />
+                  邮件已发送
+                </p>
                 <p className="text-emerald-700 text-sm leading-relaxed">
                   如果该邮箱已注册，你会收到一封包含重置链接的邮件，链接 30 分钟内有效。
                   请检查收件箱，也别忘了看一眼垃圾邮件。
@@ -61,7 +67,8 @@ export default function ForgotPasswordPage() {
               <button onClick={() => { setSent(false); setEmail(''); }} className="btn-primary w-full py-3">
                 换个邮箱重试
               </button>
-              <Link href="/login" className="block text-center mt-4 text-sm text-primary-700 hover:underline">
+              <Link href="/login" className="mt-4 inline-flex items-center gap-1.5 text-sm text-primary-700 hover:text-primary-800 group/link">
+                <IconArrowLeft className="w-4 h-4 transition-transform group-hover/link:-translate-x-0.5" strokeWidth={1.6} />
                 返回登录
               </Link>
             </div>
@@ -83,18 +90,19 @@ export default function ForgotPasswordPage() {
                 />
               </div>
 
-              {error && (
-                <div
-                  id="forgot-error"
-                  role="alert"
-                  className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm"
-                >
-                  <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {error}
-                </div>
-              )}
+              {/* 错误条常显占位：没出错时只是透明，行高留着（内容为 &nbsp; 保证一行高度），
+                  于是报错弹出/消失都不会把下面的按钮推来推去。 */}
+              <div
+                id="forgot-error"
+                role="alert"
+                aria-hidden={!error || undefined}
+                className={`flex items-center gap-2 min-h-[46px] px-4 py-3 rounded-xl border text-sm transition-colors duration-200 ${
+                  error ? 'bg-rose-50 border-rose-200 text-rose-700' : 'border-transparent text-transparent'
+                }`}
+              >
+                <IconAlert className="w-[18px] h-[18px] flex-shrink-0" strokeWidth={1.6} />
+                {error || ' '}
+              </div>
 
               <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 disabled:opacity-70">
                 {loading ? '发送中…' : '发送重置邮件'}

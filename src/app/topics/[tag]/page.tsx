@@ -8,6 +8,7 @@ import { useApi } from '@/lib/useApi';
 import { timeAgo, formatDate } from '@/lib/format';
 import type { ContentItem, ListResult } from '@/lib/types';
 import { ContentCardSkeleton } from '@/components/Skeleton';
+import { Glyph, IconArrowLeft, IconArrowRight, IconChatDots, IconDocument, IconHeart, IconStar } from '@/components/icons';
 
 interface TopicOverview {
   tag: string;
@@ -118,12 +119,11 @@ export default function TopicDetailPage() {
         <div className="absolute inset-0 mesh-bg opacity-70" />
         <div className="absolute inset-0 dot-grid opacity-25" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/topics" className="inline-flex items-center gap-1 text-white/70 hover:text-white text-sm mb-4 transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+          <Link href="/topics" className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-sm mb-4 transition-colors min-h-[44px]">
+            <IconArrowLeft className="w-4 h-4" strokeWidth={1.6} />
             返回话题广场
           </Link>
+          <div className="eyebrow mb-2"><span className="text-gold-200/90">TOPIC</span></div>
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
             <h1 className="font-display text-3xl sm:text-4xl font-bold text-white text-glow break-words">
               #{ov?.tag || tag}
@@ -131,25 +131,27 @@ export default function TopicDetailPage() {
             <button
               onClick={toggleFollow}
               disabled={followBusy}
-              className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all disabled:opacity-60 flex items-center gap-1.5 flex-shrink-0 ${
+              aria-pressed={ov?.following}
+              className={`px-4 py-2 min-h-[44px] rounded-xl text-sm font-medium border transition-colors disabled:opacity-60 flex items-center gap-1.5 flex-shrink-0 ${
                 ov?.following
                   ? 'border-gold-300/70 bg-gold-400/20 text-gold-200 hover:bg-gold-400/30'
                   : 'border-white/40 text-white/90 hover:bg-white/15'
               }`}
             >
-              {ov?.following ? '★ 已关注' : '☆ 关注话题'}
-              {!!ov?.followers && <span className="text-xs opacity-80">{ov.followers} 人</span>}
+              <IconStar className={`w-4 h-4 ${ov?.following ? 'fill-current' : ''}`} strokeWidth={1.6} />
+              {ov?.following ? '已关注' : '关注话题'}
+              {!!ov?.followers && <span className="num text-xs opacity-80">{ov.followers} 人</span>}
             </button>
           </div>
           {ov && !ov.empty && (
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-white/85 text-sm">
-              <span>{ov.count} 篇内容</span>
+              <span><span className="num font-semibold">{ov.count}</span> 篇内容</span>
               <span>·</span>
-              <span>{ov.likes} 次点赞</span>
+              <span><span className="num font-semibold">{ov.likes}</span> 次点赞</span>
               <span>·</span>
-              <span>{ov.comments} 条评论</span>
+              <span><span className="num font-semibold">{ov.comments}</span> 条评论</span>
               <span>·</span>
-              <span>{ov.views} 次浏览</span>
+              <span><span className="num font-semibold">{ov.views}</span> 次浏览</span>
               {ov.lastAt && (
                 <>
                   <span>·</span>
@@ -164,19 +166,23 @@ export default function TopicDetailPage() {
       <section className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {ov?.empty ? (
-            <div className="card-tech rounded-2xl p-10 text-center text-ink-400">
+            <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-ink-200 text-ink-400">
               话题 <b className="text-ink-700">#{ov.tag}</b> 下还没有已发布的内容
               <div className="mt-3">
-                <Link href="/community/create" className="text-primary-600 hover:underline">
-                  发布一篇并带上这个标签 →
+                <Link
+                  href="/community/create"
+                  className="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 hover:underline min-h-[44px]"
+                >
+                  发布一篇并带上这个标签
+                  <IconArrowRight className="w-4 h-4" strokeWidth={1.6} />
                 </Link>
               </div>
             </div>
           ) : (
-            <div className="grid lg:grid-cols-3 gap-6 md:gap-8">
+            <div className="grid lg:grid-cols-3 gap-6 md:gap-8 items-start">
               {/* 左侧内容流 */}
               <div className="lg:col-span-2 space-y-5 min-w-0">
-                <div className="card-tech rounded-2xl p-4 flex flex-wrap items-center gap-2">
+                <div className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 flex flex-wrap items-center gap-2">
                   <div className="flex flex-wrap gap-2 min-w-0">
                     {TYPE_TABS.map((t) => (
                       <button
@@ -185,7 +191,8 @@ export default function TopicDetailPage() {
                           setType(t.id);
                           setPage(1);
                         }}
-                        className={`px-3.5 py-1.5 rounded-xl text-sm font-medium transition-all ${
+                        aria-pressed={type === t.id}
+                        className={`px-3.5 py-2 min-h-[44px] rounded-xl text-sm font-medium transition-colors ${
                           type === t.id
                             ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/25'
                             : 'bg-ink-50 text-ink-600 hover:bg-primary-50 hover:text-primary-700'
@@ -201,7 +208,8 @@ export default function TopicDetailPage() {
                         setSort('new');
                         setPage(1);
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      aria-pressed={sort === 'new'}
+                      className={`px-3 py-1.5 min-h-[36px] rounded-lg text-sm font-medium transition-colors ${
                         sort === 'new' ? 'text-primary-700 bg-white shadow-sm' : 'text-ink-500 hover:text-ink-700'
                       }`}
                     >
@@ -212,7 +220,8 @@ export default function TopicDetailPage() {
                         setSort('hot');
                         setPage(1);
                       }}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                      aria-pressed={sort === 'hot'}
+                      className={`px-3 py-1.5 min-h-[36px] rounded-lg text-sm font-medium transition-colors ${
                         sort === 'hot' ? 'text-primary-700 bg-white shadow-sm' : 'text-ink-500 hover:text-ink-700'
                       }`}
                     >
@@ -230,17 +239,27 @@ export default function TopicDetailPage() {
                 )}
 
                 {!listLoading && items.length === 0 && (
-                  <div className="card-tech rounded-2xl p-10 text-center text-ink-400">该筛选条件下没有内容</div>
+                  <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-ink-200 text-ink-400">
+                    该筛选条件下没有内容
+                  </div>
                 )}
 
-                <div className="space-y-4">
+                <div data-reveal-group className="space-y-4">
                   {items.map((item) => {
                     const badge = TYPE_BADGE[item.contentType];
                     return (
-                      <article key={item.id} className="card-tech rounded-2xl p-5 group">
+                      <article
+                        key={item.id}
+                        data-spot
+                        className="spot card-tech rounded-2xl p-5 group"
+                      >
                         <Link href={`/contents/${item.id}`} className="flex gap-4">
-                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-2xl flex-shrink-0">
-                            {item.cover || '📄'}
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center text-ink-600 flex-shrink-0">
+                            {item.cover && item.cover !== '📄' ? (
+                              <Glyph glyph={item.cover} className="w-6 h-6" />
+                            ) : (
+                              <IconDocument className="w-6 h-6" strokeWidth={1.6} />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
@@ -275,26 +294,12 @@ export default function TopicDetailPage() {
                           <span>{timeAgo(item.publishedAt || item.createdAt)}</span>
                           <div className="ml-auto flex items-center gap-4">
                             <span className="flex items-center gap-1">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                                />
-                              </svg>
-                              <span className="sr-only">点赞</span>{item.likeCount}
+                              <IconHeart className="w-4 h-4" strokeWidth={1.6} />
+                              <span className="sr-only">点赞</span><span className="num">{item.likeCount}</span>
                             </span>
                             <span className="flex items-center gap-1">
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M8 10h8M8 14h6m-6 6h8a2 2 0 002-2V8l-4-4H8a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                />
-                              </svg>
-                              <span className="sr-only">评论</span>{item.commentCount}
+                              <IconChatDots className="w-4 h-4" strokeWidth={1.6} />
+                              <span className="sr-only">评论</span><span className="num">{item.commentCount}</span>
                             </span>
                           </div>
                         </div>
@@ -308,17 +313,17 @@ export default function TopicDetailPage() {
                     <button
                       disabled={page <= 1}
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      className="px-4 py-2 rounded-xl border border-ink-200 text-sm text-ink-600 disabled:opacity-40 hover:border-primary-300 transition-colors"
+                      className="px-4 py-2 min-h-[44px] rounded-xl border border-ink-200 text-sm text-ink-600 disabled:opacity-40 hover:border-primary-300 transition-colors"
                     >
                       上一页
                     </button>
-                    <span className="text-sm text-ink-500">
+                    <span className="num text-sm text-ink-500">
                       {page} / {maxPage}
                     </span>
                     <button
                       disabled={page >= maxPage}
                       onClick={() => setPage((p) => Math.min(maxPage, p + 1))}
-                      className="px-4 py-2 rounded-xl border border-ink-200 text-sm text-ink-600 disabled:opacity-40 hover:border-primary-300 transition-colors"
+                      className="px-4 py-2 min-h-[44px] rounded-xl border border-ink-200 text-sm text-ink-600 disabled:opacity-40 hover:border-primary-300 transition-colors"
                     >
                       下一页
                     </button>
@@ -329,7 +334,7 @@ export default function TopicDetailPage() {
               {/* 右侧侧栏 */}
               <aside className="space-y-5 min-w-0">
                 {ov && ov.types.length > 0 && (
-                  <div className="card-tech rounded-2xl p-5">
+                  <div className="bg-white rounded-2xl p-5 shadow-soft border border-ink-100">
                     <h3 className="font-display font-bold text-ink-900 mb-3">内容构成</h3>
                     <div className="space-y-2">
                       {ov.types.map((t) => {
@@ -339,7 +344,7 @@ export default function TopicDetailPage() {
                           <div key={t.type}>
                             <div className="flex items-center justify-between text-xs text-ink-500 mb-1">
                               <span>{badge?.label || t.type}</span>
-                              <span>
+                              <span className="num">
                                 {t.count} 篇 · {pct}%
                               </span>
                             </div>
@@ -357,14 +362,14 @@ export default function TopicDetailPage() {
                 )}
 
                 {ov && ov.authors.length > 0 && (
-                  <div className="card-tech rounded-2xl p-5">
+                  <div className="bg-white rounded-2xl p-5 shadow-soft border border-ink-100">
                     <h3 className="font-display font-bold text-ink-900 mb-3">主要作者</h3>
                     <div className="space-y-2.5">
                       {ov.authors.map((a) => (
                         <Link
                           key={a.id}
                           href={`/users/${a.id}`}
-                          className="flex items-center gap-2.5 group"
+                          className="flex items-center gap-2.5 group min-h-[44px]"
                         >
                           <span
                             className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
@@ -373,7 +378,7 @@ export default function TopicDetailPage() {
                             {(a.name || '?').slice(0, 1)}
                           </span>
                           <span className="text-sm text-ink-700 group-hover:text-primary-700 truncate">{a.name}</span>
-                          <span className="ml-auto text-xs text-ink-400 flex-shrink-0">{a.count} 篇</span>
+                          <span className="num ml-auto text-xs text-ink-400 flex-shrink-0">{a.count} 篇</span>
                         </Link>
                       ))}
                     </div>
@@ -381,17 +386,17 @@ export default function TopicDetailPage() {
                 )}
 
                 {ov && ov.related.length > 0 && (
-                  <div className="card-tech rounded-2xl p-5">
+                  <div className="bg-white rounded-2xl p-5 shadow-soft border border-ink-100">
                     <h3 className="font-display font-bold text-ink-900 mb-3">相关话题</h3>
                     <div className="flex flex-wrap gap-2">
                       {ov.related.map((r) => (
                         <Link
                           key={r.name}
                           href={`/topics/${encodeURIComponent(r.name)}`}
-                          className="px-3 py-1.5 rounded-full bg-ink-50 text-ink-600 text-xs hover:bg-primary-50 hover:text-primary-700 transition-colors"
+                          className="inline-flex items-center gap-1 px-3 py-2 min-h-[36px] rounded-full bg-ink-50 text-ink-600 text-xs hover:bg-primary-50 hover:text-primary-700 transition-colors"
                         >
                           #{r.name}
-                          <span className="ml-1 text-ink-400">{r.count}</span>
+                          <span className="num text-ink-400">{r.count}</span>
                         </Link>
                       ))}
                     </div>
@@ -399,7 +404,7 @@ export default function TopicDetailPage() {
                 )}
 
                 {ov?.firstAt && (
-                  <div className="card-tech rounded-2xl p-5 text-xs text-ink-400 space-y-1">
+                  <div className="bg-white rounded-2xl p-5 shadow-soft border border-ink-100 text-xs text-ink-400 space-y-1">
                     <div>首次出现：{formatDate(ov.firstAt)}</div>
                     <div>最近更新：{formatDate(ov.lastAt)}</div>
                   </div>

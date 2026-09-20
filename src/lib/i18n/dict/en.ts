@@ -138,7 +138,7 @@ const en: Dict = {
     noSearch:
       'No search history yet. Try searching “grace”, “hymn”, “fellowship”…',
     featured: 'Featured Content',
-    viewAll: 'View All →',
+    viewAll: 'View All',
     noContent: 'No content yet',
     recentEvents: 'Upcoming Events',
     allEvents: 'All events',
@@ -148,7 +148,7 @@ const en: Dict = {
     prayerWall: 'Prayer Wall',
     goPray: 'Go Pray',
     groups: 'Recommended Groups',
-    allGroups: 'View All Groups →',
+    allGroups: 'View All Groups',
     noGroups: 'No groups yet',
     media: 'Worship Media',
     mediaSub: 'Sermon videos and hymns, play instantly online',
@@ -180,7 +180,7 @@ const en: Dict = {
     traditionalHymn: 'Traditional Hymn',
     amen: '{n} said amen',
     members: '{n} members',
-    enterGroup: 'Enter group →',
+    enterGroup: 'Enter group',
   },
   lang: {
     zh: '中文',

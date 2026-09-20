@@ -8,7 +8,7 @@ import { useConfirmNav } from '@/lib/confirm';
 import { useNotice } from '@/lib/notice';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
-import { AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
 import type { LiveRoomListItem } from '@/lib/types';
 
 type Tab = 'all' | 'pending' | 'live' | 'closed';
@@ -119,8 +119,11 @@ export default function AdminLivePage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">直播管理</SectionTitle>
-      <p className="text-sm text-ink-500 -mt-2 mb-5">审核直播间、强制关闭违规直播、取消预约。取消/过期不删除数据,只对外隐藏。<span className="text-ink-400">（审核员仅可审核,强制关闭与取消由管理员操作）</span></p>
+      <PageHead
+        eyebrow="活动 · 直播"
+        title="直播管理"
+        sub={<>审核直播间、强制关闭违规直播、取消预约。取消/过期不删除数据,只对外隐藏。<span className="text-ink-400">（审核员仅可审核,强制关闭与取消由管理员操作）</span></>}
+      />
 
       {/* 超管看完整管理统计;审核员仅看「待审核」数,不暴露总数/直播中/已关闭等管理视角 */}
       {canManage ? (

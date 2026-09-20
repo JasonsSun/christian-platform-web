@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { apiGet, apiPost, apiPatch } from '@/lib/api';
+import { IconAlert, IconCheck, IconLock } from '@/components/icons';
 
 type Status = { enabled: boolean; confirmed: boolean; recoveryLeft: number };
 
@@ -113,8 +114,10 @@ export default function TwoFactorPage() {
   if (!user) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-4">🔒</div>
-        <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
+        <div className="w-16 h-16 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center mx-auto mb-4">
+          <IconLock className="w-7 h-7" strokeWidth={1.6} />
+        </div>
+        <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
         <Link href="/login?next=/settings/two-factor" className="btn-primary">去登录</Link>
       </div>
     );
@@ -129,7 +132,7 @@ export default function TwoFactorPage() {
             开启后，登录除密码外还需输入验证器 App 上的 6 位动态码。
           </p>
         </div>
-        <Link href="/me" className="text-sm text-primary-700 hover:underline shrink-0">返回</Link>
+        <Link href="/me" className="inline-flex items-center px-3 -mx-3 py-3 -my-3 text-sm text-primary-700 hover:underline shrink-0">返回</Link>
       </div>
 
       {err && (
@@ -200,11 +203,13 @@ export default function TwoFactorPage() {
         <div className="rounded-2xl bg-white border border-ink-100 p-6">
           <div className="flex items-center gap-3 mb-4">
             <span
-              className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${
+              className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                 status?.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-ink-100 text-ink-600'
               }`}
             >
-              {status?.enabled ? '✓' : '!'}
+              {status?.enabled
+                ? <IconCheck className="w-5 h-5" strokeWidth={2.2} />
+                : <IconAlert className="w-5 h-5" strokeWidth={2} />}
             </span>
             <div>
               <p className="font-medium text-ink-900">

@@ -17,10 +17,11 @@ export default function Footer() {
   return (
     <footer className="relative bg-gradient-to-br from-ink-950 via-ink-900 to-primary-950 text-white overflow-hidden">
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary-400/50 to-transparent" />
-      {/* 装饰背景 */}
+      {/* 装饰背景：两团光晕只作静态底纹。原先带 animate-glow-pulse 常驻呼吸，
+          页脚又是每个页面都渲染的元素，等于整站一直在拿 60fps 换一点看不出来的动。 */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary-500/10 rounded-full blur-3xl animate-glow-pulse" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gold-500/10 rounded-full blur-3xl animate-glow-pulse" style={{ animationDelay: '-1.5s' }} />
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary-500/[0.07] rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-gold-500/[0.07] rounded-full blur-3xl" />
         <div className="absolute inset-0 dot-grid opacity-20" />
       </div>
 
@@ -43,7 +44,7 @@ export default function Footer() {
               {['微信', '微博', 'QQ', '邮箱'].map((platform) => (
                 <button
                   key={platform}
-                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-primary-500/30 flex items-center justify-center text-sm transition-all hover:scale-110 border border-white/5 hover:border-primary-400/50"
+                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-primary-500/30 flex items-center justify-center text-sm transition-colors border border-white/5 hover:border-primary-400/50"
                   title={platform}
                 >
                   <span className="text-xs">{platform[0]}</span>

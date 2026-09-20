@@ -7,6 +7,7 @@ import { apiGet, apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useGoLogin } from '@/lib/nav';
 import { useNotice } from '@/lib/notice';
+import { IconPray } from '@/components/icons';
 
 /**
  * 捐赠支付页
@@ -242,7 +243,7 @@ export default function DonatePayPage() {
   if (state?.status === 'confirmed') {
     return (
       <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <div className="text-4xl mb-3">🙏</div>
+        <div className="w-14 h-14 mb-3 mx-auto rounded-2xl bg-primary-50 text-primary-600 grid place-items-center"><IconPray className="w-7 h-7" strokeWidth={1.5} /></div>
         <h1 className="font-display text-2xl font-bold text-ink-900">捐赠已确认</h1>
         <p className="text-sm text-ink-500 mt-2">感谢你的奉献，愿主纪念。</p>
         <Link className="btn-primary inline-block mt-6" href="/donate">返回捐赠专区</Link>
@@ -253,7 +254,7 @@ export default function DonatePayPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
-        <Link href="/donate" className="text-sm text-primary-600 hover:text-primary-700">← 返回捐赠专区</Link>
+        <Link href="/donate" className="inline-flex items-center py-3 -my-3 text-sm text-primary-600 hover:text-primary-700">← 返回捐赠专区</Link>
         <h1 className="font-display text-2xl font-bold text-ink-900 mt-3">完成支付</h1>
         <p className="text-sm text-ink-500 mt-1.5 leading-relaxed">
           捐赠金额 <span className="font-semibold text-ink-800">¥{amountText}</span>

@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { formatDateTime } from '@/lib/format';
-import { AdminLayout, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, StatCard, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, Pagination } from '../_components';
 import type { AdminDonation, AdminDonationResult } from '@/lib/types';
 
 /**
@@ -89,13 +89,12 @@ export default function AdminDonationsPage() {
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-ink-900">捐赠管理</h1>
-          <p className="text-sm text-ink-500 mt-1">真实金额仅本页可见，公开名录一律脱敏为 ****元</p>
-        </div>
-        <button className="btn-secondary" onClick={reload}>刷新</button>
-      </div>
+      <PageHead
+        eyebrow="运营 · 财务"
+        title="捐赠管理"
+        sub="真实金额仅本页可见，公开名录一律脱敏为 ****元"
+        actions={<button className="btn-secondary btn-sm min-h-11 lg:min-h-0" onClick={reload}>刷新</button>}
+      />
 
       {/* 统计 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

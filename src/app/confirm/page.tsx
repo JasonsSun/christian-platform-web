@@ -13,9 +13,28 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useNotice } from '@/lib/notice';
 import { dropConfirm, getConfirmMeta, getConfirmRequest } from '@/lib/confirm';
 import { runConfirmAction } from '@/lib/confirmActions';
+import { IconAlert, IconCheckCircle, IconLink } from '@/components/icons';
 
 /** 确认动作执行器：优先用来源页内存回调，缺失时回退到声明式 action */
 type Runner = (value: string) => void | Promise<unknown>;
+
+/** 占位卡：与真卡片同宽同内边距、并留一块同高的舞台区。
+    原来这里是一行「加载中…」，水合后整张卡凭空长出来，是这一页最明显的一次跳动。 */
+function ConfirmSkeleton() {
+  return (
+    <div className="max-w-2xl mx-auto px-4 py-12 md:py-20">
+      <div className="bg-white card-tech rounded-3xl p-6 md:p-9 border border-ink-100">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="skeleton-sheen w-11 h-11 rounded-2xl bg-ink-100 flex-shrink-0" />
+          <div className="skeleton-sheen h-8 w-52 rounded-lg bg-ink-100" />
+        </div>
+        <div className="skeleton-sheen h-4 w-full rounded bg-ink-100" />
+        <div className="skeleton-sheen h-4 w-2/3 rounded bg-ink-100 mt-2.5" />
+        <div className="skeleton-sheen h-12 w-full rounded-xl bg-ink-100 mt-8" />
+      </div>
+    </div>
+  );
+}
 
 function ConfirmInner() {
   const router = useRouter();
@@ -110,16 +129,17 @@ function ConfirmInner() {
   }, [id, runner, inputSpec, value, router, back, notice]);
 
   if (!ready) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-24 text-center text-ink-400">加载中…</div>
-    );
+    return <ConfirmSkeleton />;
   }
 
   if (stale) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-20">
-        <div className="bg-white rounded-3xl p-8 md:p-10 shadow-soft border border-ink-100 text-center">
-          <div className="text-5xl mb-4">🔗</div>
+        <div className="bg-white card-tech rounded-3xl p-8 md:p-10 border border-ink-100 text-center">
+          <span className="w-14 h-14 rounded-2xl bg-ink-100 text-ink-500 flex items-center justify-center mx-auto mb-4">
+            <IconLink className="w-7 h-7" strokeWidth={1.6} />
+          </span>
+          <div className="eyebrow justify-center mb-1.5">链接失效</div>
           <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">操作链接已失效</h1>
           <p className="text-ink-500 text-sm leading-relaxed mb-6">
             该确认已超时或已处理。请返回原页面重新发起该操作。
@@ -141,14 +161,16 @@ function ConfirmInner() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-12 md:py-20">
-      <div className="bg-white rounded-3xl p-6 md:p-9 shadow-soft border border-ink-100">
+      <div className="bg-white card-tech rounded-3xl p-6 md:p-9 border border-ink-100">
         <div className="flex items-center gap-3 mb-5">
           <span
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl ${
+            className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
               danger ? 'bg-rose-50 text-rose-600' : 'bg-primary-50 text-primary-600'
             }`}
           >
-            {danger ? '⚠️' : '✅'}
+            {danger
+              ? <IconAlert className="w-[22px] h-[22px]" strokeWidth={1.6} />
+              : <IconCheckCircle className="w-[22px] h-[22px]" strokeWidth={1.6} />}
           </span>
           <h1 className="font-display text-2xl md:text-3xl font-bold text-ink-900">{title}</h1>
         </div>
@@ -186,9 +208,17 @@ function ConfirmInner() {
           </div>
         )}
 
-        {err && (
-          <div className="mb-5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3">{err}</div>
-        )}
+        {/* 常显等高的错误槽：校验/提交失败时按钮不被往下推。
+            这里只影响本页自己，报错文案（含服务端原因）始终完整可见。 */}
+        <div
+          role="alert"
+          aria-hidden={!err || undefined}
+          className={`mb-5 min-h-[46px] rounded-xl border text-sm px-4 py-3 transition-colors duration-200 ${
+            err ? 'bg-rose-50 border-rose-200 text-rose-700' : 'border-transparent text-transparent'
+          }`}
+        >
+          {err}
+        </div>
 
         <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
           <button type="button" onClick={goBack} disabled={pending} className="btn-secondary flex-1 disabled:opacity-60">
@@ -214,7 +244,7 @@ function ConfirmInner() {
 
 export default function ConfirmPage() {
   return (
-    <Suspense fallback={<div className="max-w-2xl mx-auto px-4 py-24 text-center text-ink-400">加载中…</div>}>
+    <Suspense fallback={<ConfirmSkeleton />}>
       <ConfirmInner />
     </Suspense>
   );

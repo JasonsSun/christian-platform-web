@@ -5,7 +5,8 @@ import { apiPatch, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
-import { AdminLayout } from '@/app/admin/_components';
+import { AdminLayout, Loading, Empty, ErrorBox, PageHead, AccessState, AdminSelect } from '@/app/admin/_components';
+import { IconCheck } from '@/components/icons';
 
 interface FeedbackItem {
   id: string;
@@ -58,21 +59,13 @@ export default function AdminFeedbackPage() {
   const items = data?.items || [];
 
   if (authLoading) {
-    return (
-      <AdminLayout>
-        <div className="py-16 text-center text-ink-400">加载中…</div>
-      </AdminLayout>
-    );
+    return <AdminLayout><Loading rows={4} /></AdminLayout>;
   }
 
   if (!user) {
     return (
       <AdminLayout>
-        <div className="py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-4">🔒</div>
-          <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
-          <p className="text-ink-500">登录管理员账号后查看平台建议</p>
-        </div>
+        <AccessState title="请先登录" desc="登录管理员账号后查看平台建议" href="/login" />
       </AdminLayout>
     );
   }
@@ -80,28 +73,26 @@ export default function AdminFeedbackPage() {
   if (user.role !== 'moderator' && user.role !== 'admin') {
     return (
       <AdminLayout>
-        <div className="py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-4">🚫</div>
-          <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">无权限</h2>
-          <p className="text-ink-500">仅审核员或管理员可查看平台建议</p>
-        </div>
+        <AccessState kind="ban" title="无权限" desc="仅审核员或管理员可查看平台建议" />
       </AdminLayout>
     );
   }
 
   return (
     <AdminLayout>
-      <h1 className="font-display text-2xl font-bold text-ink-900 mb-1">平台建议</h1>
-      <p className="text-ink-500 text-sm mb-6">
-        使用者提交的功能建议与问题反馈，仅管理员可见 —— 用来决定后续开发什么
-      </p>
+      <PageHead
+        eyebrow="运营 · 用户声音"
+        title="平台建议"
+        sub="使用者提交的功能建议与问题反馈，仅管理员可见 —— 用来决定后续开发什么"
+      />
 
       <div className="flex flex-wrap gap-2 mb-6 border-b border-ink-200">
         {STATUS_TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setStatus(t.key)}
-            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
+            aria-current={status === t.key ? 'true' : undefined}
+            className={`min-h-11 lg:min-h-0 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
               status === t.key ? 'border-primary-500 text-primary-700' : 'border-transparent text-ink-500 hover:text-ink-700'
             }`}
           >
@@ -110,22 +101,15 @@ export default function AdminFeedbackPage() {
         ))}
       </div>
 
-      {loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
-      {error && (
-        <div role="alert" className="py-10 text-center rounded-2xl bg-rose-50 text-rose-700">
-          <div>{error}</div>
-          <button className="btn-secondary mt-3" onClick={reload}>重试</button>
-        </div>
-      )}
+      {loading && !data && <Loading rows={4} />}
+      {error && <ErrorBox message={error} onRetry={reload} />}
 
       {!loading && !error && items.length === 0 && (
-        <div className="py-12 text-center text-ink-400 border border-dashed border-ink-200 rounded-2xl">
-          该分类下暂无建议
-        </div>
+        <Empty label="该分类下暂无建议" hint="换一个状态页签看看别的反馈" />
       )}
 
       {!loading && !error && items.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4" data-reveal-group>
           {items.map((it) => (
             <FeedbackCard key={it.id} item={it} onChanged={reload} />
           ))}
@@ -157,12 +141,12 @@ function FeedbackCard({ item, onChanged }: { item: FeedbackItem; onChanged: () =
   }
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-ink-100 shadow-soft">
+    <div className="glass rounded-2xl p-4 sm:p-5 shadow-soft hair-top">
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <span className="px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-xs font-medium">
+        <span className="px-2.5 py-0.5 rounded-full bg-primary-50 text-primary-700 text-xs font-medium ring-1 ring-inset ring-primary-500/15">
           {CATEGORY_LABEL[item.category] || item.category}
         </span>
-        <span className="px-2.5 py-0.5 rounded-full bg-ink-100 text-ink-600 text-xs font-medium">
+        <span className="px-2.5 py-0.5 rounded-full bg-ink-100 text-ink-600 text-xs font-medium ring-1 ring-inset ring-ink-500/15">
           {STATUS_LABEL[item.status] || item.status}
         </span>
         <span className="text-xs text-ink-400 ml-auto">{timeAgo(item.createdAt)}</span>
@@ -189,17 +173,14 @@ function FeedbackCard({ item, onChanged }: { item: FeedbackItem; onChanged: () =
 
       <div className="mt-4 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <label htmlFor={`${uid}-status`} className="text-xs font-semibold text-ink-500">状态</label>
-          <select
+          <span className="text-xs font-semibold text-ink-500">状态</span>
+          <AdminSelect
             id={`${uid}-status`}
             value={status}
-            onChange={(e) => { setStatus(e.target.value); setSaved(false); }}
-            className="input-styled !w-auto text-sm"
-          >
-            {STATUS_TABS.filter((t) => t.key !== 'all').map((t) => (
-              <option key={t.key} value={t.key}>{t.label}</option>
-            ))}
-          </select>
+            label="反馈处理状态"
+            onChange={(v) => { setStatus(v); setSaved(false); }}
+            options={STATUS_TABS.filter((t) => t.key !== 'all').map((t) => ({ value: t.key, label: t.label }))}
+          />
         </div>
         <textarea
           aria-label="回复反馈提交人"
@@ -209,15 +190,20 @@ function FeedbackCard({ item, onChanged }: { item: FeedbackItem; onChanged: () =
           placeholder="回复内容（选填，提交人会在站内收到通知）"
         />
         {action.error && <p role="alert" className="text-xs text-rose-600">{action.error}</p>}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={save}
             disabled={action.pending}
-            className="btn-primary text-sm disabled:opacity-70"
+            className="btn-primary min-h-11 lg:min-h-0 text-sm disabled:opacity-70"
           >
             {action.pending ? '保存中…' : '保存'}
           </button>
-          {saved && <span role="status" className="text-xs text-emerald-600">已保存 ✓</span>}
+          {saved && (
+            <span role="status" className="inline-flex items-center gap-1 text-xs text-emerald-600">
+              <IconCheck className="w-3.5 h-3.5" strokeWidth={2} />
+              已保存
+            </span>
+          )}
           {item.handledAt && <span className="text-xs text-ink-400 ml-auto">最近处理：{timeAgo(item.handledAt)}</span>}
         </div>
       </div>

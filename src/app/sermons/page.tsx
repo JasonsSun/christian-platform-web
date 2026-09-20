@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { timeAgo } from '@/lib/format';
+import { IconMicWave, IconBookOpen, IconPlay, IconHeart } from '@/components/icons';
 
 interface Sermon {
   id: string;
@@ -103,25 +104,26 @@ export default function SermonsPage() {
       ) : items.length === 0 ? (
         <div className="text-center text-ink-400 py-20">暂无讲道，敬请期待。</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div data-reveal-group className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {items.map((s) => (
             <Link
               key={s.id}
               href={`/sermons/${s.id}`}
-              className="glass rounded-2xl overflow-hidden shadow-soft hover:shadow-card transition group"
+              data-spot
+              className="glass spot rounded-2xl overflow-hidden shadow-soft hover:shadow-card transition group"
             >
               <div className="aspect-video bg-gradient-to-br from-primary-600 to-primary-800 relative flex items-center justify-center">
                 {s.cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={s.cover} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-white/80 text-5xl">🎙️</span>
+                  <IconMicWave className="w-14 h-14 text-white/70" strokeWidth={1.2} />
                 )}
                 <span className="absolute top-2 left-2 text-[11px] px-2 py-0.5 rounded-full bg-black/60 text-white">
                   {s.mediaType === 'audio' ? '音频' : s.mediaType === 'video' ? '视频' : '文稿'}
                 </span>
                 {fmtDur(s.durationSec) ? (
-                  <span className="absolute bottom-2 right-2 text-[11px] px-2 py-0.5 rounded-full bg-black/60 text-white">
+                  <span className="num absolute bottom-2 right-2 text-[11px] px-2 py-0.5 rounded-full bg-black/60 text-white">
                     {fmtDur(s.durationSec)}
                   </span>
                 ) : null}
@@ -131,13 +133,31 @@ export default function SermonsPage() {
                   {convert(s.title)}
                 </h3>
                 <div className="text-sm text-ink-500 mt-1 flex flex-wrap gap-x-3 gap-y-1">
-                  {s.speaker ? <span>🗣 {convert(s.speaker)}</span> : null}
-                  {s.scripture ? <span>📖 {convert(s.scripture)}</span> : null}
+                  {s.speaker ? (
+                    <span className="inline-flex items-center gap-1">
+                      <IconMicWave className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+                      {convert(s.speaker)}
+                    </span>
+                  ) : null}
+                  {s.scripture ? (
+                    <span className="inline-flex items-center gap-1">
+                      <IconBookOpen className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+                      {convert(s.scripture)}
+                    </span>
+                  ) : null}
                 </div>
-                <div className="text-xs text-ink-400 mt-2 flex items-center gap-3">
+                <div className="num text-xs text-ink-400 mt-2 flex items-center gap-3">
                   {s.preachedAt ? <span>{s.preachedAt}</span> : <span>{timeAgo(s.createdAt)}</span>}
-                  <span><span aria-hidden="true">▶</span> <span className="sr-only">播放</span>{s.viewCount}</span>
-                  <span><span aria-hidden="true">♥</span> <span className="sr-only">点赞</span>{s.likeCount}</span>
+                  <span className="inline-flex items-center gap-1">
+                    <IconPlay className="w-3 h-3" strokeWidth={1.8} />
+                    <span className="sr-only">播放</span>
+                    {s.viewCount}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <IconHeart className="w-3 h-3" strokeWidth={1.8} />
+                    <span className="sr-only">点赞</span>
+                    {s.likeCount}
+                  </span>
                 </div>
               </div>
             </Link>

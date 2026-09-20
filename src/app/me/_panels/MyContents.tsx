@@ -5,6 +5,7 @@ import { apiDelete, qs } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
+import { Glyph, IconChatDots, IconHeart } from '@/components/icons';
 import type { ContentItem } from '@/lib/types';
 import { SkeletonGrid, ErrorBlock, EmptyBlock } from './shared';
 
@@ -43,17 +44,27 @@ export function MyContents() {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
       {items.map((c) => (
-        <div key={c.id} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover flex flex-col">
+        <div key={c.id} className="bg-white card-tech rounded-2xl p-4 border border-ink-100 flex flex-col">
           <Link href={`/contents/${c.id}`} className="block flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-2xl">{c.cover?.startsWith('http') ? '📄' : c.cover || '📄'}</span>
+              <span className="text-2xl leading-none flex items-center flex-shrink-0 text-ink-500">
+                <Glyph glyph={c.cover?.startsWith('http') ? '📄' : c.cover || '📄'} className="w-6 h-6" />
+              </span>
               <h3 className="font-semibold text-ink-900 truncate">{c.title}</h3>
             </div>
             <p className="text-sm text-ink-500 line-clamp-2">{c.excerpt || c.body}</p>
-            <div className="flex gap-3 mt-3 text-xs text-ink-400">
-              <span><span aria-hidden="true">❤️</span> <span className="sr-only">点赞</span>{c.likeCount}</span>
-              <span><span aria-hidden="true">💬</span> <span className="sr-only">评论</span>{c.commentCount}</span>
-              <span>
+            <div className="flex items-center gap-3 mt-3 text-xs text-ink-400">
+              <span className="inline-flex items-center gap-1">
+                <IconHeart className="w-[14px] h-[14px]" strokeWidth={1.6} />
+                <span className="sr-only">点赞</span>
+                <span className="num">{c.likeCount}</span>
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <IconChatDots className="w-[14px] h-[14px]" strokeWidth={1.6} />
+                <span className="sr-only">评论</span>
+                <span className="num">{c.commentCount}</span>
+              </span>
+              <span className="ml-auto px-2 py-0.5 rounded-full border border-ink-200 text-ink-500 whitespace-nowrap">
                 {c.status === 'published' ? '已发布' : c.status === 'pending_review' ? '审核中' : c.status}
               </span>
             </div>
@@ -63,7 +74,7 @@ export function MyContents() {
             <Link href={`/community/create?edit=${c.id}`} className="btn-chip">
               编辑
             </Link>
-            <button onClick={() => remove(c)} className="btn-chip-danger">
+            <button onClick={() => remove(c)} className="btn-chip btn-chip-danger">
               删除
             </button>
           </div>

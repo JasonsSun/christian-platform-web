@@ -4,6 +4,7 @@ import { useId, useState } from 'react';
 import { apiForm } from '@/lib/api';
 import Portal from '@/components/Portal';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
+import { IconMicWave, IconPiano } from '@/components/icons';
 
 /**
  * 投稿赞美诗歌弹窗：可只填歌词、可附带音频文件、也可只给一个"这首在哪儿能听到
@@ -148,22 +149,27 @@ export default function SubmitSongModal({
                 <label id="ss-audio-kind" className="block text-sm font-medium text-ink-700 mb-1.5">这段音频是<span aria-hidden="true"> *</span><span className="sr-only">（必填）</span></label>
                 <div className="flex gap-2" role="group" aria-labelledby="ss-audio-kind">
                   {([
-                    { id: 'vocal', label: '🎤 真人演唱' },
-                    { id: 'instrumental', label: '🎹 纯伴奏' },
-                  ] as const).map((o) => (
-                    <button
-                      key={o.id}
-                      type="button"
-                      onClick={() => setAudioKind(o.id)}
-                      className={`flex-1 px-4 py-2 rounded-xl text-sm font-medium transition ${
-                        audioKind === o.id
-                          ? 'bg-gold-500 text-ink-950 shadow'
-                          : 'bg-white text-ink-600 border border-ink-200 hover:border-gold-300'
-                      }`}
-                    >
-                      {o.label}
-                    </button>
-                  ))}
+                    { id: 'vocal', icon: IconMicWave, text: '真人演唱' },
+                    { id: 'instrumental', icon: IconPiano, text: '纯伴奏' },
+                  ] as const).map((o) => {
+                    const Icon = o.icon;
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => setAudioKind(o.id)}
+                        aria-pressed={audioKind === o.id}
+                        className={`flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition ${
+                          audioKind === o.id
+                            ? 'bg-gold-500 text-ink-950 shadow'
+                            : 'bg-white text-ink-600 border border-ink-200 hover:border-gold-300'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" strokeWidth={1.8} />
+                        {o.text}
+                      </button>
+                    );
+                  })}
                 </div>
                 <p className="text-xs text-ink-400 mt-1.5">
                   请如实选择。平台会优先展示人声版本，标注不实会导致投稿被驳回。

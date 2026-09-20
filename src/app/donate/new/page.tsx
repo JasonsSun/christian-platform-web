@@ -103,7 +103,7 @@ export default function DonateNewPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-6">
-        <Link href="/donate" className="text-sm text-primary-600 hover:text-primary-700">← 返回捐赠专区</Link>
+        <Link href="/donate" className="inline-flex items-center py-3 -my-3 text-sm text-primary-600 hover:text-primary-700">← 返回捐赠专区</Link>
         <h1 className="font-display text-2xl font-bold text-ink-900 mt-3">捐赠登记</h1>
         <p className="text-sm text-ink-500 mt-1.5 leading-relaxed">
           本次捐赠完全出于自愿。提交后由管理员确认，确认通过将展示在爱心名录中；

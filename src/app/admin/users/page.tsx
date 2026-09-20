@@ -12,12 +12,17 @@ import Portal from '@/components/Portal';
 import { formatDate } from '@/lib/format';
 import {
   AdminLayout,
-  RoleBadge,
-  StatusBadge,
-  Loading,
+  AdminSelect,
   Empty,
   ErrorBox,
-  SectionTitle,
+  PageHead,
+  Pagination,
+  RoleBadge,
+  StatusBadge,
+  TableShell,
+  TableSkeleton,
+  Th,
+  Toolbar,
 } from '../_components';
 import type { AdminUser } from '../_components';
 
@@ -149,48 +154,59 @@ export default function AdminUsersPage() {
 
   return (
     <AdminLayout>
-      <div className="flex items-end justify-between gap-3 flex-wrap mb-6">
-        {/* flex-1 + min-w-0：说明文字在「正在刷新…」和整句统计之间长短差几十到几百像素，
-            不占满剩余宽度的话右侧按钮会跟着左右跳。按钮文案也保持固定。 */}
-        <div className="flex-1 min-w-0">
-          <h1 className="font-display text-2xl font-bold text-ink-900">用户管理</h1>
-          <p className="text-xs text-ink-500 mt-1">
-            {refreshing ? '正在刷新…' : `共 ${data?.total ?? 0} 位用户，可按用户名 / 邮箱 / 昵称检索`}
-          </p>
-        </div>
-        <button className="btn-secondary btn-sm shrink-0" onClick={reload} disabled={loading}>刷新</button>
-      </div>
+      <PageHead
+        eyebrow="社交 · 账号治理"
+        title="用户管理"
+        /* flex-1 + min-w-0：说明文字在「正在刷新…」和整句统计之间长短差几十到几百像素，
+           不占满剩余宽度的话右侧按钮会跟着左右跳。按钮文案也保持固定。 */
+        sub={
+          refreshing ? (
+            '正在刷新…'
+          ) : (
+            <span className="num">共 {data?.total ?? 0} 位用户，可按用户名 / 邮箱 / 昵称检索</span>
+          )
+        }
+        actions={<button className="btn-secondary btn-sm min-h-11 lg:min-h-0" onClick={reload} disabled={loading}>刷新</button>}
+      />
 
       {/* 筛选栏 */}
-      <div className="glass rounded-2xl p-3 sm:p-4 mb-5 flex flex-wrap gap-2 sm:gap-3 items-center shadow-soft">
+      <Toolbar>
         <input
-          className="input-styled input-sm flex-1 min-w-[200px]"
+          className="input-styled input-sm min-h-11 lg:min-h-0 flex-1 basis-[13rem] sm:basis-auto"
           aria-label="搜索用户名 / 邮箱 / 昵称"
           placeholder="搜索用户名 / 邮箱 / 昵称"
           value={q}
           onChange={(e) => onSearch(e.target.value)}
         />
-        <select className="input-styled input-sm select-inline" aria-label="按角色筛选" value={role} onChange={(e) => onRoleFilter(e.target.value)}>
-          <option value="">全部角色</option>
-          <option value="member">普通成员</option>
-          <option value="moderator">审核员</option>
-          <option value="admin">管理员</option>
-        </select>
+        <AdminSelect
+          label="按角色筛选"
+          value={role}
+          onChange={onRoleFilter}
+          options={[
+            { value: '', label: '全部角色' },
+            { value: 'member', label: '普通成员' },
+            { value: 'moderator', label: '审核员' },
+            { value: 'admin', label: '管理员' },
+          ]}
+        />
         {!canManage ? (
-          <span className="text-xs text-ink-400">（仅管理员可调整角色与封禁）</span>
+          <span className="self-center text-xs text-ink-400">（仅管理员可调整角色与封禁）</span>
         ) : null}
-      </div>
+      </Toolbar>
 
       {loading && !data ? (
-        <Loading />
+        <TableSkeleton rows={6} cols={5} />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
       ) : !data || data.items.length === 0 ? (
-        <Empty label="没有匹配的用户" hint="换个关键词，或把角色筛选改回「全部角色」再试" />
+        <Empty
+          icon="search"
+          label="没有匹配的用户"
+          hint="换个关键词，或把角色筛选改回「全部角色」再试"
+        />
       ) : (
         <>
-          <div className={`glass rounded-2xl overflow-hidden shadow-soft transition-opacity ${refreshing ? 'opacity-60' : ''}`}>
-            <div className="overflow-x-auto">
+          <TableShell busy={refreshing}>
               {/* 1600 屏下正文列实测约 1216px（1560 容器 - 侧栏 256 - 间距 24 - 内边距 64）。
                   九个格子的内边距收到 px-3、六个操作按钮统一成 .btn-chip 后自然宽度约 1190，
                   最右边的「删除」不再被裁半截；min-w 只作窄屏兜底，触发横向滚动而不是压字。 */}
@@ -198,15 +214,15 @@ export default function AdminUsersPage() {
                 <caption className="sr-only">用户管理</caption>
                 <thead className="bg-ink-50 text-ink-600">
                   <tr className="whitespace-nowrap">
-                    <th scope="col" className="text-left px-3 py-3 font-medium">用户名</th>
-                    <th scope="col" className="text-left px-3 py-3 font-medium">邮箱</th>
-                    <th scope="col" className="text-left px-3 py-3 font-medium">昵称</th>
-                    <th scope="col" className="text-left px-3 py-3 font-medium">角色</th>
-                    <th scope="col" className="text-left px-3 py-3 font-medium">状态</th>
-                    <th scope="col" className="text-left px-3 py-3 font-medium">城市</th>
-                    <th scope="col" className="text-left px-3 py-3 font-medium">内容数</th>
-                    <th scope="col" className="text-left px-3 py-3 font-medium">注册时间</th>
-                    <th scope="col" className="text-left px-3 py-3 font-medium">操作</th>
+                    <Th>用户名</Th>
+                    <Th>邮箱</Th>
+                    <Th>昵称</Th>
+                    <Th>角色</Th>
+                    <Th>状态</Th>
+                    <Th>城市</Th>
+                    <Th>内容数</Th>
+                    <Th>注册时间</Th>
+                    <Th>操作</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -221,10 +237,10 @@ export default function AdminUsersPage() {
                         <td className="px-3 py-3"><RoleBadge role={u.role} /></td>
                         <td className="px-3 py-3"><StatusBadge status={u.status} /></td>
                         <td className="px-3 py-3 text-ink-600 whitespace-nowrap">{u.city || '-'}</td>
-                        <td className="px-3 py-3 text-ink-600">{u.contentCount}</td>
-                        <td className="px-3 py-3 text-ink-400 whitespace-nowrap">{formatDate(u.createdAt)}</td>
+                        <td className="num px-3 py-3 text-ink-600">{u.contentCount}</td>
+                        <td className="num px-3 py-3 text-ink-400 whitespace-nowrap">{formatDate(u.createdAt)}</td>
                         <td className="px-3 py-3">
-                          <div className="flex flex-nowrap gap-1">
+                          <div className="flex flex-wrap gap-1">
                             <button
                               className="btn-chip"
                               disabled={disabled || u.role === 'moderator'}
@@ -282,25 +298,10 @@ export default function AdminUsersPage() {
                   })}
                 </tbody>
               </table>
-            </div>
-          </div>
+          </TableShell>
 
           {/* 分页 */}
-          <div className="flex items-center justify-between gap-3 mt-4 text-sm text-ink-500 flex-wrap">
-            <span>共 {data.total} 条 · 第 {page} / {Math.max(1, Math.ceil(data.total / pageSize))} 页</span>
-            <div className="flex gap-2">
-              <button className="btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                上一页
-              </button>
-              <button
-                className="btn-secondary btn-sm"
-                disabled={page * pageSize >= data.total}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                下一页
-              </button>
-            </div>
-          </div>
+          <Pagination total={data.total} page={page} pageSize={pageSize} onPage={setPage} />
         </>
       )}
 

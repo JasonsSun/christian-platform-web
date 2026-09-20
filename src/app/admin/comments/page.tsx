@@ -6,7 +6,8 @@ import { apiDelete, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
-import { AdminLayout, Loading, Empty, ErrorBox, Badge } from '../_components';
+import { AdminLayout, Loading, Empty, ErrorBox, Badge, PageHead, Pagination, Toolbar } from '../_components';
+import { IconChatDots } from '@/components/icons';
 
 interface CommentRow {
   id: string;
@@ -55,46 +56,52 @@ export default function AdminCommentsPage() {
 
   return (
     <AdminLayout>
-      <h1 className="font-display text-2xl font-bold text-ink-900 mb-1">评论管理</h1>
-      <p className="text-ink-500 text-sm mb-5">
-        全站评论总视图。删除后会回写所属内容的评论数，计数不会漂移。
-      </p>
+      <PageHead
+        eyebrow="内容 · 治理"
+        title="评论管理"
+        sub="全站评论总视图。删除后会回写所属内容的评论数，计数不会漂移。"
+        actions={<button className="btn-secondary btn-sm min-h-11 lg:min-h-0" onClick={reload}>刷新</button>}
+      />
 
-      <form
-        className="flex gap-2 mb-4 max-w-xl"
-        onSubmit={(e) => { e.preventDefault(); setPage(1); setSearch(kw.trim()); }}
-      >
-        <input
-          aria-label="搜索评论内容 / 评论人 / 所属内容标题"
-          value={kw}
-          onChange={(e) => setKw(e.target.value)}
-          placeholder="搜索评论内容 / 评论人 / 所属内容标题"
-          className="input-styled input-sm flex-1"
-        />
-        <button type="submit" className="btn-secondary text-sm flex-shrink-0">搜索</button>
-        {search && (
-          <button type="button" className="btn-secondary text-sm flex-shrink-0" onClick={() => { setKw(''); setSearch(''); setPage(1); }}>
-            清空
-          </button>
-        )}
-      </form>
+      <Toolbar className="max-w-xl">
+        <form
+          className="flex flex-1 min-w-0 gap-2 items-stretch sm:items-center"
+          onSubmit={(e) => { e.preventDefault(); setPage(1); setSearch(kw.trim()); }}
+        >
+          <input
+            aria-label="搜索评论内容 / 评论人 / 所属内容标题"
+            value={kw}
+            onChange={(e) => setKw(e.target.value)}
+            placeholder="搜索评论内容 / 评论人 / 所属内容标题"
+            className="input-styled input-sm min-h-11 lg:min-h-0 flex-1 min-w-0"
+          />
+          <button type="submit" className="btn-secondary text-sm min-h-11 lg:min-h-0 shrink-0">搜索</button>
+          {search && (
+            <button type="button" className="btn-secondary text-sm min-h-11 lg:min-h-0 shrink-0" onClick={() => { setKw(''); setSearch(''); setPage(1); }}>
+              清空
+            </button>
+          )}
+        </form>
+      </Toolbar>
 
       {selected.length > 0 && (
         <div className="flex items-center gap-2 mb-4 px-4 py-3 rounded-xl bg-primary-50 border border-primary-100">
-          <span className="text-sm font-semibold text-primary-700">已选 {selected.length} 条</span>
-          <button onClick={() => setConfirmIds(selected)} className="btn-secondary text-xs text-rose-600 border-rose-200">批量删除</button>
-          <button onClick={() => setSelected([])} className="text-xs text-ink-500 ml-auto">取消选择</button>
+          <span className="num text-sm font-semibold text-primary-700">已选 {selected.length} 条</span>
+          <button onClick={() => setConfirmIds(selected)} className="btn-secondary btn-sm min-h-11 lg:min-h-0 text-xs text-rose-600 border-rose-200">批量删除</button>
+          <button onClick={() => setSelected([])} className="min-h-11 lg:min-h-0 px-2 text-xs text-ink-500 ml-auto">取消选择</button>
         </div>
       )}
 
-      {loading && <Loading />}
+      {loading && <Loading rows={4} />}
       {error && <ErrorBox message={error} onRetry={reload} />}
-      {!loading && !error && items.length === 0 && <Empty label="没有符合条件的评论" />}
+      {!loading && !error && items.length === 0 && (
+        <Empty icon="search" label="没有符合条件的评论" hint="换个关键词，或清空筛选看全站最新评论" />
+      )}
 
       {!loading && !error && items.length > 0 && (
         <>
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 text-xs text-ink-500 px-1">
+          <div data-reveal-group className="space-y-3">
+            <label className="flex items-center gap-2 text-xs text-ink-500 px-1 min-h-11">
               <input
                 type="checkbox"
                 className="h-5 w-5 cursor-pointer"
@@ -104,7 +111,7 @@ export default function AdminCommentsPage() {
               全选本页
             </label>
             {items.map((c) => (
-              <div key={c.id} className="bg-white rounded-2xl p-4 border border-ink-100 shadow-soft">
+              <div key={c.id} className="hair-top bg-white rounded-2xl p-4 border border-ink-100 shadow-soft">
                 <div className="flex items-start gap-3">
                   <input
                     aria-label={`选择 ${c.author.displayName} 的评论`}
@@ -115,9 +122,12 @@ export default function AdminCommentsPage() {
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500 mb-1.5">
-                      <Link href={`/users/${c.author.id}`} className="font-medium text-ink-700 hover:text-primary-600 py-2.5 -my-2.5">
-                        {c.author.displayName}
-                      </Link>
+                      <span className="inline-flex items-center gap-1.5 min-w-0">
+                        <IconChatDots className="w-3.5 h-3.5 shrink-0 text-ink-400" strokeWidth={1.6} />
+                        <Link href={`/users/${c.author.id}`} className="font-medium text-ink-700 hover:text-primary-600 py-2.5 -my-2.5">
+                          {c.author.displayName}
+                        </Link>
+                      </span>
                       <span>@{c.author.username}</span>
                       <span>·</span>
                       <span>{timeAgo(c.createdAt)}</span>
@@ -145,13 +155,7 @@ export default function AdminCommentsPage() {
             ))}
           </div>
 
-          <div className="flex items-center justify-between mt-4 text-sm">
-            <span className="text-ink-500">共 {total} 条 · 第 {page}/{totalPages} 页</span>
-            <div className="flex gap-2">
-              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn-secondary text-xs disabled:opacity-50">上一页</button>
-              <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="btn-secondary text-xs disabled:opacity-50">下一页</button>
-            </div>
-          </div>
+          <Pagination total={total} page={page} pageSize={pageSize} onPage={setPage} />
         </>
       )}
 

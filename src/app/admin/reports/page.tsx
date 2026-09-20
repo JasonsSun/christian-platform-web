@@ -5,7 +5,7 @@ import { apiGet, apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
-import { AdminLayout } from '@/app/admin/_components';
+import { AdminLayout, Loading, Empty, ErrorBox, PageHead, AccessState } from '@/app/admin/_components';
 
 interface ReportItem {
   id: string;
@@ -51,21 +51,17 @@ export default function AdminReportsPage() {
   const items = data?.items || [];
 
   if (authLoading) {
-    return (
-      <AdminLayout>
-        <div className="py-16 text-center text-ink-400">加载中…</div>
-      </AdminLayout>
-    );
+    return <AdminLayout><Loading rows={4} /></AdminLayout>;
   }
 
   if (!user) {
     return (
       <AdminLayout>
-        <div className="py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-4">🔒</div>
-          <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
-          <p className="text-ink-500">登录管理员账号后查看举报处理队列</p>
-        </div>
+        <AccessState
+          title="请先登录"
+          desc="登录管理员账号后查看举报处理队列"
+          href="/login"
+        />
       </AdminLayout>
     );
   }
@@ -73,27 +69,27 @@ export default function AdminReportsPage() {
   if (user.role !== 'moderator' && user.role !== 'admin') {
     return (
       <AdminLayout>
-        <div className="py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-4">🚫</div>
-          <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">无权限</h2>
-          <p className="text-ink-500">仅审核员或管理员可访问举报处理队列</p>
-        </div>
+        <AccessState kind="ban" title="无权限" desc="仅审核员或管理员可访问举报处理队列" />
       </AdminLayout>
     );
   }
 
   return (
     <AdminLayout>
-      <h1 className="font-display text-2xl font-bold text-ink-900 mb-1">举报处理</h1>
-      <p className="text-ink-500 text-sm mb-6">处理用户提交的内容举报，维护社区秩序</p>
+      <PageHead
+        eyebrow="社交 · 治理"
+        title="举报处理"
+        sub="处理用户提交的内容举报，维护社区秩序"
+      />
 
       {/* status tabs */}
-      <div className="flex flex-wrap gap-2 mb-6 border-b border-ink-200">
+      <div className="flex flex-wrap gap-2 mb-6 border-b border-ink-200" role="tablist" aria-label="按处理状态筛选">
         {STATUS_TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setStatus(t.key)}
-            className={`px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
+            aria-current={status === t.key ? 'true' : undefined}
+            className={`min-h-11 lg:min-h-0 px-4 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px whitespace-nowrap ${
               status === t.key ? 'border-primary-500 text-primary-700' : 'border-transparent text-ink-500 hover:text-ink-700'
             }`}
           >
@@ -102,20 +98,15 @@ export default function AdminReportsPage() {
         ))}
       </div>
 
-      {loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
-      {error && (
-        <div role="alert" className="py-10 text-center rounded-2xl bg-rose-50 text-rose-700">
-          <div>{error}</div>
-          <button className="btn-secondary mt-3" onClick={reload}>重试</button>
-        </div>
-      )}
+      {loading && !data && <Loading rows={4} />}
+      {error && <ErrorBox message={error} onRetry={reload} />}
 
       {!loading && !error && items.length === 0 && (
-        <div className="py-12 text-center text-ink-400 border border-dashed border-ink-200 rounded-2xl">该分类下暂无举报</div>
+        <Empty label="该分类下暂无举报" hint="社区很安静，换一个状态页签看看" />
       )}
 
       {!loading && !error && items.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4" data-reveal-group>
           {items.map((r) => (
             <ReportCard key={r.id} report={r} onChanged={reload} />
           ))}
@@ -142,9 +133,9 @@ function ReportCard({ report, onChanged }: { report: ReportItem; onChanged: () =
   }
 
   return (
-    <div className="bg-white rounded-2xl p-5 border border-ink-100 shadow-soft">
+    <div className="glass rounded-2xl p-4 sm:p-5 shadow-soft hair-top">
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-xs font-medium">
+        <span className="px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-700 text-xs font-medium ring-1 ring-inset ring-rose-500/15">
           {REASON_LABEL[report.reason] || report.reason}
         </span>
         <span className="text-xs text-ink-400">对象：{report.targetType}</span>
@@ -175,14 +166,14 @@ function ReportCard({ report, onChanged }: { report: ReportItem; onChanged: () =
               <button
                 onClick={() => doAction('dismiss')}
                 disabled={action.pending}
-                className="btn-secondary text-sm disabled:opacity-70"
+                className="btn-secondary min-h-11 lg:min-h-0 text-sm disabled:opacity-70"
               >
                 忽略举报
               </button>
               <button
                 onClick={() => setConfirmUpheld(true)}
                 disabled={action.pending}
-                className="btn-primary text-sm bg-rose-600 hover:bg-rose-700 disabled:opacity-70"
+                className="btn-primary min-h-11 lg:min-h-0 text-sm bg-rose-600 hover:bg-rose-700 disabled:opacity-70"
               >
                 成立并下架
               </button>
@@ -195,15 +186,15 @@ function ReportCard({ report, onChanged }: { report: ReportItem; onChanged: () =
                 value={upholdReason}
                 onChange={(e) => setUpholdReason(e.target.value)}
                 placeholder="处理原因（选填）"
-                className="input-styled"
+                className="input-styled min-h-11 lg:min-h-0"
               />
               {action.error && <p role="alert" className="text-xs text-rose-600">{action.error}</p>}
               <div className="flex gap-2">
-                <button onClick={() => setConfirmUpheld(false)} className="btn-secondary flex-1 text-sm">取消</button>
+                <button onClick={() => setConfirmUpheld(false)} className="btn-secondary min-h-11 lg:min-h-0 flex-1 text-sm">取消</button>
                 <button
                   onClick={() => doAction('uphold')}
                   disabled={action.pending}
-                  className="flex-1 text-sm py-2.5 rounded-xl text-white font-medium bg-rose-600 hover:bg-rose-700 disabled:opacity-70"
+                  className="flex-1 min-h-11 lg:min-h-0 text-sm py-2.5 rounded-xl text-white font-medium bg-rose-600 hover:bg-rose-700 disabled:opacity-70"
                 >
                   {action.pending ? '处理中…' : '确认下架'}
                 </button>

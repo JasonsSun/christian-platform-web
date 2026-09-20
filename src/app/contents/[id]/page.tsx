@@ -15,6 +15,7 @@ import ShareButton from '@/components/ShareButton';
 import RichText from '@/components/RichText';
 import ArticleReader from '@/components/ArticleReader';
 import BackplayMedia from '@/components/BackplayMedia';
+import { IconArrowLeft, IconCheckCircle, IconMusicNote, IconDocument, Glyph } from '@/components/icons';
 import dynamic from 'next/dynamic';
 
 // 举报弹窗只在点击「举报」时才需要，按需加载
@@ -216,8 +217,9 @@ export default function ContentDetailPage() {
       <section className="relative py-8 md:py-12 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800" />
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/community" className="text-white/80 text-sm hover:text-white">
-            ← 返回社区
+          <Link href="/community" className="inline-flex items-center gap-1.5 text-white/80 text-sm hover:text-white">
+            <IconArrowLeft className="w-4 h-4" strokeWidth={2} />
+            返回社区
           </Link>
 
           {/* 分享 + 举报入口 */}
@@ -233,8 +235,9 @@ export default function ContentDetailPage() {
               className="w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/15 transition-colors"
             />
             {reportMsg ? (
-              <span className="inline-flex items-center gap-1 text-white/90 bg-emerald-500/30 px-3 py-1.5 rounded-full text-sm">
-                ✓ {reportMsg}
+              <span className="inline-flex items-center gap-1.5 text-white/90 bg-emerald-500/30 px-3 py-1.5 rounded-full text-sm">
+                <IconCheckCircle className="w-4 h-4" strokeWidth={1.9} />
+                {reportMsg}
               </span>
             ) : (
               <button
@@ -253,10 +256,14 @@ export default function ContentDetailPage() {
             />
           </div>
           <div className="mt-4 flex items-center gap-3">
-            {data.cover && <span className="text-4xl">{data.cover}</span>}
+            {data.cover && (
+              <span className="text-4xl leading-none">
+                <Glyph glyph={data.cover} className="w-8 h-8" />
+              </span>
+            )}
             <h1 className="font-display text-2xl sm:text-3xl font-bold text-white leading-snug">{data.title}</h1>
           </div>
-          <div className="flex items-center gap-3 mt-4 text-white/80 text-sm">
+          <div className="num flex items-center gap-3 mt-4 text-white/80 text-sm">
             <Avatar user={data.author} size={32} />
             <span className="text-white font-medium">{data.author.displayName}</span>
             <span>·</span>
@@ -268,10 +275,10 @@ export default function ContentDetailPage() {
       <section className="py-8">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100">
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex flex-wrap items-center gap-4 mb-4">
               <button
                 onClick={handleLike}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`num flex items-center gap-2 min-h-[2.75rem] px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   data.liked ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-ink-50 text-ink-600 border border-ink-200 hover:border-rose-200'
                 }`}
               >
@@ -282,7 +289,7 @@ export default function ContentDetailPage() {
               </button>
               <button
                 onClick={handleFavorite}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={`flex items-center gap-2 min-h-[2.75rem] px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                   fav ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-ink-50 text-ink-600 border border-ink-200 hover:border-amber-200'
                 }`}
               >
@@ -291,12 +298,12 @@ export default function ContentDetailPage() {
                 </svg>
                   {fav ? '已收藏' : '收藏'}
                 </button>
-                <span className="text-sm text-ink-400">{data.viewCount} 浏览</span>
+                <span className="num text-sm text-ink-400">{data.viewCount} 浏览</span>
                 <div className="ml-auto flex items-center gap-2">
                   {user && data.author?.id === user.id && (
                     <Link
                       href={`/community/create?edit=${data.id}`}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-ink-50 text-ink-600 border border-ink-200 hover:border-primary-300"
+                      className="flex items-center gap-1.5 min-h-[2.75rem] px-4 py-2 rounded-xl text-sm font-medium bg-ink-50 text-ink-600 border border-ink-200 hover:border-primary-300"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
                     编辑
@@ -305,7 +312,7 @@ export default function ContentDetailPage() {
                   {canManage() && (
                     <button
                       onClick={askDeleteContent}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium bg-rose-50 text-rose-700 border border-rose-200 hover:border-rose-300"
+                      className="flex items-center gap-1.5 min-h-[2.75rem] px-4 py-2 rounded-xl text-sm font-medium bg-rose-50 text-rose-700 border border-rose-200 hover:border-rose-300"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                     删除
@@ -333,12 +340,21 @@ export default function ContentDetailPage() {
                       <BackplayMedia kind="video" src={m.url} title={m.title} className="w-full bg-black" />
                     ) : m.kind === 'audio' ? (
                       <div className="p-4">
-                        <div className="text-sm text-ink-600 mb-2">🎵 {m.title}</div>
+                        <div className="flex items-center gap-1.5 text-sm text-ink-600 mb-2">
+                          <IconMusicNote className="w-4 h-4 shrink-0" strokeWidth={1.8} />
+                          {m.title}
+                        </div>
                         <BackplayMedia kind="audio" src={m.url} title={m.title} className="w-full" />
                       </div>
                     ) : (
                       <a href={m.url} download={m.fileName} className="flex items-center gap-3 p-4 hover:bg-primary-50/50">
-                        <span className="text-2xl">{m.kind === 'score' ? '🎼' : '📄'}</span>
+                        <span className="flex-shrink-0 text-ink-500">
+                          {m.kind === 'score' ? (
+                            <IconMusicNote className="w-6 h-6" strokeWidth={1.5} />
+                          ) : (
+                            <IconDocument className="w-6 h-6" strokeWidth={1.5} />
+                          )}
+                        </span>
                         <span className="text-sm text-ink-700 flex-1">{m.title}</span>
                         <span className="text-xs text-primary-600">下载</span>
                       </a>
@@ -371,7 +387,7 @@ export default function ContentDetailPage() {
           {/* 评论区 */}
           <div className="mt-6 bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100">
             <h2 className="font-display text-xl font-bold text-ink-900 mb-4">
-              评论 {comments.length > 0 && <span className="text-ink-400 text-base">({comments.length})</span>}
+              评论 {comments.length > 0 && <span className="num text-ink-400 text-base">({comments.length})</span>}
             </h2>
 
             <div className="mb-6">
@@ -428,14 +444,14 @@ export default function ContentDetailPage() {
             {!commentsLoading && comments.length === 0 && (
               <p className="text-center py-6 text-ink-400 text-sm">还没有评论，来抢沙发吧～</p>
             )}
-            <div className="space-y-4">
+            <div data-reveal-group className="space-y-4">
               {comments.map((c) => (
                 <div key={c.id} className="flex gap-3 group">
                   <Avatar user={c.user} size={36} />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-ink-900 text-sm">{c.user.displayName}</span>
-                      <span className="text-xs text-ink-400">{timeAgo(c.createdAt)}</span>
+                      <span className="num text-xs text-ink-400">{timeAgo(c.createdAt)}</span>
                       {canDeleteComment(c) && (
                         <button
                           onClick={() => askDeleteComment(c)}

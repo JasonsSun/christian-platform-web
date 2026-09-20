@@ -1,6 +1,7 @@
 'use client';
 
 import { useBackgroundPlay, mediaSessionSupported } from '@/lib/backplay';
+import { IconMoon } from '@/components/icons';
 
 /**
  * 「后台播放」偏好设置。
@@ -17,7 +18,7 @@ export default function BackplaySettingCard() {
   return (
     <div className="mt-6 rounded-2xl border border-ink-100 bg-ui-surface p-5">
       <div className="flex items-start gap-4">
-        <div className="w-10 h-10 rounded-xl bg-primary-50 flex items-center justify-center flex-shrink-0">🌙</div>
+        <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0"><IconMoon className="w-5 h-5" strokeWidth={1.7} /></div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="font-semibold text-ink-900">后台播放</h2>

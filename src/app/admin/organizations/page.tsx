@@ -6,7 +6,7 @@ import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Panel } from '../_components';
 
 interface AdminOrg {
   id: string; name: string; type: string; description: string; city: string; region: string;
@@ -176,8 +176,7 @@ export default function AdminOrganizationsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">组织管理</SectionTitle>
-      <p className="-mt-3 mb-4 text-sm text-ink-500">教会 / 团契 / 事工 / 公益组织的审核与成员管理</p>
+      <PageHead eyebrow="社交 · 组织" title="组织管理" sub="教会 / 团契 / 事工 / 公益组织的审核与成员管理" />
 
       {/* 组织是什么、从哪来 —— 管理台最容易看不懂的一块，直接讲清楚 */}
       <div className="mb-6 rounded-2xl border border-ink-100 bg-ink-50/60 px-5 py-4 text-sm text-ink-600 space-y-2">

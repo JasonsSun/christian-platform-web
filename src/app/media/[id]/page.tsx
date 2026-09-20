@@ -10,8 +10,28 @@ import { usePlayer, formatTime, type Track } from '@/lib/player';
 import { getProgress, resumableAt, saveProgress, clearProgress, touchRecent } from '@/lib/watchHistory';
 import { useBackgroundPlay, useMediaBackplay } from '@/lib/backplay';
 import type { MediaDetail } from '@/lib/types';
+import {
+  IconMusicNote,
+  IconDocument,
+  IconFilm,
+  IconImage,
+  IconFolder,
+  IconPlay,
+  IconPause,
+  IconDownload,
+  IconCheckCircle,
+  IconClose,
+  IconRefresh,
+  IconArrowLeft,
+} from '@/components/icons';
 
-const KIND_ICON: Record<string, string> = { image: '🖼️', audio: '🎵', video: '🎬', score: '🎼', doc: '📄' };
+const KIND_ICON: Record<string, typeof IconMusicNote> = {
+  image: IconImage,
+  audio: IconMusicNote,
+  video: IconFilm,
+  score: IconMusicNote,
+  doc: IconDocument,
+};
 
 export default function MediaDetailPage() {
   const params = useParams();
@@ -95,6 +115,7 @@ export default function MediaDetailPage() {
 
   const d = data;
   const audioActive = player.isCurrent(d.id);
+  const KindIcon = KIND_ICON[d.kind] || IconFolder;
 
   /** 视频：每 5 秒记录一次进度，看完则清除 */
   function handleTimeUpdate() {
@@ -127,22 +148,25 @@ export default function MediaDetailPage() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Link href="/media" className="text-sm text-ink-500 hover:text-primary-600">← 返回媒体库</Link>
+      <Link href="/media" className="inline-flex items-center gap-1.5 text-sm text-ink-500 hover:text-primary-600">
+        <IconArrowLeft className="w-4 h-4" strokeWidth={2} />
+        返回媒体库
+      </Link>
 
       {/* 上次观看位置提示 */}
       {d.kind === 'video' && resumeSec != null && (
         <div className="mt-4 flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl bg-primary-50 border border-primary-200 text-sm">
           <span className="text-primary-800">
-            上次观看到 <b className="tabular-nums">{formatTime(resumeSec)}</b>
+            上次观看到 <b className="num">{formatTime(resumeSec)}</b>
             {d.durationSec ? ` / ${formatTime(d.durationSec)}` : ''}
           </span>
           <div className="flex items-center gap-2 ml-auto">
-            <button onClick={() => jumpTo(resumeSec)} className="px-3 py-1.5 rounded-lg bg-primary-600 text-white text-xs font-medium hover:bg-primary-700">
+            <button onClick={() => jumpTo(resumeSec)} className="inline-flex items-center min-h-[2.75rem] px-4 py-1.5 rounded-lg bg-primary-600 text-white text-xs font-medium hover:bg-primary-700">
               继续观看
             </button>
             <button
               onClick={() => { clearProgress(d.id); setResumeSec(null); }}
-              className="px-3 py-1.5 rounded-lg border border-ink-200 text-ink-500 text-xs hover:text-ink-700"
+              className="inline-flex items-center min-h-[2.75rem] px-4 py-1.5 rounded-lg border border-ink-200 text-ink-500 text-xs hover:text-ink-700"
             >
               从头开始
             </button>
@@ -174,10 +198,14 @@ export default function MediaDetailPage() {
             <div className="relative z-10 flex flex-col items-center gap-4 px-4">
               <button
                 onClick={playThis}
-                className="w-20 h-20 rounded-full bg-ui-surface hover:bg-white text-primary-700 shadow-card-hover flex items-center justify-center text-3xl transition"
+                className="w-20 h-20 rounded-full bg-ui-surface hover:bg-white text-primary-700 shadow-card-hover flex items-center justify-center transition"
                 title={audioActive && player.playing ? '暂停' : '播放'}
               >
-                {audioActive && player.playing ? '❚❚' : '▶'}
+                {audioActive && player.playing ? (
+                  <IconPause className="w-8 h-8" strokeWidth={1.8} />
+                ) : (
+                  <IconPlay className="w-8 h-8 ml-1" strokeWidth={1.8} />
+                )}
               </button>
               <div className="text-white text-center">
                 <div className="font-display text-xl md:text-2xl font-bold">{d.title}</div>
@@ -200,7 +228,7 @@ export default function MediaDetailPage() {
           <iframe src={d.url} className="w-full aspect-[3/4] md:aspect-[16/10] bg-white" title={d.title} />
         ) : (
           <div className="aspect-[21/9] flex flex-col items-center justify-center gap-3 text-white/80">
-            <div className="text-6xl">{KIND_ICON[d.kind] || '📁'}</div>
+            <KindIcon className="w-16 h-16 text-white/70" strokeWidth={1.1} />
             <div className="text-sm">该格式不支持在线预览，请下载后查看</div>
           </div>
         )}
@@ -217,14 +245,14 @@ export default function MediaDetailPage() {
               已审核通过
             </span>
             {d.durationSec ? (
-              <span className="px-2.5 py-1 rounded-full bg-ink-100 text-ink-600 text-xs">
+              <span className="num px-2.5 py-1 rounded-full bg-ink-100 text-ink-600 text-xs">
                 {formatTime(d.durationSec)}
               </span>
             ) : null}
           </div>
           <h1 className="font-display text-2xl md:text-3xl font-bold text-ink-900">{d.title}</h1>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-ink-500">
+          <div className="num mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-ink-500">
             <span>{formatSize(d.sizeBytes)}</span>
             <span>{d.playCount || 0} 次播放</span>
             <span>{d.owner || '匿名'}</span>
@@ -236,10 +264,20 @@ export default function MediaDetailPage() {
           <div className="mt-5 flex flex-wrap gap-3">
             {d.kind === 'audio' ? (
               <button onClick={playThis} className="btn-primary">
-                {audioActive && player.playing ? '暂停' : '▶ 在线播放'}
+                {audioActive && player.playing ? (
+                  <>
+                    <IconPause className="w-4 h-4" strokeWidth={2} /> 暂停
+                  </>
+                ) : (
+                  <>
+                    <IconPlay className="w-4 h-4" strokeWidth={2} /> 在线播放
+                  </>
+                )}
               </button>
             ) : null}
-            <a href={d.url} download={d.fileName} className="btn-secondary">⬇ 下载文件</a>
+            <a href={d.url} download={d.fileName} className="btn-secondary">
+              <IconDownload className="w-4 h-4" strokeWidth={1.9} /> 下载文件
+            </a>
             {d.references.length ? (
               <Link href={`/contents/${d.references[0].contentId}`} className="btn-secondary">
                 查看关联内容
@@ -255,11 +293,20 @@ export default function MediaDetailPage() {
                 {d.tasks.map((t) => (
                   <div key={t.id} className="flex items-start gap-3 text-sm bg-white border border-ink-100 rounded-xl px-4 py-2.5">
                     <span className={
+                      'mt-0.5 shrink-0 ' + (
                       t.status === 'done' ? 'text-emerald-600' :
                       t.status === 'failed' ? 'text-rose-600' :
                       t.status === 'running' ? 'text-primary-600' : 'text-ink-400'
-                    }>
-                      {t.status === 'done' ? '✓' : t.status === 'failed' ? '✕' : t.status === 'running' ? '⟳' : '–'}
+                    )}>
+                      {t.status === 'done' ? (
+                        <IconCheckCircle className="w-4 h-4" strokeWidth={1.9} />
+                      ) : t.status === 'failed' ? (
+                        <IconClose className="w-4 h-4" strokeWidth={2} />
+                      ) : t.status === 'running' ? (
+                        <IconRefresh className="w-4 h-4" strokeWidth={1.9} />
+                      ) : (
+                        <span aria-hidden="true">&ndash;</span>
+                      )}
                     </span>
                     <span className="font-medium text-ink-700 w-24 flex-shrink-0">
                       {{ scan: '安全扫描', transcode: '转码', poster: '封面', thumbnail: '缩略图', audio_normalize: '音频标准化', process: '处理' }[t.taskType] || t.taskType}
@@ -278,8 +325,10 @@ export default function MediaDetailPage() {
           {d.related.length === 0 ? (
             <div className="text-sm text-ink-400 border border-dashed border-ink-200 rounded-xl p-4">暂无同类文件</div>
           ) : (
-            <div className="space-y-3">
-              {d.related.map((r) => (
+            <div data-reveal-group className="space-y-3">
+              {d.related.map((r) => {
+                const RelIcon = KIND_ICON[r.kind] || IconFolder;
+                return (
                 <div key={r.id} className="bg-white border border-ink-100 rounded-xl p-3 card-hover">
                   <Link href={`/media/${r.id}`} className="flex gap-3">
                     <div className="w-16 h-16 rounded-lg bg-ink-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
@@ -290,12 +339,12 @@ export default function MediaDetailPage() {
                         // eslint-disable-next-line @next/next/no-img-element
                         <img loading="lazy" decoding="async" src={r.posterUrl} alt="" className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-2xl">{KIND_ICON[r.kind] || '📁'}</span>
+                        <RelIcon className="w-6 h-6 text-ink-500" strokeWidth={1.5} />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="text-sm font-medium text-ink-800 line-clamp-2">{r.title}</div>
-                      <div className="text-xs text-ink-400 mt-1">
+                      <div className="num text-xs text-ink-400 mt-1">
                         {r.durationSec ? formatTime(r.durationSec) : formatSize(r.sizeBytes)}
                         {r.playCount ? ` · ${r.playCount} 次播放` : ''}
                       </div>
@@ -307,13 +356,14 @@ export default function MediaDetailPage() {
                         id: r.id, title: r.title, artist: '圣约社区', url: r.url,
                         poster: r.posterUrl, durationSec: r.durationSec,
                       })}
-                      className="mt-2 w-full text-xs text-primary-600 hover:bg-primary-50 rounded-lg py-1.5"
+                      className="mt-2 w-full inline-flex items-center justify-center gap-1.5 min-h-[2.75rem] text-xs text-primary-600 hover:bg-primary-50 rounded-lg"
                     >
-                      ▶ 播放
+                      <IconPlay className="w-3.5 h-3.5" strokeWidth={2} /> 播放
                     </button>
                   ) : null}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

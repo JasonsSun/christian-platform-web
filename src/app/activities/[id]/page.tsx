@@ -12,6 +12,8 @@ import { useEscape, useDialogFocus } from '@/lib/a11y';
 import type { ActivityItem } from '@/lib/types';
 import ShareButton from '@/components/ShareButton';
 import Portal from '@/components/Portal';
+import { Glyph, IconBan } from '@/components/icons';
+import { activityCategoryLabel } from '@/lib/labels';
 import dynamic from 'next/dynamic';
 
 // 地图依赖 Leaflet(CDN) 且只在详情页可见时渲染，按需加载避免拖慢首屏
@@ -245,7 +247,7 @@ export default function ActivityDetailPage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {isCancelled && (
         <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 flex items-start gap-3">
-          <span className="text-xl leading-none">🚫</span>
+          <IconBan className="w-5 h-5 text-ink-500" strokeWidth={1.7} />
           <div>
             <p className="font-semibold text-rose-700 text-sm">此活动已取消</p>
             <p className="text-xs text-rose-700 mt-1">
@@ -257,7 +259,7 @@ export default function ActivityDetailPage() {
       {/* 封面 */}
       <div className="relative h-56 sm:h-72 rounded-3xl overflow-hidden bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center">
         {a.cover && !a.cover.startsWith('http') && a.cover.length <= 4 && (
-          <span className="text-7xl">{a.cover}</span>
+          <Glyph glyph={a.cover} className="w-20 h-20 text-white/85" strokeWidth={1.2} />
         )}
         {a.cover && a.cover.startsWith('http') && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -265,7 +267,7 @@ export default function ActivityDetailPage() {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
         <div className="absolute bottom-5 left-6 right-6">
-          <span className="px-3 py-1 rounded-full chip-frost text-xs font-semibold mr-2">{a.category}</span>
+          <span className="px-3 py-1 rounded-full chip-frost text-xs font-semibold mr-2">{activityCategoryLabel(a.category)}</span>
           {a.registered && (
             <span className="px-3 py-1 rounded-full bg-gold-400 text-ink-950 text-xs font-semibold">
               {a.myStatus === 'waitlist' ? '候补中' : '已报名'}

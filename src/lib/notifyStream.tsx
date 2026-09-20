@@ -11,6 +11,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { api, tokenStore } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { IconBell, IconClose } from '@/components/icons';
 
 type Ntf = {
   kind?: 'sync';
@@ -150,8 +151,8 @@ function NotificationToast({
         onClick={onClick}
         className="w-full text-left glass rounded-2xl shadow-card-hover p-4 border border-primary-200 flex items-start gap-3 transition-all hover:border-primary-300"
       >
-        <div className="w-9 h-9 rounded-xl bg-primary-100 flex items-center justify-center text-lg flex-shrink-0">
-          🔔
+        <div className="w-9 h-9 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center flex-shrink-0">
+          <IconBell className="w-5 h-5" strokeWidth={1.8} />
         </div>
         <div className="min-w-0 flex-1 pr-4">
           <p className="font-semibold text-ink-900 text-sm truncate">{n.title}</p>
@@ -165,7 +166,7 @@ function NotificationToast({
         aria-label="关闭提醒"
         className="absolute top-2 right-1.5 w-7 h-7 grid place-items-center rounded-full text-ink-500 hover:text-ink-700 hover:bg-ink-100/70"
       >
-        ✕
+        <IconClose className="w-3.5 h-3.5" strokeWidth={2} />
       </button>
     </div>
   );

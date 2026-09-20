@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useApi, useAction } from '@/lib/useApi';
 import { apiPatch, qs } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
 
 /* ----------------------------- 类型 ----------------------------- */
 
@@ -125,10 +125,11 @@ export default function AdminBiblePage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">圣经管理</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">
-        核对译本收录完整度 · 按卷查阅经文 · 修订录入错误
-      </p>
+      <PageHead
+        eyebrow="内容 · 圣经"
+        title="圣经管理"
+        sub="核对译本收录完整度 · 按卷查阅经文 · 修订录入错误"
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="版本数" value={admin.data?.totals.versions ?? '—'} />

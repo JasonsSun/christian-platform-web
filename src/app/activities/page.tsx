@@ -9,6 +9,8 @@ import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { countdown, formatDateTime } from '@/lib/format';
 import type { ActivityItem } from '@/lib/types';
+import { Glyph, IconCalendar } from '@/components/icons';
+import { activityCategoryLabel } from '@/lib/labels';
 
 const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南京'];
 
@@ -25,17 +27,6 @@ const SORT_TABS = [
   { key: 'upcoming', label: '即将开始' },
   { key: 'latest', label: '最新发布' },
 ];
-
-const CATEGORY_LABEL: Record<string, string> = {
-  worship: '崇拜',
-  fellowship: '团契',
-  retreat: '退修会',
-  training: '培训',
-  service: '服务',
-  prayer: '祷告',
-  study: '查经',
-  other: '其他',
-};
 
 function Avatar({ name, color, size = 36 }: { name: string; color: string; size?: number }) {
   return (
@@ -172,7 +163,7 @@ export default function ActivitiesPage() {
 
         {!loading && !error && items.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-20 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl">📅</div>
+            <div className="w-16 h-16 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center"><IconCalendar className="w-7 h-7" strokeWidth={1.5} /></div>
             <p className="text-ink-500">暂无符合条件的活动</p>
             <button onClick={() => { setSort('upcoming'); setCity(''); setCategory(''); setQ(''); }} className="btn-secondary">
               查看全部活动
@@ -199,13 +190,13 @@ function ActivityCard({ a }: { a: ActivityItem }) {
   const percent = a.capacity > 0 ? Math.min(100, Math.round((a.confirmedCount / a.capacity) * 100)) : 0;
   const ended = a.endAt ? new Date(a.endAt).getTime() < Date.now() : new Date(a.startAt).getTime() < Date.now();
   const status = getActivityStatus(a);
-  const catLabel = CATEGORY_LABEL[a.category] || a.category || '活动';
+  const catLabel = activityCategoryLabel(a.category);
 
   return (
     <Link href={`/activities/${a.id}`} className="group bg-white rounded-3xl overflow-hidden shadow-soft card-hover border border-ink-100 flex flex-col">
       <div className="h-40 relative overflow-hidden bg-gradient-to-br from-primary-500 to-primary-700">
         {a.cover && !a.cover.startsWith('http') && a.cover.length <= 4 && (
-          <div className="absolute inset-0 flex items-center justify-center text-6xl">{a.cover}</div>
+          <div className="absolute inset-0 flex items-center justify-center"><Glyph glyph={a.cover} className="w-16 h-16 text-white/85" strokeWidth={1.2} /></div>
         )}
         {a.cover && a.cover.startsWith('http') && (
           // eslint-disable-next-line @next/next/no-img-element

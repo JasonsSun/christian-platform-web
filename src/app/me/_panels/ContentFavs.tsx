@@ -6,6 +6,7 @@ import { apiDelete, apiPatch, apiPost, qs } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 
 import type { ContentItem } from '@/lib/types';
+import { Glyph, IconChatDots, IconCheck, IconClose, IconHeart, IconPlus } from '@/components/icons';
 import { SkeletonGrid, ErrorBlock, EmptyBlock } from './shared';
 
 interface FavFolderMeta {
@@ -106,33 +107,33 @@ export function MyContentFavorites() {
   return (
     <div className="space-y-4">
       {/* 分类栏 */}
-      <div className="bg-white rounded-2xl p-4 border border-ink-100 space-y-3">
+      <div className="bg-white card-tech rounded-2xl p-4 border border-ink-100 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => {
               setFolder('all');
               setSel([]);
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+            className={`px-3.5 py-1.5 max-sm:py-2.5 rounded-xl text-sm font-medium border transition-colors ${
               folder === 'all'
                 ? 'bg-primary-600 text-white border-primary-600 shadow-lg shadow-primary-500/20'
                 : 'bg-white text-ink-600 border-ink-200 hover:border-primary-300'
             }`}
           >
-            全部 {data?.total ?? 0}
+            全部 <span className="num">{data?.total ?? 0}</span>
           </button>
           <button
             onClick={() => {
               setFolder('unfiled');
               setSel([]);
             }}
-            className={`px-3.5 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+            className={`px-3.5 py-1.5 max-sm:py-2.5 rounded-xl text-sm font-medium border transition-colors ${
               folder === 'unfiled'
                 ? 'bg-ink-700 text-white border-ink-700'
                 : 'bg-white text-ink-600 border-ink-200 hover:border-primary-300'
             }`}
           >
-            未分类 {unfiled}
+            未分类 <span className="num">{unfiled}</span>
           </button>
           {folders.map((f) => (
             <span key={f.id} className="inline-flex items-center gap-1">
@@ -141,30 +142,31 @@ export function MyContentFavorites() {
                   setFolder(f.id);
                   setSel([]);
                 }}
-                className={`px-3.5 py-1.5 rounded-xl text-sm font-medium border transition-all ${
+                className={`px-3.5 py-1.5 max-sm:py-2.5 rounded-xl text-sm font-medium border transition-colors ${
                   folder === f.id
                     ? 'bg-primary-600 text-white border-primary-600 shadow-lg shadow-primary-500/20'
                     : `${FOLDER_CHIP[f.color] || FOLDER_CHIP.primary} hover:brightness-95`
                 }`}
               >
-                {f.name} {f.count}
+                {f.name} <span className="num">{f.count}</span>
               </button>
               <button
                 onClick={() => remove(f)}
                 disabled={busy}
-                className="w-6 h-6 rounded-full text-ink-500 hover:text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-40"
+                className="w-6 h-6 max-sm:w-9 max-sm:h-9 rounded-full inline-flex items-center justify-center text-ink-500 hover:text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-40"
                 aria-label={`删除分类 ${f.name}`}
                 title="删除分类（其中收藏退回未分类）"
               >
-                ×
+                <IconClose className="w-3.5 h-3.5" strokeWidth={1.8} />
               </button>
             </span>
           ))}
           <button
             onClick={() => setCreating((v) => !v)}
-            className="px-3 py-1.5 rounded-xl text-sm font-medium border border-dashed border-ink-300 text-ink-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
+            className="px-3 py-1.5 max-sm:py-2.5 rounded-xl text-sm font-medium inline-flex items-center gap-1 border border-dashed border-ink-300 text-ink-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
           >
-            + 新建分类
+            <IconPlus className="w-4 h-4" strokeWidth={1.8} />
+            新建分类
           </button>
         </div>
 
@@ -189,7 +191,7 @@ export function MyContentFavorites() {
                 setCreating(false);
                 setNewName('');
               }}
-              className="px-4 py-2 rounded-xl border border-ink-200 text-sm text-ink-600"
+              className="px-4 py-2 max-sm:py-2.5 rounded-xl border border-ink-200 text-sm text-ink-600"
             >
               取消
             </button>
@@ -249,17 +251,25 @@ export function MyContentFavorites() {
                     selected ? 'bg-primary-600 border-primary-600 text-white' : 'border-ink-300 text-transparent hover:border-primary-400'
                   }`}
                 >
-                  ✓
+                  <IconCheck className="w-3.5 h-3.5" strokeWidth={2.5} />
                 </button>
                 <Link href={`/contents/${c.id}`} className="block pr-7">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-2xl">{c.cover?.startsWith('http') ? '📄' : c.cover || '📄'}</span>
+                    <span className="text-2xl leading-none flex items-center flex-shrink-0 text-ink-500">
+                      <Glyph glyph={c.cover?.startsWith('http') ? '📄' : c.cover || '📄'} className="w-6 h-6" />
+                    </span>
                     <h3 className="font-semibold text-ink-900 truncate">{c.title}</h3>
                   </div>
                   <p className="text-sm text-ink-500 line-clamp-2">{c.excerpt || c.body}</p>
                   <div className="flex flex-wrap gap-3 mt-3 text-xs text-ink-400">
-                    <span><span aria-hidden="true">❤️</span> <span className="sr-only">点赞</span>{c.likeCount}</span>
-                    <span><span aria-hidden="true">💬</span> <span className="sr-only">评论</span>{c.commentCount}</span>
+                    <span className="inline-flex items-center gap-1">
+                      <IconHeart className="w-[14px] h-[14px]" strokeWidth={1.6} />
+                      <span className="sr-only">点赞</span>{c.likeCount}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      <IconChatDots className="w-[14px] h-[14px]" strokeWidth={1.6} />
+                      <span className="sr-only">评论</span>{c.commentCount}
+                    </span>
                     {cur ? (
                       <span className={`px-2 py-0.5 rounded-full border ${FOLDER_CHIP[cur.color] || FOLDER_CHIP.primary}`}>
                         {cur.name}

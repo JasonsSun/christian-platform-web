@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { qs } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { formatDate } from '@/lib/format';
 import type { ActivityItem, GroupItem } from '@/lib/types';
+import { Glyph, IconCalendar, IconHandshake, IconUsers } from '@/components/icons';
+import { groupCategoryLabel } from '@/lib/labels';
 
 const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南京'];
 
@@ -86,19 +88,21 @@ export default function NearbyPage() {
         <div className="space-y-10">
           {/* 活动 */}
           <section>
-            <h2 className="font-display text-xl font-bold text-ink-900 mb-4">📅 {city}的活动</h2>
+            <h2 className="font-display text-xl font-bold text-ink-900 mb-4 flex items-center gap-1.5">
+              <IconCalendar className="w-5 h-5 text-primary-500" strokeWidth={1.6} />{city}的活动
+            </h2>
             {aItems.length === 0 ? (
-              <Empty text="该城市暂无活动" />
+              <Empty icon={<IconCalendar className="w-6 h-6" strokeWidth={1.6} />} text="该城市暂无活动" />
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {aItems.map((a) => (
                   <Link key={a.id} href={`/activities/${a.id}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xl">{a.cover?.startsWith('http') ? '📅' : a.cover || '📅'}</span>
+                      <Glyph glyph={a.cover?.startsWith('http') ? '📅' : a.cover || '📅'} className="w-5 h-5 shrink-0 text-primary-500" />
                       <h3 className="font-semibold text-ink-900 truncate">{a.title}</h3>
                     </div>
                     <p className="text-xs text-ink-500">{a.location} · {formatDate(a.startAt)}</p>
-                    <p className="text-xs text-ink-400 mt-1">{a.confirmedCount}/{a.capacity} 人报名</p>
+                    <p className="text-xs text-ink-500 mt-1">{a.confirmedCount}/{a.capacity} 人报名</p>
                   </Link>
                 ))}
               </div>
@@ -107,18 +111,20 @@ export default function NearbyPage() {
 
           {/* 团契 */}
           <section>
-            <h2 className="font-display text-xl font-bold text-ink-900 mb-4">👥 {city}的团契</h2>
+            <h2 className="font-display text-xl font-bold text-ink-900 mb-4 flex items-center gap-1.5">
+              <IconHandshake className="w-5 h-5 text-primary-500" strokeWidth={1.6} />{city}的团契
+            </h2>
             {groups.length === 0 ? (
-              <Empty text="该城市暂无团契" />
+              <Empty icon={<IconHandshake className="w-6 h-6" strokeWidth={1.6} />} text="该城市暂无团契" />
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {groups.map((g) => (
                   <Link key={g.id} href={`/groups/${g.id}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xl">{g.cover?.startsWith('http') ? '👥' : g.cover || '👥'}</span>
+                      <Glyph glyph={g.cover?.startsWith('http') ? '👥' : g.cover || '👥'} className="w-5 h-5 shrink-0 text-primary-500" />
                       <h3 className="font-semibold text-ink-900 truncate">{g.name}</h3>
                     </div>
-                    <p className="text-xs text-ink-500">{g.category} · {g.memberCount} 位成员</p>
+                    <p className="text-xs text-ink-500">{groupCategoryLabel(g.category)} · {g.memberCount} 位成员</p>
                   </Link>
                 ))}
               </div>
@@ -127,9 +133,11 @@ export default function NearbyPage() {
 
           {/* 用户 */}
           <section>
-            <h2 className="font-display text-xl font-bold text-ink-900 mb-4">🙌 {city}的弟兄姐妹</h2>
+            <h2 className="font-display text-xl font-bold text-ink-900 mb-4 flex items-center gap-1.5">
+              <IconUsers className="w-5 h-5 text-primary-500" strokeWidth={1.6} />{city}的弟兄姐妹
+            </h2>
             {uItems.length === 0 ? (
-              <Empty text="该城市暂无其他用户" />
+              <Empty icon={<IconUsers className="w-6 h-6" strokeWidth={1.6} />} text="该城市暂无其他用户" />
             ) : (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {uItems.map((u) => (
@@ -150,10 +158,11 @@ export default function NearbyPage() {
   );
 }
 
-function Empty({ text }: { text: string }) {
+function Empty({ icon, text }: { icon: ReactNode; text: string }) {
   return (
-    <div className="text-center py-8">
-      <p className="text-ink-400 text-sm">{text}</p>
+    <div className="flex flex-col items-center justify-center gap-2 text-center py-10">
+      <span className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 grid place-items-center">{icon}</span>
+      <p className="text-ink-500 text-sm">{text}</p>
     </div>
   );
 }

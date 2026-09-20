@@ -9,14 +9,16 @@ import VariantSwitcher from '@/components/VariantSwitcher';
 import AccessibilityMenu from '@/components/AccessibilityMenu';
 import { isBareRoute } from '@/lib/bareRoutes';
 
-// 标签一律走 nav.* 字典（与 Navbar 同一套 key），否则切到英文/繁体后底部标签栏仍是简体
+// 移动端底部标签栏：始终线性描边（与全站图标语言一致），激活态靠「颜色 + 加粗描边 +
+// 下方指示条」三重表达。原先用 fill=currentColor / strokeWidth=0 把图标压成实心剪影，
+// 在 6 个标签里显得笨重，也和顶栏、卡片图标的观感脱节。
 const items = [
   {
     href: '/',
     key: 'nav.home',
     icon: (active: boolean) => (
-      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 2.2 : 1.8} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
       </svg>
     ),
   },
@@ -24,8 +26,8 @@ const items = [
     href: '/bible',
     key: 'nav.bible',
     icon: (active: boolean) => (
-      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 1.8} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 2 : 1.6} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
       </svg>
     ),
   },
@@ -33,8 +35,8 @@ const items = [
     href: '/songs',
     key: 'nav.songs',
     icon: (active: boolean) => (
-      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 2.2 : 1.8} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
       </svg>
     ),
   },
@@ -42,8 +44,8 @@ const items = [
     href: '/community',
     key: 'nav.community',
     icon: (active: boolean) => (
-      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 2.2 : 1.8} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
       </svg>
     ),
   },
@@ -51,8 +53,8 @@ const items = [
     href: '/live',
     key: 'nav.live',
     icon: (active: boolean) => (
-      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 2.2 : 1.8} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
       </svg>
     ),
   },
@@ -60,8 +62,8 @@ const items = [
     href: '/me',
     key: 'nav.me',
     icon: (active: boolean) => (
-      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill={active ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 0 : 2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      <svg className={`w-6 h-6 transition-colors ${active ? 'text-primary-500' : 'text-ink-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 2.2 : 1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
       </svg>
     ),
   },
@@ -92,11 +94,11 @@ export default function MobileNav({ disabledModules = [] }: { disabledModules?: 
     {/* 移动端简繁 / 无障碍入口：顶部右侧胶囊，避免挤占底部标签栏。
         导航栏 64px 高，胶囊压在它下沿 8px：z-[60] 高于导航的 z-50，所以是胶囊盖住导航而不是被裁；
         再往下挪会撞上 /groups、/activities hero 里右对齐的「创建团契 / 发布活动」按钮（top≈102）。 */}
-    <div className="md:hidden fixed top-14 right-2 z-[60] flex items-center gap-1 rounded-full bg-primary-900/90 px-1 py-1 shadow-lg backdrop-blur">
+    <div className="md:hidden fixed top-14 right-2 z-[60] flex items-center gap-1 rounded-full bg-primary-950/90 border border-white/15 px-1 py-1 shadow-lg backdrop-blur">
       <VariantSwitcher tone="light" />
       <AccessibilityMenu tone="light" />
     </div>
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 glass-tech border-t border-white/20 shadow-[0_-8px_40px_-12px_rgba(30,38,100,0.18)] pb-[env(safe-area-inset-bottom)]">
+    <nav className="mobile-tabbar md:hidden fixed bottom-0 left-0 right-0 z-50 glass-tech pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around h-16">
         {shown.map((item) => {
           const isActive = matchPath(pathname, item.href);
@@ -117,8 +119,9 @@ export default function MobileNav({ disabledModules = [] }: { disabledModules?: 
               <span className={`mt-0.5 text-xs font-medium ${isActive ? 'text-primary-600' : ''}`}>
                 {label}
               </span>
+              {/* 指示条与 hero / 分区标记同一套「蓝→金」语言，不再是一根纯蓝条 */}
               {isActive && (
-                <span className="absolute bottom-1.5 w-8 h-1 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 shadow-[0_0_10px_rgba(79,109,245,0.6)]" />
+                <span className="absolute bottom-1.5 w-8 h-1 rounded-full bg-gradient-to-r from-primary-400 to-gold-400 shadow-[0_0_10px_rgba(79,109,245,0.45)]" />
               )}
             </Link>
           );

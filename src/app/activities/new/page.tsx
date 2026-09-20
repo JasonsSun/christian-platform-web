@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
+import { Glyph } from '@/components/icons';
 import { useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
@@ -317,11 +318,11 @@ export default function NewActivityPage() {
                     aria-label={`封面图案 ${COVER_NAME[c] || c}`}
                     title={`封面图案 ${COVER_NAME[c] || c}`}
                     aria-pressed={form.cover === c}
-                    className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all ${
-                      form.cover === c ? 'bg-primary-100 ring-2 ring-primary-500' : 'bg-ink-50 hover:bg-ink-100'
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                      form.cover === c ? 'bg-primary-100 border-2 border-primary-500 text-primary-700' : 'bg-ink-50 border-2 border-transparent text-ink-500 hover:bg-ink-100'
                     }`}
                   >
-                    {c}
+                    <Glyph glyph={c} className="w-5 h-5" />
                   </button>
                 ))}
               </div>

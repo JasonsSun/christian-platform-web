@@ -7,6 +7,7 @@ import {
   isModuleKey,
   type ModuleKey,
 } from '@/lib/moderationModules';
+import { Glyph } from '@/components/icons';
 
 /**
  * 治理身份角标。
@@ -40,7 +41,7 @@ function Chip({
         color: 'var(--ui-text)',
       }}
     >
-      <span aria-hidden>{icon}</span>
+      <span aria-hidden className="inline-flex"><Glyph glyph={icon} className="w-3.5 h-3.5" strokeWidth={1.7} /></span>
       {label}
     </span>
   );

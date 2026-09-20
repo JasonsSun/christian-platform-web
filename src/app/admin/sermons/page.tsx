@@ -9,7 +9,8 @@ import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { useI18n } from '@/lib/i18n/I18nProvider';
-import { AdminLayout, SectionTitle, Loading, Empty, ErrorBox, Badge } from '../_components';
+import { AdminLayout, SectionTitle, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, Badge, PageHead, Toolbar, AdminSelect } from '../_components';
+import { IconPlus } from '@/components/icons';
 import Portal from '@/components/Portal';
 
 interface SermonItem {
@@ -116,35 +117,43 @@ function SermonManager() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <SectionTitle as="h1">讲道管理</SectionTitle>
-        <button className="btn-primary text-sm" onClick={openCreate}>＋ 新建讲道</button>
-      </div>
+      <PageHead
+        eyebrow="内容 · 讲道"
+        title="讲道管理"
+        actions={
+          <button className="btn-primary btn-sm min-h-11 lg:min-h-0 inline-flex items-center gap-1.5" onClick={openCreate}>
+            <IconPlus className="w-4 h-4" strokeWidth={2} />
+            新建讲道
+          </button>
+        }
+      />
 
-      <div className="flex flex-wrap gap-2 mb-4">
-        <input aria-label="搜索讲道标题 / 讲员 / 经文" className="input-styled input-sm flex-1 min-w-[160px]" placeholder="搜索标题/讲员/经文" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select aria-label="按讲道系列筛选" className="input-styled input-sm select-inline" value={seriesId} onChange={(e) => setSeriesId(e.target.value)}>
-          <option value="">全部系列</option>
-          {(seriesData?.items || []).map((s) => (
-            <option key={s.id} value={s.id}>{convert(s.title)}</option>
-          ))}
-        </select>
-        <label className="flex items-center gap-2 text-sm text-ink-600 px-2">
-          <input type="checkbox" checked={includeDrafts} onChange={(e) => setIncludeDrafts(e.target.checked)} />
+      <Toolbar>
+        <input aria-label="搜索讲道标题 / 讲员 / 经文" className="input-styled input-sm min-h-11 lg:min-h-0 flex-1 min-w-[160px]" placeholder="搜索标题/讲员/经文" value={q} onChange={(e) => setQ(e.target.value)} />
+        <AdminSelect
+          value={seriesId}
+          label="按讲道系列筛选"
+          onChange={setSeriesId}
+          options={[
+            { value: '', label: '全部系列' },
+            ...(seriesData?.items || []).map((s) => ({ value: s.id, label: convert(s.title) })),
+          ]}
+        />
+        <label className="flex items-center gap-2 min-h-11 lg:min-h-0 text-sm text-ink-600 px-2">
+          <input type="checkbox" className="h-5 w-5" checked={includeDrafts} onChange={(e) => setIncludeDrafts(e.target.checked)} />
           含草稿
         </label>
-      </div>
+      </Toolbar>
 
       {loading && !data ? (
-        <Loading />
+        <TableSkeleton cols={7} />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
       ) : items.length === 0 ? (
         <Empty label="暂无讲道" />
       ) : (
-        <div className="glass rounded-2xl overflow-hidden shadow-soft">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+        <TableShell busy={loading}>
+          <table className="w-full text-sm">
               <caption className="sr-only">讲道管理</caption>
               <thead className="bg-ink-50 text-ink-600">
                 <tr>
@@ -182,9 +191,8 @@ function SermonManager() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
-        </div>
+          </table>
+        </TableShell>
       )}
 
       {showForm ? (
@@ -375,20 +383,26 @@ function SeriesManager() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <SectionTitle as="h1">讲道系列</SectionTitle>
-        <button className="btn-primary text-sm" onClick={() => { setEditing(null); setShowForm(true); }}>＋ 新建系列</button>
-      </div>
+      <PageHead
+        eyebrow="内容 · 讲道"
+        title="讲道系列"
+        actions={
+          <button className="btn-primary btn-sm min-h-11 lg:min-h-0 inline-flex items-center gap-1.5" onClick={() => { setEditing(null); setShowForm(true); }}>
+            <IconPlus className="w-4 h-4" strokeWidth={2} />
+            新建系列
+          </button>
+        }
+      />
       {loading && !data ? (
-        <Loading />
+        <Loading rows={3} />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
       ) : (data?.items || []).length === 0 ? (
         <Empty label="暂无系列" />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" data-reveal-group>
           {(data?.items || []).map((s) => (
-            <div key={s.id} className="glass rounded-2xl p-4 shadow-soft">
+            <div key={s.id} className="glass rounded-2xl p-4 shadow-soft hair-top">
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-semibold text-ink-900">{convert(s.title)}</h3>
                 <Badge tone={STATUS_TONE[s.status] || 'gray'}>{s.status === 'published' ? '已发布' : '草稿'}</Badge>

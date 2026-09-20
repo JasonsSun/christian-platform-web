@@ -4,6 +4,16 @@ import { useCallback, useRef, useState } from 'react';
 import Link from 'next/link';
 import { API_BASE, tokenStore } from '@/lib/api';
 import { formatSize } from '@/lib/format';
+import {
+  IconCheck,
+  IconClose,
+  IconDocument,
+  IconFilm,
+  IconFolder,
+  IconImage,
+  IconMusicNote,
+  IconUpload,
+} from '@/components/icons';
 
 /* ---------------- 类型 ---------------- */
 
@@ -70,13 +80,15 @@ function fileKind(file: File): string {
   return 'doc';
 }
 
-function kindIcon(kind: string): string {
+/** 文件类型徽标：kind 由本地 fileKind() 推出，不走数据里的 emoji */
+function kindIcon(kind: string) {
+  const cls = 'w-5 h-5';
   switch (kind) {
-    case 'image': return '🖼️';
-    case 'audio': return '🎵';
-    case 'video': return '🎬';
-    case 'doc': return '📄';
-    default: return '📦';
+    case 'image': return <IconImage className={cls} strokeWidth={1.7} />;
+    case 'audio': return <IconMusicNote className={cls} strokeWidth={1.7} />;
+    case 'video': return <IconFilm className={cls} strokeWidth={1.7} />;
+    case 'doc': return <IconDocument className={cls} strokeWidth={1.7} />;
+    default: return <IconFolder className={cls} strokeWidth={1.7} />;
   }
 }
 
@@ -249,7 +261,9 @@ export function MediaUploader({
             e.target.value = '';
           }}
         />
-        <div className="text-4xl mb-3">☁️</div>
+        <div className="flex items-center justify-center mb-3">
+          <IconUpload className="w-10 h-10 text-primary-500" strokeWidth={1.5} />
+        </div>
         <div className="font-medium text-ink-800">点击选择或拖拽文件到此处</div>
         <div className="text-sm text-ink-400 mt-1">
           支持图片、音乐、视频、文档{multiple ? `(最多 ${maxFiles} 个)` : ''}
@@ -300,7 +314,7 @@ export function MediaUploader({
                   ) : null}
                   {item.status === 'success' && item.result ? (
                     <div className="text-xs text-emerald-700 mt-1 flex items-center gap-1.5">
-                      <span>✓</span>
+                      <IconCheck className="w-3.5 h-3.5 shrink-0" strokeWidth={2.2} />
                       <span>
                         上传成功 · {item.result.kindLabel}
                         {item.result.reviewStatus === 'pending' ? ' · 待审核' : ''}
@@ -319,7 +333,7 @@ export function MediaUploader({
                   ) : null}
                   {item.status === 'error' ? (
                     <div className="text-xs text-rose-600 mt-1 flex items-center gap-1.5">
-                      <span>✕</span>
+                      <IconClose className="w-3.5 h-3.5 shrink-0" strokeWidth={2.2} />
                       <span>{item.error || '上传失败'}</span>
                     </div>
                   ) : null}
@@ -338,7 +352,7 @@ export function MediaUploader({
                     className="text-ink-400 hover:text-rose-600 text-sm w-6 h-6 flex items-center justify-center rounded-lg hover:bg-ink-100 transition-colors"
                     aria-label="移除"
                   >
-                    ✕
+                    <IconClose className="w-4 h-4" strokeWidth={2} />
                   </button>
                 </div>
               </div>
@@ -349,9 +363,17 @@ export function MediaUploader({
           {(successCount > 0 || errorCount > 0) && (
             <div className="flex items-center gap-3 text-xs pt-1">
               {successCount > 0 ? (
-                <span className="text-emerald-600">✓ {successCount} 个成功</span>
+                <span className="text-emerald-600 inline-flex items-center gap-1">
+                  <IconCheck className="w-3.5 h-3.5 shrink-0" strokeWidth={2.2} />
+                  {successCount} 个成功
+                </span>
               ) : null}
-              {errorCount > 0 ? <span className="text-rose-600">✕ {errorCount} 个失败</span> : null}
+              {errorCount > 0 ? (
+                <span className="text-rose-600 inline-flex items-center gap-1">
+                  <IconClose className="w-3.5 h-3.5 shrink-0" strokeWidth={2.2} />
+                  {errorCount} 个失败
+                </span>
+              ) : null}
             </div>
           )}
         </div>

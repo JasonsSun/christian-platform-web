@@ -11,6 +11,11 @@ import { useBackgroundPlay, useMediaBackplay } from '@/lib/backplay';
 import { stopSpeechSessionIfAny } from '@/lib/speechSession';
 import SpeechMiniCard from '@/components/SpeechMiniCard';
 import BackplayToggle from '@/components/BackplayToggle';
+import {
+  IconArrowRight, IconClose, IconList, IconMusicNote,
+  IconPause, IconPlay, IconRefresh, IconShuffle, IconSkipBack, IconSkipForward,
+  IconSpeaker, IconSpeakerOff, IconTarget,
+} from '@/components/icons';
 
 export interface Track {
   id: string;
@@ -89,11 +94,15 @@ export function formatTime(sec: number): string {
 
 export type PlayMode = 'loop' | 'repeat-one' | 'shuffle' | 'sequential';
 
-export const PLAY_MODE_META: Record<PlayMode, { icon: string; label: string }> = {
-  loop: { icon: '🔁', label: '列表循环' },
-  'repeat-one': { icon: '🔂', label: '单曲循环' },
-  shuffle: { icon: '🔀', label: '随机播放' },
-  sequential: { icon: '➡️', label: '顺序播放' },
+/**
+ * 模式图标：列表循环=回转箭头 / 单曲=同心圆 / 随机=交叉箭头 / 顺序=右箭头，
+ * 与旁边按钮同一套线性字形；标签文案已经把语义写全，图标只负责区分档位。
+ */
+export const PLAY_MODE_META: Record<PlayMode, { icon: React.ReactNode; label: string }> = {
+  loop: { icon: <IconRefresh className="w-4 h-4" strokeWidth={1.8} />, label: '列表循环' },
+  'repeat-one': { icon: <IconTarget className="w-4 h-4" strokeWidth={1.8} />, label: '单曲循环' },
+  shuffle: { icon: <IconShuffle className="w-4 h-4" strokeWidth={1.8} />, label: '随机播放' },
+  sequential: { icon: <IconArrowRight className="w-4 h-4" strokeWidth={1.8} />, label: '顺序播放' },
 };
 
 const MODE_ORDER: PlayMode[] = ['loop', 'repeat-one', 'shuffle', 'sequential'];
@@ -549,7 +558,9 @@ function PlayerBar() {
                 // eslint-disable-next-line @next/next/no-img-element
                 <img loading="lazy" decoding="async" src={t.poster} alt="" className="w-9 h-9 rounded-lg object-cover" />
               ) : (
-                <span className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-xs">🎵</span>
+                <span className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white">
+                  <IconMusicNote className="w-4 h-4" strokeWidth={1.7} />
+                </span>
               )}
               <span className="flex-1 min-w-0">
                 <span className={`block truncate text-sm ${i === p.index ? 'text-primary-700 font-semibold' : 'text-ink-700'}`}>{t.title}</span>
@@ -606,7 +617,9 @@ function PlayerBar() {
             // eslint-disable-next-line @next/next/no-img-element
             <img loading="lazy" decoding="async" src={p.current.poster} alt="" className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
           ) : (
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white flex-shrink-0">🎵</div>
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white flex-shrink-0">
+              <IconMusicNote className="w-5 h-5" strokeWidth={1.7} />
+            </div>
           )}
 
           {/* 标题 + 时间 */}
@@ -620,16 +633,16 @@ function PlayerBar() {
 
           {/* 控制 */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            <button onClick={p.prev} title="上一首" aria-label="上一首" className="w-8 h-8 rounded-full text-ink-600 hover:bg-ink-100 flex items-center justify-center text-sm">⏮</button>
+            <button onClick={p.prev} title="上一首" aria-label="上一首" className="w-8 h-8 rounded-full text-ink-600 hover:bg-ink-100 flex items-center justify-center"><IconSkipBack className="w-4 h-4" strokeWidth={1.7} /></button>
             <button
               onClick={p.toggle}
               title={p.playing ? '暂停' : '播放'}
               aria-label={p.playing ? '暂停播放' : '开始播放'}
               className="w-10 h-10 rounded-full bg-primary-600 text-white shadow-card hover:bg-primary-700 flex items-center justify-center"
             >
-              {p.playing ? '❚❚' : '▶'}
+              {p.playing ? <IconPause className="w-4 h-4" /> : <IconPlay className="w-4 h-4 ml-0.5" />}
             </button>
-            <button onClick={p.next} title="下一首" aria-label="下一首" className="w-8 h-8 rounded-full text-ink-600 hover:bg-ink-100 flex items-center justify-center text-sm">⏭</button>
+            <button onClick={p.next} title="下一首" aria-label="下一首" className="w-8 h-8 rounded-full text-ink-600 hover:bg-ink-100 flex items-center justify-center"><IconSkipForward className="w-4 h-4" strokeWidth={1.7} /></button>
           </div>
         </div>
 
@@ -647,7 +660,7 @@ function PlayerBar() {
           </button>
 
           <button onClick={p.toggleMute} className="w-8 h-8 rounded-full text-ink-500 hover:bg-ink-100 flex items-center justify-center" title="静音" aria-label={p.muted || p.volume === 0 ? '取消静音' : '静音'}>
-            {p.muted || p.volume === 0 ? '🔇' : '🔊'}
+            {p.muted || p.volume === 0 ? <IconSpeakerOff className="w-4 h-4" strokeWidth={1.8} /> : <IconSpeaker className="w-4 h-4" strokeWidth={1.8} />}
           </button>
           <input
             aria-label="音量"
@@ -667,10 +680,10 @@ function PlayerBar() {
             title="播放列表"
             aria-label={openList ? '收起播放列表' : '展开播放列表'}
           >
-            ☰
+            <IconList className="w-4 h-4" strokeWidth={1.8} />
           </button>
           <button onClick={p.stop} className="w-8 h-8 rounded-full text-ink-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center" title="关闭" aria-label="关闭播放器">
-            ✕
+            <IconClose className="w-4 h-4" strokeWidth={2} />
           </button>
         </div>
       </div>

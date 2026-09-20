@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { downloadText, safeFilename } from '@/lib/download';
+import { IconBookOpen, IconClose, IconPencil, IconPlus } from '@/components/icons';
 
 type Devotional = {
   id: string;
@@ -160,7 +161,8 @@ export default function DevotionsPage() {
         <div className="flex items-center justify-between gap-3 mb-6">
           <div className="min-w-0">
             <h1 className="font-display text-2xl md:text-3xl font-bold text-ink-900 flex items-center gap-2">
-              <span>📖</span> 灵修日记
+              <IconBookOpen className="w-6 h-6 md:w-7 md:h-7 text-primary-500" strokeWidth={1.6} />
+              灵修日记
             </h1>
             <p className="text-sm text-ink-500 mt-1">安静默想，把领受写下来。仅自己可见。</p>
           </div>
@@ -185,8 +187,8 @@ export default function DevotionsPage() {
 
         {!authed && !authLoading ? (
           <div className="glass rounded-2xl p-10 text-center shadow-card border border-white/40">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center text-3xl">
-              📖
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-primary-100 to-primary-200 text-primary-600 flex items-center justify-center">
+              <IconBookOpen className="w-8 h-8" strokeWidth={1.5} />
             </div>
             <h2 className="font-display text-lg font-bold text-ink-900 mb-2">灵修日记是你的私人空间</h2>
             <p className="text-ink-500 text-sm mb-5">登录后即可记录每日灵修默想，跨设备同步，仅你自己可见。</p>
@@ -199,23 +201,29 @@ export default function DevotionsPage() {
           </div>
         ) : (
           <>
-            {/* 统计 */}
-            {stats && (
+            {/* 统计：登录态解析中 data 仍为空，这里必须一起占位，否则数据到达时整页往下顶 104px */}
+            {(stats || !data) && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                {[
-                  { label: '累计篇数', value: stats.total, unit: '篇' },
-                  { label: '本月', value: stats.thisMonth, unit: '篇' },
-                  { label: '连续记录', value: stats.streakDays, unit: '天' },
-                  { label: '开始于', value: stats.firstAt ? fmt(stats.firstAt).slice(0, 5) : '—', unit: '' },
-                ].map((t, i) => (
-                  <div key={i} className="glass rounded-2xl p-4 shadow-card border border-white/40">
-                    <p className="text-xs text-ink-400">{t.label}</p>
-                    <p className="font-display text-xl font-bold text-ink-900 mt-0.5">
-                      {t.value}
-                      {t.unit && <span className="text-xs font-normal text-ink-400 ml-1">{t.unit}</span>}
-                    </p>
-                  </div>
-                ))}
+                {stats ? (
+                  [
+                    { label: '累计篇数', value: stats.total, unit: '篇' },
+                    { label: '本月', value: stats.thisMonth, unit: '篇' },
+                    { label: '连续记录', value: stats.streakDays, unit: '天' },
+                    { label: '开始于', value: stats.firstAt ? fmt(stats.firstAt).slice(0, 5) : '—', unit: '' },
+                  ].map((t, i) => (
+                    <div key={i} className="glass rounded-2xl p-4 shadow-card border border-white/40">
+                      <p className="text-xs text-ink-500">{t.label}</p>
+                      <p className="font-display text-xl font-bold text-ink-900 mt-0.5">
+                        {t.value}
+                        {t.unit && <span className="text-xs font-normal text-ink-500 ml-1">{t.unit}</span>}
+                      </p>
+                    </div>
+                  ))
+                ) : (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-20 rounded-2xl bg-ink-100 animate-pulse" aria-hidden />
+                  ))
+                )}
               </div>
             )}
 
@@ -300,8 +308,8 @@ export default function DevotionsPage() {
                 onClick={() => setDraft({ ...EMPTY_DRAFT })}
                 className="w-full mb-6 flex items-center gap-3 rounded-2xl border-2 border-dashed border-primary-200 bg-ui-surface hover:bg-white hover:border-primary-400 px-5 py-4 text-left transition-colors group"
               >
-                <span className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center text-xl flex-shrink-0 group-hover:bg-primary-100">
-                  ＋
+                <span className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0 group-hover:bg-primary-100">
+                  <IconPlus className="w-5 h-5" strokeWidth={2} />
                 </span>
                 <span className="min-w-0">
                   <span className="block font-semibold text-ink-800">记一篇新的灵修</span>
@@ -360,11 +368,23 @@ export default function DevotionsPage() {
               </div>
             ) : items.length === 0 ? (
               <div className="glass rounded-2xl p-10 text-center shadow-card border border-white/40">
-                <p className="text-ink-500">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center">
+                  <IconBookOpen className="w-7 h-7" strokeWidth={1.5} />
+                </div>
+                <p className="text-ink-600 font-medium">
                   {q || month ? '没有符合条件的灵修日记。' : '还没有灵修日记。'}
                 </p>
                 {!q && !month && (
-                  <p className="text-ink-400 text-sm mt-1">灵修是信仰生活的呼吸——今天就开始记第一篇吧。</p>
+                  <>
+                    <p className="text-ink-500 text-sm mt-1.5">灵修是信仰生活的呼吸——今天就开始记第一篇吧。</p>
+                    <button
+                      onClick={() => setDraft({ ...EMPTY_DRAFT })}
+                      className="btn-primary text-sm mt-5 inline-flex items-center gap-1.5"
+                    >
+                      <IconPencil className="w-4 h-4" strokeWidth={1.9} />
+                      记第一篇
+                    </button>
+                  </>
                 )}
               </div>
             ) : (
@@ -385,7 +405,11 @@ export default function DevotionsPage() {
                                 {it.mood && (
                                   <span className="px-2 py-0.5 rounded-full bg-primary-50 text-primary-600">{it.mood}</span>
                                 )}
-                                {it.ref && <span className="text-primary-600">📖 {it.ref}</span>}
+                                {it.ref && (
+                                  <span className="inline-flex items-center gap-1 text-primary-600">
+                                    <IconBookOpen className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />{it.ref}
+                                  </span>
+                                )}
                               </p>
                             </div>
                             <div className="flex items-center gap-1 flex-shrink-0">
@@ -396,14 +420,14 @@ export default function DevotionsPage() {
                                 title="编辑"
                                 className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-ink-400 hover:text-primary-600 hover:bg-primary-50 transition-colors"
                               >
-                                ✎
+                                <IconPencil className="w-4 h-4" strokeWidth={1.6} />
                               </button>
                               <button
                                 onClick={() => askDelete(it)}
                                 title="删除"
                                 className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-ink-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                               >
-                                ×
+                                <IconClose className="w-4 h-4" strokeWidth={1.6} />
                               </button>
                             </div>
                           </div>

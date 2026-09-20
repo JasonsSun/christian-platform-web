@@ -4,10 +4,11 @@ import { Fragment, useState } from 'react';
 import { apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 import { useApi } from '@/lib/useApi';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
 import {
   CHANNEL_LABEL, notifTypeLabel, channelLabel, NOTIF_TYPE_ICON,
 } from '@/lib/notificationMeta';
+import { Glyph } from '@/components/icons';
 
 interface Template {
   id: string; code: string; channel: string; titleTpl: string; bodyTpl: string; enabled: boolean;
@@ -169,8 +170,7 @@ export default function AdminNotificationsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">通知中心</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">通知模板、渠道与收发统计</p>
+      <PageHead eyebrow="运营 · 通知" title="通知中心" sub="通知模板、渠道与收发统计" />
 
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
         <StatCard title="通知总数" value={data?.totals.total ?? '—'} />
@@ -294,7 +294,7 @@ export default function AdminNotificationsPage() {
                   {(data?.byType || []).map((t) => (
                     <li key={t.type} className="flex items-center justify-between">
                       <span className="flex items-center gap-1.5 text-ink-600">
-                        <span aria-hidden>{NOTIF_TYPE_ICON[t.type] || '🔔'}</span>
+                        <Glyph glyph={NOTIF_TYPE_ICON[t.type] || '🔔'} className="w-4 h-4" />
                         {notifTypeLabel(t.type)}
                       </span>
                       <span className="text-ink-900 font-medium">{t.c}<span className="text-ink-400 text-xs"> · 未读{t.unread}</span></span>
@@ -337,7 +337,7 @@ export default function AdminNotificationsPage() {
                     <tr key={r.id} className="border-t border-ink-100">
                       <td className="px-4 py-3 text-ink-600">{r.user || '—'}</td>
                       <td className="px-4 py-3 text-ink-600">
-                        <span className="mr-1" aria-hidden>{NOTIF_TYPE_ICON[r.type] || '🔔'}</span>
+                        <span className="mr-1 inline-flex items-center align-middle" aria-hidden><Glyph glyph={NOTIF_TYPE_ICON[r.type] || '🔔'} className="w-4 h-4" /></span>
                         {notifTypeLabel(r.type)}
                       </td>
                       <td className="px-4 py-3 text-ink-900">{r.title}<div className="text-xs text-ink-400">{r.body}</div></td>

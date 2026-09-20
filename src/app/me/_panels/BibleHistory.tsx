@@ -6,6 +6,8 @@ import { useApi } from '@/lib/useApi';
 
 import { formatDate } from '@/lib/format';
 
+import { IconBookOpen } from '@/components/icons';
+
 interface BibleHistoryItem {
   version: string;
   bookId: string;
@@ -36,7 +38,7 @@ export function MyBibleHistory() {
   if (items.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="text-5xl mb-3">📖</div>
+        <div className="w-16 h-16 mb-3 mx-auto rounded-2xl bg-primary-50 text-primary-600 grid place-items-center"><IconBookOpen className="w-8 h-8" strokeWidth={1.4} /></div>
         <h3 className="font-display text-lg font-bold text-ink-900 mb-1">还没有读经记录</h3>
         <p className="text-ink-500 text-sm mb-4">开始你的第一段读经旅程吧</p>
         <Link href="/bible" className="btn-primary px-5 py-2.5 text-sm">去读经</Link>

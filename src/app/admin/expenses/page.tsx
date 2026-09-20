@@ -9,7 +9,7 @@ import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { formatDateTime } from '@/lib/format';
 import { scrollBehavior } from '@/lib/motion';
-import { AdminLayout, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, StatCard, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
 import type { AdminExpense, AdminExpenseResult } from '@/lib/types';
 
 /**
@@ -147,23 +147,22 @@ export default function AdminExpensesPage() {
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-ink-900">支出公示管理</h1>
-          <p className="text-sm text-ink-500 mt-1">
-            维护公示页展示的开销明细 · 结余 = 已确认捐赠收入 − 已公示支出（仅管理员口径）
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/donate/transparency" className="btn-secondary" target="_blank" rel="noopener noreferrer">查看公示页</Link>
-          <button
-            className="btn-primary"
-            onClick={() => { if (!showForm) resetForm(); setShowForm(!showForm); }}
-          >
-            {showForm ? '收起表单' : '录入支出'}
-          </button>
-        </div>
-      </div>
+      <PageHead
+        eyebrow="运营 · 财务"
+        title="支出公示管理"
+        sub="维护公示页展示的开销明细 · 结余 = 已确认捐赠收入 − 已公示支出（仅管理员口径）"
+        actions={
+          <>
+            <Link href="/donate/transparency" className="btn-secondary btn-sm min-h-11 lg:min-h-0" target="_blank" rel="noopener noreferrer">查看公示页</Link>
+            <button
+              className="btn-primary btn-sm min-h-11 lg:min-h-0"
+              onClick={() => { if (!showForm) resetForm(); setShowForm(!showForm); }}
+            >
+              {showForm ? '收起表单' : '录入支出'}
+            </button>
+          </>
+        }
+      />
 
       {/* 统计 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

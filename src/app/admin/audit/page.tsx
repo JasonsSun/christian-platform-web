@@ -7,7 +7,7 @@ import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime, formatIp } from '@/lib/format';
 import { auditActionLabel, entityTypeLabel } from '@/lib/labels';
-import { AdminLayout, Badge, Loading, Empty, ErrorBox, SectionTitle } from '../_components';
+import { AdminLayout, AdminSelect, Badge, Empty, ErrorBox, PageHead, Pagination, TableShell, TableSkeleton, Th, Toolbar } from '../_components';
 import type { AuditLog } from '../_components';
 
 const ACTIONS: { value: string; label: string }[] = [
@@ -48,80 +48,66 @@ export default function AdminAuditPage() {
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-2xl font-bold text-ink-900">审计日志</h1>
-        <button className="btn-secondary btn-sm" onClick={reload}>刷新</button>
-      </div>
+      <PageHead
+        eyebrow="系统 · 留痕"
+        title="审计日志"
+        sub="管理员与审核员的每一次处置都会留痕在这里"
+        actions={<button className="btn-secondary btn-sm min-h-11 lg:min-h-0" onClick={reload}>刷新</button>}
+      />
 
-      <div className="glass rounded-2xl p-4 mb-5 flex items-center gap-3 shadow-soft">
-        <label htmlFor="audit-action" className="text-sm text-ink-500">操作类型</label>
-        <select id="audit-action" className="input-styled input-sm select-inline" value={action} onChange={(e) => onAction(e.target.value)}>
-          <option value="">全部动作</option>
-          {ACTIONS.map((a) => (
-            <option key={a.value} value={a.value}>{a.label}</option>
-          ))}
-        </select>
-      </div>
+      <Toolbar>
+        <span className="self-center text-[13px] font-medium text-ink-500">操作类型</span>
+        <AdminSelect
+          id="audit-action"
+          label="按操作类型筛选"
+          value={action}
+          onChange={onAction}
+          options={[{ value: '', label: '全部动作' }, ...ACTIONS]}
+        />
+      </Toolbar>
 
       {loading && !data ? (
-        <Loading />
+        <TableSkeleton rows={8} cols={5} />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
       ) : !data || data.items.length === 0 ? (
-        <Empty label="暂无审计日志" />
+        <Empty label="暂无审计日志" hint="换个动作类型，或稍后再来 —— 有处置动作时这里才会有记录" />
       ) : (
         <>
-          <div className="glass rounded-2xl overflow-hidden shadow-soft">
-            <div className="overflow-x-auto">
+          <TableShell busy={loading}>
               <table className="w-full text-sm">
                 <caption className="sr-only">审计日志</caption>
                 <thead className="bg-ink-50 text-ink-600">
                   <tr>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">时间</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">操作人</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">动作</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">对象类型</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">对象 ID</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">详情</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">IP</th>
+                    <Th>时间</Th>
+                    <Th>操作人</Th>
+                    <Th>动作</Th>
+                    <Th>对象类型</Th>
+                    <Th>对象 ID</Th>
+                    <Th>详情</Th>
+                    <Th>IP</Th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.items.map((a) => (
                     <tr key={a.id} className="border-t border-ink-100 hover:bg-ink-50/50 align-top">
-                      <td className="px-4 py-3 text-ink-400 whitespace-nowrap">{formatDateTime(a.created_at)}</td>
-                      <td className="px-4 py-3 text-ink-700 whitespace-nowrap">
+                      <td className="num px-3 lg:px-4 py-3 text-ink-400 whitespace-nowrap">{formatDateTime(a.created_at)}</td>
+                      <td className="px-3 lg:px-4 py-3 text-ink-700 whitespace-nowrap">
                         {a.actor_name || '-'}
                         {a.actor_username ? <div className="text-xs text-ink-400">{a.actor_username}</div> : null}
                       </td>
-                      <td className="px-4 py-3"><Badge tone="blue">{auditActionLabel(a.action)}</Badge></td>
-                      <td className="px-4 py-3 text-ink-600">{entityTypeLabel(a.entity_type)}</td>
-                      <td className="px-4 py-3 text-ink-600 font-mono text-xs">{a.entity_id || '-'}</td>
-                      <td className="px-4 py-3 text-ink-600 max-w-xs break-words">{a.detail || '-'}</td>
-                      <td className="px-4 py-3 text-ink-400 whitespace-nowrap">{formatIp(a.ip)}</td>
+                      <td className="px-3 lg:px-4 py-3"><Badge tone="blue">{auditActionLabel(a.action)}</Badge></td>
+                      <td className="px-3 lg:px-4 py-3 text-ink-600">{entityTypeLabel(a.entity_type)}</td>
+                      <td className="px-3 lg:px-4 py-3 text-ink-600 font-mono text-xs">{a.entity_id || '-'}</td>
+                      <td className="px-3 lg:px-4 py-3 text-ink-600 max-w-xs break-words">{a.detail || '-'}</td>
+                      <td className="num px-3 lg:px-4 py-3 text-ink-400 whitespace-nowrap">{formatIp(a.ip)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-          </div>
+          </TableShell>
 
-          <div className="flex items-center justify-between mt-4 text-sm text-ink-500">
-            <span>共 {data.total} 条</span>
-            <div className="flex gap-2">
-              <button className="btn-secondary" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                上一页
-              </button>
-              <span className="px-2 py-1">第 {page} 页</span>
-              <button
-                className="btn-secondary"
-                disabled={page * pageSize >= data.total}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                下一页
-              </button>
-            </div>
-          </div>
+          <Pagination total={data.total} page={page} pageSize={pageSize} onPage={setPage} />
         </>
       )}
     </AdminLayout>

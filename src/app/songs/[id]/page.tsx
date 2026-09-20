@@ -44,14 +44,14 @@ function VocalWantedCard({ song, onSubmit }: { song: SongDetail; onSubmit: () =>
           href={target.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-1.5 min-h-[2.75rem] px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-medium transition-colors"
         >
-          <IconExternalLink className="w-4 h-4" strokeWidth={2} />
+          <IconExternalLink className="w-4 h-4 shrink-0" strokeWidth={2} />
           {target.verified ? `在线听人声版（${target.source}）` : target.label}
         </a>
         <button
           onClick={onSubmit}
-          className="px-4 py-2 rounded-xl bg-gold-500 hover:bg-gold-400 text-ink-950 text-sm font-medium transition-colors"
+          className="inline-flex items-center min-h-[2.75rem] px-4 py-2 rounded-xl bg-gold-500 hover:bg-gold-400 text-ink-950 text-sm font-medium transition-colors"
         >
           上传我演唱的版本
         </button>
@@ -131,13 +131,13 @@ export default function SongDetailPage() {
         <div className="flex items-center justify-between mb-6">
           <Link
             href="/songs"
-            className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-white/20 transition-all duration-300"
+            className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-white/20 transition-all duration-300"
             aria-label="返回"
           >
             <IconArrowLeft className="w-5 h-5" strokeWidth={2} />
           </Link>
           <div className="text-white/80 text-sm font-medium">诗歌详情</div>
-          <div className="w-10 h-10">
+          <div className="w-11 h-11">
             <ShareButton
               title={data ? `圣诗 · ${data.title}` : '圣约社区 · 诗歌'}
               text="推荐给你一首圣诗，愿诗歌的旋律伴你灵修。"
@@ -146,7 +146,7 @@ export default function SongDetailPage() {
                 text: (data.lyrics || '').split('\n').map((l) => l.trim()).filter(Boolean).slice(0, 4).join('\n') || data.title,
                 reference: `《${data.title}》${data.author ? ` · ${data.author}` : ''}`,
               } : undefined}
-              className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-white/20 transition-all duration-300"
+              className="w-11 h-11 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white flex items-center justify-center hover:bg-white/20 transition-all duration-300"
             />
           </div>
         </div>
@@ -158,9 +158,9 @@ export default function SongDetailPage() {
         )}
 
         {loading && (
-          <div className="animate-pulse space-y-4">
-            <div className="h-10 w-2/3 bg-white/10 rounded-lg" />
-            <div className="h-64 bg-white/10 rounded-2xl" />
+          <div className="space-y-4">
+            <div className="h-10 w-2/3 bg-white/10 rounded-lg skeleton-sheen" />
+            <div className="h-64 bg-white/10 rounded-2xl skeleton-sheen" />
           </div>
         )}
 
@@ -199,7 +199,7 @@ export default function SongDetailPage() {
               )}
 
               {/* 操作按钮 */}
-              <div className="mt-6 flex items-center justify-center gap-3">
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <button
                   onClick={handlePlay}
                   disabled={pending && !!data.audioUrl}
@@ -232,7 +232,7 @@ export default function SongDetailPage() {
                 >
                   投屏
                 </Link>
-                <span className="text-white/75 text-sm flex items-center gap-1">
+                <span className="num text-white/75 text-sm flex items-center gap-1">
                   <IconEye className="w-4 h-4" strokeWidth={1.8} />
                   {data.playCount} 次播放
                 </span>
@@ -274,7 +274,7 @@ export default function SongDetailPage() {
                   </div>
                 )}
               </div>
-              <p className="text-center text-white/70 text-xs mt-4">收录于 {formatDate(data.createdAt)}</p>
+              <p className="num text-center text-white/70 text-xs mt-4">收录于 {formatDate(data.createdAt)}</p>
             </section>
 
             {/* 相关推荐 */}
@@ -284,12 +284,13 @@ export default function SongDetailPage() {
                   <IconLink className="w-5 h-5 text-gold-400" strokeWidth={1.8} />
                   相关诗歌
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                <div data-reveal-group className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
                   {data.related.map((r) => (
                     <Link
                       key={r.id}
                       href={`/songs/${r.id}`}
-                      className="group flex items-center gap-4 p-3 md:p-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/25 transition-all duration-300"
+                      data-spot
+                      className="group spot flex items-center gap-4 p-3 md:p-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/25 transition-all duration-300"
                     >
                       <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-gold-100 to-gold-200 text-gold-700 group-hover:from-gold-400 group-hover:to-gold-500 group-hover:text-ink-950 transition-colors">
                         <IconMusicNote className="w-5 h-5 md:w-6 md:h-6" strokeWidth={1.6} />

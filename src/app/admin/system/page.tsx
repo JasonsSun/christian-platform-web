@@ -7,7 +7,7 @@ import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
 import { channelLabel, notifJobReasonLabel, notifJobStatusLabel, notifTypeLabel } from '@/lib/notificationMeta';
-import { AdminLayout, Badge, Loading, Empty, ErrorBox, SectionTitle } from '../_components';
+import { AdminLayout, Badge, Loading, Empty, ErrorBox, SectionTitle, PageHead, Panel, AccessState } from '../_components';
 
 interface HealthData {
   status: string;
@@ -110,22 +110,27 @@ export default function AdminSystemPage() {
     }
   };
 
-  if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
+  if (authLoading) return <AdminLayout><Loading rows={3} /></AdminLayout>;
   if (user === null)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">
-        请先登录以访问管理后台。 <Link className="btn-primary ml-2" href="/login">去登录</Link>
-      </div>
+      <AdminLayout>
+        <AccessState title="请先登录" desc="登录审核员或管理员账号后查看系统信息。" href="/login" />
+      </AdminLayout>
     );
   if (user.role !== 'moderator' && user.role !== 'admin')
-    return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">无权限访问（需要审核员或管理员角色）。</div>;
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要审核员或管理员角色。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-2xl font-bold text-ink-900">系统信息</h1>
-        <button className="btn-secondary" onClick={reload}>刷新</button>
-      </div>
+      <PageHead
+        eyebrow="系统 · 运维"
+        title="系统信息"
+        actions={<button className="btn-secondary btn-sm min-h-11 lg:min-h-0" onClick={reload}>刷新</button>}
+      />
 
       {/* 健康检查 */}
       <div className="glass rounded-2xl p-5 shadow-soft mb-6">

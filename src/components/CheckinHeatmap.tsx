@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { apiGet } from '@/lib/api';
+import { IconLock, IconTrophy } from '@/components/icons';
 
 interface HeatDay {
   date: string;
@@ -54,9 +55,30 @@ export default function CheckinHeatmap() {
 
   if (needLogin) return null;
   if (loading) {
+    // 与真卡同一套 DOM（标题行 28 / 四格统计 62 / 热力图条 94+8 / 徽章行 24），
+    // 原来只有一个 h-40 方块，数据落地把下面的徽章墙整块顶下去 100 多像素。
     return (
-      <div className="glass rounded-2xl p-5 shadow-card border border-white/40">
-        <div className="h-40 animate-pulse rounded-xl bg-white/50" />
+      <div className="glass rounded-2xl p-5 shadow-card border border-white/40" aria-hidden>
+        <div className="flex items-center justify-between mb-4">
+          <span className="skeleton-sheen block h-7 w-24 rounded bg-white/50" />
+          <span className="skeleton-sheen block h-4 w-16 rounded bg-white/50" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="rounded-xl bg-ui-surface px-3 py-2">
+              <span className="skeleton-sheen block h-7 w-12 rounded bg-white/50" />
+              <span className="skeleton-sheen block h-4 w-14 rounded mt-0.5 bg-white/50" />
+            </div>
+          ))}
+        </div>
+        <div className="pb-2">
+          <span className="skeleton-sheen block h-[94px] w-full rounded-xl bg-white/50" />
+        </div>
+        <div className="flex flex-wrap gap-2 mt-4">
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <span key={i} className="skeleton-sheen block h-6 w-[100px] rounded-full bg-white/50" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -127,7 +149,8 @@ export default function CheckinHeatmap() {
               b.got ? 'bg-gradient-to-r from-gold-500 to-gold-400 text-ink-950 shadow-gold' : 'bg-ink-100 text-ink-600'
             }`}
           >
-            {b.got ? '🏅' : '🔒'} {b.label}
+            {b.got ? <IconTrophy className="w-3.5 h-3.5" strokeWidth={1.8} /> : <IconLock className="w-3.5 h-3.5" strokeWidth={1.8} />}
+            {b.label}
           </span>
         ))}
       </div>

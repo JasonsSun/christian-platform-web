@@ -19,6 +19,7 @@ const ReadingAngel = dynamic(() => import('@/components/ReadingAngel'), { ssr: f
 const ShareModal = dynamic(() => import('@/components/ShareModal'), { ssr: false }) as unknown as typeof import('@/components/ShareModal').default;
 import { useTheme } from '@/lib/theme';
 import { READING_PLANS } from '@/lib/readingPlans';
+import { IconAlert, IconBookOpen, IconCalendar, IconHeadphones, IconPause, IconPencil, IconPlay, IconSpeaker } from '@/components/icons';
 
 /** 可供「对照阅读」的译本（与 @/server/bible 的 VERSIONS 保持一致） */
 const CMP_VERSIONS = [
@@ -196,7 +197,7 @@ export default function ReadChapter() {
             ? `读完本章 · 已完成《${cd[0].planTitle}》第 ${cd[0].day} 天 ✓`
             : cd.length > 1
               ? `读完本章 · 完成 ${cd.length} 个读经计划打卡 ✓`
-              : '读完本章 🎉'
+              : '读完本章 ✓'
         );
         setTimeout(() => setToast(null), 2600);
       })
@@ -929,7 +930,7 @@ export default function ReadChapter() {
                   onClick={() => setFontSize(size)}
                   aria-label={FONT_LABEL[size]}
                   aria-pressed={fontSize === size}
-                  className={`w-9 h-8 inline-flex items-center justify-center rounded-full font-bold font-serif transition-colors ${
+                  className={`w-10 h-9 md:h-8 inline-flex items-center justify-center rounded-full font-bold font-serif transition-colors ${
                     fontSize === size ? 'bg-primary-600 text-white' : 'text-ink-500 hover:text-primary-600'
                   }`}
                   title={FONT_LABEL[size]}
@@ -941,7 +942,7 @@ export default function ReadChapter() {
             <div className="relative">
               <button
                 onClick={() => setSettingsOpen((v) => !v)}
-                className={`inline-flex items-center justify-center w-10 h-10 rounded-full shadow-soft border transition-colors ${
+                className={`inline-flex items-center justify-center w-11 h-11 md:w-10 md:h-10 rounded-full shadow-soft border transition-colors ${
                   settingsOpen ? 'bg-primary-600 text-white border-primary-600' : 'bg-white text-ink-600 border-ink-100 hover:text-primary-600'
                 }`}
                 title="阅读排版与主题"
@@ -954,7 +955,7 @@ export default function ReadChapter() {
               {settingsOpen && (
                 <>
                   <div className="fixed inset-0 z-30" onClick={() => setSettingsOpen(false)} />
-                  <div ref={settingsRef} className="absolute right-0 top-12 z-40 w-72 bg-white rounded-2xl shadow-card-hover border border-ink-100 p-4 text-ink-800" role="dialog" aria-label="阅读排版与主题">
+                  <div ref={settingsRef} className="absolute right-0 top-12 z-40 w-72 bg-white rounded-2xl shadow-pop border border-ink-100 p-4 text-ink-800" role="dialog" aria-label="阅读排版与主题">
                     {/* 主题 */}
                     <div className="text-xs font-semibold text-ink-500 mb-2">主题</div>
                     <div className="grid grid-cols-3 gap-2 mb-4">
@@ -966,7 +967,7 @@ export default function ReadChapter() {
                         <button
                           key={t.k}
                           onClick={() => setReadTheme(t.k)}
-                          className={`flex flex-col items-center gap-1 py-2 rounded-xl border transition-all ${
+                          className={`flex flex-col items-center gap-1 py-2 rounded-xl border transition ${
                             readTheme === t.k ? 'border-primary-500 ring-2 ring-primary-200' : 'border-ink-200 hover:border-primary-300'
                           }`}
                         >
@@ -982,7 +983,7 @@ export default function ReadChapter() {
                         <button
                           key={k}
                           onClick={() => setLineHeight(k)}
-                          className={`flex-1 py-1.5 rounded-lg text-sm border transition-colors ${
+                          className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm border transition-colors ${
                             lineHeight === k ? 'bg-primary-600 text-white border-primary-600' : 'bg-ink-50 text-ink-600 border-ink-200 hover:border-primary-300'
                           }`}
                         >
@@ -997,7 +998,7 @@ export default function ReadChapter() {
                         <button
                           key={k}
                           onClick={() => setSerifFont(k === 'serif')}
-                          className={`flex-1 py-1.5 rounded-lg text-sm border transition-colors ${
+                          className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm border transition-colors ${
                             (k === 'serif') === serifFont ? 'bg-primary-600 text-white border-primary-600' : 'bg-ink-50 text-ink-600 border-ink-200 hover:border-primary-300'
                           }`}
                         >
@@ -1012,7 +1013,7 @@ export default function ReadChapter() {
                         <button
                           key={k}
                           onClick={() => setReadWidth(k)}
-                          className={`flex-1 py-1.5 rounded-lg text-sm border transition-colors ${
+                          className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm border transition-colors ${
                             readWidth === k ? 'bg-primary-600 text-white border-primary-600' : 'bg-ink-50 text-ink-600 border-ink-200 hover:border-primary-300'
                           }`}
                         >
@@ -1051,7 +1052,7 @@ export default function ReadChapter() {
             if (!p) return null;
             return (
               <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-700">
-                <span aria-hidden>📅</span>
+                <IconCalendar className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
                 你正在读《{p.title}》第 {dayParam} 天 · 读完本页自动打卡
               </div>
             );
@@ -1074,16 +1075,18 @@ export default function ReadChapter() {
         )}
 
         {loading && (
-          <div className="space-y-4 animate-pulse">
+          <div className="space-y-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-6 bg-ink-100 rounded w-full" style={{ width: `${70 + (i % 3) * 10}%` }} />
+              <div key={i} className="skeleton-sheen h-6 bg-ink-100 rounded w-full" style={{ width: `${70 + (i % 3) * 10}%` }} />
             ))}
           </div>
         )}
 
         {!loading && data && !data.hasContent && (
           <div className="bg-white rounded-2xl p-12 shadow-soft border border-ink-100 text-center">
-            <div className="text-5xl mb-4">📖</div>
+            <div className="mx-auto mb-4 w-16 h-16 rounded-2xl bg-ink-50 border border-ink-100 flex items-center justify-center">
+              <IconBookOpen className="w-8 h-8 text-ink-400" strokeWidth={1.5} />
+            </div>
             <h3 className="font-display text-xl font-bold text-ink-900 mb-2">本章暂无该译本数据</h3>
             <p className="text-ink-500 mb-6">《{data.book.name}》第 {chapter} 章在「{version}」译本中尚未收录。</p>
             <div className="flex justify-center gap-3">
@@ -1107,7 +1110,7 @@ export default function ReadChapter() {
               <button
                 onClick={toggleChapterBookmark}
                 disabled={!user || bookmarkAction.pending || bmLoading}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                className={`inline-flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
                   chapterBookmarked
                     ? 'bg-gold-500 border-gold-600 text-ink-950 shadow-gold-500/30'
                     : 'bg-white border-ink-200 text-ink-700 hover:border-gold-400 hover:text-gold-600'
@@ -1128,7 +1131,7 @@ export default function ReadChapter() {
                   else speech.start(speechStartVerse());
                 }}
                 disabled={speech.ttsLoading}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                className={`inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[7.5rem] px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
                   speech.state !== 'idle'
                     ? 'bg-primary-600 border-primary-600 text-white'
                     : 'bg-white border-ink-200 text-ink-700 hover:border-primary-400 hover:text-primary-600'
@@ -1138,9 +1141,9 @@ export default function ReadChapter() {
                 {speech.ttsLoading ? (
                   <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3a9 9 0 109 9" /></svg>
                 ) : speech.state === 'playing' ? (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" /></svg>
+                  <IconPause className="w-4 h-4" />
                 ) : (
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z" /></svg>
+                  <IconPlay className="w-4 h-4" />
                 )}
                 {speech.ttsLoading
                   ? '合成中…'
@@ -1151,13 +1154,14 @@ export default function ReadChapter() {
                       : '朗读本章'}
               </button>
               {speech.ttsMode === 'server' && !speech.ttsError && !speech.ttsLoading && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-600">
-                  🎧 语音朗读（微信内也能听）
+                <span className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-600">
+                  <IconHeadphones className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+                  语音朗读（微信内也能听）
                   {speech.ttsProvider === 'cache' ? '·已缓存' : speech.ttsProvider === 'baidu' ? '·百度' : speech.ttsProvider === 'edge' ? '·微软' : speech.ttsProvider === 'client' ? '·直连' : ''}
                 </span>
               )}
               {speech.ttsMode === 'server' && speech.ttsLoading && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-50 border border-primary-100 text-xs text-primary-600">
+                <span className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-primary-50 border border-primary-100 text-xs text-primary-600">
                   <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3a9 9 0 109 9" /></svg>
                   正在合成语音，首次约需 10 秒，请稍候…
                 </span>
@@ -1167,9 +1171,10 @@ export default function ReadChapter() {
                 <button
                   type="button"
                   onClick={speech.clientPlay}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary-600 text-white text-xs font-medium hover:bg-primary-700 transition-colors"
+                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-primary-600 text-white text-xs font-medium hover:bg-primary-700 transition-colors"
                 >
-                  ▶ 点此播放（用你的网络直接合成）
+                  <IconPlay className="w-3.5 h-3.5 shrink-0" />
+                  点此播放（用你的网络直接合成）
                 </button>
               )}
               {/* 浏览器有语音但听不到 / 发音很差 → 一键改用服务器合成语音 */}
@@ -1177,21 +1182,23 @@ export default function ReadChapter() {
                 <button
                   type="button"
                   onClick={() => speech.useServerVoice(speechStartVerse())}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
+                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 hover:border-primary-400 hover:text-primary-600 transition-colors"
                   title="本机缺少中文语音时浏览器朗读会完全无声，点此改用服务器合成"
                 >
-                  🔊 没声音？改用在线语音
+                  <IconSpeaker className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+                  没声音？改用在线语音
                 </button>
               )}
               {/* 服务器语音模式下的说明：让用户知道这是网络合成的、为什么用它 */}
               {speech.ttsMode === 'server' && !speech.ttsLoading && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-50 border border-ink-100 text-xs text-ink-600">
+                <span className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-ink-50 border border-ink-100 text-xs text-ink-600">
                   当前使用在线语音（服务器合成，需联网）
                 </span>
               )}
               {speech.ttsError && !speech.clientReady && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
-                  ⚠ 语音合成暂不可用，请稍后重试；也可改用 Chrome / Safari 的本地语音
+                <span className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">
+                  <IconAlert className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />
+                  语音合成暂不可用，请稍后重试；也可改用 Chrome / Safari 的本地语音
                 </span>
               )}
 
@@ -1200,7 +1207,7 @@ export default function ReadChapter() {
               {/* 括号注释开关 */}
               {chapterHasNotes && (
                 <label
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
                   title="经文中的括号多是译注/补注。勾选后阅读时隐藏，朗读时始终跳过。"
                 >
                   <input
@@ -1215,7 +1222,7 @@ export default function ReadChapter() {
 
               {/* 多译本对照：一键逐节对照另一译本 */}
               <label
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
+                className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
                 title="选择另一译本，逐节对照阅读"
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5h6M9 12h6M9 19h6M4 5h.01M4 12h.01M4 19h.01" /></svg>
@@ -1235,7 +1242,7 @@ export default function ReadChapter() {
               {/* 朗读设置：是否播报章节 / 节号、语速、自动下一章 */}
               <>
                   <label
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
                     title={`朗读前先播报「${data?.book.name ?? ''} 第 ${chapter} 章」`}
                   >
                     <input
@@ -1247,7 +1254,7 @@ export default function ReadChapter() {
                     念书名章
                   </label>
                   <label
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer"
                     title="每节正文前播报「第 3 节」"
                   >
                     <input
@@ -1258,7 +1265,7 @@ export default function ReadChapter() {
                     />
                     念节号
                   </label>
-                  <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500">
+                  <label className="inline-flex items-center gap-2 min-h-[44px] px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500">
                     语速
                     <input
                       type="range"
@@ -1277,7 +1284,7 @@ export default function ReadChapter() {
                       {speech.wordSync ? '逐字高亮' : '整节高亮'}
                     </span>
                   </label>
-                  <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer">
+                  <label className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-white border border-ink-200 text-xs text-ink-500 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={autoNextChapter}
@@ -1288,14 +1295,14 @@ export default function ReadChapter() {
                   </label>
                 </>
               {speech.ttsMode === 'server' && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-600">
+                <span className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl bg-ink-100 border border-ink-200 text-xs text-ink-600">
                   服务端语音：设置更改后重新朗读生效
                 </span>
               )}
               {speech.state !== 'idle' && (
                 <button
                   onClick={speech.stop}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium border bg-white border-ink-200 text-ink-500 hover:text-rose-600 hover:border-rose-300 transition-colors"
+                  className="inline-flex items-center gap-1.5 min-h-[44px] px-3 py-2 rounded-xl text-sm font-medium border bg-white border-ink-200 text-ink-500 hover:text-rose-600 hover:border-rose-300 transition-colors"
                   title="停止朗读"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 6h12v12H6V6z" /></svg>
@@ -1305,7 +1312,7 @@ export default function ReadChapter() {
               <button
                 onClick={markRead}
                 disabled={!user || readAction.pending}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                className={`inline-flex items-center justify-center gap-2 min-h-[44px] px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${
                   !user ? 'opacity-60 cursor-not-allowed bg-white border-ink-200 text-ink-700' : 'btn-primary'
                 }`}
                 title="手动标记本章已读（滚动读完所有蓝点也会自动标记）"
@@ -1346,14 +1353,14 @@ export default function ReadChapter() {
                       if (typeof window !== 'undefined' && (window.getSelection()?.toString() || '').trim()) return;
                       selectVerse(v.verse);
                     }}
-                    className={`read-verse mb-5 group relative pl-12 pr-12 py-2 rounded-xl transition-all duration-200 scroll-mt-24 cursor-pointer ${
+                    className={`read-verse mb-5 group relative pl-12 pr-12 py-2 rounded-xl border-l-4 transition-colors duration-200 scroll-mt-24 cursor-pointer ${
                       speaking
                         ? speech.wordSync
-                          ? 'bg-amber-50/80 border-l-2 border-amber-400 shadow-sm'
-                          : 'bg-amber-100/90 border-l-4 border-amber-500 shadow-sm'
+                          ? 'bg-amber-50/80 border-amber-400 shadow-sm'
+                          : 'bg-amber-100/90 border-amber-500 shadow-sm'
                         : targeted
-                          ? 'bg-primary-50/70 border-l-2 border-primary-400'
-                          : 'hover:bg-ink-50/50'
+                          ? 'bg-primary-50/70 border-primary-400'
+                          : 'border-transparent hover:bg-ink-50/50'
                     }`}
                   >
                     {/* 真实读经蓝点（仅登录用户）：本节进入视野并驻留数秒后淡出 = 已读 */}
@@ -1412,7 +1419,7 @@ export default function ReadChapter() {
                               ) : (
                                 <span
                                   key={j}
-                                  className="verse-char inline transition-all duration-150"
+                                  className="verse-char inline transition-colors duration-150"
                                   data-raw={seg ? r : undefined}
                                 >
                                   {ch}
@@ -1495,7 +1502,7 @@ export default function ReadChapter() {
                           onClick={(e) => { e.stopPropagation(); setVerseMenu(null); }}
                         />
                         <span
-                          className="md:hidden absolute right-1 top-11 z-30 block min-w-[9.5rem] rounded-2xl border border-ink-200 bg-white shadow-lg p-1.5"
+                          className="md:hidden absolute right-1 top-11 z-30 block min-w-[9.5rem] rounded-2xl border border-ink-200 bg-white shadow-pop p-1.5"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <span className="block px-2.5 pt-0.5 pb-1 text-[11px] text-ink-400">第 {v.verse} 节</span>
@@ -1503,14 +1510,14 @@ export default function ReadChapter() {
                             type="button"
                             disabled={bookmarkAction.pending || bmLoading}
                             onClick={() => { setVerseMenu(null); toggleVerseBookmark(v.verse); }}
-                            className="block w-full text-left px-2.5 py-2.5 rounded-xl text-sm text-ink-700 hover:bg-ink-100 disabled:opacity-60"
+                            className="flex items-center w-full min-h-[44px] text-left px-2.5 py-2.5 rounded-xl text-sm text-ink-700 hover:bg-ink-100 disabled:opacity-60"
                           >
                             {vb ? '取消收藏本节' : '收藏本节'}
                           </button>
                           <button
                             type="button"
                             onClick={() => { setVerseMenu(null); toggleNoteEditor(v.verse); }}
-                            className="block w-full text-left px-2.5 py-2.5 rounded-xl text-sm text-ink-700 hover:bg-ink-100"
+                            className="flex items-center w-full min-h-[44px] text-left px-2.5 py-2.5 rounded-xl text-sm text-ink-700 hover:bg-ink-100"
                           >
                             写笔记
                           </button>
@@ -1525,14 +1532,15 @@ export default function ReadChapter() {
                     return (
                       <div className="mt-1.5 ml-10 mr-4 flex items-start gap-2" onClick={(e) => e.stopPropagation()}>
                         <span className="flex-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 whitespace-pre-wrap break-words">
-                          📝 {savedNote}
+                          <IconPencil className="inline-block w-3.5 h-3.5 mr-1 align-[-3px] shrink-0" strokeWidth={1.8} />
+                          {savedNote}
                         </span>
                         <button
                           type="button"
                           onClick={() => deleteVerseNote(v.verse)}
                           disabled={bookmarkAction.pending}
                           title="删除这条笔记"
-                          className="flex-shrink-0 text-[11px] px-2 py-1.5 rounded-lg border border-ink-200 text-ink-400 hover:text-rose-600 hover:border-rose-200 transition-colors"
+                          className="flex-shrink-0 inline-flex items-center justify-center min-h-[40px] text-xs px-3 py-2 rounded-lg border border-ink-200 text-ink-400 hover:text-rose-600 hover:border-rose-200 transition-colors"
                         >
                           删除
                         </button>
@@ -1591,6 +1599,21 @@ export default function ReadChapter() {
                   font-weight: 700;
                   transform: scale(1.12);
                   text-shadow: 0 0 8px rgba(217, 119, 6, 0.35);
+                }
+                /* 逐字高亮走的是 styled-jsx 里的裸色值，不吃 globals 那套琥珀重钉，
+                   夜间读经页上实测只有 2.6:1 —— 恰恰是唯一需要看清的那几个字。 */
+                :global(.read-page[data-read-theme="dark"] .verse-char.read) {
+                  color: #e0a355;
+                }
+                :global(.read-page[data-read-theme="dark"] .verse-char.active) {
+                  color: #f5c877;
+                  text-shadow: 0 0 10px rgba(245, 200, 119, 0.3);
+                }
+                :global(.read-page[data-read-theme="sepia"] .verse-char.read) {
+                  color: #8a5a0b;
+                }
+                :global(.read-page[data-read-theme="sepia"] .verse-char.active) {
+                  color: #a2650f;
                 }
               `}</style>
             </article>

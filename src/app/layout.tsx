@@ -26,6 +26,7 @@ import dynamic from 'next/dynamic'
 // layout 是 Server Component，故不能用 ssr:false（只允许在客户端组件里关 SSR）。
 const CommandPalette = dynamic(() => import('@/components/CommandPalette')) as unknown as typeof import('@/components/CommandPalette').default
 import ScrollProgress from '@/components/ScrollProgress'
+import MotionLayer from '@/components/MotionLayer'
 import type { Metadata } from 'next'
 
 const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://amen.dpdns.org';
@@ -82,6 +83,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={initialLang}>
       {/* 不再预连接 Google Fonts：境内不可达，预连接反而产生无谓的挂起请求 */}
       <body className="overflow-x-hidden">
+        {/* 环境光层：极淡网格 + 两团 aurora，纯装饰，压在正文之下、body 底色之上 */}
+        <div className="ambient" aria-hidden="true" />
         {/* 首屏前无闪烁设置 <html data-theme>，避免暗色模式刷新白屏 */}
         <script dangerouslySetInnerHTML={{ __html: themeNoFlashScript }} />
         {/* 首屏前无闪烁应用无障碍偏好（字体/对比/动效），避免刷新闪动 */}
@@ -104,6 +107,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <ActivityTracker />
                   {/* 顶部阅读进度条 */}
                   <ScrollProgress />
+                  {/* 全站动效：滚动浮现 / 数字滚动 / 卡片柔光 */}
+                  <MotionLayer />
                   {/* 全局命令面板：⌘K / Ctrl+K */}
                   <CommandPalette />
                   {/* 无障碍：键盘跳过导航直达主内容 */}

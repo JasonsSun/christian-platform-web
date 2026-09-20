@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useBackgroundPlay, useMediaBackplay } from '@/lib/backplay';
+import { IconArrowRight, IconExpand, IconSpeaker, IconSpeakerOff } from '@/components/icons';
 
 interface Props {
   src: string | null;
@@ -275,15 +276,21 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
           </span>
           {behindSec > 0 && (
             <button
-              className="px-2 py-1 rounded-full bg-rose-600 text-white text-[11px] hover:bg-rose-700 shrink-0"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-600 text-white text-[11px] hover:bg-rose-700 shrink-0 min-h-[44px] md:min-h-0"
               onClick={jumpToLive}
             >
-              ⏩ 跳到最新
+              <IconArrowRight className="w-3.5 h-3.5" strokeWidth={2} />
+              跳到最新
             </button>
           )}
           <div className="flex items-center gap-1.5 ml-auto">
-            <button className="text-white text-sm px-1 hover:text-rose-300" onClick={toggleMute} title={muted ? '取消静音' : '静音'}>
-              {muted || volume === 0 ? '🔇' : '🔊'}
+            <button
+              className="inline-flex h-11 w-11 md:h-8 md:w-8 items-center justify-center text-white hover:text-rose-300"
+              onClick={toggleMute}
+              title={muted ? '取消静音' : '静音'}
+              aria-label={muted ? '取消静音' : '静音'}
+            >
+              {muted || volume === 0 ? <IconSpeakerOff className="w-4 h-4" strokeWidth={1.8} /> : <IconSpeaker className="w-4 h-4" strokeWidth={1.8} />}
             </button>
             <input
               aria-label="音量"
@@ -292,7 +299,14 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
               className="w-20 accent-rose-500"
               title="音量"
             />
-            <button className="text-white text-sm px-1 hover:text-rose-300" onClick={toggleFullscreen} title="全屏">⛶</button>
+            <button
+              className="inline-flex h-11 w-11 md:h-8 md:w-8 items-center justify-center text-white hover:text-rose-300"
+              onClick={toggleFullscreen}
+              title="全屏"
+              aria-label="全屏"
+            >
+              <IconExpand className="w-4 h-4" strokeWidth={1.8} />
+            </button>
           </div>
         </div>
       )}

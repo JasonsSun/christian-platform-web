@@ -4,6 +4,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { apiPost } from '@/lib/api';
+import { IconCalendar, IconCheck } from '@/components/icons';
 
 /**
  * 首页每日签到卡：仅登录用户可见，紧凑展示连续/累计天数 + 立即签到。
@@ -20,7 +21,7 @@ export default function HomeCheckinCard() {
     return (
       <section className="relative pt-6">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="glass rounded-2xl p-5 shadow-soft h-20 animate-pulse" />
+          <div className="skeleton-sheen card-tech rounded-2xl p-5 h-[76px]" />
         </div>
       </section>
     );
@@ -41,27 +42,27 @@ export default function HomeCheckinCard() {
   return (
     <section className="relative pt-6">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="glass rounded-2xl p-5 shadow-soft flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
+        <div data-spot className="spot card-tech rounded-2xl p-5 flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-gold shrink-0">
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+              <IconCalendar className="w-6 h-6 text-white" strokeWidth={1.7} />
             </div>
-            <div>
+            <div className="min-w-0">
               <h3 className="font-display font-bold text-ink-900">每日签到</h3>
               <p className="text-xs text-ink-500 mt-0.5">
-                连续 <b className="text-primary-600">{c.streak ?? 0}</b> 天 · 累计 {c.totalDays ?? 0} 天
-                {c.longestStreak ? ` · 最长 ${c.longestStreak} 天` : ''}
+                连续 <b className="num text-primary-600">{c.streak ?? 0}</b> 天 · 累计 <span className="num">{c.totalDays ?? 0}</span> 天
+                {c.longestStreak ? <span> · 最长 <span className="num">{c.longestStreak}</span> 天</span> : null}
               </p>
             </div>
           </div>
+          {/* 标签从「立即签到」换成「今日已签到」会改变宽度：给一个够宽的下限，避免点完按钮把整行挤动 */}
           <button
             onClick={checkin}
             disabled={pending || checked}
-            className="btn-primary disabled:opacity-60 shrink-0"
+            className="btn-primary min-w-[9.5rem] justify-center disabled:opacity-60 shrink-0"
           >
-            {checked ? '今日已签到 ✓' : pending ? '签到中…' : '立即签到'}
+            {checked ? <IconCheck className="w-4 h-4" strokeWidth={2.4} /> : null}
+            {checked ? '今日已签到' : pending ? '签到中…' : '立即签到'}
           </button>
         </div>
       </div>

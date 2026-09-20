@@ -1,6 +1,7 @@
 'use client';
 
 import { useBackgroundPlay } from '@/lib/backplay';
+import { IconMoon, IconStop } from '@/components/icons';
 
 /**
  * 「息屏继续播放」开关。
@@ -21,10 +22,12 @@ export default function BackplayToggle({ className = '' }: { className?: string 
       className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] leading-none transition-colors ${
         enabled
           ? 'bg-primary-50 text-primary-700 border border-primary-200'
-          : 'text-ink-400 border border-ink-200 hover:text-ink-600'
+          : 'text-ink-500 border border-ink-200 hover:text-ink-600'
       } ${className}`}
     >
-      <span aria-hidden>{enabled ? '🌙' : '⏹'}</span>
+      <span aria-hidden className="inline-flex">
+        {enabled ? <IconMoon className="w-3.5 h-3.5" strokeWidth={1.8} /> : <IconStop className="w-3.5 h-3.5" strokeWidth={1.8} />}
+      </span>
       <span>{enabled ? '后台可播' : '息屏即停'}</span>
     </button>
   );

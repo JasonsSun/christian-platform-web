@@ -15,6 +15,7 @@
 :root {
   --ui-surface: #ffffff;
   --ui-rail: #f7f8fc;
+  --ui-page: #f6f7fb;
   --ui-hover: #eef1fb;
   --ui-border: #e9ecf5;
   --ui-text: #2d3350;
@@ -29,6 +30,7 @@
 [data-theme="dark"] {
   --ui-surface: #171b22;
   --ui-rail: #12161d;
+  --ui-page: #0f1116;
   --ui-hover: #1e232c;
   --ui-border: #262c37;
   --ui-text: #e6e8ef;
@@ -39,6 +41,7 @@
 [data-theme="sepia"] {
   --ui-surface: #fbf4e6;
   --ui-rail: #f4e9d3;
+  --ui-page: #f3ead6;
   --ui-hover: #ece1c8;
   --ui-border: #e6d8bd;
   --ui-text: #4a3f2f;
@@ -1671,4 +1674,373 @@ html[data-a11y-reduce-motion="1"] *::after {
   left: 0;
   outline: 3px solid #f59e0b;
   outline-offset: 2px;
+}
+
+/* =====================================================================
+   质感层（2026-09-21）：层次 / 光 / 微交互
+   ---------------------------------------------------------------------
+   为什么要单独一层：tailwind.config.js 里早就有 glow / aurora / card-tech 这套
+   「科技感」词汇，但 95 个路由各自用工具类拼版式，全站 272 处 shadow-soft/card 是
+   Tailwind 生成的同一档死值，卡片因此全是「一张白纸贴在一张白纸上」。这一层不去改
+   页面（改不动），而是把「阴影」本身变成随主题换色的令牌：Tailwind v3 产物里
+   @layer utilities 的内容被提到工具区位（实测 .shadow-soft 在 65k 字节处），
+   而未分层的规则排在文件末尾（101k 之后）——所以这里同优先级的 .shadow-soft 天然赢，
+   不需要 !important，也不需要碰任何页面文件。
+   ===================================================================== */
+
+/* —— 层次令牌：三主题各一套 ——
+   深色下纯黑阴影看不见，改用「更深的落影 + 顶部 1px 内高光」模拟屏幕发光；
+   羊皮纸把冷蓝换成暖褐，否则冷灰影落在纸上像截图叠错层。 */
+:root {
+  --el-1: 0 1px 2px rgba(21, 27, 58, 0.05), 0 2px 8px -3px rgba(21, 27, 58, 0.09);
+  --el-2: 0 2px 4px rgba(21, 27, 58, 0.04), 0 10px 24px -10px rgba(21, 27, 58, 0.14);
+  --el-3: 0 4px 10px rgba(21, 27, 58, 0.05), 0 22px 48px -14px rgba(21, 27, 58, 0.20);
+  --el-pop: 0 18px 50px -14px rgba(21, 27, 58, 0.26), 0 0 0 1px rgba(21, 27, 58, 0.06);
+  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --hair: rgba(79, 109, 245, 0.45);
+  --hair-gold: rgba(245, 158, 11, 0.40);
+  --spot: rgba(79, 109, 245, 0.10);
+  --sheen: rgba(255, 255, 255, 0.42);
+  --focus-halo: rgba(245, 158, 11, 0.20);
+  --amb-grid: rgba(79, 109, 245, 0.045);
+  --amb-a: rgba(79, 109, 245, 0.055);
+  --amb-b: rgba(251, 191, 36, 0.045);
+}
+[data-theme="dark"] {
+  --el-1: 0 1px 2px rgba(0, 0, 0, 0.55), 0 2px 10px -4px rgba(0, 0, 0, 0.5);
+  --el-2: 0 2px 4px rgba(0, 0, 0, 0.45), 0 12px 28px -12px rgba(0, 0, 0, 0.65);
+  --el-3: 0 6px 14px rgba(0, 0, 0, 0.5), 0 26px 54px -16px rgba(0, 0, 0, 0.75);
+  --el-pop: 0 20px 56px -16px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(150, 170, 255, 0.10);
+  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  --hair: rgba(150, 170, 255, 0.42);
+  --hair-gold: rgba(245, 178, 76, 0.36);
+  --spot: rgba(130, 155, 255, 0.14);
+  --sheen: rgba(255, 255, 255, 0.20);
+  --focus-halo: rgba(245, 178, 76, 0.26);
+  --amb-grid: rgba(130, 155, 255, 0.05);
+  --amb-a: rgba(79, 109, 245, 0.14);
+  --amb-b: rgba(245, 158, 11, 0.05);
+}
+[data-theme="sepia"] {
+  --el-1: 0 1px 2px rgba(92, 66, 22, 0.07), 0 2px 8px -3px rgba(92, 66, 22, 0.10);
+  --el-2: 0 2px 4px rgba(92, 66, 22, 0.06), 0 10px 24px -10px rgba(92, 66, 22, 0.16);
+  --el-3: 0 4px 10px rgba(92, 66, 22, 0.08), 0 22px 48px -14px rgba(92, 66, 22, 0.22);
+  --el-pop: 0 18px 50px -14px rgba(92, 66, 22, 0.28), 0 0 0 1px rgba(92, 66, 22, 0.10);
+  --edge: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --hair: rgba(125, 97, 39, 0.42);
+  --hair-gold: rgba(160, 105, 15, 0.42);
+  --spot: rgba(125, 97, 39, 0.10);
+  --sheen: rgba(255, 255, 255, 0.5);
+  --focus-halo: rgba(146, 64, 14, 0.22);
+  --amb-grid: rgba(125, 97, 39, 0.05);
+  --amb-a: rgba(125, 97, 39, 0.05);
+  --amb-b: rgba(245, 158, 11, 0.05);
+}
+
+/* —— 把三档阴影接到全站已在用的工具类上（272 处，零页面改动） —— */
+.shadow-soft { box-shadow: var(--el-1); }
+.shadow-card { box-shadow: var(--el-2); }
+.shadow-card-hover { box-shadow: var(--el-3); }
+.hover\:shadow-card-hover:hover { box-shadow: var(--el-3); }
+.hover\:shadow-card:hover { box-shadow: var(--el-2); }
+.hover\:shadow-soft:hover { box-shadow: var(--el-1); }
+/* 浮层（弹层、下拉、命令面板）：一圈极淡的描边 + 深落影，深色下靠描边才分得清边界 */
+.shadow-pop { box-shadow: var(--el-pop); }
+/* shadow-glow 是装饰用的品牌光，不能当成层次令牌压掉，只补一层落影 */
+.shadow-glow { box-shadow: 0 0 40px rgba(79, 109, 245, 0.3), var(--el-2); }
+
+/* —— 卡片：抬升与发丝渐变描边 ——
+   只给「真的可点」的卡加抬升，纯信息块乱动会显得廉价；位移压到 4px（原 card-hover 的
+   8px 在长列表里像抽风）。transform 不计入 CLS，所以这条不影响稳定性门。 */
+.card-hover,
+.card-tech,
+[class~="rounded-2xl"][class~="shadow-soft"],
+[class~="rounded-2xl"][class~="shadow-card"] {
+  transition:
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease,
+    background-color 0.25s ease;
+}
+a.card-hover:hover,
+a .card-hover:hover,
+a[class~="rounded-2xl"]:hover,
+.card-hover:hover,
+.card-tech:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--el-3), var(--edge);
+}
+.card-tech { box-shadow: var(--el-2), var(--edge); }
+.card-hover { box-shadow: var(--el-1), var(--edge); }
+
+/* 指针跟随的柔光：卡片表面「被照亮」而不是「换个底色」。
+   --mx/--my 由 MotionLayer 写入；没有 JS 时永远停在 50% 且 opacity 为 0，不会留一块脏光。 */
+.spot { position: relative; }
+.spot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), var(--spot), transparent 62%);
+}
+.spot:hover::after,
+.spot:focus-visible::after { opacity: 1; }
+
+/* 渐变发丝描边：只在悬停/聚焦时亮起，用于「主推」卡与 hero 面板 */
+.glow-edge { position: relative; }
+.glow-edge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--hair), var(--hair-gold) 48%, transparent 78%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.glow-edge:hover::before,
+.glow-edge:focus-within::before,
+.glow-edge.is-active::before { opacity: 1; }
+
+/* —— 按钮：按压回弹 + 掠过的高光 ——
+   ::before 而不是 ::after：.btn-shimmer 已经占了 after。
+   overflow 只加在真正跑光带的三档上：.btn-secondary/.btn-ghost 里常有绝对定位的
+   角标（未读数、NEW 片），一并裁掉就看不见了一半。 */
+.btn-primary,
+.btn-gold,
+.btn-danger {
+  position: relative;
+  overflow: hidden;
+}
+.btn-primary::before,
+.btn-gold::before,
+.btn-danger::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: -55%;
+  width: 40%;
+  transform: skewX(-14deg);
+  background: linear-gradient(90deg, transparent, var(--sheen), transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+.btn-primary:hover::before,
+.btn-gold:hover::before,
+.btn-danger:hover::before {
+  animation: btn-sheen 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes btn-sheen {
+  0% { left: -55%; opacity: 0; }
+  18% { opacity: 0.9; }
+  100% { left: 115%; opacity: 0; }
+}
+.btn-primary:active,
+.btn-secondary:active,
+.btn-gold:active,
+.btn-danger:active {
+  transform: translateY(0) scale(0.982);
+}
+/* 主按钮的发光落影：把 --el 与品牌色叠起来，悬停时像「点亮」而不是「变深」 */
+.btn-primary:hover { box-shadow: var(--el-2), 0 10px 34px -12px rgba(79, 109, 245, 0.55); }
+.btn-gold:hover { box-shadow: var(--el-2), 0 10px 34px -12px rgba(245, 158, 11, 0.5); }
+.btn-danger:hover { box-shadow: var(--el-2), 0 10px 34px -12px rgba(244, 63, 94, 0.45); }
+
+/* 行内小芯片：按下有落、悬停有边，纯 CSS 就能拿到的手感 */
+.btn-chip:active { transform: translateY(1px); }
+.btn-chip { transition: background-color 0.2s, border-color 0.2s, color 0.2s, transform 0.12s ease, box-shadow 0.2s ease; }
+.btn-chip-accent:hover,
+.btn-chip-safe:hover { box-shadow: var(--el-1); }
+
+/* —— 焦点：描边保留（无障碍门依赖它），外面再加一圈柔光 —— */
+:focus-visible {
+  box-shadow: 0 0 0 6px var(--focus-halo);
+}
+
+/* —— 环境层：极淡网格 + 两团 aurora，给整站一个「有光源」的底 ——
+   alpha 压在 0.05 上下：像素级对比度探针读的是文字底下的实际成像，
+   再高就会把 ink-500 这类小字从 4.6 拉到线下。 */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.ambient::before {
+  content: '';
+  position: absolute;
+  inset: -10% -10% 0 -10%;
+  background-image:
+    linear-gradient(var(--amb-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--amb-grid) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(120% 70% at 50% 0%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(120% 70% at 50% 0%, #000 0%, transparent 72%);
+}
+.ambient::after {
+  content: '';
+  position: absolute;
+  inset: -20% -10% 20% -10%;
+  background:
+    radial-gradient(38% 42% at 12% 8%, var(--amb-a), transparent 60%),
+    radial-gradient(34% 38% at 88% 2%, var(--amb-b), transparent 62%);
+  animation: ambient-drift 26s ease-in-out infinite alternate;
+}
+@keyframes ambient-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-2.5%, 2%, 0) scale(1.06); }
+}
+
+/* —— 区块标题的 eyebrow 与发丝光线 —— */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ui-muted);
+}
+.hair-top { position: relative; }
+.hair-top::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--hair) 22%, var(--hair-gold) 55%, transparent);
+  opacity: 0.7;
+}
+
+/* —— 数字：等宽数位，计数动画时不会左右抽动 —— */
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.num-beam {
+  background: linear-gradient(135deg, var(--ui-accent) 0%, #6b8eff 52%, var(--hair-gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: var(--ui-accent); /* 渐变被禁用（高对比/打印）时退回实色，不至于空白 */
+}
+
+/* —— 骨架：从「灰块」改成「有光扫过」 —— */
+.skeleton-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton-sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--spot), transparent);
+  transform: translateX(-100%);
+  animation: skeleton-sweep 1.5s ease-in-out infinite;
+}
+@keyframes skeleton-sweep {
+  100% { transform: translateX(100%); }
+}
+
+/* —— 播放中的声波条：容器高度固定，跳动只发生在条子内部，不会推动任何布局 —— */
+.eq {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.eq > i {
+  width: 2px;
+  height: 30%;
+  border-radius: 1px;
+  background: currentColor;
+}
+.eq.is-playing > i {
+  animation: eq-bounce 0.95s ease-in-out infinite;
+}
+.eq.is-playing > i:nth-child(2) { animation-delay: 0.12s; }
+.eq.is-playing > i:nth-child(3) { animation-delay: 0.28s; }
+.eq.is-playing > i:nth-child(4) { animation-delay: 0.42s; }
+@keyframes eq-bounce {
+  0%, 100% { height: 28%; }
+  50% { height: 100%; }
+}
+
+/* hero 底部的滚动提示：一只会呼吸的鼠标轮廓 */
+@keyframes scroll-hint {
+  0% { transform: translateY(0); opacity: 0.95; }
+  65% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 0; }
+}
+.animate-scroll-hint {
+  animation: scroll-hint 1.9s ease-in-out infinite;
+}
+
+/* 移动端底部标签栏压在正文上，必须「浮得起、分得清」。
+   .glass-tech 给的是 blur + saturate + 12% 白玻璃和一条白色描边：浅色主题下正文本身接近
+   白，那条白描边等于没画，整条栏和页面糊在一起。这里只覆盖底色/描边/投影，模糊留着，
+   底色仍由 --ui-border / --ui-surface 随主题走。 */
+[data-theme="light"] .mobile-tabbar { background: rgba(255, 255, 255, 0.88); }
+.mobile-tabbar {
+  border-top: 1px solid var(--ui-border);
+  box-shadow: 0 -12px 32px -16px rgba(21, 27, 58, 0.28);
+}
+
+/* —— 滚动浮现：类名由 MotionLayer 现场加，绝不做成静态标记 ——
+   服务端 HTML 与首屏都不带 .js-reveal，所以爬虫/无 JS/探针看到的都是正常可见内容；
+   只有「首屏以下 + 允许动效」的元素才会被临时藏起来。 */
+.js-reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  /* 一张卡可能同时带 .card-hover（自己声明了 transition）：transition 是整体覆盖的，
+     这里必须把阴影/描边一起列上，否则浮现过的卡片悬停时会掉回「瞬间变色」的生硬手感。 */
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease,
+    background-color 0.25s ease;
+}
+.js-reveal.js-reveal-in {
+  opacity: 1;
+  transform: none;
+}
+/* 退化为完全静止：手动开关与系统偏好双保险，且必须能盖掉上面的隐藏，
+   否则减少动效的用户会看到一片永远不浮现的空白。 */
+html[data-a11y-reduce-motion="1"] .js-reveal,
+html[data-a11y-reduce-motion="1"] .ambient::after,
+html[data-a11y-reduce-motion="1"] .skeleton-sheen::after {
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .js-reveal,
+  .ambient::after,
+  .skeleton-sheen::after {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
+/* 高对比模式下阴影全部作废（本文件上面已有 box-shadow:none），环境层一并关掉 */
+html[data-a11y-contrast="high"] .ambient { display: none; }
+/* 打印：动效层还没滚到的区块不该是一片空白，全部按可见输出 */
+@media print {
+  .js-reveal { opacity: 1 !important; transform: none !important; }
+  .ambient { display: none !important; }
 }

@@ -3,7 +3,7 @@
 import { Fragment, useId, useState } from 'react';
 import { useApi } from '@/lib/useApi';
 import { apiPatch, apiPost } from '@/lib/api';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
+import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead } from '../_components';
 
 interface AdminSong {
   id: string; title: string; author: string; category: string; tags: string;
@@ -162,8 +162,7 @@ export default function AdminSongsPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">赞美诗管理</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">诗歌、歌词、曲谱、音频与播放/收藏统计</p>
+      <PageHead eyebrow="内容 · 诗歌" title="赞美诗管理" sub="诗歌、歌词、曲谱、音频与播放/收藏统计" />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <StatCard title="诗歌总数" value={data?.total ?? '—'} />

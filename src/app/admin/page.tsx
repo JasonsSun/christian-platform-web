@@ -6,7 +6,8 @@ import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
 import { contentStatusLabel, auditActionLabel } from '@/lib/labels';
-import { AdminLayout, StatCard, StatusBadge, Loading, Empty, ErrorBox, SectionTitle, Badge } from './_components';
+import { IconArrowRight, IconChatDots, IconEye, IconHeart, IconRefresh } from '@/components/icons';
+import { AdminLayout, PageHead, StatCard, StatusBadge, Loading, Empty, ErrorBox, SectionTitle, Badge } from './_components';
 import type { AdminStats } from './_components';
 
 /** 状态条的颜色按归一化后的状态取：接口里 pending_review 和 pending 是同义，
@@ -75,18 +76,26 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <div className="flex items-end justify-between gap-3 flex-wrap mb-6">
-        <div className="flex-1 min-w-0">
-          <h1 className="font-display text-2xl font-bold text-ink-900">仪表盘</h1>
-          <p className="text-xs text-ink-500 mt-1">
+      <PageHead
+        eyebrow="治理概览"
+        title="仪表盘"
+        sub={
+          <span className="num">
             {refreshing ? '正在刷新…' : updatedAt ? `数据更新于 ${updatedAt}` : '数据快照'}
-          </p>
-        </div>
-        <button className="btn-secondary btn-sm shrink-0" onClick={reload} disabled={loading}>刷新</button>
-      </div>
+          </span>
+        }
+        actions={
+          <button className="btn-secondary btn-sm min-h-11 lg:min-h-0 inline-flex items-center gap-1.5" onClick={reload} disabled={loading}>
+            <IconRefresh className={`w-4 h-4 shrink-0 ${loading ? 'animate-spin' : ''}`} strokeWidth={1.7} />
+            刷新
+          </button>
+        }
+      />
 
-      {/* 核心指标卡：整卡可点直达对应管理页 */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-8">
+      {/* 核心指标卡：整卡可点直达对应管理页。
+          data-reveal-group 让六格逐格浮上来、data-count 让数字跑到位（.num 保证等宽数位，
+          计数过程中卡片宽度不变，不会左右抽动）。 */}
+      <div data-reveal-group className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 lg:mb-8">
         <StatCard title="用户数" value={t.users} hint={`封禁 ${t.suspended}`} href="/admin/users" />
         <StatCard title="已发布内容" value={t.published} hint={`总计 ${t.contents}`} href="/admin/contents" />
         <StatCard
@@ -101,12 +110,12 @@ export default function AdminDashboard() {
         <StatCard title="团契数" value={t.groupCount} href="/admin/groups" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
         {/* 内容状态分布 */}
-        <div className="glass rounded-2xl p-5 shadow-soft">
+        <div className="card-tech hover:!transform-none rounded-2xl p-4 sm:p-5">
           <div className="flex items-baseline justify-between gap-3 mb-4">
             <SectionTitle>内容状态分布</SectionTitle>
-            <span className="text-xs text-ink-500 -mt-4">共 {statusTotal} 篇</span>
+            <span className="num text-xs text-ink-500 shrink-0">共 {statusTotal} 篇</span>
           </div>
           {data.byStatus.length === 0 ? (
             <Empty label="暂无内容" href="/admin/contents" hrefLabel="去内容管理" />
@@ -120,10 +129,20 @@ export default function AdminDashboard() {
                       <span className={`w-2 h-2 rounded-full ${tone}`} aria-hidden="true" />
                       {contentStatusLabel(s.status)}
                     </div>
-                    <div className="flex-1 h-3 rounded-full bg-ink-100 overflow-hidden" aria-hidden="true">
-                      <div className={`h-full ${tone}`} style={{ width: `${(s.c / maxStatus) * 100}%` }} />
+                    <div
+                      className="flex-1 h-2.5 rounded-full bg-ink-100 overflow-hidden"
+                      role="progressbar"
+                      aria-valuenow={s.c}
+                      aria-valuemin={0}
+                      aria-valuemax={maxStatus}
+                      aria-label={`${contentStatusLabel(s.status)} ${s.c} 篇`}
+                    >
+                      <div
+                        className={`h-full ${tone} transition-[width] duration-500 ease-out`}
+                        style={{ width: `${(s.c / maxStatus) * 100}%` }}
+                      />
                     </div>
-                    <div className="w-12 text-right text-sm font-semibold text-ink-700">{s.c}</div>
+                    <div className="num w-12 text-right text-sm font-semibold text-ink-700">{s.c}</div>
                   </div>
                 );
               })}
@@ -131,11 +150,12 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* 近 7 天用户增长 */}
-        <div className="glass rounded-2xl p-5 shadow-soft">
+        {/* 近 7 天用户增长：本页唯一一处「发光」的区块 —— 一圈常驻的发丝渐变描边 +
+            指针跟随的柔光。后台只有一个强调位，六个格子全亮等于没亮。 */}
+        <div data-spot className="spot glow-edge is-active card-tech hover:!transform-none rounded-2xl p-4 sm:p-5">
           <div className="flex items-baseline justify-between gap-3 mb-4">
             <SectionTitle>近 7 天用户增长</SectionTitle>
-            <span className="text-xs text-ink-500 -mt-4">
+            <span className="num text-xs text-ink-500 shrink-0">
               合计 {growthTotal} · 日均 {(growthTotal / 7).toFixed(1)}
             </span>
           </div>
@@ -153,14 +173,14 @@ export default function AdminDashboard() {
             >
               {series.map((g) => (
                 <div key={g.key} className="flex-1 flex flex-col items-center justify-end gap-1 min-w-0">
-                  <div className={`text-xs ${g.c ? 'text-ink-600' : 'text-ink-300'}`} aria-hidden="true">{g.c}</div>
+                  <div className={`num text-xs ${g.c ? 'text-ink-600' : 'text-ink-500'}`} aria-hidden="true">{g.c}</div>
                   <div
                     className={`w-full rounded-t ${g.c ? 'bg-primary-500' : 'bg-ink-100'}`}
                     style={{ height: g.c ? `${(g.c / maxGrowth) * 100}%` : 3 }}
                     title={`${g.key}: ${g.c}`}
                     aria-hidden="true"
                   />
-                  <div className="text-[10px] text-ink-400" aria-hidden="true">{g.md}</div>
+                  <div className="num text-[10px] text-ink-500" aria-hidden="true">{g.md}</div>
                 </div>
               ))}
             </div>
@@ -175,17 +195,15 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+      <div data-reveal-group className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* 最近审计日志：只留 6 条 + 入口，不再套一层内滚动 */}
-        <div className="glass rounded-2xl p-5 shadow-soft">
+        <div className="card-tech hover:!transform-none rounded-2xl p-4 sm:p-5">
           <div className="flex items-baseline justify-between gap-3 mb-4">
             <SectionTitle>最近审计日志</SectionTitle>
-            <Link href="/admin/audit" className="text-sm text-primary-600 whitespace-nowrap py-1.5 -my-1.5 hover:underline">
-              查看全部 →
-            </Link>
+            <PanelLink href="/admin/audit">查看全部</PanelLink>
           </div>
           {data.recentAudit.length === 0 ? (
-            <Empty label="暂无审计日志" />
+            <Empty label="暂无审计日志" hint="管理员与审核员的每一次处置都会留痕在这里" />
           ) : (
             <ul className="flex flex-col gap-1">
               {data.recentAudit.slice(0, 6).map((a) => {
@@ -202,7 +220,7 @@ export default function AdminDashboard() {
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="text-ink-700 truncate">{a.detail || a.entity_type}</div>
-                      <div className="text-xs text-ink-400">{meta}</div>
+                      <div className="num text-xs text-ink-400">{meta}</div>
                     </div>
                   </li>
                 );
@@ -212,12 +230,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* 热门内容 Top8 */}
-        <div className="glass rounded-2xl p-5 shadow-soft">
+        <div className="card-tech hover:!transform-none rounded-2xl p-4 sm:p-5">
           <div className="flex items-baseline justify-between gap-3 mb-4">
             <SectionTitle>热门内容 Top8</SectionTitle>
-            <Link href="/admin/contents" className="text-sm text-primary-600 whitespace-nowrap py-1.5 -my-1.5 hover:underline">
-              内容管理 →
-            </Link>
+            <PanelLink href="/admin/contents">内容管理</PanelLink>
           </div>
           {data.topContent.length === 0 ? (
             <Empty label="暂无内容" />
@@ -227,17 +243,28 @@ export default function AdminDashboard() {
                 <li key={c.id}>
                   <Link
                     href={`/contents/${c.id}`}
-                    className="flex items-center gap-3 text-sm rounded-xl px-2 -mx-2 py-2 -my-0.5 hover:bg-primary-50 transition group"
+                    className="flex items-center gap-3 text-sm rounded-xl px-2 -mx-2 py-2 -my-0.5 hover:bg-primary-50 transition-colors group"
                   >
-                    <span className="w-5 flex-shrink-0 text-center font-bold text-ink-400">{i + 1}</span>
+                    <span className="num w-5 flex-shrink-0 text-center font-bold text-ink-500 group-hover:text-primary-600 transition-colors">
+                      {i + 1}
+                    </span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-ink-800 truncate group-hover:text-primary-700">{c.title}</div>
+                      <div className="text-ink-800 truncate group-hover:text-primary-700 transition-colors">{c.title}</div>
                       {/* ♥/👁/💬 三个 emoji 在表格里既花又不等价于文字（不同系统字体会掉字），
-                          直接写成「150 赞」这类短词，读屏也不用再补 sr-only */}
-                      <div className="text-xs text-ink-400 inline-flex items-center gap-2.5">
-                        <span>{c.like_count} 赞</span>
-                        <span>{c.view_count} 浏览</span>
-                        <span>{c.comment_count} 评论</span>
+                          换成线性图标 + 等宽数字，读屏也不用再补 sr-only */}
+                      <div className="num text-xs text-ink-400 inline-flex items-center gap-2.5">
+                        <span className="inline-flex items-center gap-1">
+                          <IconHeart className="w-3.5 h-3.5 shrink-0" strokeWidth={1.6} />
+                          {c.like_count}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <IconEye className="w-3.5 h-3.5 shrink-0" strokeWidth={1.6} />
+                          {c.view_count}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <IconChatDots className="w-3.5 h-3.5 shrink-0" strokeWidth={1.6} />
+                          {c.comment_count}
+                        </span>
                       </div>
                     </div>
                     {/* 榜单里 8 行全是「已发布」时这枚徽章只是噪声，只留异常状态 */}
@@ -250,5 +277,18 @@ export default function AdminDashboard() {
         </div>
       </div>
     </AdminLayout>
+  );
+}
+
+/** 面板右上角的「查看全部 →」：箭头只在做位移，不改变文字宽度。 */
+function PanelLink({ href, children }: { href: string; children: string }) {
+  return (
+    <Link
+      href={href}
+      className="group/link inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary-600 whitespace-nowrap py-1.5 -my-1.5 hover:text-primary-700 transition-colors"
+    >
+      {children}
+      <IconArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover/link:translate-x-0.5" strokeWidth={1.8} />
+    </Link>
   );
 }

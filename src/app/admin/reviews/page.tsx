@@ -7,7 +7,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
 import { contentTypeLabel } from '@/lib/labels';
-import { AdminLayout, StatusBadge, Loading, Empty, ErrorBox, SectionTitle, Badge } from '../_components';
+import { AdminLayout, StatusBadge, Loading, Empty, ErrorBox, Badge, PageHead, Toolbar, Pagination, AccessState } from '../_components';
 import type { ReviewTask } from '@/lib/types';
 
 const TABS = [
@@ -34,7 +34,7 @@ function ReviewCard({
   const c = task.content;
 
   return (
-    <div className="glass rounded-2xl p-5 shadow-soft">
+    <div className="glass rounded-2xl p-4 sm:p-5 shadow-soft hair-top">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -132,15 +132,19 @@ export default function AdminReviewsPage() {
   const { data, loading, error, reload } = useApi<{ items: ReviewTask[]; total: number }>(path, [tab, page]);
   const { run, pending } = useAction();
 
-  if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
+  if (authLoading) return <AdminLayout><Loading rows={4} /></AdminLayout>;
   if (user === null)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">
-        请先登录以访问管理后台。 <Link className="btn-primary ml-2" href="/login">去登录</Link>
-      </div>
+      <AdminLayout>
+        <AccessState title="请先登录" desc="登录审核员或管理员账号后查看审核队列。" href="/login" />
+      </AdminLayout>
     );
   if (user.role !== 'moderator' && user.role !== 'admin')
-    return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">无权限访问（需要审核员或管理员角色）。</div>;
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要审核员或管理员角色。" />
+      </AdminLayout>
+    );
 
   async function decide(taskId: string, action: 'approve' | 'reject', reason?: string) {
     const ok = await run(async () => {
@@ -160,58 +164,54 @@ export default function AdminReviewsPage() {
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-2xl font-bold text-ink-900">审核队列</h1>
-        {/* 文案固定：刷新时改成「刷新中…」会加宽按钮，把同一行的右侧往左撑 24px */}
-        <button className="btn-secondary btn-sm" onClick={reload} disabled={loading}>刷新</button>
-      </div>
+      <PageHead
+        eyebrow="内容 · 治理"
+        title="审核队列"
+        sub="逐条查看待审内容，通过后自动发布并通知作者；驳回会附上原因。"
+        actions={
+          <>
+            <Link href="/admin/contents" className="btn-secondary btn-sm min-h-11 lg:min-h-0">
+              内容总览
+            </Link>
+            {/* 文案固定：刷新时改成「刷新中…」会加宽按钮，把同一行的右侧往左撑 24px */}
+            <button className="btn-secondary btn-sm min-h-11 lg:min-h-0" onClick={reload} disabled={loading}>刷新</button>
+          </>
+        }
+      />
 
-      <div className="flex gap-2 flex-wrap mb-5">
+      <Toolbar>
         {TABS.map((t) => (
           <button
             key={t.key}
-            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+            className={`min-h-11 lg:min-h-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
               tab === t.key ? 'bg-primary-600 text-white shadow-card' : 'bg-ink-100 text-ink-600 hover:bg-ink-200'
             }`}
+            aria-pressed={tab === t.key}
             onClick={() => switchTab(t.key)}
           >
             {t.label}
           </button>
         ))}
-      </div>
+      </Toolbar>
 
       {notice ? (
         <div role="status" className="mb-4 rounded-xl bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{notice}</div>
       ) : null}
 
       {loading && !data ? (
-        <Loading />
+        <Loading rows={4} />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
       ) : !data || data.items.length === 0 ? (
-        <Empty label="暂无需要处理的审核任务" />
+        <Empty label="暂无需要处理的审核任务" hint="换一个页签看看历史任务" />
       ) : (
         <>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4" data-reveal-group>
             {data.items.map((task) => (
               <ReviewCard key={task.id} task={task} onDecide={(a, r) => decide(task.id, a, r)} deciding={pending} />
             ))}
           </div>
-          <div className="flex items-center justify-between gap-3 mt-5 text-sm text-ink-500 flex-wrap">
-            <span>共 {data.total} 条 · 第 {page} / {Math.max(1, Math.ceil(data.total / pageSize))} 页</span>
-            <div className="flex gap-2">
-              <button className="btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-                上一页
-              </button>
-              <button
-                className="btn-secondary btn-sm"
-                disabled={page * pageSize >= data.total}
-                onClick={() => setPage((p) => p + 1)}
-              >
-                下一页
-              </button>
-            </div>
-          </div>
+          <Pagination total={data.total} page={page} pageSize={pageSize} onPage={setPage} />
         </>
       )}
     </AdminLayout>

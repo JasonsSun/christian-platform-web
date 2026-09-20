@@ -7,17 +7,19 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
 import { NOTIF_TYPE_ICON, categoryOfNotif } from '@/lib/notificationMeta';
+import { Glyph, IconBell, IconCalendar, IconChatDots, IconInbox, IconSettings } from '@/components/icons';
 import type { NotificationItem } from '@/lib/types';
 
 type TabKey = 'all' | 'activity' | 'community' | 'system';
 
-const TABS: { key: TabKey; label: string; icon: string }[] = [
-  { key: 'all', label: '全部', icon: '🔔' },
-  { key: 'activity', label: '活动', icon: '📅' },
-  { key: 'community', label: '社区', icon: '💬' },
-  { key: 'system', label: '系统', icon: '⚙️' },
+const TABS: { key: TabKey; label: string; icon: JSX.Element }[] = [
+  { key: 'all', label: '全部', icon: <IconBell className="w-4 h-4" strokeWidth={1.6} /> },
+  { key: 'activity', label: '活动', icon: <IconCalendar className="w-4 h-4" strokeWidth={1.6} /> },
+  { key: 'community', label: '社区', icon: <IconChatDots className="w-4 h-4" strokeWidth={1.6} /> },
+  { key: 'system', label: '系统', icon: <IconSettings className="w-4 h-4" strokeWidth={1.6} /> },
 ];
 
+// 通知类型对应的 emoji 存在 notificationMeta 里（按 code 映射），渲染时经 Glyph 换成线性图标
 const iconFor = (type: string): string => NOTIF_TYPE_ICON[type] || '🔔';
 
 export default function NotificationsPage() {
@@ -101,13 +103,13 @@ export default function NotificationsPage() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 min-w-0 whitespace-nowrap px-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 min-w-0 whitespace-nowrap flex items-center justify-center gap-1 px-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
               tab === t.key
                 ? 'bg-white text-primary-700 shadow-sm'
                 : 'text-ink-500 hover:text-ink-700'
             }`}
           >
-            <span className="mr-0.5">{t.icon}</span>
+            {t.icon}
             {t.label}
           </button>
         ))}
@@ -145,7 +147,9 @@ export default function NotificationsPage() {
 
       {!loading && !error && items.length === 0 && (
         <div className="text-center py-16 bg-white rounded-2xl border border-ink-100 shadow-soft">
-          <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">🔔</div>
+          <div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3">
+            <IconBell className="w-7 h-7" strokeWidth={1.6} />
+          </div>
           <h2 className="font-display text-lg font-bold text-ink-900 mb-1">还没有通知</h2>
           <p className="text-ink-500">有新的动态会在这里提醒你</p>
         </div>
@@ -153,7 +157,9 @@ export default function NotificationsPage() {
 
       {!loading && !error && items.length > 0 && filtered.length === 0 && (
         <div className="text-center py-16 bg-white rounded-2xl border border-ink-100 shadow-soft">
-          <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">📭</div>
+          <div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3">
+            <IconInbox className="w-7 h-7" strokeWidth={1.6} />
+          </div>
           <p className="text-ink-500">该分类下暂无通知</p>
         </div>
       )}
@@ -171,8 +177,8 @@ export default function NotificationsPage() {
                 n.read ? 'bg-white border-ink-100' : 'bg-primary-50/60 border-primary-200'
               }`}
             >
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${n.read ? 'bg-ink-100' : 'bg-primary-100'}`}>
-                {iconFor(n.type)}
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${n.read ? 'bg-ink-100 text-ink-500' : 'bg-primary-100 text-primary-700'}`}>
+                <Glyph glyph={iconFor(n.type)} className="w-5 h-5" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">

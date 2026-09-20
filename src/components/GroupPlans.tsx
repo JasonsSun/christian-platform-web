@@ -9,6 +9,7 @@ import { useGoLogin } from '@/lib/nav';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { READING_PLANS } from '@/lib/readingPlans';
 import Portal from '@/components/Portal';
+import { Glyph, IconClose } from '@/components/icons';
 
 export interface GroupPlanItem {
   planId: string;
@@ -209,16 +210,16 @@ export default function GroupPlans({
             {items.map((it) => (
               <div key={it.planId} className="rounded-2xl border border-ink-100 p-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-primary-50 flex items-center justify-center text-2xl flex-shrink-0">
-                    {it.emoji}
+                  <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center flex-shrink-0">
+                    <Glyph glyph={it.emoji} className="w-6 h-6" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold text-ink-900">{it.title}</h3>
-                      <span className="text-xs text-ink-400">{it.joinedCount} 人参与</span>
+                      <span className="text-xs text-ink-500">{it.joinedCount} 人参与</span>
                     </div>
                     <p className="text-sm text-ink-500 mt-0.5">{it.subtitle}</p>
-                    <p className="text-xs text-ink-400 mt-1">
+                    <p className="text-xs text-ink-500 mt-1">
                       开始于 {it.startDate} · 应读第 {it.expectedDay}/{it.days} 天
                     </p>
 
@@ -300,15 +301,16 @@ export default function GroupPlans({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-3">
-                <h3 id={progressTitleId} className="font-display text-lg font-bold text-ink-900">
-                  {progressPlan?.emoji} {progressPlan?.title} · 进度榜
+                <h3 id={progressTitleId} className="font-display text-lg font-bold text-ink-900 flex items-center gap-2 min-w-0">
+                  {progressPlan?.emoji ? <Glyph glyph={progressPlan.emoji} className="w-5 h-5 shrink-0 text-primary-600" /> : null}
+                  <span className="truncate">{progressPlan?.title} · 进度榜</span>
                 </h3>
                 <button
                   onClick={() => setProgressOpen(null)}
-                  className="text-ink-400 hover:text-ink-700"
+                  className="inline-flex h-11 w-11 md:h-8 md:w-8 shrink-0 items-center justify-center rounded-xl text-ink-500 hover:text-ink-700 hover:bg-ink-100/70"
                   aria-label="关闭"
                 >
-                  ✕
+                  <IconClose className="w-4 h-4" strokeWidth={2} />
                 </button>
               </div>
               {progress ? (

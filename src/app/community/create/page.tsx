@@ -9,11 +9,12 @@ import { useAction, useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
 import type { ContentItem, MediaItem } from '@/lib/types';
+import { Glyph, IconCheck, IconPencil, IconPray, IconSparkles } from '@/components/icons';
 
 const CONTENT_TYPES = [
-  { id: 'article', label: '文章', icon: '📝' },
-  { id: 'testimony', label: '见证', icon: '✨' },
-  { id: 'devotion', label: '灵修', icon: '🙏' },
+  { id: 'article', label: '文章', Icon: IconPencil },
+  { id: 'testimony', label: '见证', Icon: IconSparkles },
+  { id: 'devotion', label: '灵修', Icon: IconPray },
 ];
 
 const COVER_EMOJIS = ['📖', '✨', '🙏', '🌿', '❤️', '🌟', '☀️', '🌈', '🔥', '💡', '🌸', '🕊️'];
@@ -136,6 +137,7 @@ export default function CreateContentPage() {
       <section className="relative py-8 md:py-12 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-700 via-primary-600 to-primary-800" />
         <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="eyebrow mb-2"><span className="text-gold-200/90">{editId ? 'EDIT' : 'PUBLISH'}</span></div>
           <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">{editId ? '编辑内容' : '发布内容'}</h1>
           <p className="text-white/80 mt-2 text-sm">{editId ? '修改后重新提交审核' : '与主内肢体分享你的文章、见证或灵修'}</p>
         </div>
@@ -143,9 +145,13 @@ export default function CreateContentPage() {
 
       <section className="py-8">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 space-y-6">
+          <div data-spot className="spot bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 space-y-6">
             {loadingEdit && (
-              <div className="text-center text-ink-400 py-6">正在载入原文…</div>
+              <div className="space-y-3 py-2">
+                <div className="h-4 w-28 bg-ink-100 rounded skeleton-sheen" />
+                <div className="h-10 bg-ink-100 rounded-xl skeleton-sheen" />
+                <div className="h-40 bg-ink-100 rounded-xl skeleton-sheen" />
+              </div>
             )}
             {editError && (
               <div role="alert" className="rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3">{editError}</div>
@@ -171,7 +177,7 @@ export default function CreateContentPage() {
                         : 'bg-white text-ink-600 border border-ink-200 hover:border-primary-300'
                     }`}
                   >
-                    <span aria-hidden="true">{t.icon}</span>
+                    <t.Icon className="w-4 h-4" strokeWidth={1.6} />
                     {t.label}
                   </button>
                 ))}
@@ -220,21 +226,21 @@ export default function CreateContentPage() {
 
             {/* 封面 emoji */}
             <div>
-              <label id="content-cover-label" className="block text-sm font-semibold text-ink-700 mb-2">封面 Emoji</label>
+              <label id="content-cover-label" className="block text-sm font-semibold text-ink-700 mb-2">封面图标</label>
               <div className="flex flex-wrap gap-2" role="group" aria-labelledby="content-cover-label">
                 {COVER_EMOJIS.map((e, i) => (
                   <button
                     key={e}
                     onClick={() => setCover(e)}
                     aria-pressed={cover === e}
-                    aria-label={`封面表情：${COVER_NAMES[i] ?? e}`}
-                    className={`w-11 h-11 rounded-xl text-xl flex items-center justify-center transition-all ${
+                    aria-label={`封面图标：${COVER_NAMES[i] ?? e}`}
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
                       cover === e
-                        ? 'bg-primary-100 border-2 border-primary-500'
-                        : 'bg-ink-50 border-2 border-transparent hover:border-primary-200'
+                        ? 'bg-primary-100 border-2 border-primary-500 text-primary-700'
+                        : 'bg-ink-50 border-2 border-transparent text-ink-500 hover:border-primary-200'
                     }`}
                   >
-                    {e}
+                    <Glyph glyph={e} className="w-5 h-5" />
                   </button>
                 ))}
               </div>
@@ -260,13 +266,16 @@ export default function CreateContentPage() {
                         key={m.id}
                         onClick={() => toggleMedia(m.id)}
                         aria-pressed={on}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition ${
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${
                           on ? 'bg-primary-50 border-primary-400 text-primary-700' : 'bg-ink-50 border-transparent text-ink-600 hover:border-primary-200'
                         }`}
                       >
-                        <span>{m.kind === 'image' ? '🖼️' : m.kind === 'audio' ? '🎵' : m.kind === 'video' ? '🎬' : m.kind === 'score' ? '🎼' : '📄'}</span>
+                        <Glyph
+                          glyph={m.kind === 'image' ? '🖼' : m.kind === 'audio' ? '🎵' : m.kind === 'video' ? '🎬' : m.kind === 'score' ? '🎼' : '📄'}
+                          className="w-4 h-4 shrink-0"
+                        />
                         <span className="max-w-[140px] truncate">{m.title}</span>
-                        {on ? <span className="text-primary-600" aria-hidden="true">✓</span> : null}
+                        {on ? <IconCheck className="w-4 h-4 text-primary-600 shrink-0" strokeWidth={1.6} /> : null}
                       </button>
                     );
                   })}

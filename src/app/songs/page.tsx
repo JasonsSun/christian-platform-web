@@ -11,7 +11,7 @@ import dynamic from 'next/dynamic';
 // 投稿弹窗点击才出现，按需加载
 const SubmitSongModal = dynamic(() => import('@/components/SubmitSongModal'), { ssr: false }) as unknown as typeof import('@/components/SubmitSongModal').default;
 import SongCard from '@/components/SongCard';
-import { IconMusicNote, IconSearch, IconMicrophone, IconStar, IconSparkles } from '@/components/icons';
+import { IconMusicNote, IconSearch, IconMicrophone, IconStar, IconChevronRight } from '@/components/icons';
 import type { SongItem } from '@/lib/types';
 import { SongCardSkeleton } from '@/components/Skeleton';
 
@@ -104,7 +104,11 @@ export default function SongsPage() {
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-gold-800 via-gold-700 to-gold-900" />
+        {/* 原先整块是深金渐变，下面又压了一条亮金歌单带，两层金叠在一起发闷。
+            hero 换成全站深蓝科技底，金只留作强调色（歌单带、选中态、聚焦环）。 */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-800 via-primary-700 to-primary-900" />
+        <div className="absolute inset-0 mesh-bg opacity-70" />
+        <div className="absolute inset-0 dot-grid opacity-25" />
         <div className="absolute inset-0 overflow-hidden">
           {[
             { top: '15%', left: '10%', size: 48, delay: '0s', duration: '6s' },
@@ -124,7 +128,7 @@ export default function SongsPage() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10 md:pt-16 md:pb-14 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-ink-950/20 backdrop-blur-sm border border-white/20 mb-6">
             <IconMusicNote className="w-4 h-4 text-white" strokeWidth={1.7} />
-            <span className="text-white font-medium">
+            <span className="num text-white font-medium">
               {tab === 'favorites'
                 ? `${favItems.length} 首收藏`
                 : tab === 'vocal'
@@ -132,7 +136,7 @@ export default function SongsPage() {
                   : `${data?.total ?? '—'} 首诗歌 · ${vocalCount} 首有人声`}
             </span>
           </div>
-          <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 md:mb-6">赞美诗歌</h1>
+          <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 md:mb-6 text-glow">赞美诗歌</h1>
           <p className="text-base sm:text-xl text-white/95 max-w-2xl mx-auto mb-6 md:mb-8 font-serif italic">
             "我要向耶和华歌唱，称颂他的大名。" —— 诗篇 66:2
           </p>
@@ -174,10 +178,13 @@ export default function SongsPage() {
         {/* 主题歌单入口 */}
         <Link
           href="/songs/collections"
-          className="group mb-6 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 p-4 shadow-glow text-ink-950 hover:opacity-95 transition-opacity"
+          data-spot
+          className="group spot mb-6 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 p-4 shadow-glow text-ink-950 hover:opacity-95 transition-opacity"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <span className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">🎵</span>
+            <span className="w-10 h-10 rounded-xl bg-white/20 text-ink-950/85 flex items-center justify-center flex-shrink-0">
+              <IconMusicNote className="w-5 h-5" strokeWidth={1.7} />
+            </span>
             <div className="min-w-0">
               <p className="font-display text-base font-bold">主题歌单</p>
               <p className="text-xs text-ink-950/80 truncate">按场景找歌 · 灵修 · 安慰 · 敬拜 · 救恩 · 节期…</p>
@@ -185,7 +192,7 @@ export default function SongsPage() {
           </div>
           <span className="flex-shrink-0 inline-flex items-center gap-1 text-sm font-semibold">
             去逛逛
-            <span className="text-ink-950/70 group-hover:translate-x-0.5 transition-transform">›</span>
+            <IconChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
           </span>
         </Link>
 
@@ -195,7 +202,8 @@ export default function SongsPage() {
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className={`px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
+              aria-pressed={tab === t.id}
+              className={`inline-flex items-center min-h-[2.75rem] px-5 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
                 tab === t.id
                   ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-ink-950 shadow-lg shadow-gold-500/30'
                   : 'bg-white text-ink-600 hover:bg-ink-50 border border-ink-200 hover:border-gold-300'
@@ -203,7 +211,7 @@ export default function SongsPage() {
             >
               {t.label}
               {t.id === 'vocal' && vocalCount > 0 && (
-                <span className={`ml-1.5 text-xs ${tab === t.id ? 'text-ink-950/90' : 'text-ink-400'}`}>{vocalCount}</span>
+                <span className={`num ml-1.5 text-xs ${tab === t.id ? 'text-ink-950/90' : 'text-ink-400'}`}>{vocalCount}</span>
               )}
             </button>
           ))}
@@ -219,14 +227,15 @@ export default function SongsPage() {
                   <button
                     key={c.name}
                     onClick={() => setCategory(c.name === '全部' ? '' : c.name)}
-                    className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
+                    aria-pressed={active}
+                    className={`inline-flex items-center min-h-[2.75rem] px-4 py-2 rounded-full font-medium text-sm transition-all duration-300 ${
                       active
                         ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-ink-950 shadow-lg shadow-gold-500/30'
                         : 'bg-white text-ink-600 hover:bg-ink-50 border border-ink-200 hover:border-gold-300'
                     }`}
                   >
                     {c.name}
-                    <span className={`ml-1.5 text-xs ${active ? 'text-ink-950/90' : 'text-ink-400'}`}>{c.count}</span>
+                    <span className={`num ml-1.5 text-xs ${active ? 'text-ink-950/90' : 'text-ink-400'}`}>{c.count}</span>
                   </button>
                 );
               })}
@@ -235,7 +244,8 @@ export default function SongsPage() {
             <div className="flex items-center gap-1 bg-white rounded-full p-1 shadow-soft border border-ink-100 self-start">
               <button
                 onClick={() => setSort('hot')}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                aria-pressed={sort === 'hot'}
+                className={`min-h-[2.75rem] md:min-h-[2.25rem] px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   sort === 'hot' ? 'bg-gold-500 text-ink-950' : 'text-ink-500 hover:text-gold-600'
                 }`}
               >
@@ -243,7 +253,8 @@ export default function SongsPage() {
               </button>
               <button
                 onClick={() => setSort('new')}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                aria-pressed={sort === 'new'}
+                className={`min-h-[2.75rem] md:min-h-[2.25rem] px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
                   sort === 'new' ? 'bg-gold-500 text-ink-950' : 'text-ink-500 hover:text-gold-600'
                 }`}
               >
@@ -345,7 +356,7 @@ export default function SongsPage() {
             )}
           </div>
         ) : isList ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          <div data-reveal-group className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {data?.items.map((s) => (
               <SongCard key={s.id} s={s} onRequestVocal={openSubmit} />
             ))}
@@ -353,10 +364,10 @@ export default function SongsPage() {
         ) : null}
 
         {isList && !loading && data && data.total > data.items.length && (
-          <p className="text-center text-ink-400 text-sm mt-8">共 {data.total} 首，已显示前 {data.items.length} 首</p>
+          <p className="num text-center text-ink-400 text-sm mt-8">共 {data.total} 首，已显示前 {data.items.length} 首</p>
         )}
         {isList && !loading && data && data.items.length > 0 && (
-          <p className="text-center text-ink-400 text-xs mt-4">最后更新：{formatDate(data.items[0]?.createdAt)}</p>
+          <p className="num text-center text-ink-400 text-xs mt-4">最后更新：{formatDate(data.items[0]?.createdAt)}</p>
         )}
 
         {/* 我的收藏模式 */}
@@ -388,7 +399,7 @@ export default function SongsPage() {
               </div>
             )}
             {!favLoading && !favError && favItems.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+              <div data-reveal-group className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 {favItems.map((s) => (
                   <SongCard key={s.id} s={s} onRequestVocal={openSubmit} />
                 ))}

@@ -6,11 +6,19 @@ import { useApi } from '@/lib/useApi';
 import { usePlayer } from '@/lib/player';
 import { findCollection, songsInCollection } from '@/lib/songCollections';
 import SongCard from '@/components/SongCard';
-import { IconPlay, IconArrowLeft } from '@/components/icons';
+import { IconPlay, IconArrowLeft, IconMusicNote, Glyph } from '@/components/icons';
 import { SongCardSkeleton } from '@/components/Skeleton';
 import type { SongItem } from '@/lib/types';
 
 type SongsResp = { items: SongItem[]; total: number };
+
+/* 🎺 在 EMOJI_ICON 里没有对应图标，这里补一层本地映射，其余交给 Glyph。 */
+const FALLBACK_ICON: Record<string, typeof IconMusicNote> = { '🎺': IconMusicNote };
+
+function CollectionGlyph({ glyph, className }: { glyph: string; className: string }) {
+  const Cmp = FALLBACK_ICON[glyph.replace(/\uFE0F/g, '')];
+  return Cmp ? <Cmp className={className} strokeWidth={1.4} /> : <Glyph glyph={glyph} className={className} />;
+}
 
 export default function SongCollectionDetailPage() {
   const params = useParams();
@@ -40,7 +48,9 @@ export default function SongCollectionDetailPage() {
   if (!collection) {
     return (
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gold-50 flex items-center justify-center text-3xl">🎵</div>
+        <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gold-50 flex items-center justify-center text-gold-600">
+          <IconMusicNote className="w-8 h-8" strokeWidth={1.5} />
+        </div>
         <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">没有找到这个主题歌单</h1>
         <p className="text-ink-500 mb-6">歌单可能已更名或调整，去主题歌单页看看其它的吧。</p>
         <Link href="/songs/collections" className="btn-primary inline-block px-6 py-2.5 text-sm">
@@ -66,7 +76,7 @@ export default function SongCollectionDetailPage() {
 
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 text-center sm:text-left">
             <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/25 flex items-center justify-center text-4xl md:text-5xl flex-shrink-0">
-              {collection.emoji}
+              <CollectionGlyph glyph={collection.emoji} className="w-10 h-10 md:w-12 md:h-12 text-white" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-white/80 text-sm font-medium mb-1">主题歌单 · {collection.subtitle}</p>
@@ -76,12 +86,12 @@ export default function SongCollectionDetailPage() {
                 <button
                   onClick={playAll}
                   disabled={!playable.length}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white text-ink-900 font-semibold text-sm shadow-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-ink-900 font-semibold text-sm shadow-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <IconPlay className="w-4 h-4" />
                   {playable.length ? `播放全部（${playable.length}）` : '暂无可播放音频'}
                 </button>
-                <span className="text-white/80 text-sm">共 {items.length} 首</span>
+                <span className="num text-white/80 text-sm">共 {items.length} 首</span>
               </div>
             </div>
           </div>
@@ -110,7 +120,7 @@ export default function SongCollectionDetailPage() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          <div data-reveal-group className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             {items.map((s) => (
               <SongCard key={s.id} s={s} />
             ))}

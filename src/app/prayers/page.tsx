@@ -9,6 +9,8 @@ import { useConfirmNav } from '@/lib/confirm';
 import { useNotice } from '@/lib/notice';
 import { timeAgo } from '@/lib/format';
 import type { Author, PrayerItem, ListResult } from '@/lib/types';
+import { Skeleton } from '@/components/Skeleton';
+import { IconPray, IconTrash } from '@/components/icons';
 
 const TABS = [
   { key: 'all', label: '全部代祷' },
@@ -140,6 +142,7 @@ export default function PrayersPage() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* 页头 */}
       <div className="mb-6">
+        <div className="eyebrow mb-2">PRAYER WALL</div>
         <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink-900">代祷墙</h1>
         <p className="text-ink-500 mt-1 text-sm">
           为主内肢体守望，一句「阿们」就是一同站立
@@ -147,7 +150,7 @@ export default function PrayersPage() {
       </div>
 
       {/* 发布框 */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-soft border border-ink-100 mb-6">
+      <div data-spot className="spot glow-edge bg-white rounded-2xl p-4 sm:p-5 shadow-soft border border-ink-100 mb-6">
         <div className="flex gap-2">
           <input
             name="body"
@@ -163,7 +166,7 @@ export default function PrayersPage() {
           <button
             onClick={submit}
             disabled={postAction.pending}
-            className="btn-primary px-5 py-2.5 text-sm flex-shrink-0"
+            className="btn-primary px-5 py-2.5 text-sm flex-shrink-0 min-h-[44px]"
           >
             {postAction.pending ? '发布中…' : '发布'}
           </button>
@@ -173,14 +176,14 @@ export default function PrayersPage() {
       </div>
 
       {/* 筛选 */}
-      <div className="flex flex-wrap gap-2 mb-5" role="group" aria-label="代祷筛选">
+      <div className="flex flex-wrap items-center gap-2 mb-5" role="group" aria-label="代祷筛选">
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => { setTab(t.key); setPage(1); }}
             disabled={t.key === 'mine' && !user}
             aria-pressed={tab === t.key}
-            className={`px-4 py-1.5 rounded-full text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+            className={`inline-flex items-center px-4 py-2 min-h-[44px] rounded-full text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
               tab === t.key
                 ? 'bg-primary-600 text-white'
                 : 'bg-ink-50 text-ink-600 hover:bg-ink-100'
@@ -189,24 +192,42 @@ export default function PrayersPage() {
             {t.label}
           </button>
         ))}
-        <span className="ml-auto self-center text-xs text-ink-400">{total} 条代祷</span>
+        <span className="ml-auto text-xs text-ink-400"><span className="num font-semibold text-ink-600">{total}</span> 条代祷</span>
       </div>
 
       {/* 列表 */}
       {loading && items.length === 0 && (
-        <div className="text-center py-16 text-ink-400 text-sm">加载中…</div>
+        <div className="space-y-3">
+          <p className="sr-only">加载中…</p>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white rounded-2xl p-4 sm:p-5 shadow-soft border border-ink-100">
+              <div className="flex items-start gap-3">
+                <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3 w-28 skeleton-sheen" />
+                  <Skeleton className="h-3 w-full skeleton-sheen" />
+                  <Skeleton className="h-3 w-2/3 skeleton-sheen" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
       {!loading && items.length === 0 && (
-        <div className="text-center py-16 text-ink-400 text-sm">
-          这里还没有代祷，成为第一个吧～
+        <div className="bg-white rounded-3xl border border-dashed border-ink-200 px-6 py-16 text-center">
+          <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-400 items-center justify-center mb-3">
+            <IconPray className="w-6 h-6" strokeWidth={1.6} />
+          </span>
+          <p className="text-ink-400 text-sm">这里还没有代祷，成为第一个吧～</p>
         </div>
       )}
 
-      <div className="space-y-3">
+      <div data-reveal-group className="space-y-3">
         {items.map((p) => (
           <article
             key={p.id}
-            className="bg-white rounded-2xl p-4 sm:p-5 shadow-soft border border-ink-100"
+            data-spot
+            className="spot bg-white rounded-2xl p-4 sm:p-5 shadow-soft border border-ink-100"
           >
             <div className="flex items-start gap-3">
               <Avatar user={p.user} />
@@ -227,24 +248,13 @@ export default function PrayersPage() {
                   <button
                     onClick={() => toggleAmen(p)}
                     disabled={amenAction.pending}
-                    className={`flex items-center gap-1.5 text-sm transition-colors disabled:opacity-60 ${
+                    aria-pressed={p.amened}
+                    className={`flex items-center gap-1.5 text-sm py-1.5 -my-1.5 transition-colors disabled:opacity-60 ${
                       p.amened ? 'text-gold-600' : 'text-ink-500 hover:text-gold-600'
                     }`}
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill={p.amened ? 'currentColor' : 'none'}
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 21C12 21 4 14.5 4 9a4 4 0 018-1 4 4 0 018 1c0 5.5-8 12-8 12z"
-                      />
-                    </svg>
-                    阿们 ({p.amenCount})
+                    <IconPray className="w-4 h-4" strokeWidth={1.6} />
+                    阿们 (<span className="num">{p.amenCount}</span>)
                   </button>
 
                   {/* 作者可删自己的；管理员/审核员可删任何一条（清理违规违法内容） */}
@@ -256,20 +266,13 @@ export default function PrayersPage() {
                           ? '删除这条代祷'
                           : '管理员/审核员：移除违规代祷'
                       }
-                      className={`ml-auto flex items-center gap-1 text-xs transition-colors ${
+                      className={`ml-auto flex items-center gap-1 text-xs py-1.5 -my-1.5 transition-colors ${
                         p.user.id === user?.id
                           ? 'text-ink-400 hover:text-rose-600'
                           : 'text-rose-600 hover:text-rose-700 font-medium'
                       }`}
                     >
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
+                      <IconTrash className="w-3.5 h-3.5" strokeWidth={1.6} />
                       {p.user.id === user?.id ? '删除' : '移除'}
                     </button>
                   )}

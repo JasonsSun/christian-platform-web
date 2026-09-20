@@ -29,7 +29,7 @@ export default function VariantSwitcher({ tone = 'dark' }: { tone?: 'dark' | 'li
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className={`inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors ${base}`}
+        className={`inline-flex items-center justify-center gap-1 min-h-[44px] px-2.5 py-2 rounded-lg text-sm font-medium transition-colors ${base}`}
         title="简繁切换"
         aria-label="切换简体或繁体"
         aria-haspopup="true"
@@ -46,7 +46,7 @@ export default function VariantSwitcher({ tone = 'dark' }: { tone?: 'dark' | 'li
         <span>{VARIANT_LABEL[variant]}</span>
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-28 bg-white rounded-2xl shadow-card border border-ink-100 py-2 overflow-hidden z-50">
+        <div className="absolute right-0 mt-2 w-28 bg-white rounded-2xl shadow-pop border border-ink-100 py-2 overflow-hidden z-50">
           {(['s', 't'] as Variant[]).map((v) => (
             <button
               key={v}
@@ -54,7 +54,7 @@ export default function VariantSwitcher({ tone = 'dark' }: { tone?: 'dark' | 'li
                 setVariant(v);
                 setOpen(false);
               }}
-              className={`block w-full text-left px-4 py-2.5 text-sm transition-colors ${
+              className={`block w-full min-h-[44px] text-left px-4 py-2.5 text-sm transition-colors ${
                 v === variant ? 'text-primary-600 bg-primary-50 font-medium' : 'text-ink-700 hover:bg-ink-100'
               }`}
               aria-current={v === variant}

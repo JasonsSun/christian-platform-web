@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { useApi } from '@/lib/useApi';
+import { Glyph, IconBookMarked, IconBooks, IconMusicNote } from '@/components/icons';
 
 import type { ContentItem, SongItem } from '@/lib/types';
 
@@ -16,7 +17,7 @@ function FavSection({
   children,
 }: {
   title: string;
-  icon: string;
+  icon: React.ReactNode;
   count: number;
   empty: string;
   emptyHref: string;
@@ -26,7 +27,7 @@ function FavSection({
   return (
     <section>
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-xl">{icon}</span>
+        <span className="flex items-center text-primary-600">{icon}</span>
         <h3 className="font-display text-lg font-bold text-ink-900">{title}</h3>
         <span className="text-xs text-ink-400">({count})</span>
       </div>
@@ -56,12 +57,14 @@ export function MyFavCenter() {
 
   return (
     <div className="space-y-8">
-      <FavSection title="收藏的内容" icon="📚" count={contents.length} empty="还没有收藏任何内容" emptyHref="/community" emptyLabel="去发现内容">
+      <FavSection title="收藏的内容" icon={<IconBooks className="w-5 h-5" strokeWidth={1.7} />} count={contents.length} empty="还没有收藏任何内容" emptyHref="/community" emptyLabel="去发现内容">
         <div className="grid sm:grid-cols-2 gap-4">
           {contents.map((c) => (
             <Link key={c.id} href={`/contents/${c.id}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">{c.cover?.startsWith('http') ? '📄' : c.cover || '📄'}</span>
+                <span className="text-2xl leading-none flex items-center flex-shrink-0 text-ink-500">
+                  <Glyph glyph={c.cover?.startsWith('http') ? '📄' : c.cover || '📄'} className="w-6 h-6" />
+                </span>
                 <h3 className="font-semibold text-ink-900 truncate">{c.title}</h3>
               </div>
               <p className="text-sm text-ink-500 line-clamp-2">{c.excerpt || c.body}</p>
@@ -70,12 +73,14 @@ export function MyFavCenter() {
         </div>
       </FavSection>
 
-      <FavSection title="收藏的诗歌" icon="🎵" count={songs.length} empty="还没有收藏任何诗歌" emptyHref="/songs" emptyLabel="去发现诗歌">
+      <FavSection title="收藏的诗歌" icon={<IconMusicNote className="w-5 h-5" strokeWidth={1.7} />} count={songs.length} empty="还没有收藏任何诗歌" emptyHref="/songs" emptyLabel="去发现诗歌">
         <div className="grid sm:grid-cols-2 gap-4">
           {songs.map((s) => (
             <Link key={s.id} href={`/songs/${s.id}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold-500 to-gold-400 flex items-center justify-center text-xl flex-shrink-0">🎵</div>
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold-500 to-gold-400 flex items-center justify-center text-ink-900 flex-shrink-0">
+                  <IconMusicNote className="w-6 h-6" strokeWidth={1.7} />
+                </div>
                 <div className="min-w-0">
                   <h3 className="font-semibold text-ink-900 truncate">{s.title}</h3>
                   <p className="text-xs text-ink-500 mt-0.5">{s.author || '佚名'} · {s.category || '诗歌'}</p>
@@ -86,7 +91,7 @@ export function MyFavCenter() {
         </div>
       </FavSection>
 
-      <FavSection title="读经书签" icon="🔖" count={bookmarks.length} empty="还没有读经书签" emptyHref="/bible" emptyLabel="去读经">
+      <FavSection title="读经书签" icon={<IconBookMarked className="w-5 h-5" strokeWidth={1.7} />} count={bookmarks.length} empty="还没有读经书签" emptyHref="/bible" emptyLabel="去读经">
         <div className="grid sm:grid-cols-2 gap-4">
           {bookmarks.map((b) => (
             <Link key={b.id} href={`/bible/${b.version}/${b.bookId}/${b.chapter}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">

@@ -11,6 +11,8 @@
 import { useMemo } from 'react';
 import { useApi } from '@/lib/useApi';
 import { formatDate } from '@/lib/format';
+import { Glyph, IconArrowRight, IconParty } from '@/components/icons';
+import { Skeleton } from '@/components/Skeleton';
 
 export interface BadgeView {
   id: string;
@@ -28,21 +30,28 @@ export interface BadgeView {
   percent: number;
 }
 
-const TIER_STYLE: Record<string, { ring: string; chip: string; bar: string }> = {
+/**
+ * 徽章是渐变金属底 + 线性图标，图标颜色跟底色的明暗走：
+ * 铜/银的底压得深，用亮字；金的底本身发亮，用深字，否则轮廓糊成一片。
+ */
+const TIER_STYLE: Record<string, { ring: string; chip: string; bar: string; glyph: string }> = {
   bronze: {
     ring: 'from-amber-700/70 to-amber-900/70',
     chip: 'bg-amber-100 text-amber-800',
     bar: 'from-amber-500 to-amber-700',
+    glyph: 'text-amber-50',
   },
   silver: {
     ring: 'from-slate-400/70 to-slate-600/70',
     chip: 'bg-slate-200 text-slate-700',
     bar: 'from-slate-400 to-slate-600',
+    glyph: 'text-white',
   },
   gold: {
     ring: 'from-yellow-400/80 to-amber-600/80',
     chip: 'bg-yellow-100 text-yellow-800',
     bar: 'from-yellow-400 to-amber-500',
+    glyph: 'text-amber-900',
   },
 };
 
@@ -73,7 +82,33 @@ export default function BadgeWall({
   }, [badges]);
 
   if (loading && !badges.length) {
-    return <div className="h-24 rounded-2xl bg-ink-100 animate-pulse" />;
+    /* 骨架按紧凑条的真实高度搭：标题行 20 + 间距 8 + 徽章 48，
+       原先的 h-24 与落地态差几十像素，数据一到整块往上顶。 */
+    if (compact) {
+      return (
+        <div className="mt-6">
+          <div className="mb-2 flex items-center justify-between">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-3 w-10" />
+          </div>
+          <div className="flex gap-2 pb-1">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="w-12 h-12 shrink-0 rounded-2xl" />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-5 w-40" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-[104px] rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (!mine && earned.length === 0) return null;
@@ -90,8 +125,9 @@ export default function BadgeWall({
             </span>
           </h3>
           {onMore && (
-            <button onClick={onMore} className="text-xs text-primary-600 hover:text-primary-700">
-              查看全部 →
+            <button onClick={onMore} className="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 min-h-[44px] md:min-h-0">
+              查看全部
+              <IconArrowRight className="w-3.5 h-3.5" strokeWidth={1.8} />
             </button>
           )}
         </div>
@@ -105,9 +141,11 @@ export default function BadgeWall({
               <div
                 key={b.id}
                 title={`${b.name} · ${b.desc}`}
-                className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200 flex items-center justify-center text-xl shadow-soft"
+                role="img"
+                aria-label={`${b.name}：${b.desc}`}
+                className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 border border-primary-200 flex items-center justify-center text-primary-700 shadow-soft"
               >
-                {b.icon}
+                <Glyph glyph={b.icon} className="w-6 h-6" />
               </div>
             ))}
           </div>
@@ -120,8 +158,17 @@ export default function BadgeWall({
   return (
     <div className="space-y-6">
       {newEarned.length > 0 && (
-        <div className="rounded-2xl border border-gold-300 bg-gold-50 px-4 py-3 text-sm text-gold-700">
-          🎉 刚刚解锁：{newEarned.map((b) => `${b.icon} ${b.name}`).join('、')}
+        <div className="flex items-start gap-2.5 rounded-2xl border border-gold-300 bg-gold-50 px-4 py-3 text-sm text-gold-700">
+          <IconParty className="w-4 h-4 mt-0.5 shrink-0" strokeWidth={1.8} />
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-medium">刚刚解锁</span>
+            {newEarned.map((b) => (
+              <span key={b.id} className="inline-flex items-center gap-1.5 rounded-full bg-gold-100 px-2 py-0.5 text-xs">
+                <Glyph glyph={b.icon} className="w-3.5 h-3.5" />
+                {b.name}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
@@ -134,7 +181,7 @@ export default function BadgeWall({
 
       {groups.map(([label, list]) => (
         <div key={label}>
-          <div className="text-xs font-semibold tracking-wider text-ink-400 uppercase mb-3">{label}</div>
+          <div className="text-xs font-semibold tracking-wider text-ink-500 uppercase mb-3">{label}</div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {list.map((b) => {
               const st = TIER_STYLE[b.tier] || TIER_STYLE.bronze;
@@ -149,11 +196,11 @@ export default function BadgeWall({
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center text-2xl bg-gradient-to-br ${st.ring} ${
+                      className={`w-12 h-12 shrink-0 rounded-2xl flex items-center justify-center bg-gradient-to-br ${st.ring} ${st.glyph} ${
                         b.earned ? '' : 'grayscale opacity-50'
                       }`}
                     >
-                      {b.icon}
+                      <Glyph glyph={b.icon} className="w-6 h-6" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
@@ -189,7 +236,7 @@ export default function BadgeWall({
                           style={{ width: `${b.percent}%` }}
                         />
                       </div>
-                      <div className="mt-1 text-[11px] text-ink-400">
+                      <div className="mt-1 text-[11px] text-ink-500">
                         {b.current} / {b.target}
                       </div>
                     </div>

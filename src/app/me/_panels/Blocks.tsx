@@ -29,7 +29,7 @@ export function MyBlocks() {
     <div className="space-y-3">
       <p className="text-sm text-ink-500">屏蔽后，对方将不会出现在你的关注动态与私信会话中。</p>
       {items.map((u) => (
-        <div key={u.id} className="bg-white rounded-2xl p-4 border border-ink-100 flex items-center gap-3">
+        <div key={u.id} className="bg-white card-tech rounded-2xl p-4 border border-ink-100 flex items-center gap-3">
           <span
             className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
             style={{ background: u.avatarColor }}
@@ -40,7 +40,8 @@ export function MyBlocks() {
             <Link href={`/users/${u.id}`} className="font-semibold text-ink-900 hover:text-primary-600 transition-colors">{u.displayName}</Link>
             <p className="text-xs text-ink-400">@{u.username}{u.city ? ` · ${u.city}` : ''}</p>
           </div>
-          <button onClick={() => unblock(u.id)} className="text-sm text-rose-600 hover:underline flex-shrink-0">解除屏蔽</button>
+          {/* 裸文字链在手机上按不准，统一成后台的 chip 词表 */}
+          <button onClick={() => unblock(u.id)} className="btn-chip btn-chip-danger flex-shrink-0">解除屏蔽</button>
         </div>
       ))}
     </div>

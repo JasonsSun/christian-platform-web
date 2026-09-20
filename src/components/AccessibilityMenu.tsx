@@ -37,7 +37,7 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen(!open)}
-        className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${base}`}
+        className={`inline-flex items-center justify-center w-11 h-11 rounded-lg transition-colors ${base}`}
         title={t('pref.a11yTitle')}
         aria-label={t('pref.a11yTitle')}
         aria-haspopup="true"
@@ -51,7 +51,7 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
       {open && (
         <div
           ref={dlgRef}
-          className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-card border border-ink-100 p-4 z-50 text-ink-800"
+          className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-pop border border-ink-100 p-4 z-50 text-ink-800"
           role="dialog"
           aria-label={t('pref.a11yPanel')}
           data-guard="a11y-menu"
@@ -62,7 +62,7 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
               <button
                 key={o.value}
                 onClick={() => setFontScale(o.value)}
-                className={`flex-1 py-2 rounded-lg text-sm border transition-colors ${
+                className={`flex-1 min-h-[44px] py-2 rounded-lg text-sm border transition-colors ${
                   fontScale === o.value
                     ? 'border-primary-500 bg-primary-50 text-primary-600 font-medium'
                     : 'border-ink-200 text-ink-600 hover:bg-ink-100'
@@ -77,7 +77,7 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
           <p className="text-xs font-semibold text-ink-500 mb-2">{t('pref.highContrast')}</p>
           <button
             onClick={() => setContrast(contrast === 'high' ? 'normal' : 'high')}
-            className={`w-full py-2 rounded-lg text-sm border transition-colors mb-4 ${
+            className={`w-full min-h-[44px] py-2 rounded-lg text-sm border transition-colors mb-4 ${
               contrast === 'high'
                 ? 'border-primary-500 bg-primary-50 text-primary-600 font-medium'
                 : 'border-ink-200 text-ink-600 hover:bg-ink-100'
@@ -90,7 +90,7 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
           <p className="text-xs font-semibold text-ink-500 mb-2">{t('pref.motion')}</p>
           <button
             onClick={() => setReduceMotion(!reduceMotion)}
-            className={`w-full py-2 rounded-lg text-sm border transition-colors ${
+            className={`w-full min-h-[44px] py-2 rounded-lg text-sm border transition-colors ${
               reduceMotion
                 ? 'border-primary-500 bg-primary-50 text-primary-600 font-medium'
                 : 'border-ink-200 text-ink-600 hover:bg-ink-100'

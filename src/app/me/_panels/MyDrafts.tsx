@@ -7,6 +7,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import type { ContentItem } from '@/lib/types';
+import { Glyph } from '@/components/icons';
 import { SkeletonGrid, ErrorBlock, EmptyBlock } from './shared';
 
 /** 我的草稿(个人中心高频 tab,从 me/page.tsx 抽出,静态引入保留首屏) */
@@ -60,16 +61,19 @@ export function MyDrafts() {
   return (
     <div className="grid sm:grid-cols-2 gap-4">
       {items.map((c) => (
-        <div key={c.id} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
+        <div key={c.id} className="bg-white card-tech rounded-2xl p-4 border border-ink-100 flex flex-col">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">{c.cover?.startsWith('http') ? '📄' : c.cover || '📄'}</span>
+            <span className="text-2xl leading-none flex items-center flex-shrink-0 text-ink-500">
+              <Glyph glyph={c.cover?.startsWith('http') ? '📄' : c.cover || '📄'} className="w-6 h-6" />
+            </span>
             <h3 className="font-semibold text-ink-900 truncate">{c.title || '未命名草稿'}</h3>
           </div>
-          <p className="text-sm text-ink-500 line-clamp-2">{c.excerpt || c.body || '（暂无内容）'}</p>
-          <div className="flex items-center justify-end gap-2 mt-3">
+          <p className="text-sm text-ink-500 line-clamp-2 flex-1">{c.excerpt || c.body || '（暂无内容）'}</p>
+          {/* 与「我的内容」用同一条分隔线 + 同一套 chip 操作行，两个 tab 的节奏一致 */}
+          <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-ink-100">
             <button
               onClick={() => remove(c)}
-              className="btn-chip-danger"
+              className="btn-chip btn-chip-danger"
             >
               删除
             </button>

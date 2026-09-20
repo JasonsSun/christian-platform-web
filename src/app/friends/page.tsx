@@ -10,6 +10,7 @@ import { useGoLogin } from '@/lib/nav';
 import { useConfirmNav } from '@/lib/confirm';
 import { timeAgo } from '@/lib/format';
 import type { FriendStatus, FriendRequestItem, FriendItem } from '@/lib/types';
+import { IconHandshake, IconInbox, IconSearch } from '@/components/icons';
 
 interface UserCard {
   id: string;
@@ -272,7 +273,7 @@ export default function FriendsPage() {
             <div className="text-center py-12"><p className="text-rose-600 mb-3">{disc.error}</p><button onClick={disc.reload} className="btn-secondary">重试</button></div>
           )}
           {!disc.loading && !disc.error && (disc.data?.items?.length ?? 0) === 0 && (
-            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">🔍</div><p className="text-ink-600">没有找到符合条件的用户</p></div>
+            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3"><IconSearch className="w-7 h-7" strokeWidth={1.6} /></div><p className="text-ink-600">没有找到符合条件的用户</p></div>
           )}
           {!disc.loading && !disc.error && (disc.data?.items?.length ?? 0) > 0 && (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -319,7 +320,7 @@ export default function FriendsPage() {
           {friends.loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
           {friends.error && <div className="text-center py-12"><p className="text-rose-600 mb-3">{friends.error}</p><button onClick={friends.reload} className="btn-secondary">重试</button></div>}
           {!friends.loading && !friends.error && (friends.data?.items?.length ?? 0) === 0 && (
-            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">🤝</div><p className="text-ink-600">还没有好友,去「发现」里加好友吧</p></div>
+            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3"><IconHandshake className="w-7 h-7" strokeWidth={1.6} /></div><p className="text-ink-600">还没有好友,去「发现」里加好友吧</p></div>
           )}
           {!friends.loading && !friends.error && (friends.data?.items?.length ?? 0) > 0 && (
             <div className="grid sm:grid-cols-2 gap-4">
@@ -350,7 +351,7 @@ export default function FriendsPage() {
           {requests.loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
           {requests.error && <div className="text-center py-12"><p className="text-rose-600 mb-3">{requests.error}</p><button onClick={requests.reload} className="btn-secondary">重试</button></div>}
           {!requests.loading && !requests.error && (requests.data?.items?.length ?? 0) === 0 && (
-            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center text-2xl mx-auto mb-3">📭</div><p className="text-ink-600">暂无新的好友申请</p></div>
+            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3"><IconInbox className="w-7 h-7" strokeWidth={1.6} /></div><p className="text-ink-600">暂无新的好友申请</p></div>
           )}
           {!requests.loading && !requests.error && (requests.data?.items?.length ?? 0) > 0 && (
             <>

@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import Portal from '@/components/Portal';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
+import { IconFlag } from '@/components/icons';
 
 const REASONS = [
   { value: 'spam', label: '垃圾广告' },
@@ -96,7 +97,7 @@ export default function ReportModal({ open, onClose, contentId, onSubmitted }: P
           </button>
 
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg" aria-hidden="true">🚩</span>
+            <IconFlag className="w-5 h-5 text-primary-600" strokeWidth={1.7} />
             <h2 id={titleId} className="font-display text-lg font-bold text-ink-900">举报内容</h2>
           </div>
           <p className="text-sm text-ink-500 mb-5">我们会尽快核实处理，感谢你维护社区秩序</p>

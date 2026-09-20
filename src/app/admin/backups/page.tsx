@@ -6,7 +6,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { formatDateTime } from '@/lib/format';
-import { AdminLayout, Loading, ErrorBox, Empty, Badge } from '../_components';
+import { AdminLayout, Loading, ErrorBox, Empty, Badge, PageHead, Panel, AccessState } from '../_components';
 import Portal from '@/components/Portal';
 
 interface BackupFile {
@@ -48,7 +48,11 @@ export default function AdminBackupsPage() {
   const restoreTitleId = useId();
 
   if (user && user.role !== 'moderator' && user.role !== 'admin') {
-    return <AdminLayout><Empty label="无权限访问" /></AdminLayout>;
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="备份管理仅限管理员与审核员，且所有备份操作都会记入审计日志。" />
+      </AdminLayout>
+    );
   }
   if (loading) return <AdminLayout><Loading /></AdminLayout>;
   if (error) return <AdminLayout><ErrorBox message={error} onRetry={reload} /></AdminLayout>;
@@ -85,51 +89,49 @@ export default function AdminBackupsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-ink-900">备份管理</h1>
-            <p className="text-sm text-ink-500 mt-1">数据库逻辑备份的查看、下载、恢复与清理</p>
-          </div>
-          <button onClick={doCreate} disabled={createAction.pending} className="btn-primary px-5 disabled:opacity-70">
+      <PageHead
+        eyebrow="系统 · 运维"
+        title="备份管理"
+        sub="数据库逻辑备份的查看、下载、恢复与清理"
+        actions={
+          <button onClick={doCreate} disabled={createAction.pending} className="btn-primary min-h-11 lg:min-h-0 px-5 disabled:opacity-70">
             {createAction.pending ? '备份中…' : '立即备份'}
           </button>
-        </div>
+        }
+      />
 
+      <div className="space-y-6">
         {/* 自动备份说明 */}
-        <div className="rounded-2xl bg-ink-50 border border-ink-100 px-5 py-4 text-sm text-ink-600">
-          <p>
-            <span className="font-semibold text-ink-800">自动备份：</span>
-            宿主机 cron 定时任务（{data.cron.schedule}）每日执行 <code className="px-1 rounded bg-white">deploy/backup.sh</code> 生成 <code className="px-1 rounded bg-white">*.sql.gz</code> 全量备份（mysqldump）。
+        <Panel title="自动备份" as="h2">
+          <p className="text-sm text-ink-600 leading-relaxed">
+            <span className="font-semibold text-ink-800">宿主机 cron 定时任务</span>
+            （<span className="num">{data.cron.schedule}</span>）每日执行 <code className="px-1 rounded bg-ink-100">deploy/backup.sh</code> 生成 <code className="px-1 rounded bg-ink-100">*.sql.gz</code> 全量备份（mysqldump）。
           </p>
-          <p className="mt-1 text-xs text-ink-400">{data.cron.note}</p>
+          <p className="mt-1.5 text-xs text-ink-400">{data.cron.note}</p>
           {data.lastBackupAt && (
-            <p className="mt-1 text-xs text-ink-500">最近一次备份：{new Date(data.lastBackupAt).toLocaleString('zh-CN')}</p>
+            <p className="mt-1.5 text-xs text-ink-500">最近一次备份：<span className="num">{new Date(data.lastBackupAt).toLocaleString('zh-CN')}</span></p>
           )}
-        </div>
+        </Panel>
 
         {createAction.error && <p className="text-sm text-rose-600">{createAction.error}</p>}
 
-        <div className="bg-white rounded-3xl shadow-soft border border-ink-100 overflow-hidden">
-          <div className="px-5 py-4 border-b border-ink-100 flex items-center justify-between">
-            <h2 className="font-display text-lg font-bold text-ink-900">备份文件（{files.length}）</h2>
-          </div>
+        <Panel title={`备份文件（${files.length}）`}>
           {files.length === 0 ? (
-            <p className="text-center py-10 text-ink-400 text-sm">还没有备份文件，点击右上角「立即备份」创建一份</p>
+            <Empty label="还没有备份文件" hint="点击右上角「立即备份」创建一份" />
           ) : (
             <div className="divide-y divide-ink-100">
               {files.map((f) => (
-                <div key={f.name} className="px-5 py-4 flex items-center gap-4">
-                  <div className="flex-1 min-w-0">
+                <div key={f.name} className="py-3.5 flex flex-wrap items-center gap-3 sm:gap-4">
+                  <div className="flex-1 min-w-[200px]">
                     <p className="font-medium text-ink-900 text-sm truncate">{f.name}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <Badge tone={f.kind === 'sql.gz' ? 'blue' : 'primary'}>{f.kind}</Badge>
                       <Badge tone={f.source === 'app' ? 'green' : 'gray'}>{f.source === 'app' ? '应用备份' : '自动备份'}</Badge>
-                      <span className="text-xs text-ink-400">{formatBytes(f.size)}</span>
-                      <span className="text-xs text-ink-400">· {formatDateTime(f.mtime) || new Date(f.mtime).toLocaleString('zh-CN')}</span>
+                      <span className="num text-xs text-ink-400">{formatBytes(f.size)}</span>
+                      <span className="num text-xs text-ink-400">· {formatDateTime(f.mtime) || new Date(f.mtime).toLocaleString('zh-CN')}</span>
                     </div>
                   </div>
-                  <div className="inline-flex flex-wrap items-center justify-end gap-1 flex-shrink-0">
+                  <div className="inline-flex flex-wrap items-center justify-end gap-1 shrink-0">
                     <a
                       href={`/api/v1/admin/backups/${encodeURIComponent(f.name)}`}
                       aria-label={`下载备份 ${f.name}`}
@@ -150,7 +152,7 @@ export default function AdminBackupsPage() {
               ))}
             </div>
           )}
-        </div>
+        </Panel>
 
         <p className="text-xs text-ink-400 leading-relaxed">
           提示：<code className="px-1 rounded bg-ink-100">*.sql.gz</code> 由运维通过 mysqldump 恢复；<code className="px-1 rounded bg-ink-100">*.json</code> 应用备份可通过上方「恢复」回灌（INSERT IGNORE，只补不覆盖已有数据）。

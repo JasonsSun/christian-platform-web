@@ -3,8 +3,9 @@
 import { Fragment, useMemo, useState } from 'react';
 import { useApi } from '@/lib/useApi';
 import { apiGet, apiPatch } from '@/lib/api';
-import { AdminLayout, SectionTitle, Badge, Loading, ErrorBox } from '../_components';
+import { AdminLayout, SectionTitle, Badge, Loading, ErrorBox, PageHead } from '../_components';
 import { StaffBadges } from '@/components/ModeratorBadge';
+import { Glyph, IconCheck } from '@/components/icons';
 
 interface ModuleInfo {
   key: string;
@@ -146,7 +147,7 @@ export default function AdminRolesPage() {
               color: 'var(--ui-text)',
             }}
           >
-            <span aria-hidden>{m.icon}</span>
+            <span aria-hidden className="inline-flex"><Glyph glyph={m.icon} className="w-4 h-4" strokeWidth={1.7} /></span>
             {m.label}
           </button>
         );
@@ -156,11 +157,14 @@ export default function AdminRolesPage() {
 
   return (
     <AdminLayout>
-      <SectionTitle as="h1">权限中心</SectionTitle>
-      <p className="-mt-3 mb-5 text-sm text-ink-500">
-        权限等级：管理员 &gt; 模块审核员 &gt; 普通成员。管理员拥有全部模块与系统治理权；
-        审核员的能力严格等于这里分配的模块，一人可兼任多个模块。
-      </p>
+      <PageHead
+        eyebrow="系统 · 权限"
+        title="权限中心"
+        sub={<>
+          权限等级：管理员 &gt; 模块审核员 &gt; 普通成员。管理员拥有全部模块与系统治理权；
+          审核员的能力严格等于这里分配的模块，一人可兼任多个模块。
+        </>}
+      />
 
       {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
         <div className="space-y-6">
@@ -338,9 +342,15 @@ export default function AdminRolesPage() {
                           {roles.map((r) => (
                             <td key={r.key} className="text-center px-4 py-2.5">
                               {has(r.key, perm) ? (
-                                <span className="text-emerald-600 font-bold">✓</span>
+                                <span className="inline-flex items-center justify-center w-6 h-6 rounded-lg bg-emerald-50 text-emerald-600">
+                                  <IconCheck className="w-3.5 h-3.5" strokeWidth={2.4} />
+                                  <span className="sr-only">已授予</span>
+                                </span>
                               ) : (
-                                <span className="text-ink-400">—</span>
+                                <span>
+                                  <span aria-hidden="true" className="text-ink-500">—</span>
+                                  <span className="sr-only">未授予</span>
+                                </span>
                               )}
                             </td>
                           ))}
