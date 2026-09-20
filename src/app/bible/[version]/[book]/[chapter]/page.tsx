@@ -85,14 +85,12 @@ export default function ReadChapter() {
   const [serifFont, setSerifFont] = useState(true);
   const [readWidth, setReadWidth] = useState<ReadWidth>('medium');
   const { theme: globalTheme } = useTheme();
-  // 读经页主题默认跟随全站主题；用户若曾在读经页单独选过（bible:theme），以该选择为准
-  const [readTheme, setReadTheme] = useState<ReadTheme>(() => {
-    if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('bible:theme');
-      if (saved === 'light' || saved === 'dark' || saved === 'sepia') return saved as ReadTheme;
-    }
-    return (globalTheme as ReadTheme) || 'light';
-  });
+  // 读经主题默认跟随全站主题；用户若曾在读经页单独选过（bible:theme），以该选择为准。
+  // 首帧必须写死 'light'（与服务端 HTML 一致）：水合时 React 不会回头改 data-read-theme
+  // 这类属性，若在初始化里就读 localStorage，状态是「夜间」而 DOM 会永远停在「日间」，
+  // 整页仍是纸白（实测面板环住「夜间」、色板选中态正确，而背景还是 #f6f7fb）。
+  // 还原交给下面的挂载副作用——那是一次真正的状态变更，属性才会被打上。
+  const [readTheme, setReadTheme] = useState<ReadTheme>('light');
   const [settingsOpen, setSettingsOpen] = useState(false);
   useEscape(settingsOpen, () => setSettingsOpen(false));
   // 排版面板不是模态框，只要关闭后焦点回到那个齿轮按钮
@@ -105,6 +103,9 @@ export default function ReadChapter() {
   const [chapterBookmarked, setChapterBookmarked] = useState(false);
   const [verseBookmarks, setVerseBookmarks] = useState<Set<number>>(new Set());
   const [noteEditing, setNoteEditing] = useState<number | null>(null);
+  // 手机端的单节操作菜单（收藏/笔记）：一次只开一节，Esc 或点外面收起
+  const [verseMenu, setVerseMenu] = useState<number | null>(null);
+  useEscape(verseMenu !== null, () => setVerseMenu(null));
   const [noteDraft, setNoteDraft] = useState('');
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -258,6 +259,7 @@ export default function ReadChapter() {
     dwellTimers.current.clear();
     readVersesRef.current = new Set();
     setReadVerses(new Set());
+    setVerseMenu(null);
   }, [version, book, chapter]);
 
   // 回填：本地缓存先抹掉该抹的蓝点，服务端回来再校正；整章读完过的章节直接全灭
@@ -418,15 +420,23 @@ export default function ReadChapter() {
       const w = localStorage.getItem('bible:width');
       if (w === 'narrow' || w === 'medium' || w === 'wide') setReadWidth(w);
       const th = localStorage.getItem('bible:theme');
-      if (th === 'light' || th === 'dark' || th === 'sepia') setReadTheme(th);
+      // 没单独选过就跟全站主题走（Theme 与 ReadTheme 同一档取值）
+      setReadTheme(th === 'light' || th === 'dark' || th === 'sepia' ? th : globalTheme);
     } catch { /* ignore */ }
   }, []);
-  // 排版/主题偏好变化即持久化
-  useEffect(() => { try { localStorage.setItem('bible:font', fontSize); } catch { /* ignore */ } }, [fontSize]);
-  useEffect(() => { try { localStorage.setItem('bible:lh', lineHeight); } catch { /* ignore */ } }, [lineHeight]);
-  useEffect(() => { try { localStorage.setItem('bible:serif', serifFont ? '1' : '0'); } catch { /* ignore */ } }, [serifFont]);
-  useEffect(() => { try { localStorage.setItem('bible:width', readWidth); } catch { /* ignore */ } }, [readWidth]);
-  useEffect(() => { try { localStorage.setItem('bible:theme', readTheme); } catch { /* ignore */ } }, [readTheme]);
+  // 偏好变化即持久化。首跑必须跳过：挂载那一次 state 还是默认值，
+  // 直接写库会把刚读到的偏好又冲成默认（用户下次进来就真的「忘了」）。
+  const prefsFirstRun = useRef(true);
+  useEffect(() => {
+    if (prefsFirstRun.current) { prefsFirstRun.current = false; return; }
+    try {
+      localStorage.setItem('bible:font', fontSize);
+      localStorage.setItem('bible:lh', lineHeight);
+      localStorage.setItem('bible:serif', serifFont ? '1' : '0');
+      localStorage.setItem('bible:width', readWidth);
+      localStorage.setItem('bible:theme', readTheme);
+    } catch { /* ignore */ }
+  }, [fontSize, lineHeight, serifFont, readWidth, readTheme]);
 
   // 「读完自动下一章」：朗读自然读完时触发，用 ref 取最新值避免回调闭包过期
   const autoNextRef = useRef(false);
@@ -786,6 +796,12 @@ export default function ReadChapter() {
     }
   };
 
+  // 桌面端那个图标按钮与手机端弹层走同一个笔记编辑开关，别把取草稿的逻辑抄两遍
+  const toggleNoteEditor = (verse: number) => {
+    setNoteDraft(bmList?.items.find((b) => b.verse === verse)?.note || '');
+    setNoteEditing(noteEditing === verse ? null : verse);
+  };
+
   const toggleVerseBookmark = async (verse: number) => {
     if (!user) {
       showToast('请先登录');
@@ -882,6 +898,11 @@ export default function ReadChapter() {
       }
     }
   };
+
+  // 首屏只有骨架屏（8 条约 300px 的占位条），真实经文一撑起来就是 3000+px。
+  // 「上一章/下一章」这行如果跟着一起渲染，会被推下去几百到几千 px —— 桌面端实测 CLS 0.0467 全来自它。
+  // 数据没到之前先不渲染它：新插入的元素没有「上一次位置」，不计入位移。
+  const showingSkeleton = loading && !data?.hasContent;
 
   return (
     <div className={`read-page min-h-screen ${readTheme === 'dark' ? 'text-[#dcdbd4]' : readTheme === 'sepia' ? 'text-[#4a3f2f]' : ''}`} data-read-theme={readTheme}>
@@ -1344,11 +1365,12 @@ export default function ReadChapter() {
                       />
                     )}
 
-                    {/* 节号：点击点亮本节；正在朗读时从本节续读 */}
+                    {/* 节号：点击点亮本节；正在朗读时从本节续读。手机端把圆点撑到 36×36（左侧 48px 沟里放得下） */}
                     <button
+                      type="button"
                       onClick={(e) => { e.stopPropagation(); selectVerse(v.verse); }}
                       title="点击点亮本节；正在朗读时从本节续读"
-                      className={`absolute left-4 top-2 w-7 h-7 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
+                      className={`absolute left-4 top-2 w-7 h-7 max-md:left-2 max-md:top-1 max-md:w-9 max-md:h-9 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
                         speaking
                           ? 'bg-amber-500 text-ink-950 scale-110 shadow-md'
                           : targeted
@@ -1414,11 +1436,12 @@ export default function ReadChapter() {
                       </span>
                     )}
 
-                    {/* 收藏按钮 */}
+                    {/* 收藏按钮（桌面端 hover 出现；手机端收进下面的 ⋯ 菜单：48px 沟里塞不下两个 36px 目标） */}
                     <button
+                      type="button"
                       onClick={(e) => { e.stopPropagation(); toggleVerseBookmark(v.verse); }}
                       disabled={!user || bookmarkAction.pending || bmLoading}
-                      className={`absolute right-2 top-2 opacity-0 max-md:opacity-100 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-amber-100 ${
+                      className={`absolute right-2 top-2 opacity-0 hidden md:inline-block group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-amber-100 ${
                         vb 
                           ? 'opacity-100 text-amber-500' 
                           : 'text-ink-500 hover:text-amber-500'
@@ -1431,14 +1454,10 @@ export default function ReadChapter() {
                     </button>
                     {/* 笔记按钮：点击展开内联编辑,与本节书签绑定保存 */}
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const cur = bmList?.items.find((b) => b.verse === v.verse)?.note || '';
-                        setNoteDraft(cur);
-                        setNoteEditing(noteEditing === v.verse ? null : v.verse);
-                      }}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); toggleNoteEditor(v.verse); }}
                       disabled={!user}
-                      className={`absolute right-9 top-2 opacity-0 max-md:opacity-100 group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-primary-100 ${
+                      className={`absolute right-9 top-2 opacity-0 hidden md:inline-block group-hover:opacity-100 focus:opacity-100 transition-all duration-200 p-1.5 rounded-lg hover:bg-primary-100 ${
                         noteEditing === v.verse
                           ? 'opacity-100 text-primary-600'
                           : 'text-ink-500 hover:text-primary-600'
@@ -1449,6 +1468,55 @@ export default function ReadChapter() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                     </button>
+
+                    {/* 手机端单节操作入口：一个 36×36 按钮 + 带文字标签的弹层（<p> 里只能放行内元素，所以弹层用 span） */}
+                    {user && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setVerseMenu(verseMenu === v.verse ? null : v.verse); }}
+                        aria-expanded={verseMenu === v.verse}
+                        title="本节操作"
+                        className={`md:hidden absolute right-1 top-1 w-9 h-9 flex items-center justify-center rounded-lg transition-colors duration-200 ${
+                          verseMenu === v.verse ? 'bg-primary-50/80 text-primary-700' : vb ? 'text-amber-500' : 'text-ink-500'
+                        }`}
+                      >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                          <circle cx="5" cy="12" r="2" />
+                          <circle cx="12" cy="12" r="2" />
+                          <circle cx="19" cy="12" r="2" />
+                        </svg>
+                      </button>
+                    )}
+                    {verseMenu === v.verse && (
+                      <>
+                        <span
+                          aria-hidden
+                          className="md:hidden fixed inset-0 z-20"
+                          onClick={(e) => { e.stopPropagation(); setVerseMenu(null); }}
+                        />
+                        <span
+                          className="md:hidden absolute right-1 top-11 z-30 block min-w-[9.5rem] rounded-2xl border border-ink-200 bg-white shadow-lg p-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="block px-2.5 pt-0.5 pb-1 text-[11px] text-ink-400">第 {v.verse} 节</span>
+                          <button
+                            type="button"
+                            disabled={bookmarkAction.pending || bmLoading}
+                            onClick={() => { setVerseMenu(null); toggleVerseBookmark(v.verse); }}
+                            className="block w-full text-left px-2.5 py-2.5 rounded-xl text-sm text-ink-700 hover:bg-ink-100 disabled:opacity-60"
+                          >
+                            {vb ? '取消收藏本节' : '收藏本节'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setVerseMenu(null); toggleNoteEditor(v.verse); }}
+                            className="block w-full text-left px-2.5 py-2.5 rounded-xl text-sm text-ink-700 hover:bg-ink-100"
+                          >
+                            写笔记
+                          </button>
+                        </span>
+                      </>
+                    )}
                   </p>
                   {/* 已保存的笔记:直接显示出来(此前只写不显示,用户以为没保存/删不掉) */}
                   {noteEditing !== v.verse && (() => {
@@ -1547,8 +1615,11 @@ export default function ReadChapter() {
           </>
         )}
 
-        {/* 上下章切换 */}
-        <div className="flex items-center justify-between mt-10 pt-6 divider-gradient">
+        {/* 上下章切换：这里不能挂 .divider-gradient——那是个「1px 高的独立分隔条」类，
+            放到有内容的 flex 行上会变成一条 #c2d4ff 的宽带子印在文字背后
+            （实测「目录」压在带子上只有 2.38）。改用会随读经主题换色的上边框。 */}
+        {!showingSkeleton && (
+        <div className="flex items-center justify-between mt-10 pt-6 border-t border-ink-200">
           <button
             onClick={() => prev && router.push(`/bible/${version}/${book}/${prev}`)}
             disabled={!prev}
@@ -1559,7 +1630,10 @@ export default function ReadChapter() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
             上一章
           </button>
-          <Link href={`/bible/${version}/${book}`} className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+          <Link
+            href={`/bible/${version}/${book}`}
+            className="relative text-primary-600 hover:text-primary-700 text-sm font-medium after:absolute after:-inset-x-3 after:-inset-y-3 after:content-['']"
+          >
             目录
           </Link>
           <button
@@ -1573,6 +1647,7 @@ export default function ReadChapter() {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
+        )}
       </div>
 
       {/* 读经小天使：单击=朗读/停止；拖动换位置；朗读时指字/指行，未朗读时趴着休息 */}

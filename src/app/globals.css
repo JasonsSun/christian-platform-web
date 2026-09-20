@@ -841,6 +841,17 @@ html .read-page[data-read-theme="sepia"] {
 /* —— 夜间 —— */
 html .read-page[data-read-theme="dark"] .bg-white { background-color: #171b22 !important; }
 html .read-page[data-read-theme="dark"] .bg-ink-100 { background-color: #1c2029 !important; }
+/* bg-ink-50 原先没人管：站点深色把它压成 #161a23、站点浅色又把它留在纸上，
+   于是「当前使用在线语音」这类提示条在读经页里成了浮在暗面/纸面上的错块。 */
+html .read-page[data-read-theme="dark"] .bg-ink-50 { background-color: #14181f !important; }
+/* 琥珀族（节号跳转条、首字下沉、笔记预览、已收藏星标）：站点主题会按纸面把它压深，
+   压在夜间读经页上实测 2.5~2.7，整族按暗面重新钉一遍，hover 态同理。 */
+html .read-page[data-read-theme="dark"] .text-amber-500 { color: #f0b35c !important; }
+html .read-page[data-read-theme="dark"] .text-amber-700 { color: #e0a355 !important; }
+html .read-page[data-read-theme="dark"] .bg-amber-50 { background-color: rgba(224,163,85,0.10) !important; }
+html .read-page[data-read-theme="dark"] .border-amber-200 { border-color: rgba(224,163,85,0.28) !important; }
+html .read-page[data-read-theme="dark"] .group:hover .group-hover\:text-amber-900 { color: #f5c877 !important; }
+html .read-page[data-read-theme="dark"] .group:hover .group-hover\:bg-amber-100 { background-color: rgba(224,163,85,0.16) !important; }
 html .read-page[data-read-theme="dark"] .bg-primary-50\/80 { background-color: rgba(99,134,255,0.10) !important; }
 html .read-page[data-read-theme="dark"] .bg-primary-50\/70 { background-color: rgba(99,134,255,0.12) !important; }
 html .read-page[data-read-theme="dark"] .border-ink-200 { border-color: #2a2f3a !important; }
@@ -856,11 +867,23 @@ html .read-page[data-read-theme="dark"] .text-ink-400 { color: #8b91a0 !importan
 html .read-page[data-read-theme="dark"] .text-ink-300 { color: #6b7280 !important; }
 html .read-page[data-read-theme="dark"] .text-primary-600 { color: #aab8ff !important; }
 html .read-page[data-read-theme="dark"] .text-primary-700 { color: #b9c4ff !important; }
+/* 悬停底色属于另一个类名：Tailwind 的 .hover\:bg-ink-100:hover 不含 .bg-ink-100，
+   所以上面的深色兜底管不到它，手机点按后残留的 :hover 会把浅灰底压在深色字上。 */
+html .read-page[data-read-theme="dark"] .hover\:bg-ink-100:hover { background-color: #232833 !important; }
 html .read-page[data-read-theme="dark"] .read-verse:hover { background: rgba(255,255,255,0.04) !important; }
 
 /* —— 护眼（羊皮纸） —— */
 html .read-page[data-read-theme="sepia"] .bg-white { background-color: #fbf4e6 !important; }
 html .read-page[data-read-theme="sepia"] .bg-ink-100 { background-color: #ece1c8 !important; }
+/* 同夜间：羊皮纸面必须自己钉住 ink-50 与琥珀族，否则站点深色把 amber-700 反成 #fcd34d
+   压在纸上只有 1.09——比不映射还糟。 */
+html .read-page[data-read-theme="sepia"] .bg-ink-50 { background-color: #f7efdd !important; }
+html .read-page[data-read-theme="sepia"] .text-amber-500 { color: #a2650f !important; }
+html .read-page[data-read-theme="sepia"] .text-amber-700 { color: #7d5010 !important; }
+html .read-page[data-read-theme="sepia"] .bg-amber-50 { background-color: #fbf1d9 !important; }
+html .read-page[data-read-theme="sepia"] .border-amber-200 { border-color: #e8d5a8 !important; }
+html .read-page[data-read-theme="sepia"] .group:hover .group-hover\:text-amber-900 { color: #6d4409 !important; }
+html .read-page[data-read-theme="sepia"] .group:hover .group-hover\:bg-amber-100 { background-color: #f2e2bd !important; }
 html .read-page[data-read-theme="sepia"] .bg-primary-50\/80 { background-color: rgba(184,134,11,0.10) !important; }
 html .read-page[data-read-theme="sepia"] .bg-primary-50\/70 { background-color: rgba(184,134,11,0.12) !important; }
 html .read-page[data-read-theme="sepia"] .border-ink-200 { border-color: #e6d8bd !important; }
@@ -879,6 +902,7 @@ html .read-page[data-read-theme="sepia"] .text-ink-400 { color: #75643f !importa
 html .read-page[data-read-theme="sepia"] .text-ink-300 { color: #94805f !important; }
 html .read-page[data-read-theme="sepia"] .text-primary-600 { color: #7d6127 !important; }
 html .read-page[data-read-theme="sepia"] .text-primary-700 { color: #6f5421 !important; }
+html .read-page[data-read-theme="sepia"] .hover\:bg-ink-100:hover { background-color: #e3d4b0 !important; }
 html .read-page[data-read-theme="sepia"] .read-verse:hover { background: rgba(184,134,11,0.06) !important; }
 
 /* —— 纸白读经页与全站主题互相独立，这里补第三个方向 ——
@@ -899,11 +923,16 @@ html .read-page[data-read-theme="light"] .text-primary-700 { color: #3242b0 !imp
 html .read-page[data-read-theme="light"] .text-rose-600 { color: #e11d48 !important; }
 html .read-page[data-read-theme="light"] .text-rose-700 { color: #be123c !important; }
 html .read-page[data-read-theme="light"] .text-amber-500 { color: #b45309 !important; }
-html .read-page[data-read-theme="light"] .text-amber-700 { color: #b45309 !important; }
+/* 纸白面的琥珀压深一级：#b45309 落在 ink-100 的节号芯片上实测 4.19，
+   而那块芯片并不是纯白，纸白档必须按最暗的那层底来定。 */
+html .read-page[data-read-theme="light"] .text-amber-700 { color: #92400e !important; }
 html .read-page[data-read-theme="light"] .text-gold-600 { color: #d97706 !important; }
 html .read-page[data-read-theme="light"] .text-emerald-700 { color: #047857 !important; }
 html .read-page[data-read-theme="light"] .bg-white { background-color: #ffffff !important; }
 html .read-page[data-read-theme="light"] .bg-ink-100 { background-color: #eef0f7 !important; }
+html .read-page[data-read-theme="light"] .bg-ink-50 { background-color: #f6f7fb !important; }
+html .read-page[data-read-theme="light"] .bg-amber-50 { background-color: #fffbeb !important; }
+html .read-page[data-read-theme="light"] .border-amber-200 { border-color: #fde68a !important; }
 html .read-page[data-read-theme="light"] .border-ink-200 { border-color: #dde1ee !important; }
 html .read-page[data-read-theme="light"] .border-ink-100 { border-color: #eef0f7 !important; }
 
