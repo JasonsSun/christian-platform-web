@@ -85,7 +85,8 @@ export default function AdminSettingsPage() {
                           aria-checked={draft[it.key] === 'true'}
                           aria-label={it.label || it.key}
                           onClick={() => set(it.key, draft[it.key] === 'true' ? 'false' : 'true')}
-                          className={`relative w-12 h-6 rounded-full transition ${draft[it.key] === 'true' ? 'bg-primary-600' : 'bg-ink-300'}`}
+                          /* after: 只撑命中区不改视觉尺寸：开关本身 24px 高，手机上按不准 */
+                          className={`relative w-12 h-6 rounded-full transition after:absolute after:-inset-y-2 after:-inset-x-1 after:content-[''] ${draft[it.key] === 'true' ? 'bg-primary-600' : 'bg-ink-300'}`}
                         >
                           <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${draft[it.key] === 'true' ? 'left-6' : 'left-0.5'}`} />
                         </button>

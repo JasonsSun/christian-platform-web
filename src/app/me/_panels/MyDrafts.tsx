@@ -69,7 +69,7 @@ export function MyDrafts() {
           <div className="flex items-center justify-end gap-2 mt-3">
             <button
               onClick={() => remove(c)}
-              className="text-sm text-rose-600 hover:text-rose-600 hover:underline"
+              className="btn-chip-danger"
             >
               删除
             </button>

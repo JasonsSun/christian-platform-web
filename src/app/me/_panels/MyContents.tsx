@@ -58,11 +58,12 @@ export function MyContents() {
               </span>
             </div>
           </Link>
-          <div className="flex items-center justify-end gap-3 mt-3 pt-3 border-t border-ink-100">
-            <Link href={`/community/create?edit=${c.id}`} className="text-sm text-ink-500 hover:text-primary-600">
+          <div className="flex items-center justify-end gap-2 mt-3 pt-3 border-t border-ink-100">
+            {/* 裸文字链在手机上只有 28px 宽，按不准；统一成后台那套 chip 词表 */}
+            <Link href={`/community/create?edit=${c.id}`} className="btn-chip">
               编辑
             </Link>
-            <button onClick={() => remove(c)} className="text-sm text-rose-600 hover:text-rose-600 hover:underline">
+            <button onClick={() => remove(c)} className="btn-chip-danger">
               删除
             </button>
           </div>

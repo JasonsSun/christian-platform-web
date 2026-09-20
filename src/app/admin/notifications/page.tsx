@@ -144,7 +144,8 @@ export default function AdminNotificationsPage() {
                 aria-checked={f.enabled}
                 aria-label="启用该模板"
                 onClick={() => onChange({ ...f, enabled: !f.enabled })}
-                className={`relative w-12 h-6 rounded-full transition ${f.enabled ? 'bg-primary-600' : 'bg-ink-300'}`}
+                /* after: 只撑命中区不改视觉尺寸：开关本身 24px 高，手机上按不准 */
+                className={`relative w-12 h-6 rounded-full transition after:absolute after:-inset-y-2 after:-inset-x-1 after:content-[''] ${f.enabled ? 'bg-primary-600' : 'bg-ink-300'}`}
               >
                 <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${f.enabled ? 'left-6' : 'left-0.5'}`} />
               </button>

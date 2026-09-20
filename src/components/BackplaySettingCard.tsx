@@ -43,8 +43,9 @@ export default function BackplaySettingCard() {
           aria-checked={enabled}
           data-testid="backplay-setting-switch"
           onClick={() => setEnabled(!enabled)}
-          className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${enabled ? 'bg-primary-600' : 'bg-ink-300'}`}
           aria-label="后台播放"
+          /* after: 只撑命中区不改视觉尺寸：开关本身 28px 高，手机上按不准 */
+          className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 after:absolute after:-inset-y-1.5 after:-inset-x-1 after:content-[''] ${enabled ? 'bg-primary-600' : 'bg-ink-300'}`}
         >
           <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${enabled ? 'left-6' : 'left-1'}`} />
         </button>

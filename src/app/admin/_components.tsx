@@ -195,14 +195,14 @@ export function AdminNav() {
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="w-full lg:hidden flex items-center gap-2 px-1 py-1.5 text-left"
+          className="w-full lg:hidden flex items-center gap-2 px-1 py-2.5 text-left"
         >
-          <span className="font-display text-base font-bold text-ink-900 shrink-0">后台导航</span>
+          <span className="font-display text-lg font-bold text-ink-900 shrink-0">后台导航</span>
           {current ? (
-            <span className="text-xs text-ink-500 truncate">{current.group} · {current.label}</span>
+            <span className="text-sm text-ink-500 truncate">{current.group} · {current.label}</span>
           ) : null}
           <svg
-            className={`w-4 h-4 ml-auto shrink-0 text-ink-400 transition-transform ${open ? 'rotate-180' : ''}`}
+            className={`w-5 h-5 ml-auto shrink-0 text-ink-400 transition-transform ${open ? 'rotate-180' : ''}`}
             fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
             strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
           >
@@ -210,18 +210,18 @@ export function AdminNav() {
           </svg>
         </button>
 
-        <div className="hidden lg:block font-display text-base font-bold text-ink-900 mb-3 px-1">管理后台</div>
+        <div className="hidden lg:block font-display text-lg font-bold text-ink-900 mb-3 px-1">管理后台</div>
 
         {user ? (
           <div className="px-1 mb-3 space-y-1">
             <div className="flex items-center gap-1.5 flex-wrap">
               <StaffBadges role={user.role} scopes={scopes} compact />
-              <span className="text-[11px] text-ink-500">
+              <span className="text-xs text-ink-500">
                 {isAdmin ? '全部模块 + 系统治理' : user.role === 'moderator' ? `${scopes.length} 个模块` : '普通成员'}
               </span>
             </div>
             {!isAdmin && user.role === 'moderator' && scopes.length === 0 ? (
-              <p className="text-[11px] text-amber-700">尚未分配任何模块，请联系管理员</p>
+              <p className="text-xs text-amber-700">尚未分配任何模块，请联系管理员</p>
             ) : null}
           </div>
         ) : (
@@ -257,7 +257,9 @@ export function AdminNav() {
           <nav aria-label="后台导航" className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3 lg:block lg:space-y-4">
             {groups.map((g) => (
               <div key={g.group}>
-                <div className="flex items-center gap-1.5 px-2 mb-1 text-xs font-semibold text-ink-500">
+                {/* 分组标题必须比它自己的条目大：原来是 text-xs(12) 压着 text-sm(14) 的条目，
+                    层级倒挂，扫一眼分不清哪行是栏目、哪行是入口。阶梯 18 / 16 / 14。 */}
+                <div className="flex items-center gap-2 px-2 mb-1.5 text-base font-bold text-ink-900">
                   <GroupIcon name={g.group} />
                   {g.group}
                 </div>
@@ -308,7 +310,7 @@ function GroupIcon({ name }: { name: string }) {
   if (!d) return null;
   return (
     <svg
-      className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+      className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24"
       stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
     >
       <path d={d} />
