@@ -346,6 +346,20 @@ CREATE TABLE IF NOT EXISTS bible_reading_history (
   KEY idx_rh_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 逐节已读状态：bible_reading_history 只记到「章」，重进本章时无法还原读过哪几节，
+-- 所以这里按 (user, version, book, chapter) 存一份节号并集，读经页据此回填蓝点。
+CREATE TABLE IF NOT EXISTS bible_verse_read (
+  id         CHAR(36)      NOT NULL PRIMARY KEY,
+  user_id    CHAR(36)      NOT NULL,
+  version    VARCHAR(16)   NOT NULL DEFAULT 'cuv',
+  book_id    VARCHAR(32)   NOT NULL,
+  chapter    INT           NOT NULL,
+  verses     VARCHAR(2048) NOT NULL DEFAULT '',
+  updated_at DATETIME      NOT NULL,
+  UNIQUE KEY uk_vr (user_id, version, book_id, chapter),
+  KEY idx_vr_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS song_favorites (
   id         CHAR(36)     NOT NULL PRIMARY KEY,
   user_id    CHAR(36)     NOT NULL,

@@ -89,16 +89,47 @@ try {
     return r.result?.result?.value;
   };
 
+  // 页面上的写库/回填都是异步的（驻留计时、防抖 flush、read-state 往返），
+  // 固定 sleep 要么抢跑要么把偶发的慢网络误判成缺陷 → 一律轮询到有界超时。
+  const waitFor = async (expr, timeoutMs = 12000, stepMs = 400) => {
+    const t0 = Date.now();
+    for (;;) {
+      const v = await evaluate(expr);
+      if (v || Date.now() - t0 > timeoutMs) return !!v;
+      await sleep(stepMs);
+    }
+  };
+  const waitRow = async (sql, params, ok = (r) => !!r, timeoutMs = 8000) => {
+    const t0 = Date.now();
+    for (;;) {
+      const [[r]] = await conn.query(sql, params);
+      if (ok(r) || Date.now() - t0 > timeoutMs) return r;
+      await sleep(400);
+    }
+  };
+  const countLit = () => evaluate(`document.querySelectorAll('.read-dot:not(.is-read)').length`);
+
   // 先报名 john-21，确保「读完自动打卡」这条链路可验证
   const enrollRes = await fetch(BASE + '/api/v1/plans/john-21/enroll', {
     method: 'POST', headers: { Authorization: `Bearer ${token}` },
   });
   console.log('报名 john-21:', enrollRes.status);
 
+  // 归零：本脚本必须从干净状态起步。上一轮留下的 localStorage / 库里残留会让浏览器
+  // 认为本章早读完了，于是不再触发「读完本章」写库，历史与打卡两项会假失败。
+  await conn.query('DELETE FROM bible_verse_read WHERE user_id=? AND book_id=? AND chapter IN (3,4)', [UID, 'john']);
+  await conn.query('DELETE FROM bible_reading_history WHERE user_id=? AND book_id=? AND chapter IN (3,4)', [UID, 'john']);
+  await conn.query('DELETE FROM reading_plan_progress WHERE user_id=? AND plan_id=? AND day=3', [UID, 'john-21']);
+
   // 先落地 token，再进读经页
   await cdp.send('Page.navigate', { url: BASE + '/' });
   await sleep(1200);
-  await evaluate(`localStorage.setItem('platform_access_token',${JSON.stringify(token)});localStorage.setItem('platform_refresh_token',${JSON.stringify(token)});'ok'`);
+  await evaluate(`(() => {
+    Object.keys(localStorage).filter((k) => k.startsWith('bible:readVerses:')).forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem('platform_access_token', ${JSON.stringify(token)});
+    localStorage.setItem('platform_refresh_token', ${JSON.stringify(token)});
+    return 1;
+  })()`);
   await cdp.send('Page.navigate', { url: BASE + '/bible/cuv/john/3' });
   await sleep(2500);
 
@@ -117,6 +148,7 @@ try {
 
   const readAtStart = await evaluate(`document.querySelectorAll('.read-dot.is-read').length`);
   console.log(`初始已读红点: ${readAtStart}`);
+  check('起始状态已归零（无历史蓝点）', readAtStart === 0, `read=${readAtStart}`);
 
   // 点击第 2 节：应只点亮（选中高亮），且不触发朗读
   await evaluate(`(() => { const p=document.getElementById('v2'); if(p) p.click(); return 1; })()`);
@@ -129,6 +161,14 @@ try {
   const speaking = await evaluate(`!!(window.speechSynthesis && window.speechSynthesis.speaking)`);
   check('点击经文 → 未触发朗读', speaking === false, `speaking=${speaking}`);
 
+  // 完成提示只活 3.2s，必须一边滚一边抓拍，等滚完再读 innerText 早就没了
+  let sawComplete = false;
+  const hasCompleteToast = async () => {
+    if (sawComplete) return true;
+    sawComplete = /读完本章/.test((await evaluate(`document.body.innerText || ''`)) || '');
+    return sawComplete;
+  };
+
   // 拟真阅读节奏：每屏停留 3.6s（> 3s 驻留阈值），让每节都能经过「阅读带」并计时完成
   const vh = await evaluate('window.innerHeight');
   const total = await evaluate('document.body.scrollHeight');
@@ -136,38 +176,99 @@ try {
   while (y < total) {
     await evaluate(`window.scrollTo(0, ${y}); 1`);
     await sleep(3600);
+    await hasCompleteToast();
     y += Math.floor(vh * 0.8);
   }
   await evaluate(`window.scrollTo(0, document.body.scrollHeight); 1`);
   await sleep(3600);
+  // 最后一节的驻留计时可能在这次 sleep 之后才走完：等蓝点全灭，别用固定值抢跑
+  const allDim = await waitFor(`document.querySelectorAll('.read-dot:not(.is-read)').length === 0`, 12000);
+  await hasCompleteToast();
 
-  const readAfter = await evaluate(`document.querySelectorAll('.read-dot.is-read').length`);
+  const litAfter = await countLit();
+  const readAfter = verseCount - litAfter;
   console.log(`滚动阅读后已读红点: ${readAfter} / ${verseCount}`);
   check('滚动阅读后红点淡出（>0）', readAfter > 0, `read=${readAfter}`);
-  check('按阅读节奏滚完 → 全部红点淡出', readAfter >= verseCount, `read=${readAfter}/${verseCount}`);
-
-  await sleep(800);
-  const bodyText = await evaluate(`document.body.innerText || ''`);
-  check('读完本章出现完成提示', /读完本章|已完成/.test(bodyText), bodyText.slice(0, 120));
+  check('按阅读节奏滚完 → 全部红点淡出', allDim && litAfter === 0, `lit=${litAfter}/${verseCount}`);
+  check('读完本章出现完成提示', sawComplete);
 
   // 落库校验：应写入 john:3 的历史 + john-21 第3天打卡
-  const [[hist]] = await conn.query(
-    'SELECT COUNT(*) AS c FROM bible_reading_history WHERE user_id=? AND book_id=? AND chapter=?', [UID, 'john', 3]
+  const hist = await waitRow(
+    'SELECT COUNT(*) AS c FROM bible_reading_history WHERE user_id=? AND book_id=? AND chapter=?', [UID, 'john', 3],
+    (r) => Number(r?.c) > 0
   );
-  check('已读记录写入 bible_reading_history', Number(hist.c) > 0, `c=${hist.c}`);
-  const [[prog]] = await conn.query(
-    'SELECT COUNT(*) AS c FROM reading_plan_progress WHERE user_id=? AND plan_id=? AND day=?', [UID, 'john-21', 3]
+  check('已读记录写入 bible_reading_history', Number(hist?.c) > 0, `c=${hist?.c}`);
+  const prog = await waitRow(
+    'SELECT COUNT(*) AS c FROM reading_plan_progress WHERE user_id=? AND plan_id=? AND day=?', [UID, 'john-21', 3],
+    (r) => Number(r?.c) > 0
   );
-  check('自动打卡 john-21 第3天', Number(prog.c) > 0, `c=${prog.c}`);
+  check('自动打卡 john-21 第3天', Number(prog?.c) > 0, `c=${prog?.c}`);
 
   const shot = await cdp.send('Page.captureScreenshot', { format: 'png' });
   fs.writeFileSync('F:/sjjob/_shots/readdot-verify.png', Buffer.from(shot.result.data, 'base64'));
   console.log('截图: F:/sjjob/_shots/readdot-verify.png');
 
+  // ---- 跨会话记忆：换浏览器（清掉本地缓存）重进本章，蓝点不该再亮 ----
+  const vr = await waitRow(
+    'SELECT verses FROM bible_verse_read WHERE user_id=? AND book_id=? AND chapter=?', [UID, 'john', 3],
+    (r) => (r?.verses || '').split(',').filter(Boolean).length > 0
+  );
+  const stored3 = (vr?.verses || '').split(',').filter(Boolean).map(Number);
+  check('逐节已读写入 bible_verse_read', stored3.length > 0, `verses=${vr?.verses || ''}`);
+  check('整章读完后 bible_verse_read 覆盖全部节号', stored3.length >= verseCount, `stored=${stored3.length}/${verseCount}`);
+
+  await evaluate(`localStorage.removeItem('bible:readVerses:cuv:john:3');'ok'`);
+  await cdp.send('Page.navigate', { url: BASE + '/bible/cuv/john/3' });
+  await sleep(2500);
+  // 回填要走 read-state 往返，等它落定；顺带跨过上一轮那条 3.2s 的完成提示
+  const cleared = await waitFor(`document.querySelectorAll('.read-dot').length > 0 && document.querySelectorAll('.read-dot:not(.is-read)').length === 0`, 12000);
+  await sleep(1500);
+  const litAfterReenter = await countLit();
+  const bodyAfterReenter = await evaluate(`document.body.innerText || ''`);
+  check('重进本章后没有残留蓝点', cleared && litAfterReenter === 0, `lit=${litAfterReenter}`);
+  check('重进本章不再重复弹「读完本章」', !/读完本章/.test(bodyAfterReenter), bodyAfterReenter.slice(0, 80));
+
+  // ---- 只读半章：读过的该灭，没读到的该继续亮 ----
+  await evaluate(`localStorage.removeItem('bible:readVerses:cuv:john:4');'ok'`);
+  await conn.query('DELETE FROM bible_verse_read WHERE user_id=? AND book_id=? AND chapter=?', [UID, 'john', 4]);
+  await cdp.send('Page.navigate', { url: BASE + '/bible/cuv/john/4' });
+  await sleep(2800);
+  const vh4 = await evaluate('window.innerHeight');
+  for (let y = 0; y < vh4 * 1.6; y += Math.floor(vh4 * 0.5)) {
+    await evaluate(`window.scrollTo(0, ${y}); 1`);
+    await sleep(3600);
+  }
+  await sleep(1500); // 防抖 flush 的窗口
+  const litFirst = await evaluate(`document.querySelectorAll('.read-dot:not(.is-read)').length`);
+  const total4 = await evaluate(`document.querySelectorAll('.read-dot').length`);
+  check('半章阅读后仍有未读蓝点', litFirst > 0 && litFirst < total4, `lit=${litFirst}/${total4}`);
+  const vr4 = await waitRow(
+    'SELECT verses FROM bible_verse_read WHERE user_id=? AND book_id=? AND chapter=?', [UID, 'john', 4],
+    (r) => (r?.verses || '').split(',').filter(Boolean).length > 0
+  );
+  const saved4 = (vr4?.verses || '').split(',').filter(Boolean).map(Number);
+  check('半章进度按节号存库', saved4.length > 0 && saved4.length < total4, `saved=${saved4.join(',')}/${total4}`);
+
+  await evaluate(`localStorage.removeItem('bible:readVerses:cuv:john:4');'ok'`);
+  await cdp.send('Page.navigate', { url: BASE + '/bible/cuv/john/4' });
+  await sleep(2500);
+  // 回填同样是异步的：只断言不变量——存过的节必须灭、没存过的仍有亮的节
+  // （顶部阅读带里没读过的节可能在这几秒里刚好驻留完成，用精确等值会误报）
+  const ok4 = await waitFor(`(() => {
+    const stored = ${JSON.stringify(saved4)};
+    const dots = [...document.querySelectorAll('[data-verse]')];
+    if (!dots.length) return false;
+    const dark = (n) => document.getElementById('v' + n)?.querySelector('.read-dot')?.classList.contains('is-read');
+    return stored.every((n) => dark(n)) && dots.some((el) => !el.querySelector('.read-dot')?.classList.contains('is-read'));
+  })()`, 12000);
+  const litAfter4 = await countLit();
+  check('重进半章后：读过的节不再亮，其余照旧', ok4, `lit=${litAfter4} 已存=${saved4.length} 总数=${total4}`);
+
   // 清理本次测试产生的数据
   await conn.query('DELETE FROM reading_plan_progress WHERE user_id=? AND plan_id=?', [UID, 'john-21']);
   await conn.query('DELETE FROM reading_plan_enrollment WHERE user_id=? AND plan_id=?', [UID, 'john-21']);
-  await conn.query('DELETE FROM bible_reading_history WHERE user_id=? AND book_id=? AND chapter=?', [UID, 'john', 3]);
+  await conn.query('DELETE FROM bible_reading_history WHERE user_id=? AND book_id=? AND chapter IN (3,4)', [UID, 'john']);
+  await conn.query('DELETE FROM bible_verse_read WHERE user_id=? AND book_id=? AND chapter IN (3,4)', [UID, 'john']);
   console.log('测试数据已清理');
 } catch (e) {
   console.log('ERR', e.message);

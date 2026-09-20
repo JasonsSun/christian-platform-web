@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useApi, useAction } from '@/lib/useApi';
-import { api, apiPost, apiDelete, qs } from '@/lib/api';
+import { api, apiPost, apiDelete, qs, API_BASE, tokenStore } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useDialogFocus, useEscape } from '@/lib/a11y';
 import { scrollBehavior } from '@/lib/motion';
@@ -204,13 +204,89 @@ export default function ReadChapter() {
   const recordChapterReadRef = useRef(recordChapterRead);
   recordChapterReadRef.current = recordChapterRead;
 
-  // 换章/换卷时清空蓝点与计时器
+  // ---- 已读节号的持久化 ----
+  // readVerses 原先只活在组件内存里：换章、刷新、重进站一律清零，所以读过的节照样亮着蓝点。
+  // 本地缓存负责即时回填（等服务端回来会先闪一遍点），服务端负责跨设备、跨浏览器。
+  const routeKey = `${version}:${book}:${chapter}`;
+  const routeKeyRef = useRef(routeKey);
+  routeKeyRef.current = routeKey;
+  const dirty = useRef<{ version: string; bookId: string; chapter: number; verses: Set<number> } | null>(null);
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const seededRef = useRef('');
+
+  const sendDirty = () => {
+    const d = dirty.current;
+    if (flushTimer.current) { clearTimeout(flushTimer.current); flushTimer.current = null; }
+    if (!d || !d.verses.size || !userRef.current) return;
+    // 服务端按并集合并，所以失败时不清空：下一轮会把没写进去的再发一次
+    apiPost<{ ok: boolean }>('/bible/read-state', { version: d.version, bookId: d.bookId, chapter: d.chapter, verses: [...d.verses] })
+      .then(() => { d.verses.clear(); })
+      .catch(() => {});
+  };
+  const sendDirtyRef = useRef(sendDirty);
+  sendDirtyRef.current = sendDirty;
+
+  const markVersesRead = (ns: number[], persist = true) => {
+    const fresh: number[] = [];
+    for (const n of ns) {
+      if (Number.isInteger(n) && n > 0 && !readVersesRef.current.has(n)) {
+        readVersesRef.current.add(n);
+        fresh.push(n);
+      }
+    }
+    if (!fresh.length) return;
+    setReadVerses(new Set(readVersesRef.current));
+    try {
+      localStorage.setItem(`bible:readVerses:${routeKeyRef.current}`, JSON.stringify([...readVersesRef.current]));
+    } catch { /* ignore */ }
+    if (!persist || !userRef.current) return;
+    const [v, bId, ch] = routeKeyRef.current.split(':');
+    if (!dirty.current || dirty.current.version !== v || dirty.current.bookId !== bId || dirty.current.chapter !== Number(ch)) {
+      dirty.current = { version: v, bookId: bId, chapter: Number(ch), verses: new Set() };
+    }
+    for (const n of fresh) dirty.current.verses.add(n);
+    if (flushTimer.current) clearTimeout(flushTimer.current);
+    flushTimer.current = setTimeout(() => sendDirtyRef.current(), 2000);
+  };
+  const markVersesReadRef = useRef(markVersesRead);
+  markVersesReadRef.current = markVersesRead;
+
+  // 换章/换卷时清空蓝点与计时器；上一章没写完的节号先补发出去
   useEffect(() => {
+    sendDirtyRef.current();
     for (const t of dwellTimers.current.values()) clearTimeout(t);
     dwellTimers.current.clear();
     readVersesRef.current = new Set();
     setReadVerses(new Set());
   }, [version, book, chapter]);
+
+  // 回填：本地缓存先抹掉该抹的蓝点，服务端回来再校正；整章读完过的章节直接全灭
+  useEffect(() => {
+    if (!user || !data?.hasContent || !verseCount) return;
+    const key = `${version}:${book}:${chapter}`;
+    if (seededRef.current === key) return;
+    seededRef.current = key;
+    try {
+      const local = JSON.parse(localStorage.getItem(`bible:readVerses:${key}`) || '[]');
+      if (Array.isArray(local)) markVersesReadRef.current(local.map(Number), false);
+    } catch { /* ignore */ }
+    // 本地就已读满整章 = 本章先前读完过，别在重进时再报一次「读完本章」
+    if (readVersesRef.current.size >= verseCount) recordedRef.current = key;
+    api<{ chapterRead?: boolean; verses?: number[] }>(
+      '/bible/read-state?' + qs({ version, bookId: book, chapter }),
+      {},
+      { noCache: true }
+    ).then((res) => {
+      if (!res) return;
+      if (res.chapterRead) {
+        // 整章读完过：所有蓝点视为已读，并且不能再报一次「读完本章」
+        recordedRef.current = key;
+        markVersesReadRef.current((data?.verses ?? []).map((v) => v.verse), false);
+      } else if (Array.isArray(res.verses)) {
+        markVersesReadRef.current(res.verses, false);
+      }
+    }).catch(() => {});
+  }, [user, data?.hasContent, verseCount, version, book, chapter]);
 
   // 蓝点驻留检测：经文进入「阅读带」(上下各留 12% 盲区) 并停留 READ_DWELL_MS → 该节已读
   useEffect(() => {
@@ -226,8 +302,7 @@ export default function ReadChapter() {
             if (readVersesRef.current.has(n) || dwellTimers.current.has(n)) continue;
             const t = setTimeout(() => {
               dwellTimers.current.delete(n);
-              readVersesRef.current.add(n);
-              setReadVerses(new Set(readVersesRef.current));
+              markVersesReadRef.current([n]);
               // 全部蓝点淡出 → 本章读完
               if (readVersesRef.current.size >= verseCountRef.current) {
                 recordChapterReadRef.current();
@@ -246,10 +321,28 @@ export default function ReadChapter() {
     return () => obs.disconnect();
   }, [user, data?.hasContent, data?.verses, version, book, chapter]);
 
-  // 卸载时清理计时器
-  useEffect(() => () => {
-    for (const t of dwellTimers.current.values()) clearTimeout(t);
-    dwellTimers.current.clear();
+  // 卸载时清理计时器并把没写完的节号补发出去
+  useEffect(() => {
+    // 手机上「读完一节就关标签页」很常见：防抖窗口没到就关掉了，用 keepalive 兜最后一下
+    const onHide = () => {
+      const d = dirty.current;
+      if (!d || !d.verses.size || !userRef.current) return;
+      if (flushTimer.current) { clearTimeout(flushTimer.current); flushTimer.current = null; }
+      const token = tokenStore.get();
+      fetch(`${API_BASE}/bible/read-state`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ version: d.version, bookId: d.bookId, chapter: d.chapter, verses: [...d.verses] }),
+        keepalive: true,
+      }).catch(() => {});
+    };
+    document.addEventListener('pagehide', onHide);
+    return () => {
+      document.removeEventListener('pagehide', onHide);
+      sendDirtyRef.current();
+      for (const t of dwellTimers.current.values()) clearTimeout(t);
+      dwellTimers.current.clear();
+    };
   }, []);
 
   // 「先读完本章、之后才登录」的补记：登录后若本章蓝点已全灭，补一次写库
@@ -776,6 +869,9 @@ export default function ReadChapter() {
       })
     );
     if (res?.ok) {
+      // 手动标记同样要让蓝点当场全灭，否则点了按钮什么都没发生
+      recordedRef.current = `${version}:${book}:${chapter}`;
+      markVersesReadRef.current((data?.verses ?? []).map((v) => v.verse), false);
       const cd = res.completedDays || [];
       if (cd.length === 1) {
         showToast(`已完成《${cd[0].planTitle}》第 ${cd[0].day} 天 ✓`);
