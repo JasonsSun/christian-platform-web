@@ -502,6 +502,145 @@ html, body {
     padding-bottom: 0.375rem;
     border-radius: 0.5rem;
   }
+
+  /* 后台筛选条里的下拉。.input-styled 带 w-full（同层规则压过 w-40 / w-56 工具类），
+     所以一个「全部角色」能撑满整行，右边还留一大截空白箭头。这里收回自适应宽度，
+     并把系统默认的粗箭头换成和输入框一致的细线箭头（appearance:none 后必须自己画，
+     否则一点箭头痕迹都没有，看着不像能点）。箭头用固定灰：深色 #6b7280 压在
+     #1c2029 上 3.5:1、羊皮纸 4.6:1，都过图形元素 3:1 的线。 */
+  .select-inline {
+    width: auto;
+    min-width: 7.5rem;
+    max-width: 100%;
+    flex-shrink: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2.25rem;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%236b7280' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    background-size: 12px 8px;
+  }
+
+  /* 表格行内操作按钮。原来一行并排六个、各自一套配色（实心金、描边、纯底色混用），
+     窄一点就折成两行，看着像一堵墙。统一成同一档小尺寸，只靠底色/文字分轻重。
+     配色走 --chip-* 变量而不是 @apply 工具类：本块排在 @tailwind utilities 之后，
+     @apply 进来的 background 会反过来盖掉站点上写的 bg-rose-50，浅色主题下染色直接失效，
+     深色主题却靠 !important 兜底生效 —— 两边不一致比丑更糟。变量由本类自己按主题给。 */
+  .btn-chip {
+    --chip-bg: var(--ui-surface);
+    --chip-fg: var(--ui-muted);
+    --chip-bd: var(--ui-border);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--chip-bd);
+    border-radius: 0.5rem;
+    background-color: var(--chip-bg);
+    color: var(--chip-fg);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.125rem;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s, opacity 0.2s;
+  }
+  /* 触屏上 28px 高的行内操作够不到（探针实测 hit 42x28，低于 36 的门槛）：
+     指针精细（鼠标）时保持紧凑，粗指针（手机/平板）时抬高到 36px，桌面版式不受影响。 */
+  @media (pointer: coarse) {
+    .btn-chip {
+      min-height: 2.25rem;
+    }
+  }
+  /* 悬停用一层半透明遮罩压深/压亮，不重新指定底色，染色档（危险/金色）因此不会掉色 */
+  .btn-chip:hover:not(:disabled) {
+    background-image: linear-gradient(rgba(15, 18, 32, 0.06), rgba(15, 18, 32, 0.06));
+    border-color: var(--chip-fg);
+  }
+  .btn-chip:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  .btn-chip-danger {
+    --chip-bg: #fff1f2;
+    --chip-fg: #be123c;
+    --chip-bd: #fecdd3;
+  }
+  .btn-chip-accent {
+    --chip-bg: #fffbeb;
+    --chip-fg: #b45309;
+    --chip-bd: #fde68a;
+  }
+  .btn-chip-safe {
+    --chip-bg: #ecfdf5;
+    --chip-fg: #047857;
+    --chip-bd: #a7f3d0;
+  }
+  [data-theme="dark"] .btn-chip {
+    --chip-bg: #1c2029;
+    --chip-fg: #9aa0ad;
+    --chip-bd: #2a2f3a;
+  }
+  [data-theme="dark"] .btn-chip:hover:not(:disabled) {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.07));
+  }
+  [data-theme="dark"] .btn-chip-danger {
+    --chip-bg: rgba(244, 63, 94, 0.1);
+    --chip-fg: #fda4af;
+    --chip-bd: rgba(251, 113, 133, 0.3);
+  }
+  [data-theme="dark"] .btn-chip-accent {
+    --chip-bg: rgba(245, 158, 11, 0.16);
+    --chip-fg: #fcd34d;
+    --chip-bd: rgba(252, 211, 77, 0.3);
+  }
+  [data-theme="dark"] .btn-chip-safe {
+    --chip-bg: rgba(16, 185, 129, 0.1);
+    --chip-fg: #6ee7b7;
+    --chip-bd: rgba(110, 231, 183, 0.28);
+  }
+  [data-theme="sepia"] .btn-chip {
+    --chip-bg: #fbf4e6;
+    --chip-fg: #74653f;
+    --chip-bd: #e6d8bd;
+  }
+  [data-theme="sepia"] .btn-chip-danger {
+    --chip-bg: #fbeaea;
+    --chip-fg: #9f1239;
+    --chip-bd: #e7c9c4;
+  }
+  [data-theme="sepia"] .btn-chip-accent {
+    --chip-bg: #f7ecd4;
+    --chip-fg: #92400e;
+    --chip-bd: #e3cfa4;
+  }
+  [data-theme="sepia"] .btn-chip-safe {
+    --chip-bg: #eaf2e4;
+    --chip-fg: #065f46;
+    --chip-bd: #cfe0c9;
+  }
+
+  /* 全站默认滚动条是 10px 靛蓝渐变，放在后台 224px 侧栏里看着像一根进度条。
+     这类"必须能滚但不该抢戏"的容器用本类收窄并换成中性色，滚动行为不动；
+     走 --ui-* 令牌是为了深色/羊皮纸下自动跟表面色，不用另写主题分支。 */
+  .scroll-slim {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ui-muted) transparent;
+  }
+  .scroll-slim::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scroll-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb {
+    background: var(--ui-muted);
+    border-radius: 6px;
+  }
+  .scroll-slim::-webkit-scrollbar-thumb:hover {
+    background: var(--ui-accent);
+  }
 }
 
 /* 非模态提示条（Notice）入场动画 */

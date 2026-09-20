@@ -122,8 +122,8 @@ function SermonManager() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <input aria-label="搜索讲道标题 / 讲员 / 经文" className="input-styled flex-1 min-w-[160px]" placeholder="搜索标题/讲员/经文" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select aria-label="按讲道系列筛选" className="input-styled" value={seriesId} onChange={(e) => setSeriesId(e.target.value)}>
+        <input aria-label="搜索讲道标题 / 讲员 / 经文" className="input-styled input-sm flex-1 min-w-[160px]" placeholder="搜索标题/讲员/经文" value={q} onChange={(e) => setQ(e.target.value)} />
+        <select aria-label="按讲道系列筛选" className="input-styled input-sm select-inline" value={seriesId} onChange={(e) => setSeriesId(e.target.value)}>
           <option value="">全部系列</option>
           {(seriesData?.items || []).map((s) => (
             <option key={s.id} value={s.id}>{convert(s.title)}</option>
@@ -135,7 +135,7 @@ function SermonManager() {
         </label>
       </div>
 
-      {loading ? (
+      {loading && !data ? (
         <Loading />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
@@ -143,45 +143,47 @@ function SermonManager() {
         <Empty label="暂无讲道" />
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
-          <table className="w-full text-sm">
-            <caption className="sr-only">讲道管理</caption>
-            <thead className="bg-ink-50 text-ink-600">
-              <tr>
-                <th scope="col" className="text-left px-4 py-3 font-medium">标题</th>
-                <th scope="col" className="text-left px-4 py-3 font-medium">讲员</th>
-                <th scope="col" className="text-left px-4 py-3 font-medium">系列</th>
-                <th scope="col" className="text-center px-4 py-3 font-medium">媒体</th>
-                <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
-                <th scope="col" className="text-center px-4 py-3 font-medium">数据</th>
-                <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((s) => (
-                <tr key={s.id} className="border-t border-ink-100 hover:bg-primary-50/40">
-                  <td className="px-4 py-3">
-                    <Link href={`/sermons/${s.id}`} className="font-medium text-ink-900 hover:text-primary-700 line-clamp-1 max-w-[240px]">
-                      {convert(s.title)}
-                    </Link>
-                    {s.scripture ? <div className="text-xs text-ink-400">{convert(s.scripture)}</div> : null}
-                  </td>
-                  <td className="px-4 py-3 text-ink-600">{s.speaker ? convert(s.speaker) : '—'}</td>
-                  <td className="px-4 py-3 text-ink-600">{s.seriesTitle ? convert(s.seriesTitle) : '—'}</td>
-                  <td className="px-4 py-3 text-center">
-                    <Badge tone="primary">{s.mediaType === 'audio' ? '音频' : s.mediaType === 'video' ? '视频' : '文稿'}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <Badge tone={STATUS_TONE[s.status] || 'gray'}>{s.status === 'published' ? '已发布' : '草稿'}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-center text-ink-500">▶{s.viewCount} ♥{s.likeCount}</td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <button onClick={() => openEdit(s)} className="text-primary-600 hover:underline mr-3">编辑</button>
-                    <button onClick={() => remove(s)} className="text-rose-600 hover:underline">删除</button>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <caption className="sr-only">讲道管理</caption>
+              <thead className="bg-ink-50 text-ink-600">
+                <tr>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">标题</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">讲员</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">系列</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">媒体</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">数据</th>
+                  <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {items.map((s) => (
+                  <tr key={s.id} className="border-t border-ink-100 hover:bg-primary-50/40">
+                    <td className="px-4 py-3">
+                      <Link href={`/sermons/${s.id}`} className="font-medium text-ink-900 hover:text-primary-700 line-clamp-1 max-w-[240px]">
+                        {convert(s.title)}
+                      </Link>
+                      {s.scripture ? <div className="text-xs text-ink-400">{convert(s.scripture)}</div> : null}
+                    </td>
+                    <td className="px-4 py-3 text-ink-600">{s.speaker ? convert(s.speaker) : '—'}</td>
+                    <td className="px-4 py-3 text-ink-600">{s.seriesTitle ? convert(s.seriesTitle) : '—'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <Badge tone="primary">{s.mediaType === 'audio' ? '音频' : s.mediaType === 'video' ? '视频' : '文稿'}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Badge tone={STATUS_TONE[s.status] || 'gray'}>{s.status === 'published' ? '已发布' : '草稿'}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-center text-ink-500 whitespace-nowrap">播放 {s.viewCount} · 收藏 {s.likeCount}</td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <button onClick={() => openEdit(s)} className="btn-chip mr-1.5">编辑</button>
+                      <button onClick={() => remove(s)} className="btn-chip btn-chip-danger">删除</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -377,7 +379,7 @@ function SeriesManager() {
         <SectionTitle as="h1">讲道系列</SectionTitle>
         <button className="btn-primary text-sm" onClick={() => { setEditing(null); setShowForm(true); }}>＋ 新建系列</button>
       </div>
-      {loading ? (
+      {loading && !data ? (
         <Loading />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
@@ -394,8 +396,8 @@ function SeriesManager() {
               <p className="text-sm text-ink-500 mt-1 line-clamp-2">{convert(s.description) || '—'}</p>
               <div className="text-xs text-ink-400 mt-2">讲道数：{s.sermonCount || 0} · 排序：{s.sortOrder}</div>
               <div className="flex gap-3 mt-3">
-                <button className="text-primary-600 hover:underline text-sm" onClick={() => { setEditing(s); setShowForm(true); }}>编辑</button>
-                <button className="text-rose-600 hover:underline text-sm" onClick={() => remove(s)}>删除</button>
+                <button className="btn-chip" onClick={() => { setEditing(s); setShowForm(true); }}>编辑</button>
+                <button className="btn-chip btn-chip-danger" onClick={() => remove(s)}>删除</button>
               </div>
             </div>
           ))}

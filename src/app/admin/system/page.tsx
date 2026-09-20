@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import { apiGet, apiPost } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { formatDateTime } from '@/lib/format';
+import { channelLabel, notifJobReasonLabel, notifJobStatusLabel, notifTypeLabel } from '@/lib/notificationMeta';
 import { AdminLayout, Badge, Loading, Empty, ErrorBox, SectionTitle } from '../_components';
 
 interface HealthData {
@@ -57,13 +59,6 @@ interface NotifyInfo {
     created_at: string;
   }[];
 }
-
-const NOTIFY_CHANNEL_LABEL: Record<string, string> = {
-  inapp: '站内',
-  email: '邮件',
-  wechat: '微信',
-  sms: '短信',
-};
 
 export default function AdminSystemPage() {
   const { user, loading: authLoading } = useAuth();
@@ -145,7 +140,7 @@ export default function AdminSystemPage() {
           <>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-sm text-ink-500">运行状态：</span>
-              <Badge tone={data.status === 'UP' ? 'green' : 'red'}>{data.status}</Badge>
+              <Badge tone={data.status === 'UP' ? 'green' : 'red'}>{data.status === 'UP' ? '正常' : '异常'}</Badge>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <InfoRow label="数据库引擎" value={data.database.engine} />
@@ -157,7 +152,7 @@ export default function AdminSystemPage() {
               <InfoRow label="诗歌数" value={data.counts.songs} />
               <InfoRow label="经文数" value={data.counts.verses} />
               <InfoRow label="通知数" value={data.counts.notifications} />
-              <InfoRow label="服务时间" value={data.time} />
+              <InfoRow label="服务时间" value={formatDateTime(data.time) || data.time} />
             </div>
           </>
         )}
@@ -168,12 +163,8 @@ export default function AdminSystemPage() {
         <div className="flex items-center justify-between">
           <SectionTitle>外发通知队列</SectionTitle>
           <div className="flex items-center gap-2">
-            <button className="btn-secondary text-xs" onClick={loadNotify} disabled={notifyLoading}>
-              {notifyLoading ? '刷新中…' : '刷新'}
-            </button>
-            <button className="btn-primary text-xs" onClick={flushQueue} disabled={flushBusy}>
-              {flushBusy ? '冲刷中…' : '冲刷队列'}
-            </button>
+            <button className="btn-secondary btn-sm" onClick={loadNotify} disabled={notifyLoading}>刷新</button>
+            <button className="btn-primary btn-sm" onClick={flushQueue} disabled={flushBusy} aria-busy={flushBusy}>冲刷队列</button>
           </div>
         </div>
         <p className="text-xs text-ink-400 mb-4">
@@ -204,15 +195,16 @@ export default function AdminSystemPage() {
               <span className="text-ink-500">通道就绪：</span>
               {Object.entries(notifyData.channels || {}).map(([k, v]) => (
                 <Badge key={k} tone={v ? 'green' : 'gray'}>
-                  {NOTIFY_CHANNEL_LABEL[k] || k}
+                  {channelLabel(k)}
                   {v ? ' 已配置' : ' 未配置'}
                 </Badge>
               ))}
             </div>
 
             {notifyData.recent?.length ? (
-              <div className="rounded-xl border border-ink-100 overflow-hidden">
-                <table className="w-full text-xs">
+              /* 原来是 overflow-hidden：窄屏下整张表被裁掉且滚不动，全站 15 张后台表都用 overflow-x-auto */
+              <div className="rounded-xl border border-ink-100 overflow-x-auto">
+                <table className="w-full min-w-[760px] text-xs">
                   <caption className="sr-only">外发通知队列</caption>
                   <thead className="bg-ink-50 text-ink-600">
                     <tr>
@@ -220,22 +212,32 @@ export default function AdminSystemPage() {
                       <th scope="col" className="text-left px-3 py-2 font-medium">类型</th>
                       <th scope="col" className="text-left px-3 py-2 font-medium">标题</th>
                       <th scope="col" className="text-center px-3 py-2 font-medium">状态</th>
+                      <th scope="col" className="text-left px-3 py-2 font-medium">原因</th>
                       <th scope="col" className="text-right px-3 py-2 font-medium">时间</th>
                     </tr>
                   </thead>
                   <tbody>
                     {notifyData.recent.map((j) => (
                       <tr key={j.id} className="border-t border-ink-100">
-                        <td className="px-3 py-2">{NOTIFY_CHANNEL_LABEL[j.channel] || j.channel}</td>
-                        <td className="px-3 py-2 text-ink-500">{j.kind}</td>
+                        <td className="px-3 py-2">{channelLabel(j.channel)}</td>
+                        <td className="px-3 py-2">
+                          {/* 中文给人读，code 留给排障：与事件中心同一套呈现 */}
+                          <div className="text-ink-700">{notifTypeLabel(j.kind)}</div>
+                          <div className="font-mono text-[11px] text-ink-400">{j.kind}</div>
+                        </td>
                         <td className="px-3 py-2 text-ink-700 line-clamp-1 max-w-[220px]">{j.title}</td>
                         <td className="px-3 py-2 text-center">
-                          <Badge tone={j.status === 'sent' ? 'green' : j.status === 'failed' ? 'red' : 'gold'}>
-                            {j.status}
+                          <Badge tone={j.status === 'sent' ? 'green' : j.status === 'failed' ? 'red' : j.status === 'skipped' ? 'gold' : 'gray'}>
+                            {notifJobStatusLabel(j.status)}
                           </Badge>
                         </td>
-                        <td className="px-3 py-2 text-right text-ink-400">
-                          {j.created_at?.slice(0, 16).replace('T', ' ')}
+                        {/* 队列里绝大多数是 skipped，不给原因就等于让管理员猜为什么没发出去 */}
+                        <td className="px-3 py-2 text-ink-500 max-w-[200px] truncate" title={notifJobReasonLabel(j.reason) || undefined}>
+                          {notifJobReasonLabel(j.reason) || '—'}
+                        </td>
+                        <td className="px-3 py-2 text-right text-ink-400 whitespace-nowrap">
+                          {/* created_at 带 Z，slice 会把 UTC 墙上时间直接印出来，比本机时间差 8 小时 */}
+                          {formatDateTime(j.created_at) || j.created_at}
                         </td>
                       </tr>
                     ))}

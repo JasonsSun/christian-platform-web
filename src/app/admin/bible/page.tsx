@@ -141,7 +141,7 @@ export default function AdminBiblePage() {
         />
       </div>
 
-      {admin.loading ? (
+      {admin.loading && !admin.data ? (
         <Loading />
       ) : admin.error ? (
         <ErrorBox message={admin.error} onRetry={admin.reload} />

@@ -59,6 +59,20 @@ export const NOTIF_TYPE_LABEL: Record<string, string> = {
   password_reset: '密码重置',
   quota_changed: '配额变更',
   quota_levelup_tip: '等级提升提示',
+  // 补漏：以下这些是 src/server 里真实入队的 type，此前没收录，
+  // 后台外发队列只能把 code 原样印在中文界面上
+  feedback_reply: '反馈已回复',
+  staff_message: '工作人员消息',
+  invite_joined: '受邀加入',
+  group_owner_changed: '团长已变更',
+  group_removed: '已移出团契',
+  org_deleted: '组织已删除',
+  org_member_removed: '已移出组织',
+  'activity.reminder': '活动提醒',
+  'donation.paid': '奉献已到账',
+  'donation.paid_admin': '收到线上奉献',
+  'reminder.read': '读经提醒',
+  'reminder.devotion': '灵修提醒',
 };
 
 /** 类型 → 图标（用户端通知列表用） */
@@ -96,18 +110,20 @@ export const CHANNEL_LABEL: Record<string, string> = {
 /** 未知 code 的兜底：按命名规则粗译，绝不裸露英文 code 给用户 */
 const TOKEN_ZH: Record<string, string> = {
   activity: '活动', group: '团契', org: '组织', content: '内容', media: '媒体', song: '诗歌',
-  live: '直播', user: '用户', friend: '好友', prayer: '祷告', quota: '配额',
+  live: '直播', user: '用户', friend: '好友', prayer: '祷告', quota: '配额', donation: '奉献',
   pending: '待处理', approved: '已通过', rejected: '未通过', cancelled: '已取消', canceled: '已取消',
   updated: '有更新', removed: '已移除', reported: '被举报', submitted: '已提交',
   created: '已创建', deleted: '已删除', changed: '有变更', reminder: '提醒', joined: '已加入',
   left: '已退出', owner: '负责人', new: '新', review: '审核', tip: '提示', reset: '重置',
+  paid: '已到账', admin: '管理员', reply: '回复', message: '消息', staff: '工作人员',
+  invite: '邀请', read: '读经', devotion: '灵修', feedback: '反馈', member: '成员',
 };
 
 export function notifTypeLabel(type?: string): string {
   if (!type) return '未知类型';
   if (NOTIF_TYPE_LABEL[type]) return NOTIF_TYPE_LABEL[type];
-  // 未收录的类型：按 _ 分词逐段翻译，译不出就保留原词，但保证整体不是纯英文 code 的裸奔观感
-  const parts = type.split('_').map((seg) => TOKEN_ZH[seg]).filter(Boolean);
+  // 未收录的类型：按 _ / . 分词逐段翻译，译不出就保留原词，但保证整体不是纯英文 code 的裸奔观感
+  const parts = type.split(/[_.]/).map((seg) => TOKEN_ZH[seg]).filter(Boolean);
   if (parts.length) return parts.join('');
   return `其他通知（${type}）`;
 }
@@ -115,4 +131,31 @@ export function notifTypeLabel(type?: string): string {
 export function channelLabel(channel?: string): string {
   if (!channel) return '未知渠道';
   return CHANNEL_LABEL[channel] || channel;
+}
+
+/** 外发队列任务状态 → 中文。notify_jobs.status 只有这四个取值。 */
+export const NOTIF_JOB_STATUS_LABEL: Record<string, string> = {
+  pending: '待发送', sent: '已发送', failed: '发送失败', skipped: '已跳过',
+};
+
+export function notifJobStatusLabel(status?: string): string {
+  return (status && NOTIF_JOB_STATUS_LABEL[status]) || status || '未知';
+}
+
+/** 跳过原因 → 中文。队列里 90% 的行都是 skipped，不给原因就等于让管理员猜。 */
+const NOTIF_SKIP_REASON_LABEL: Record<string, string> = {
+  smtp_not_configured: '邮件通道未配置',
+  wechat_not_configured: '微信通道未配置',
+  sms_not_configured: '短信通道未配置',
+  unknown_channel: '未知通道',
+  // 入队时就判定的原因：收件人缺对应联系方式（notify.ts 的 fanout）
+  no_email: '收件人未填邮箱',
+  wechat_not_bound: '收件人未绑定微信',
+  phone_unverified: '收件人手机号未验证',
+};
+
+/** 返回中文原因；发送失败的 reason 是异常文本，原样保留才有排障价值 */
+export function notifJobReasonLabel(reason?: string | null): string {
+  if (!reason) return '';
+  return NOTIF_SKIP_REASON_LABEL[reason] || reason;
 }

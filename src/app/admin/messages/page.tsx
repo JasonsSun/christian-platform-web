@@ -118,7 +118,7 @@ export default function AdminMessagesPage() {
         管理员与审核员之间的内部沟通渠道。普通成员既不显示入口，也无法访问此接口。
       </p>
 
-      {loading ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
+      {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft grid md:grid-cols-[260px_1fr] min-h-[520px]">
           {/* 会话列表 */}
           <div className="border-r border-ink-100 max-h-[600px] overflow-y-auto">

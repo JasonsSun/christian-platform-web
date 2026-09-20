@@ -63,7 +63,7 @@ export default function AdminTagsPage() {
           <button type="submit" className="btn-secondary text-sm">搜索</button>
           {search && <button type="button" onClick={() => { setKw(''); setSearch(''); }} className="btn-secondary text-sm">清空</button>}
         </form>
-        <select aria-label="标签排序方式" value={sort} onChange={(e) => setSort(e.target.value as 'count' | 'name')} className="input-styled w-32">
+        <select aria-label="标签排序方式" value={sort} onChange={(e) => setSort(e.target.value as 'count' | 'name')} className="input-styled input-sm select-inline">
           <option value="count">按使用量</option>
           <option value="name">按名称</option>
         </select>

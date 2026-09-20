@@ -58,7 +58,7 @@ export default function AdminSettingsPage() {
       <SectionTitle as="h1">系统设置</SectionTitle>
       <p className="-mt-3 mb-5 text-sm text-ink-500">上传、通知、搜索、维护模式等运行配置</p>
 
-      {loading ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
+      {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
         <div className="space-y-6">
           {groups.map((g) => (
             <div key={g} className="glass rounded-2xl p-5 shadow-soft">

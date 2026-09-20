@@ -162,7 +162,7 @@ export default function AdminRolesPage() {
         审核员的能力严格等于这里分配的模块，一人可兼任多个模块。
       </p>
 
-      {loading ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
+      {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
         <div className="space-y-6">
           <div className="grid md:grid-cols-3 gap-4">
             {roles.map((r) => (
@@ -225,7 +225,7 @@ export default function AdminRolesPage() {
                         <span className="text-xs text-ink-400">@{row.username}</span>
                         <StaffBadges role={row.role} scopes={cur} compact />
                       </div>
-                      <div className="flex gap-3">
+                      <div className="flex items-center gap-2">
                         <button
                           className="btn-secondary text-xs"
                           disabled={!dirty || saving === row.id}
@@ -234,7 +234,7 @@ export default function AdminRolesPage() {
                           {saving === row.id ? '保存中…' : dirty ? '保存' : '已保存'}
                         </button>
                         <button
-                          className="text-xs text-rose-600 hover:underline"
+                          className="btn-chip btn-chip-danger"
                           disabled={saving === row.id}
                           onClick={() => save(row.id, [])}
                         >
@@ -258,7 +258,7 @@ export default function AdminRolesPage() {
                         <span className="text-xs text-ink-400">@{p.username}</span>
                         <Badge tone="gray">待分配模块</Badge>
                       </div>
-                      <div className="flex gap-3">
+                      <div className="flex items-center gap-2">
                         <button
                           className="btn-secondary text-xs"
                           disabled={cur.length === 0 || saving === p.id}
@@ -267,7 +267,7 @@ export default function AdminRolesPage() {
                           {saving === p.id ? '保存中…' : '保存为审核员'}
                         </button>
                         <button
-                          className="text-xs text-ink-500 hover:underline"
+                          className="btn-chip"
                           onClick={() => setPending((x) => x.filter((y) => y.id !== p.id))}
                         >
                           移除

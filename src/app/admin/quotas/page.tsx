@@ -106,7 +106,7 @@ export default function AdminQuotasPage() {
         按「在线时长 / 使用次数 / 内容贡献 / 违规」计算信任分并自动分级，等级越高可上传的视频越长、文件越大、每日次数越多。
       </p>
 
-      {loading ? <Loading /> : null}
+      {loading && !data ? <Loading /> : null}
       {error ? <ErrorBox message={error} onRetry={reload} /> : null}
       {msg ? <div role="status" className="mb-4 rounded-xl bg-emerald-50 border border-emerald-100 px-4 py-2 text-sm text-emerald-700">{msg}</div> : null}
 
@@ -122,9 +122,11 @@ export default function AdminQuotasPage() {
           {/* 等级分布 */}
           <div className="glass rounded-2xl p-5 mb-6">
             <h2 className="font-semibold text-ink-900 mb-3">等级分布</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {/* flex-wrap 而不是 6 列网格：接口只返回有用量的等级，网格会留下 4 个空格子，
+                卡片看着像渲染坏了一半 */}
+            <div className="flex flex-wrap gap-3">
               {data.stats.byLevel.map((b: any) => (
-                <div key={b.level} className="rounded-2xl border border-ink-100 bg-ui-surface px-4 py-3">
+                <div key={b.level} className="rounded-2xl border border-ink-100 bg-ui-surface px-4 py-3 min-w-[150px]">
                   <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${LEVEL_TONE[b.level] || LEVEL_TONE[0]}`}>
                     L{b.level} {b.name}
                   </span>
@@ -234,7 +236,7 @@ export default function AdminQuotasPage() {
                     onKeyDown={(e) => { if (e.key === 'Enter') { setKw(kwInput); setPage(1); } }}
                   />
                 </div>
-                <select className="input-styled input-sm w-auto text-sm" aria-label="按成长等级筛选" value={level} onChange={(e) => { setLevel(e.target.value); setPage(1); }}>
+                <select className="input-styled input-sm select-inline text-sm" aria-label="按成长等级筛选" value={level} onChange={(e) => { setLevel(e.target.value); setPage(1); }}>
                   <option value="">全部等级</option>
                   {data.policies.map((p) => <option key={p.level} value={p.level}>L{p.level} {p.name}</option>)}
                 </select>

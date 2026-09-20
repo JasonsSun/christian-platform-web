@@ -5,6 +5,7 @@ import { apiPatch } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
+import { formatDateTime } from '@/lib/format';
 import {
   AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox,
 } from '../_components';
@@ -86,7 +87,7 @@ export default function AdminActivitiesPage() {
 
       <div className="flex flex-wrap gap-2 mb-4">
         <input
-          className="input-styled flex-1 min-w-[180px]"
+          className="input-styled input-sm flex-1 min-w-[180px]"
           aria-label="搜索活动标题 / 城市 / 地点"
           placeholder="搜索活动标题 / 城市 / 地点"
           value={q}
@@ -107,7 +108,7 @@ export default function AdminActivitiesPage() {
 
       {msg ? <div role="status" className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
 
-      {loading ? (
+      {loading && !data ? (
         <Loading />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
@@ -115,82 +116,88 @@ export default function AdminActivitiesPage() {
         <Empty label="暂无活动" />
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
-          <table className="w-full text-sm">
-            <caption className="sr-only">活动管理</caption>
-            <thead className="bg-ink-50 text-ink-600">
-              <tr>
-                <th scope="col" className="text-left px-4 py-3 font-medium">活动</th>
-                <th scope="col" className="text-left px-4 py-3 font-medium">城市/地点</th>
-                <th scope="col" className="text-left px-4 py-3 font-medium">开始时间</th>
-                <th scope="col" className="text-center px-4 py-3 font-medium">报名</th>
-                <th scope="col" className="text-center px-4 py-3 font-medium">签到</th>
-                <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
-                <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((a) => (
-                <tr key={a.id} className="border-t border-ink-100 hover:bg-primary-50/40">
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-ink-900">{a.title}</div>
-                    <div className="text-xs text-ink-400">{a.category} · {a.organizer}</div>
-                  </td>
-                  <td className="px-4 py-3 text-ink-600">
-                    <div>{a.city || '—'}</div>
-                    <div className="text-xs text-ink-400">{a.location || ''}</div>
-                  </td>
-                  <td className="px-4 py-3 text-ink-600">{a.startAt?.slice(0, 16).replace('T', ' ')}</td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="font-medium text-ink-900">{a.confirmed}</span>
-                    <span className="text-ink-400">/{a.capacity}</span>
-                    {a.waitlist > 0 ? <span className="ml-1 text-xs text-gold-700">候补{a.waitlist}</span> : null}
-                  </td>
-                  <td className="px-4 py-3 text-center text-ink-700">{a.checkins}</td>
-                  <td className="px-4 py-3 text-center">
-                    <Badge tone={STATUS_MAP[a.status]?.tone || 'gray'}>{STATUS_MAP[a.status]?.label || a.status}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                    {a.status === 'cancelled' ? (
-                      <button
-                        disabled={busy === a.id}
-                        onClick={() => changeStatus(a.id, 'published')}
-                        className="text-emerald-700 hover:underline disabled:opacity-50"
-                      >
-                        恢复上线
-                      </button>
-                    ) : (
-                      <>
-                        {a.status === 'published' ? (
-                          <button
-                            disabled={busy === a.id}
-                            onClick={() => changeStatus(a.id, 'offline')}
-                            className="text-gold-700 hover:underline disabled:opacity-50"
-                          >
-                            下架
-                          </button>
-                        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <caption className="sr-only">活动管理</caption>
+              <thead className="bg-ink-50 text-ink-600">
+                <tr>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">活动</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">城市/地点</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">开始时间</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">报名</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">签到</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
+                  <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((a) => (
+                  <tr key={a.id} className="border-t border-ink-100 hover:bg-primary-50/40">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-ink-900">{a.title}</div>
+                      <div className="text-xs text-ink-400">{a.category} · {a.organizer}</div>
+                    </td>
+                    <td className="px-4 py-3 text-ink-600">
+                      <div>{a.city || '—'}</div>
+                      <div className="text-xs text-ink-400">{a.location || ''}</div>
+                    </td>
+                    {/* 接口给的是带 Z 的 UTC 串，slice 出来的墙上时间比本机早 8 小时，
+                        会和活动详情页（formatDateTime）对不上同一场活动 */}
+                    <td className="px-4 py-3 text-ink-600">{formatDateTime(a.startAt) || '—'}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="font-medium text-ink-900">{a.confirmed}</span>
+                      <span className="text-ink-400">/{a.capacity}</span>
+                      {a.waitlist > 0 ? <span className="ml-1 text-xs text-gold-700">候补{a.waitlist}</span> : null}
+                    </td>
+                    <td className="px-4 py-3 text-center text-ink-700">{a.checkins}</td>
+                    <td className="px-4 py-3 text-center">
+                      <Badge tone={STATUS_MAP[a.status]?.tone || 'gray'}>{STATUS_MAP[a.status]?.label || a.status}</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <div className="inline-flex flex-wrap justify-end gap-1">
+                        {a.status === 'cancelled' ? (
                           <button
                             disabled={busy === a.id}
                             onClick={() => changeStatus(a.id, 'published')}
-                            className="text-emerald-700 hover:underline disabled:opacity-50"
+                            className="btn-chip btn-chip-safe"
                           >
-                            上线
+                            恢复上线
                           </button>
+                        ) : (
+                          <>
+                            {a.status === 'published' ? (
+                              <button
+                                disabled={busy === a.id}
+                                onClick={() => changeStatus(a.id, 'offline')}
+                                className="btn-chip"
+                              >
+                                下架
+                              </button>
+                            ) : (
+                              <button
+                                disabled={busy === a.id}
+                                onClick={() => changeStatus(a.id, 'published')}
+                                className="btn-chip btn-chip-accent"
+                              >
+                                上线
+                              </button>
+                            )}
+                            <button
+                              disabled={busy === a.id}
+                              onClick={() => cancelActivity(a)}
+                              className="btn-chip btn-chip-danger"
+                            >
+                              取消活动
+                            </button>
+                          </>
                         )}
-                        <button
-                          disabled={busy === a.id}
-                          onClick={() => cancelActivity(a)}
-                          className="text-rose-700 font-medium hover:underline disabled:opacity-50"
-                        >
-                          取消活动
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </AdminLayout>

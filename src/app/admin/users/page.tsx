@@ -64,6 +64,8 @@ export default function AdminUsersPage() {
     return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">无权限访问（需要审核员或管理员角色）。</div>;
 
   const canManage = user.role === 'admin';
+  // 手里已经有一页数据时不再整页换成「加载中…」：刷新会把表格抹成一行字再弹回来
+  const refreshing = loading && data != null;
 
   function onSearch(v: string) {
     setQ(v);
@@ -147,21 +149,28 @@ export default function AdminUsersPage() {
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="font-display text-2xl font-bold text-ink-900">用户管理</h1>
-        <button className="btn-secondary" onClick={reload}>刷新</button>
+      <div className="flex items-end justify-between gap-3 flex-wrap mb-6">
+        {/* flex-1 + min-w-0：说明文字在「正在刷新…」和整句统计之间长短差几十到几百像素，
+            不占满剩余宽度的话右侧按钮会跟着左右跳。按钮文案也保持固定。 */}
+        <div className="flex-1 min-w-0">
+          <h1 className="font-display text-2xl font-bold text-ink-900">用户管理</h1>
+          <p className="text-xs text-ink-500 mt-1">
+            {refreshing ? '正在刷新…' : `共 ${data?.total ?? 0} 位用户，可按用户名 / 邮箱 / 昵称检索`}
+          </p>
+        </div>
+        <button className="btn-secondary btn-sm shrink-0" onClick={reload} disabled={loading}>刷新</button>
       </div>
 
       {/* 筛选栏 */}
-      <div className="glass rounded-2xl p-4 mb-5 flex flex-wrap gap-3 items-center shadow-soft">
+      <div className="glass rounded-2xl p-3 sm:p-4 mb-5 flex flex-wrap gap-2 sm:gap-3 items-center shadow-soft">
         <input
-          className="input-styled flex-1 min-w-[200px]"
+          className="input-styled input-sm flex-1 min-w-[200px]"
           aria-label="搜索用户名 / 邮箱 / 昵称"
           placeholder="搜索用户名 / 邮箱 / 昵称"
           value={q}
           onChange={(e) => onSearch(e.target.value)}
         />
-        <select className="input-styled w-40" aria-label="按角色筛选" value={role} onChange={(e) => onRoleFilter(e.target.value)}>
+        <select className="input-styled input-sm select-inline" aria-label="按角色筛选" value={role} onChange={(e) => onRoleFilter(e.target.value)}>
           <option value="">全部角色</option>
           <option value="member">普通成员</option>
           <option value="moderator">审核员</option>
@@ -172,29 +181,32 @@ export default function AdminUsersPage() {
         ) : null}
       </div>
 
-      {loading ? (
+      {loading && !data ? (
         <Loading />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
       ) : !data || data.items.length === 0 ? (
-        <Empty label="没有匹配的用户" />
+        <Empty label="没有匹配的用户" hint="换个关键词，或把角色筛选改回「全部角色」再试" />
       ) : (
         <>
-          <div className="glass rounded-2xl overflow-hidden shadow-soft">
+          <div className={`glass rounded-2xl overflow-hidden shadow-soft transition-opacity ${refreshing ? 'opacity-60' : ''}`}>
             <div className="overflow-x-auto">
+              {/* 1600 屏下正文列实测约 1216px（1560 容器 - 侧栏 256 - 间距 24 - 内边距 64）。
+                  九个格子的内边距收到 px-3、六个操作按钮统一成 .btn-chip 后自然宽度约 1190，
+                  最右边的「删除」不再被裁半截；min-w 只作窄屏兜底，触发横向滚动而不是压字。 */}
               <table className="w-full min-w-[1120px] text-sm">
                 <caption className="sr-only">用户管理</caption>
                 <thead className="bg-ink-50 text-ink-600">
                   <tr className="whitespace-nowrap">
-                    <th scope="col" className="text-left px-4 py-3 font-medium">用户名</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">邮箱</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">昵称</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">角色</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">状态</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">城市</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">内容数</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">注册时间</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">操作</th>
+                    <th scope="col" className="text-left px-3 py-3 font-medium">用户名</th>
+                    <th scope="col" className="text-left px-3 py-3 font-medium">邮箱</th>
+                    <th scope="col" className="text-left px-3 py-3 font-medium">昵称</th>
+                    <th scope="col" className="text-left px-3 py-3 font-medium">角色</th>
+                    <th scope="col" className="text-left px-3 py-3 font-medium">状态</th>
+                    <th scope="col" className="text-left px-3 py-3 font-medium">城市</th>
+                    <th scope="col" className="text-left px-3 py-3 font-medium">内容数</th>
+                    <th scope="col" className="text-left px-3 py-3 font-medium">注册时间</th>
+                    <th scope="col" className="text-left px-3 py-3 font-medium">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -203,18 +215,18 @@ export default function AdminUsersPage() {
                     const disabled = !canManage || self || pending;
                     return (
                       <tr key={u.id} className="border-t border-ink-100 hover:bg-ink-50/50">
-                        <td className="px-4 py-3 text-ink-800">{u.username}{self ? <span className="text-xs text-ink-400">（我）</span> : ''}</td>
-                        <td className="px-4 py-3 text-ink-600">{u.email}</td>
-                        <td className="px-4 py-3 text-ink-600">{u.displayName}</td>
-                        <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
-                        <td className="px-4 py-3"><StatusBadge status={u.status} /></td>
-                        <td className="px-4 py-3 text-ink-600">{u.city || '-'}</td>
-                        <td className="px-4 py-3 text-ink-600">{u.contentCount}</td>
-                        <td className="px-4 py-3 text-ink-400">{formatDate(u.createdAt)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1.5">
+                        <td className="px-3 py-3 text-ink-800 whitespace-nowrap">{u.username}{self ? <span className="text-xs text-ink-400">（我）</span> : ''}</td>
+                        <td className="px-3 py-3 text-ink-600">{u.email}</td>
+                        <td className="px-3 py-3 text-ink-600 whitespace-nowrap">{u.displayName}</td>
+                        <td className="px-3 py-3"><RoleBadge role={u.role} /></td>
+                        <td className="px-3 py-3"><StatusBadge status={u.status} /></td>
+                        <td className="px-3 py-3 text-ink-600 whitespace-nowrap">{u.city || '-'}</td>
+                        <td className="px-3 py-3 text-ink-600">{u.contentCount}</td>
+                        <td className="px-3 py-3 text-ink-400 whitespace-nowrap">{formatDate(u.createdAt)}</td>
+                        <td className="px-3 py-3">
+                          <div className="flex flex-nowrap gap-1">
                             <button
-                              className="btn-secondary btn-sm text-xs px-2"
+                              className="btn-chip"
                               disabled={disabled || u.role === 'moderator'}
                               onClick={() => changeRole(u, 'moderator')}
                               title={self ? '不能修改自己' : canManage ? '' : '仅管理员可操作'}
@@ -222,7 +234,7 @@ export default function AdminUsersPage() {
                               升审核员
                             </button>
                             <button
-                              className="btn-gold btn-sm text-xs px-2"
+                              className="btn-chip btn-chip-accent"
                               disabled={disabled || u.role === 'admin'}
                               onClick={() => changeRole(u, 'admin')}
                               title={self ? '不能修改自己' : canManage ? '' : '仅管理员可操作'}
@@ -230,7 +242,7 @@ export default function AdminUsersPage() {
                               升管理员
                             </button>
                             <button
-                              className="text-xs px-2 py-1 rounded-lg border border-ink-200 text-ink-600 disabled:opacity-40"
+                              className="btn-chip"
                               disabled={disabled || u.role === 'member'}
                               onClick={() => changeRole(u, 'member')}
                               title={self ? '不能修改自己' : canManage ? '' : '仅管理员可操作'}
@@ -238,9 +250,7 @@ export default function AdminUsersPage() {
                               降成员
                             </button>
                             <button
-                              className={`text-xs px-2 py-1 rounded-lg disabled:opacity-40 ${
-                                u.status === 'suspended' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                              }`}
+                              className={`btn-chip ${u.status === 'suspended' ? 'btn-chip-safe' : 'btn-chip-danger'}`}
                               disabled={disabled}
                               onClick={() => toggleBan(u)}
                               title={self ? '不能修改自己' : canManage ? '' : '仅管理员可操作'}
@@ -248,7 +258,7 @@ export default function AdminUsersPage() {
                               {u.status === 'suspended' ? '解封' : '封禁'}
                             </button>
                             <button
-                              className="text-xs px-2 py-1 rounded-lg border border-ink-200 text-ink-600 disabled:opacity-40"
+                              className="btn-chip"
                               disabled={disabled}
                               onClick={() => resetPassword(u)}
                               title={self ? '不能重置自己' : canManage ? '生成随机新密码，仅显示一次' : '仅管理员可操作'}
@@ -257,7 +267,7 @@ export default function AdminUsersPage() {
                             </button>
                             {canManage ? (
                               <button
-                                className="text-xs px-2 py-1 rounded-lg bg-rose-50 text-rose-700 disabled:opacity-40"
+                                className="btn-chip btn-chip-danger"
                                 disabled={disabled}
                                 onClick={() => deleteUser(u)}
                                 title={self ? '不能删除自己' : '删除账号及其全部内容（不可恢复）'}
@@ -276,15 +286,14 @@ export default function AdminUsersPage() {
           </div>
 
           {/* 分页 */}
-          <div className="flex items-center justify-between mt-4 text-sm text-ink-500">
-            <span>共 {data.total} 条</span>
+          <div className="flex items-center justify-between gap-3 mt-4 text-sm text-ink-500 flex-wrap">
+            <span>共 {data.total} 条 · 第 {page} / {Math.max(1, Math.ceil(data.total / pageSize))} 页</span>
             <div className="flex gap-2">
-              <button className="btn-secondary" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              <button className="btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
                 上一页
               </button>
-              <span className="px-2 py-1">第 {page} 页</span>
               <button
-                className="btn-secondary"
+                className="btn-secondary btn-sm"
                 disabled={page * pageSize >= data.total}
                 onClick={() => setPage((p) => p + 1)}
               >
@@ -307,7 +316,7 @@ export default function AdminUsersPage() {
                   已为用户「{resetPwdFor.displayName || resetPwdFor.username}」生成新密码，其全部会话已吊销。
                   <span className="text-rose-600 font-medium">此密码仅显示一次</span>，请立即线下转达并提醒其登录后修改：
                 </p>
-                <div className="my-4 px-4 py-3 rounded-xl bg-ink-50 border border-ink-200 font-mono text-lg tracking-wider select-all text-center">
+                <div className="my-4 px-3 py-3 rounded-xl bg-ink-50 border border-ink-200 font-mono text-lg tracking-wider select-all text-center">
                   {resetPwdResult}
                 </div>
                 <button className="btn-primary w-full" onClick={() => { setResetPwdFor(null); reload(); }}>

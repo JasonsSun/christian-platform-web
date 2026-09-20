@@ -5,6 +5,7 @@ import { apiDelete, apiGet, apiPost, apiPatch } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
+import { formatDateTime } from '@/lib/format';
 import { AdminLayout, Loading, ErrorBox, Empty, Badge } from '../_components';
 import Portal from '@/components/Portal';
 
@@ -125,29 +126,23 @@ export default function AdminBackupsPage() {
                       <Badge tone={f.kind === 'sql.gz' ? 'blue' : 'primary'}>{f.kind}</Badge>
                       <Badge tone={f.source === 'app' ? 'green' : 'gray'}>{f.source === 'app' ? '应用备份' : '自动备份'}</Badge>
                       <span className="text-xs text-ink-400">{formatBytes(f.size)}</span>
-                      <span className="text-xs text-ink-400">· {new Date(f.mtime).toLocaleString('zh-CN')}</span>
+                      <span className="text-xs text-ink-400">· {formatDateTime(f.mtime) || new Date(f.mtime).toLocaleString('zh-CN')}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="inline-flex flex-wrap items-center justify-end gap-1 flex-shrink-0">
                     <a
                       href={`/api/v1/admin/backups/${encodeURIComponent(f.name)}`}
                       aria-label={`下载备份 ${f.name}`}
-                      className="text-xs px-3 py-2 rounded-lg border border-ink-200 text-ink-600 hover:bg-ink-50 transition"
+                      className="btn-chip"
                     >
                       下载
                     </a>
                     {f.kind === 'json' && (
-                      <button
-                        onClick={() => setConfirmRestore(f.name)}
-                        className="text-xs px-3 py-2 rounded-lg border border-gold-200 text-gold-700 hover:bg-gold-50 transition"
-                      >
+                      <button onClick={() => setConfirmRestore(f.name)} className="btn-chip btn-chip-safe">
                         恢复
                       </button>
                     )}
-                    <button
-                      onClick={() => setConfirmDel(f.name)}
-                      className="text-xs px-3 py-2 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 transition"
-                    >
+                    <button onClick={() => setConfirmDel(f.name)} className="btn-chip btn-chip-danger">
                       删除
                     </button>
                   </div>

@@ -6,6 +6,7 @@ import { apiGet, apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
+import { contentTypeLabel } from '@/lib/labels';
 import { AdminLayout, StatusBadge, Loading, Empty, ErrorBox, SectionTitle, Badge } from '../_components';
 import type { ReviewTask } from '@/lib/types';
 
@@ -38,7 +39,7 @@ function ReviewCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-ink-900 truncate">{c.title}</span>
-            <Badge tone="primary">{c.contentType}</Badge>
+            <Badge tone="primary">{contentTypeLabel(c.contentType)}</Badge>
             <StatusBadge status={task.status} />
           </div>
           <div className="text-xs text-ink-400 mt-1">
@@ -51,7 +52,7 @@ function ReviewCard({
         {c.body}
       </div>
       {c.body && c.body.length > 80 ? (
-        <button className="text-xs text-primary-600 mt-1" onClick={() => setExpanded((v) => !v)}>
+        <button className="text-xs text-primary-600 py-1.5 -my-1.5" onClick={() => setExpanded((v) => !v)}>
           {expanded ? '收起' : '展开全文'}
         </button>
       ) : null}
@@ -78,16 +79,16 @@ function ReviewCard({
       ) : rejecting ? (
         <div className="mt-3">
           <textarea
-            className="input-styled w-full"
+            className="input-styled input-sm w-full"
             rows={2}
             aria-label="驳回原因"
             placeholder="驳回原因（选填，将通知作者）"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
           />
-          <div className="flex gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2">
             <button
-              className="btn-gold btn-sm text-sm px-3"
+              className="btn-chip btn-chip-danger"
               disabled={deciding}
               onClick={() => {
                 onDecide('reject', reason.trim() || undefined);
@@ -97,25 +98,21 @@ function ReviewCard({
             >
               确认驳回
             </button>
-            <button className="btn-secondary btn-sm text-sm px-3" disabled={deciding} onClick={() => setRejecting(false)}>
+            <button className="btn-chip" disabled={deciding} onClick={() => setRejecting(false)}>
               取消
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex gap-2 mt-4">
+        <div className="flex items-center gap-2 mt-4">
           <button
-            className="btn-primary btn-sm text-sm px-3"
+            className="btn-chip btn-chip-safe"
             disabled={deciding}
             onClick={() => onDecide('approve')}
           >
             通过
           </button>
-          <button
-            className="text-sm px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 disabled:opacity-40"
-            disabled={deciding}
-            onClick={() => setRejecting(true)}
-          >
+          <button className="btn-chip btn-chip-danger" disabled={deciding} onClick={() => setRejecting(true)}>
             驳回
           </button>
         </div>
@@ -165,7 +162,8 @@ export default function AdminReviewsPage() {
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold text-ink-900">审核队列</h1>
-        <button className="btn-secondary" onClick={reload}>刷新</button>
+        {/* 文案固定：刷新时改成「刷新中…」会加宽按钮，把同一行的右侧往左撑 24px */}
+        <button className="btn-secondary btn-sm" onClick={reload} disabled={loading}>刷新</button>
       </div>
 
       <div className="flex gap-2 flex-wrap mb-5">
@@ -186,7 +184,7 @@ export default function AdminReviewsPage() {
         <div role="status" className="mb-4 rounded-xl bg-emerald-50 text-emerald-700 px-4 py-2 text-sm">{notice}</div>
       ) : null}
 
-      {loading ? (
+      {loading && !data ? (
         <Loading />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
@@ -199,15 +197,14 @@ export default function AdminReviewsPage() {
               <ReviewCard key={task.id} task={task} onDecide={(a, r) => decide(task.id, a, r)} deciding={pending} />
             ))}
           </div>
-          <div className="flex items-center justify-between mt-5 text-sm text-ink-500">
-            <span>共 {data.total} 条</span>
+          <div className="flex items-center justify-between gap-3 mt-5 text-sm text-ink-500 flex-wrap">
+            <span>共 {data.total} 条 · 第 {page} / {Math.max(1, Math.ceil(data.total / pageSize))} 页</span>
             <div className="flex gap-2">
-              <button className="btn-secondary" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+              <button className="btn-secondary btn-sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
                 上一页
               </button>
-              <span className="px-2 py-1">第 {page} 页</span>
               <button
-                className="btn-secondary"
+                className="btn-secondary btn-sm"
                 disabled={page * pageSize >= data.total}
                 onClick={() => setPage((p) => p + 1)}
               >

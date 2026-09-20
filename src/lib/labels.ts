@@ -85,11 +85,38 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   LIVE_RECORDING_CLEANUP: '清理直播录像',
   // 平台管理
   ORG_STATUS_CHANGE: '变更机构状态',
+  ORG_DELETE: '删除机构',
+  ORG_MEMBER_ADD: '添加机构成员',
+  ORG_MEMBER_REMOVE: '移除机构成员',
   REPORT_UPHELD: '举报成立',
   REPORT_DISMISSED: '举报驳回',
   SETTINGS_UPDATE: '更新系统设置',
   QUOTA_POLICY_UPDATE: '更新配额策略',
   BIBLE_VERSE_UPDATE: '修订经文',
+  // 补漏：这些动作此前会在中文审计日志里直接显示成英文码
+  USER_DELETE: '删除用户',
+  MODERATOR_SCOPE_CHANGE: '变更审核范围',
+  LOGIN_2FA_FAILURE: '两步验证失败',
+  PASSWORD_RESET_REQUEST: '申请重置密码',
+  SESSION_REVOKE: '撤销登录设备',
+  SESSION_REVOKE_ALL: '撤销全部登录设备',
+  CONTENT_STATUS_CHANGE: '变更内容状态',
+  ACTIVITY_CANCEL_BY_ADMIN: '管理员取消活动',
+  ACTIVITY_CANCEL_BY_ORGANIZER: '主办方取消活动',
+  ACTIVITY_DELETE: '删除活动',
+  GROUP_DISSOLVE: '解散团契',
+  GROUP_LEAVE_OWNER: '团长退出团契',
+  GROUP_REMOVE_MEMBER: '移出团契成员',
+  GROUP_TRANSFER_OWNER: '转让团长',
+  TAG_RENAME: '重命名标签',
+  TAG_MERGE: '合并标签',
+  TAG_DELETE: '删除标签',
+  NOTIF_TEMPLATE_CREATE: '新增通知模板',
+  NOTIF_TEMPLATE_UPDATE: '更新通知模板',
+  NOTIF_TEMPLATE_DELETE: '删除通知模板',
+  SONG_BATCH_IMPORT: '批量导入诗歌',
+  PRAYER_DELETE: '删除代祷',
+  PAYMENT_CONFIG_UPDATE: '更新支付配置',
 };
 
 export function auditActionLabel(action?: string | null): string {
@@ -116,9 +143,46 @@ export const ENTITY_TYPE_LABEL: Record<string, string> = {
   bible_verses: '经文',
   comment: '评论',
   report: '举报',
+  tag: '标签',
+  prayer: '代祷',
 };
 
 export function entityTypeLabel(type?: string | null): string {
   if (!type) return '-';
   return ENTITY_TYPE_LABEL[type] || type;
+}
+
+/** 内容体裁 → 中文。后台多处（内容管理筛选、审核队列徽章）此前各自维护一份，
+ *  漏掉的地方就直接把 article / testimony 印在中文界面上。 */
+export const CONTENT_TYPE_LABEL: Record<string, string> = {
+  article: '文章',
+  testimony: '见证',
+  devotion: '灵修',
+  media: '媒体',
+  prayer: '代祷',
+};
+
+export function contentTypeLabel(type?: string | null): string {
+  if (!type) return '-';
+  return CONTENT_TYPE_LABEL[type] || type;
+}
+
+/** 发件箱事件类型 → 中文（事件中心表格里和英文码并列展示，英文码保留给排障） */
+export const EVENT_TYPE_LABEL: Record<string, string> = {
+  'content.submitted': '内容提交审核',
+  'content.approved': '内容审核通过',
+  'content.rejected': '内容审核驳回',
+  'content.liked': '内容被点赞',
+  'comment.created': '新增评论',
+  'activity.registered': '活动报名',
+  'group.joined': '加入团契',
+  'group.posted': '团契发布动态',
+  'group.dissolved': '团契解散',
+  'group.owner_transferred': '团长转让',
+  'prayer.amen': '代祷回应',
+};
+
+export function eventTypeLabel(type?: string | null): string {
+  if (!type) return '-';
+  return EVENT_TYPE_LABEL[type] || type;
 }

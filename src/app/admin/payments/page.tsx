@@ -100,7 +100,7 @@ export default function AdminPaymentsPage() {
         </Link>
       </div>
 
-      {loading ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
+      {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
         <div className="space-y-6">
           {groups.map((g) => {
             const meta = GROUP_META[g];
@@ -147,7 +147,7 @@ export default function AdminPaymentsPage() {
                             <>
                               <button
                                 type="button"
-                                className="btn-secondary btn-sm text-xs px-2"
+                                className="btn-chip"
                                 onClick={() => setReveal((p) => ({ ...p, [f.key]: !p[f.key] }))}
                               >
                                 {reveal[f.key] ? '隐藏' : '显示'}
@@ -155,7 +155,7 @@ export default function AdminPaymentsPage() {
                               {f.set ? (
                                 <button
                                   type="button"
-                                  className="btn-secondary btn-sm text-xs px-2 text-rose-600"
+                                  className="btn-chip btn-chip-danger"
                                   onClick={() => setVal(f.key, CLEAR)}
                                 >
                                   清空

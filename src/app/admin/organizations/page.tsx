@@ -209,7 +209,7 @@ export default function AdminOrganizationsPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4 items-center">
-        <input className="input-styled flex-1 min-w-[180px]" aria-label="搜索组织名称 / 城市" placeholder="搜索组织名称 / 城市" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className="input-styled input-sm flex-1 min-w-[180px]" aria-label="搜索组织名称 / 城市" placeholder="搜索组织名称 / 城市" value={q} onChange={(e) => setQ(e.target.value)} />
         {['', 'pending', 'approved', 'rejected'].map((s) => (
           <button key={s || 'all'} onClick={() => setStatus(s)}
             className={`px-4 py-2 rounded-xl text-sm font-medium transition ${status === s ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600 hover:bg-ink-200'}`}>
@@ -218,174 +218,178 @@ export default function AdminOrganizationsPage() {
         ))}
       </div>
 
-      {!canDelete ? (
-        <p className="mb-4 text-xs text-amber-700">
-          当前为审核员视角：可通过 / 驳回组织审核；删除组织等破坏性操作仅平台管理员可执行。
-        </p>
-      ) : null}
+      {/* visibility 而不是条件渲染：鉴权完成前 canDelete 为 false，这段提示先出现再消失，
+          会把下面的表格整体往上拽一截（实测 CLS 0.0076）。 */}
+      <p className={`mb-4 text-xs text-amber-700 ${canDelete ? 'invisible' : ''}`}>
+        当前为审核员视角：可通过 / 驳回组织审核；删除组织等破坏性操作仅平台管理员可执行。
+      </p>
 
       {msg ? <div role="status" className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
 
-      {loading ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : items.length === 0 ? (
+      {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : items.length === 0 ? (
         <Empty label="暂无组织" />
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
-          <table className="w-full text-sm">
-            <caption className="sr-only">组织管理</caption>
-            <thead className="bg-ink-50 text-ink-600">
-              <tr>
-                <th scope="col" className="text-left px-4 py-3 font-medium">组织</th>
-                <th scope="col" className="text-left px-4 py-3 font-medium">类型</th>
-                <th scope="col" className="text-left px-4 py-3 font-medium">城市</th>
-                <th scope="col" className="text-center px-4 py-3 font-medium">成员</th>
-                <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
-                <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((o) => (
-                <Fragment key={o.id}>
-                  <tr className="border-t border-ink-100 hover:bg-primary-50/40">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-ink-900">{o.name}</div>
-                      <div className="text-xs text-ink-400 line-clamp-1 max-w-[300px]">{o.description}</div>
-                    </td>
-                    <td className="px-4 py-3"><Badge tone="primary">{TYPE_LABEL[o.type] || o.type}</Badge></td>
-                    <td className="px-4 py-3 text-ink-600">{o.city || '—'}</td>
-                    <td className="px-4 py-3 text-center text-ink-700">{o.memberCount}</td>
-                    <td className="px-4 py-3 text-center">
-                      <Badge tone={STATUS_MAP[o.status]?.tone || 'gray'}>{STATUS_MAP[o.status]?.label || o.status}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right space-x-2 whitespace-nowrap">
-                      {canReview ? (
-                        <button onClick={() => toggleMembers(o)} className="text-primary-600 hover:underline">
-                          {openOrgId === o.id ? '收起成员' : `成员(${o.memberCount})`}
-                        </button>
-                      ) : null}
-                      {canReview && o.status !== 'approved' ? (
-                        <button disabled={busy === o.id} onClick={() => review(o.id, 'approved')} className="text-emerald-700 hover:underline disabled:opacity-50">通过</button>
-                      ) : null}
-                      {canReview && o.status !== 'rejected' ? (
-                        <button disabled={busy === o.id} onClick={() => review(o.id, 'rejected')} className="text-rose-600 hover:underline disabled:opacity-50">驳回</button>
-                      ) : null}
-                      {canDelete ? (
-                        <button disabled={busy === o.id} onClick={() => deleteOrg(o)} className="text-rose-700 font-medium hover:underline disabled:opacity-50">删除</button>
-                      ) : null}
-                    </td>
-                  </tr>
-
-                  {/* 成员管理面板：行内展开，不使用弹框 */}
-                  {openOrgId === o.id ? (
-                    <tr className="border-t border-ink-100 bg-ink-50/60">
-                      <td colSpan={6} className="px-4 py-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="text-sm font-semibold text-ink-800">「{o.name}」成员管理</div>
-                          <div className="text-xs text-ink-400">共 {members.length} 人</div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <caption className="sr-only">组织管理</caption>
+              <thead className="bg-ink-50 text-ink-600">
+                <tr>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">组织</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">类型</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">城市</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">成员</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
+                  <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((o) => (
+                  <Fragment key={o.id}>
+                    <tr className="border-t border-ink-100 hover:bg-primary-50/40">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-ink-900">{o.name}</div>
+                        <div className="text-xs text-ink-400 line-clamp-1 max-w-[300px]">{o.description}</div>
+                      </td>
+                      <td className="px-4 py-3"><Badge tone="primary">{TYPE_LABEL[o.type] || o.type}</Badge></td>
+                      <td className="px-4 py-3 text-ink-600">{o.city || '—'}</td>
+                      <td className="px-4 py-3 text-center text-ink-700">{o.memberCount}</td>
+                      <td className="px-4 py-3 text-center">
+                        <Badge tone={STATUS_MAP[o.status]?.tone || 'gray'}>{STATUS_MAP[o.status]?.label || o.status}</Badge>
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <div className="inline-flex flex-wrap justify-end gap-1">
+                          {canReview ? (
+                            <button onClick={() => toggleMembers(o)} className="btn-chip">
+                              {openOrgId === o.id ? '收起成员' : `成员(${o.memberCount})`}
+                            </button>
+                          ) : null}
+                          {canReview && o.status !== 'approved' ? (
+                            <button disabled={busy === o.id} onClick={() => review(o.id, 'approved')} className="btn-chip btn-chip-safe">通过</button>
+                          ) : null}
+                          {canReview && o.status !== 'rejected' ? (
+                            <button disabled={busy === o.id} onClick={() => review(o.id, 'rejected')} className="btn-chip btn-chip-danger">驳回</button>
+                          ) : null}
+                          {canDelete ? (
+                            <button disabled={busy === o.id} onClick={() => deleteOrg(o)} className="btn-chip btn-chip-danger">删除</button>
+                          ) : null}
                         </div>
-
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          <input
-                            className="input-styled flex-1 min-w-[200px]"
-                            aria-label="按用户名 / 昵称 / 邮箱搜索待添加用户"
-                            placeholder="按用户名 / 昵称 / 邮箱搜索待添加用户"
-                            value={candKeyword}
-                            onChange={(e) => setCandKeyword(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') searchCandidates();
-                            }}
-                          />
-                          <button onClick={searchCandidates} className="px-4 py-2 rounded-xl text-sm bg-primary-600 text-white hover:bg-primary-700">
-                            搜索
-                          </button>
-                        </div>
-
-                        {candidates.length > 0 ? (
-                          <div className="mb-3 space-y-1">
-                            {candidates.map((c) => (
-                              <div key={c.userId} className="flex items-center justify-between gap-2 rounded-xl bg-white border border-ink-100 px-3 py-2">
-                                <div className="text-sm text-ink-700">
-                                  {c.displayName}
-                                  <span className="text-ink-400 text-xs ml-1">@{c.username}</span>
-                                </div>
-                                <div className="flex gap-2">
-                                  {MEMBER_ROLES.map((r) => (
-                                    <button
-                                      key={r.value}
-                                      disabled={memberBusy === c.userId}
-                                      onClick={() => addMember(c.userId, r.value)}
-                                      className="text-xs px-2.5 py-1 rounded-lg border border-ink-200 text-ink-600 hover:border-primary-300 hover:bg-primary-50 disabled:opacity-50"
-                                    >
-                                      加为{r.label}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : null}
-
-                        {memberMsg ? <div role="alert" className="mb-3 text-xs text-rose-600">{memberMsg}</div> : null}
-
-                        {membersLoading ? (
-                          <p className="text-sm text-ink-400 py-3">成员加载中…</p>
-                        ) : members.length === 0 ? (
-                          <p className="text-sm text-ink-400 py-3">该组织还没有成员，搜索用户后添加即可。</p>
-                        ) : (
-                          <div className="rounded-xl overflow-hidden border border-ink-100 bg-white">
-                            <table className="w-full text-xs">
-                              <caption className="sr-only">该组织的成员列表</caption>
-                              <thead className="bg-ink-50 text-ink-600">
-                                <tr>
-                                  <th scope="col" className="text-left px-3 py-2 font-medium">成员</th>
-                                  <th scope="col" className="text-left px-3 py-2 font-medium">邮箱</th>
-                                  <th scope="col" className="text-left px-3 py-2 font-medium">角色</th>
-                                  <th scope="col" className="text-right px-3 py-2 font-medium">操作</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {members.map((m) => (
-                                  <tr key={m.userId} className="border-t border-ink-100">
-                                    <td className="px-3 py-2 text-ink-800">
-                                      {m.displayName}
-                                      <span className="text-ink-400 ml-1">@{m.username}</span>
-                                    </td>
-                                    <td className="px-3 py-2 text-ink-500">{m.email}</td>
-                                    <td className="px-3 py-2">
-                                      <select
-                                        value={m.role}
-                                        aria-label={`设置 ${m.displayName} 的组织角色`}
-                                        disabled={memberBusy === m.userId}
-                                        onChange={(e) => changeRole(m, e.target.value)}
-                                        className="rounded-lg border border-ink-200 px-2 py-1 text-xs bg-white"
-                                      >
-                                        {MEMBER_ROLES.map((r) => (
-                                          <option key={r.value} value={r.value}>{r.label}</option>
-                                        ))}
-                                      </select>
-                                    </td>
-                                    <td className="px-3 py-2 text-right whitespace-nowrap">
-                                      <span className="text-ink-500 mr-2">{roleLabel(m.role)}</span>
-                                      <button
-                                        disabled={memberBusy === m.userId}
-                                        onClick={() => removeMember(m)}
-                                        className="text-rose-600 hover:underline disabled:opacity-50"
-                                      >
-                                        移除
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
                       </td>
                     </tr>
-                  ) : null}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
+
+                    {/* 成员管理面板：行内展开，不使用弹框 */}
+                    {openOrgId === o.id ? (
+                      <tr className="border-t border-ink-100 bg-ink-50/60">
+                        <td colSpan={6} className="px-4 py-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="text-sm font-semibold text-ink-800">「{o.name}」成员管理</div>
+                            <div className="text-xs text-ink-400">共 {members.length} 人</div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            <input
+                              className="input-styled flex-1 min-w-[200px]"
+                              aria-label="按用户名 / 昵称 / 邮箱搜索待添加用户"
+                              placeholder="按用户名 / 昵称 / 邮箱搜索待添加用户"
+                              value={candKeyword}
+                              onChange={(e) => setCandKeyword(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') searchCandidates();
+                              }}
+                            />
+                            <button onClick={searchCandidates} className="px-4 py-2 rounded-xl text-sm bg-primary-600 text-white hover:bg-primary-700">
+                              搜索
+                            </button>
+                          </div>
+
+                          {candidates.length > 0 ? (
+                            <div className="mb-3 space-y-1">
+                              {candidates.map((c) => (
+                                <div key={c.userId} className="flex items-center justify-between gap-2 rounded-xl bg-white border border-ink-100 px-3 py-2">
+                                  <div className="text-sm text-ink-700">
+                                    {c.displayName}
+                                    <span className="text-ink-400 text-xs ml-1">@{c.username}</span>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    {MEMBER_ROLES.map((r) => (
+                                      <button
+                                        key={r.value}
+                                        disabled={memberBusy === c.userId}
+                                        onClick={() => addMember(c.userId, r.value)}
+                                        className="text-xs px-2.5 py-1 rounded-lg border border-ink-200 text-ink-600 hover:border-primary-300 hover:bg-primary-50 disabled:opacity-50"
+                                      >
+                                        加为{r.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+
+                          {memberMsg ? <div role="alert" className="mb-3 text-xs text-rose-600">{memberMsg}</div> : null}
+
+                          {membersLoading ? (
+                            <p className="text-sm text-ink-400 py-3">成员加载中…</p>
+                          ) : members.length === 0 ? (
+                            <p className="text-sm text-ink-400 py-3">该组织还没有成员，搜索用户后添加即可。</p>
+                          ) : (
+                            <div className="rounded-xl overflow-hidden border border-ink-100 bg-white">
+                              <table className="w-full text-xs">
+                                <caption className="sr-only">该组织的成员列表</caption>
+                                <thead className="bg-ink-50 text-ink-600">
+                                  <tr>
+                                    <th scope="col" className="text-left px-3 py-2 font-medium">成员</th>
+                                    <th scope="col" className="text-left px-3 py-2 font-medium">邮箱</th>
+                                    <th scope="col" className="text-left px-3 py-2 font-medium">角色</th>
+                                    <th scope="col" className="text-right px-3 py-2 font-medium">操作</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {members.map((m) => (
+                                    <tr key={m.userId} className="border-t border-ink-100">
+                                      <td className="px-3 py-2 text-ink-800">
+                                        {m.displayName}
+                                        <span className="text-ink-400 ml-1">@{m.username}</span>
+                                      </td>
+                                      <td className="px-3 py-2 text-ink-500">{m.email}</td>
+                                      <td className="px-3 py-2">
+                                        <select
+                                          value={m.role}
+                                          aria-label={`设置 ${m.displayName} 的组织角色`}
+                                          disabled={memberBusy === m.userId}
+                                          onChange={(e) => changeRole(m, e.target.value)}
+                                          className="rounded-lg border border-ink-200 px-2 py-1 text-xs bg-white"
+                                        >
+                                          {MEMBER_ROLES.map((r) => (
+                                            <option key={r.value} value={r.value}>{r.label}</option>
+                                          ))}
+                                        </select>
+                                      </td>
+                                      <td className="px-3 py-2 text-right whitespace-nowrap">
+                                        <span className="text-ink-500 mr-2">{roleLabel(m.role)}</span>
+                                        <button
+                                          disabled={memberBusy === m.userId}
+                                          onClick={() => removeMember(m)}
+                                          className="btn-chip btn-chip-danger"
+                                        >
+                                          移除
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </AdminLayout>

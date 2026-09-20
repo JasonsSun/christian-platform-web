@@ -69,7 +69,7 @@ export default function AdminCommentsPage() {
           value={kw}
           onChange={(e) => setKw(e.target.value)}
           placeholder="搜索评论内容 / 评论人 / 所属内容标题"
-          className="input-styled flex-1"
+          className="input-styled input-sm flex-1"
         />
         <button type="submit" className="btn-secondary text-sm flex-shrink-0">搜索</button>
         {search && (
@@ -97,6 +97,7 @@ export default function AdminCommentsPage() {
             <label className="flex items-center gap-2 text-xs text-ink-500 px-1">
               <input
                 type="checkbox"
+                className="h-5 w-5 cursor-pointer"
                 checked={allChecked}
                 onChange={() => setSelected(allChecked ? [] : items.map((i) => i.id))}
               />
@@ -110,11 +111,11 @@ export default function AdminCommentsPage() {
                     type="checkbox"
                     checked={selected.includes(c.id)}
                     onChange={() => setSelected((s) => (s.includes(c.id) ? s.filter((x) => x !== c.id) : [...s, c.id]))}
-                    className="mt-1"
+                    className="mt-1 h-5 w-5 flex-shrink-0 cursor-pointer"
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500 mb-1.5">
-                      <Link href={`/users/${c.author.id}`} className="font-medium text-ink-700 hover:text-primary-600 py-1.5 -my-1.5">
+                      <Link href={`/users/${c.author.id}`} className="font-medium text-ink-700 hover:text-primary-600 py-2.5 -my-2.5">
                         {c.author.displayName}
                       </Link>
                       <span>@{c.author.username}</span>
@@ -123,7 +124,7 @@ export default function AdminCommentsPage() {
                       <span>·</span>
                       <span>
                         评论于{' '}
-                        <Link href={`/contents/${c.content.id}`} className="text-primary-600 hover:underline">
+                        <Link href={`/contents/${c.content.id}`} className="text-primary-600 hover:underline py-2 -my-2">
                           {c.content.title}
                         </Link>
                       </span>
@@ -135,7 +136,7 @@ export default function AdminCommentsPage() {
                   </div>
                   <button
                     onClick={() => setConfirmIds([c.id])}
-                    className="text-xs text-ink-400 hover:text-rose-600 flex-shrink-0"
+                    className="btn-chip btn-chip-danger flex-shrink-0"
                   >
                     删除
                   </button>

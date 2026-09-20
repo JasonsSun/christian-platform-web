@@ -196,7 +196,7 @@ export default function AdminPrayersPage() {
                         {isAdmin && (
                           <button
                             onClick={() => remove(p)}
-                            className="text-xs py-1 px-3 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 whitespace-nowrap"
+                            className="btn-chip btn-chip-danger"
                           >
                             移除
                           </button>

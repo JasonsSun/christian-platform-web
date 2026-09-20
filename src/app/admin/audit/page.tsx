@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { apiGet, qs } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatIp } from '@/lib/format';
 import { auditActionLabel, entityTypeLabel } from '@/lib/labels';
 import { AdminLayout, Badge, Loading, Empty, ErrorBox, SectionTitle } from '../_components';
 import type { AuditLog } from '../_components';
@@ -50,12 +50,12 @@ export default function AdminAuditPage() {
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold text-ink-900">审计日志</h1>
-        <button className="btn-secondary" onClick={reload}>刷新</button>
+        <button className="btn-secondary btn-sm" onClick={reload}>刷新</button>
       </div>
 
       <div className="glass rounded-2xl p-4 mb-5 flex items-center gap-3 shadow-soft">
         <label htmlFor="audit-action" className="text-sm text-ink-500">操作类型</label>
-        <select id="audit-action" className="input-styled w-56" value={action} onChange={(e) => onAction(e.target.value)}>
+        <select id="audit-action" className="input-styled input-sm select-inline" value={action} onChange={(e) => onAction(e.target.value)}>
           <option value="">全部动作</option>
           {ACTIONS.map((a) => (
             <option key={a.value} value={a.value}>{a.label}</option>
@@ -63,7 +63,7 @@ export default function AdminAuditPage() {
         </select>
       </div>
 
-      {loading ? (
+      {loading && !data ? (
         <Loading />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
@@ -98,7 +98,7 @@ export default function AdminAuditPage() {
                       <td className="px-4 py-3 text-ink-600">{entityTypeLabel(a.entity_type)}</td>
                       <td className="px-4 py-3 text-ink-600 font-mono text-xs">{a.entity_id || '-'}</td>
                       <td className="px-4 py-3 text-ink-600 max-w-xs break-words">{a.detail || '-'}</td>
-                      <td className="px-4 py-3 text-ink-400 whitespace-nowrap">{a.ip || '-'}</td>
+                      <td className="px-4 py-3 text-ink-400 whitespace-nowrap">{formatIp(a.ip)}</td>
                     </tr>
                   ))}
                 </tbody>

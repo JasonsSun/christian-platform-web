@@ -49,6 +49,12 @@ export function formatSize(n?: number): string {
   return `${(n / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
 }
 
+/** IPv4-over-IPv6 前缀只是内部表示，界面上留着像脏数据 */
+export function formatIp(ip?: string | null): string {
+  const s = String(ip || '').replace(/^::ffff:/, '');
+  return s || '-';
+}
+
 /** 媒体类型中文标签 */
 export const MEDIA_KIND_LABEL: Record<string, string> = {
   image: '图片', audio: '音乐', video: '视频', score: '曲谱', doc: '资料',

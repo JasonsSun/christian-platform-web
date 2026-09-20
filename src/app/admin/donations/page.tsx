@@ -121,7 +121,7 @@ export default function AdminDonationsPage() {
           ))}
         </div>
         <input
-          className="input-styled flex-1 min-w-[200px]"
+          className="input-styled input-sm flex-1 min-w-[200px]"
           aria-label="搜索展示名 / 教会名 / 留言 / 用户名"
           placeholder="搜索展示名 / 教会名 / 留言 / 用户名"
           value={q}
@@ -186,9 +186,9 @@ export default function AdminDonationsPage() {
                       </td>
                       <td className="px-4 py-3 text-ink-400">{formatDateTime(d.createdAt)}</td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="inline-flex flex-wrap justify-end gap-1">
                           <button
-                            className="btn-primary btn-sm text-xs px-2.5"
+                            className="btn-chip btn-chip-safe"
                             disabled={pending || d.status === 'confirmed'}
                             onClick={() => confirmOne(d)}
                             title={d.status === 'confirmed' ? '已是已确认状态' : '确认并展示到公开名录'}
@@ -196,7 +196,7 @@ export default function AdminDonationsPage() {
                             确认
                           </button>
                           <button
-                            className="text-xs px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 disabled:opacity-40"
+                            className="btn-chip btn-chip-danger"
                             disabled={pending || d.status === 'rejected'}
                             onClick={() => rejectOne(d)}
                             title={d.status === 'rejected' ? '已是已驳回状态' : '驳回并不予展示'}

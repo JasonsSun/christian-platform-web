@@ -124,13 +124,13 @@ function MemberPanel({
                 {m.role !== 'owner' ? (
                   <>
                     <button
-                      className="text-[11px] px-2 py-1 rounded-lg border border-ink-200 text-ink-600 hover:bg-ink-50"
+                      className="btn-chip btn-chip-accent"
                       onClick={() => transferOwner(m)}
                     >
                       设为团长
                     </button>
                     <button
-                      className="text-[11px] px-2 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100"
+                      className="btn-chip btn-chip-danger"
                       onClick={() => removeMember(m)}
                     >
                       移出
@@ -197,19 +197,25 @@ export default function AdminGroupsPage() {
         <StatCard title="本页动态合计" value={totalPosts} />
       </div>
 
-      <div className="flex flex-wrap gap-3 items-center mb-4">
-        <input
-          className="input-styled flex-1 min-w-[220px]"
-          aria-label="搜索群组名称 / 城市"
-          placeholder="搜索群组名称 / 城市"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-        <button className="btn-secondary" onClick={reload}>刷新</button>
-        {!canManage ? <span className="text-xs text-amber-700">当前为审核员视角：可查看成员，解散/调整团契仅管理员可操作</span> : null}
+      <div className="mb-4">
+        <div className="flex flex-wrap gap-3 items-center">
+          <input
+            className="input-styled input-sm flex-1 min-w-[220px]"
+            aria-label="搜索群组名称 / 城市"
+            placeholder="搜索群组名称 / 城市"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+          <button className="btn-secondary btn-sm" onClick={reload}>刷新</button>
+        </div>
+        {/* 这一行用 visibility 而不是条件渲染来开关：鉴权完成前 canManage 是 false，
+            提示先出现后消失，会把「刷新」横向推 353px（实测 CLS 0.0076）。 */}
+        <p className={`mt-2 text-xs text-amber-700 ${canManage ? 'invisible' : ''}`}>
+          当前为审核员视角：可查看成员，解散/调整团契仅管理员可操作
+        </p>
       </div>
 
-      {loading ? (
+      {loading && !data ? (
         <Loading />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
@@ -217,62 +223,66 @@ export default function AdminGroupsPage() {
         <Empty label="暂无群组" />
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
-          <table className="w-full text-sm">
-            <caption className="sr-only">群组管理</caption>
-            <thead className="bg-ink-50 text-ink-600">
-              <tr>
-                <th scope="col" className="text-left px-4 py-3 font-medium">群组</th>
-                <th scope="col" className="text-left px-4 py-3 font-medium">分类</th>
-                <th scope="col" className="text-left px-4 py-3 font-medium">城市</th>
-                <th scope="col" className="text-left px-4 py-3 font-medium">负责人</th>
-                <th scope="col" className="text-center px-4 py-3 font-medium">成员</th>
-                <th scope="col" className="text-center px-4 py-3 font-medium">动态</th>
-                <th scope="col" className="text-left px-4 py-3 font-medium">创建时间</th>
-                <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((g) => {
-                const open = expanded === g.id;
-                return (
-                  <Fragment key={g.id}>
-                    <tr className="border-t border-ink-100 hover:bg-primary-50/40">
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-ink-900">{g.name}</div>
-                        <div className="text-xs text-ink-400 line-clamp-1 max-w-[260px]">{g.description}</div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge tone="primary">{CATEGORY_LABEL[g.category] || g.category}</Badge>
-                      </td>
-                      <td className="px-4 py-3 text-ink-600">{g.city || '—'}</td>
-                      <td className="px-4 py-3 text-ink-600">{g.owner || '—'}</td>
-                      <td className="px-4 py-3 text-center font-medium text-ink-900">{g.memberCount}</td>
-                      <td className="px-4 py-3 text-center text-ink-700">{g.postCount}</td>
-                      <td className="px-4 py-3 text-ink-500">{g.createdAt?.slice(0, 10)}</td>
-                      <td className="px-4 py-3 text-right whitespace-nowrap space-x-2">
-                        <button
-                          className="text-primary-700 hover:underline"
-                          onClick={() => setExpanded(open ? null : g.id)}
-                        >
-                          {open ? '收起' : '查看成员'}
-                        </button>
-                        {canManage ? (
-                          <button className="text-rose-600 hover:underline" onClick={() => dissolve(g)}>解散</button>
-                        ) : null}
-                      </td>
-                    </tr>
-                    {open ? (
-                      <tr className="border-t border-ink-100">
-                        <td colSpan={8} className="p-0">
-                          <MemberPanel groupId={g.id} canManage={canManage} onChanged={reload} />
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <caption className="sr-only">群组管理</caption>
+              <thead className="bg-ink-50 text-ink-600">
+                <tr>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">群组</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">分类</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">城市</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">负责人</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">成员</th>
+                  <th scope="col" className="text-center px-4 py-3 font-medium">动态</th>
+                  <th scope="col" className="text-left px-4 py-3 font-medium">创建时间</th>
+                  <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((g) => {
+                  const open = expanded === g.id;
+                  return (
+                    <Fragment key={g.id}>
+                      <tr className="border-t border-ink-100 hover:bg-primary-50/40">
+                        <td className="px-4 py-3">
+                          <div className="font-medium text-ink-900">{g.name}</div>
+                          <div className="text-xs text-ink-400 line-clamp-1 max-w-[260px]">{g.description}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <Badge tone="primary">{CATEGORY_LABEL[g.category] || g.category}</Badge>
+                        </td>
+                        <td className="px-4 py-3 text-ink-600">{g.city || '—'}</td>
+                        <td className="px-4 py-3 text-ink-600">{g.owner || '—'}</td>
+                        <td className="px-4 py-3 text-center font-medium text-ink-900">{g.memberCount}</td>
+                        <td className="px-4 py-3 text-center text-ink-700">{g.postCount}</td>
+                        <td className="px-4 py-3 text-ink-500">{formatDate(g.createdAt) || '—'}</td>
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                          <div className="inline-flex flex-wrap justify-end gap-1">
+                            <button
+                              className="btn-chip"
+                              onClick={() => setExpanded(open ? null : g.id)}
+                            >
+                              {open ? '收起' : '查看成员'}
+                            </button>
+                            {canManage ? (
+                              <button className="btn-chip btn-chip-danger" onClick={() => dissolve(g)}>解散</button>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
-                    ) : null}
-                  </Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                      {open ? (
+                        <tr className="border-t border-ink-100">
+                          <td colSpan={8} className="p-0">
+                            <MemberPanel groupId={g.id} canManage={canManage} onChanged={reload} />
+                          </td>
+                        </tr>
+                      ) : null}
+                    </Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </AdminLayout>

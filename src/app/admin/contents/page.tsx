@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useId } from 'react';
 import Link from 'next/link';
 import { apiDelete, apiPatch, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
+import { CONTENT_TYPE_LABEL } from '@/lib/labels';
+import { useEscape, useDialogFocus } from '@/lib/a11y';
+import Portal from '@/components/Portal';
 import { AdminLayout, Badge, Loading, Empty, ErrorBox } from '../_components';
 
 interface ContentRow {
@@ -33,13 +36,7 @@ const STATUS_TABS = [
   { key: 'rejected', label: '已下架', tone: 'red' as const },
 ];
 
-const TYPE_LABEL: Record<string, string> = {
-  article: '文章',
-  testimony: '见证',
-  devotion: '灵修',
-  media: '媒体',
-  prayer: '代祷',
-};
+const TYPE_LABEL = CONTENT_TYPE_LABEL;
 
 const STATUS_LABEL: Record<string, string> = {
   published: '已发布',
@@ -73,6 +70,10 @@ export default function AdminContentsPage() {
   const [selected, setSelected] = useState<string[]>([]);
   const bulk = useAction();
   const [pendingDelete, setPendingDelete] = useState<string[]>([]);
+  // 删除确认弹层：Esc 可关、焦点圈在里面。生成中的删除不许关，否则点了确认却没回执。
+  useEscape(pendingDelete.length > 0 && !bulk.pending, () => setPendingDelete([]));
+  const deleteDlgRef = useDialogFocus(pendingDelete.length > 0);
+  const deleteTitleId = useId();
 
   const items = data?.items || [];
   const total = data?.total || 0;
@@ -142,11 +143,11 @@ export default function AdminContentsPage() {
             value={kw}
             onChange={(e) => setKw(e.target.value)}
             placeholder="搜索标题 / 正文 / 标签 / 作者"
-            className="input-styled flex-1"
+            className="input-styled input-sm flex-1"
           />
-          <button type="submit" className="btn-secondary text-sm flex-shrink-0">搜索</button>
+          <button type="submit" className="btn-secondary btn-sm text-xs flex-shrink-0">搜索</button>
           {search && (
-            <button type="button" className="btn-secondary text-sm flex-shrink-0" onClick={() => { setKw(''); setSearch(''); setPage(1); }}>
+            <button type="button" className="btn-secondary btn-sm text-xs flex-shrink-0" onClick={() => { setKw(''); setSearch(''); setPage(1); }}>
               清空
             </button>
           )}
@@ -155,7 +156,7 @@ export default function AdminContentsPage() {
           value={type}
           aria-label="按内容类型筛选"
           onChange={(e) => { setType(e.target.value); setPage(1); setSelected([]); }}
-          className="input-styled w-32"
+          className="input-styled input-sm select-inline"
         >
           <option value="all">全部类型</option>
           {Object.entries(TYPE_LABEL).map(([k, v]) => (
@@ -168,27 +169,30 @@ export default function AdminContentsPage() {
       {selected.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-4 px-4 py-3 rounded-xl bg-primary-50 border border-primary-100">
           <span className="text-sm font-semibold text-primary-700">已选 {selected.length} 条</span>
-          <button onClick={() => doBulk('published')} disabled={bulk.pending} className="btn-primary text-xs disabled:opacity-70">批量上架</button>
-          <button onClick={() => doBulk('rejected')} disabled={bulk.pending} className="btn-secondary text-xs disabled:opacity-70">批量下架</button>
-          <button onClick={() => doBulk('pending_review')} disabled={bulk.pending} className="btn-secondary text-xs disabled:opacity-70">退回待审</button>
-          <button onClick={() => setPendingDelete(selected)} disabled={bulk.pending} className="btn-secondary text-xs text-rose-600 border-rose-200 disabled:opacity-70">删除</button>
+          <button onClick={() => doBulk('published')} disabled={bulk.pending} className="btn-primary btn-sm text-xs disabled:opacity-70">批量上架</button>
+          <button onClick={() => doBulk('rejected')} disabled={bulk.pending} className="btn-secondary btn-sm text-xs disabled:opacity-70">批量下架</button>
+          <button onClick={() => doBulk('pending_review')} disabled={bulk.pending} className="btn-secondary btn-sm text-xs disabled:opacity-70">退回待审</button>
+          <button onClick={() => setPendingDelete(selected)} disabled={bulk.pending} className="btn-chip btn-chip-danger">删除 {selected.length} 条</button>
           <button onClick={() => setSelected([])} className="text-xs text-ink-500 ml-auto">取消选择</button>
           {bulk.error && <p role="alert" className="w-full text-xs text-rose-600">{bulk.error}</p>}
         </div>
       )}
 
-      {loading && <Loading />}
+      {/* 刷新时不再整块换成「加载中…」：表格被抹成一行字再弹回来，读到的行全丢了 */}
+      {loading && !data && <Loading />}
       {error && <ErrorBox message={error} onRetry={reload} />}
-      {!loading && !error && items.length === 0 && <Empty label="没有符合条件的内容" />}
+      {data && !loading && items.length === 0 && (
+        <Empty label="没有符合条件的内容" hint="换个状态页签，或清空搜索词再试" />
+      )}
 
-      {!loading && !error && items.length > 0 && (
+      {!!data && items.length > 0 && (
         <>
-          <div className="bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden">
+          <div className={`bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden transition-opacity ${loading ? 'opacity-60' : ''}`}>
             {/* 窄屏下让表格横向滚动，而不是把 8 列压成 14px 宽的竖排（探针实测 390px 下
                 作者列 14px、标题列 28px，一个名字换 3~6 行）。min-w 按固定列宽合计 648px
                 再加标题的 180px 取的，和 /admin/users 同一套写法。 */}
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[860px] text-sm">
+              <table className="w-full min-w-[920px] text-sm">
               <caption className="sr-only">内容管理</caption>
               <thead className="bg-ink-50 text-ink-600 text-xs">
                 <tr className="whitespace-nowrap">
@@ -196,6 +200,7 @@ export default function AdminContentsPage() {
                     <input
                       aria-label="全选本页内容"
                       type="checkbox"
+                      className="h-5 w-5 align-middle cursor-pointer"
                       checked={allChecked}
                       onChange={() => setSelected(allChecked ? [] : items.map((i) => i.id))}
                     />
@@ -204,7 +209,7 @@ export default function AdminContentsPage() {
                   <th scope="col" className="text-left px-3 py-2.5 font-medium w-24">作者</th>
                   <th scope="col" className="text-left px-3 py-2.5 font-medium w-20">类型</th>
                   <th scope="col" className="text-left px-3 py-2.5 font-medium w-24">状态</th>
-                  <th scope="col" className="text-right px-3 py-2.5 font-medium w-28">数据</th>
+                  <th scope="col" className="text-right px-3 py-2.5 font-medium w-44">数据</th>
                   <th scope="col" className="text-left px-3 py-2.5 font-medium w-24">时间</th>
                   <th scope="col" className="text-right px-3 py-2.5 font-medium w-32">操作</th>
                 </tr>
@@ -213,7 +218,7 @@ export default function AdminContentsPage() {
                 {items.map((c) => (
                   <tr key={c.id} className="border-t border-ink-100 hover:bg-ink-50/60">
                     <td className="px-3 py-3">
-                      <input aria-label={`选择内容「${c.title}」`} type="checkbox" checked={selected.includes(c.id)} onChange={() => toggle(c.id)} />
+                      <input aria-label={`选择内容「${c.title}」`} type="checkbox" className="h-5 w-5 align-middle cursor-pointer" checked={selected.includes(c.id)} onChange={() => toggle(c.id)} />
                     </td>
                     <td className="px-3 py-3">
                       <Link href={`/contents/${c.id}`} className="font-medium text-ink-800 hover:text-primary-600 line-clamp-1 py-3 -my-3">
@@ -231,7 +236,7 @@ export default function AdminContentsPage() {
                       </div>
                     </td>
                     <td className="px-3 py-3">
-                      <Link href={`/users/${c.author.id}`} className="text-ink-600 hover:text-primary-600">
+                      <Link href={`/users/${c.author.id}`} className="text-ink-600 hover:text-primary-600 py-3 -my-3">
                         {c.author.displayName}
                       </Link>
                     </td>
@@ -241,18 +246,19 @@ export default function AdminContentsPage() {
                         {STATUS_LABEL[c.status] || c.status}
                       </Badge>
                     </td>
-                    <td className="px-3 py-3 text-right text-xs text-ink-500">
-                      👍{c.likeCount} 💬{c.commentCount} 👁{c.viewCount}
+                    {/* 数字前挂 emoji 在表格里既花又容易掉字（不同系统字体没有同一颗眼睛），
+                        改写成「浏览 20 · 点赞 0」，读屏也不用再补 sr-only */}
+                    <td className="px-3 py-3 text-right text-xs text-ink-500 whitespace-nowrap">
+                      浏览 {c.viewCount} · 点赞 {c.likeCount} · 评论 {c.commentCount}
                     </td>
-                    <td className="px-3 py-3 text-xs text-ink-400">{timeAgo(c.createdAt)}</td>
+                    <td className="px-3 py-3 text-xs text-ink-400 whitespace-nowrap">{timeAgo(c.createdAt)}</td>
                     <td className="px-3 py-3 text-right whitespace-nowrap">
                       {c.status === 'published' ? (
-                        <button onClick={() => doBulk('rejected', [c.id])} disabled={bulk.pending} className="text-xs text-ink-500 hover:text-rose-600">下架</button>
+                        <button onClick={() => doBulk('rejected', [c.id])} disabled={bulk.pending} className="btn-chip">下架</button>
                       ) : (
-                        <button onClick={() => doBulk('published', [c.id])} disabled={bulk.pending} className="text-xs text-primary-600 hover:underline">上架</button>
+                        <button onClick={() => doBulk('published', [c.id])} disabled={bulk.pending} className="btn-chip btn-chip-accent">上架</button>
                       )}
-                      <span className="text-ink-400 mx-1.5">·</span>
-                      <button onClick={() => setPendingDelete([c.id])} className="text-xs text-ink-500 hover:text-rose-600">删除</button>
+                      <button onClick={() => setPendingDelete([c.id])} className="btn-chip btn-chip-danger ml-1.5">删除</button>
                     </td>
                   </tr>
                 ))}
@@ -262,11 +268,11 @@ export default function AdminContentsPage() {
           </div>
 
           {/* 分页 */}
-          <div className="flex items-center justify-between mt-4 text-sm">
+          <div className="flex items-center justify-between gap-3 mt-4 text-sm flex-wrap">
             <span className="text-ink-500">共 {total} 条 · 第 {page}/{totalPages} 页</span>
             <div className="flex gap-2">
-              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn-secondary text-xs disabled:opacity-50">上一页</button>
-              <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="btn-secondary text-xs disabled:opacity-50">下一页</button>
+              <button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))} className="btn-secondary btn-sm text-xs disabled:opacity-50">上一页</button>
+              <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="btn-secondary btn-sm text-xs disabled:opacity-50">下一页</button>
             </div>
           </div>
         </>
@@ -274,16 +280,26 @@ export default function AdminContentsPage() {
 
       {/* 删除确认 */}
       {pendingDelete.length > 0 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(17,24,39,0.45)' }} onClick={() => setPendingDelete([])}>
+        <Portal>
+        <div
+          ref={deleteDlgRef}
+          data-guard="admin-contents-delete-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={deleteTitleId}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(17,24,39,0.45)' }}
+          onClick={() => { if (!bulk.pending) setPendingDelete([]); }}
+        >
           <div className="bg-white rounded-2xl shadow-card-hover max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-display text-lg font-bold text-ink-900 mb-2">确认删除内容</h3>
+            <h3 id={deleteTitleId} className="font-display text-lg font-bold text-ink-900 mb-2">确认删除内容</h3>
             <p className="text-sm text-ink-500 mb-4">
               将删除 <span className="font-semibold text-rose-600">{pendingDelete.length}</span> 篇内容，其下的评论、点赞与收藏会一并清除。
               此操作不可撤销，建议优先使用「下架」。
             </p>
             {bulk.error && <p role="alert" className="text-xs text-rose-600 mb-3">{bulk.error}</p>}
             <div className="flex gap-3">
-              <button onClick={() => setPendingDelete([])} className="flex-1 py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm">取消</button>
+              <button onClick={() => setPendingDelete([])} disabled={bulk.pending} className="flex-1 py-2.5 rounded-xl border border-ink-200 text-ink-600 text-sm disabled:opacity-50">取消</button>
               <button
                 onClick={() => doDelete(pendingDelete)}
                 disabled={bulk.pending}
@@ -294,6 +310,7 @@ export default function AdminContentsPage() {
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </AdminLayout>
   );

@@ -159,7 +159,15 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Tab' || !node) return;
       const items = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(isReachable);
-      if (!items.length) return;
+      if (!items.length) {
+        // 弹层里暂时没有任何控件（异步内容未到位）时把焦点钉在容器上，
+        // 否则一次 Tab 就走进背景页，而 aria-modal 又告诉读屏"背景不存在"。
+        if (document.activeElement !== node && !node.contains(document.activeElement)) {
+          e.preventDefault();
+          node.focus({ preventScroll: true });
+        }
+        return;
+      }
       const first = items[0];
       const last = items[items.length - 1];
       const now = document.activeElement;
@@ -187,6 +195,9 @@ export function useDialogFocus<T extends HTMLElement = HTMLDivElement>(
       if (trap) document.addEventListener('keydown', onKey, true);
       if (autofocus) {
         const first = [...node.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(isReachable)[0];
+        // 没有子控件时容器自己必须是可聚焦的：div.focus() 在缺少 tabindex 时静默失败，
+        // 焦点会留在触发按钮上（= 背景页），异步加载中的弹层尤其容易踩到。
+        if (!first && !node.hasAttribute('tabindex')) node.tabIndex = -1;
         (first || node).focus({ preventScroll: true });
       }
     };

@@ -203,7 +203,7 @@ export default function AdminSongsPage() {
         </button>
       </div>
 
-      {loading ? (
+      {loading && !data ? (
         <Loading />
       ) : error ? (
         <ErrorBox message={error} onRetry={reload} />
@@ -277,7 +277,7 @@ export default function AdminSongsPage() {
                           type="button"
                           onClick={() => openListenEditor(s)}
                           disabled={busyId === s.id}
-                          className="text-[10px] text-ink-400 hover:text-primary-600 disabled:opacity-50"
+                          className="btn-chip"
                         >
                           修改
                         </button>
@@ -287,7 +287,7 @@ export default function AdminSongsPage() {
                         type="button"
                         onClick={() => openListenEditor(s)}
                         disabled={busyId === s.id}
-                        className="text-[11px] px-2 py-0.5 rounded-full bg-ink-100 text-ink-600 border border-ink-200 hover:bg-ink-50 disabled:opacity-50"
+                        className="btn-chip"
                       >
                         登记链接
                       </button>

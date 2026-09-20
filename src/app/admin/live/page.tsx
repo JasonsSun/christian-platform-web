@@ -7,6 +7,7 @@ import { apiPost } from '@/lib/api';
 import { useConfirmNav } from '@/lib/confirm';
 import { useNotice } from '@/lib/notice';
 import { useAuth } from '@/lib/auth';
+import { formatDateTime } from '@/lib/format';
 import { AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox } from '../_components';
 import type { LiveRoomListItem } from '@/lib/types';
 
@@ -175,7 +176,7 @@ export default function AdminLivePage() {
         </div>
       ) : null}
 
-      {loading ? <Loading /> : null}
+      {loading && !data ? <Loading /> : null}
       {error ? <ErrorBox message={error} onRetry={reload} /> : null}
       {!loading && !rooms.length ? <Empty label={tab === 'pending' ? '没有待审核的直播间' : '暂无直播间'} /> : null}
 
@@ -188,12 +189,13 @@ export default function AdminLivePage() {
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Link href={`/live/${r.id}`} className="font-semibold text-ink-900 hover:underline truncate">{r.title}</Link>
+                    {/* 短标题（探针里 "asd" 只有 28px 宽）在触屏上点不中，左右各借 6px 命中区 */}
+                    <Link href={`/live/${r.id}`} className="font-semibold text-ink-900 hover:underline truncate py-2 -my-2 px-1.5 -mx-1.5">{r.title}</Link>
                     <span className={`px-2 py-0.5 rounded-full text-xs ${b.cls}`}>{b.text}</span>
                   </div>
                   <p className="text-xs text-ink-400 mt-1">
                     主播 {r.owner?.displayName || '—'} · 峰值 {r.viewerPeak} · 当前 {r.viewerCount}
-                    {r.scheduledAt ? ` · 约定 ${new Date(r.scheduledAt).toLocaleString('zh-CN')}` : ''}
+                    {r.scheduledAt ? ` · 约定 ${formatDateTime(r.scheduledAt)}` : ''}
                   </p>
                   {r.cancelled && r.cancelReason ? <p className="text-xs text-rose-600 mt-1">取消原因:{r.cancelReason}</p> : null}
                   {r.reviewStatus === 'rejected' && r.reviewNote ? <p className="text-xs text-rose-600 mt-1">驳回:{r.reviewNote}</p> : null}
@@ -207,19 +209,19 @@ export default function AdminLivePage() {
                   ) : null}
                 </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Link href={`/live/${r.id}`} className="btn-ghost" aria-label={`查看直播间「${r.title}」`}>查看</Link>
+                <div className="inline-flex items-center gap-1 flex-wrap">
+                  <Link href={`/live/${r.id}`} className="btn-chip" aria-label={`查看直播间「${r.title}」`}>查看</Link>
                   {canReview(r) && (
                     <>
-                      <button className="btn-primary" disabled={busy} onClick={() => reviewAsk(r, true)}>通过</button>
-                      <button className="btn-danger" disabled={busy} onClick={() => reviewAsk(r, false)}>驳回</button>
+                      <button className="btn-chip btn-chip-safe" disabled={busy} onClick={() => reviewAsk(r, true)}>通过</button>
+                      <button className="btn-chip btn-chip-danger" disabled={busy} onClick={() => reviewAsk(r, false)}>驳回</button>
                     </>
                   )}
                   {canManage && r.status === 'live' && (
-                    <button className="btn-danger" disabled={busy} onClick={() => cancelAsk(r, true)}>强制关闭</button>
+                    <button className="btn-chip btn-chip-danger" disabled={busy} onClick={() => cancelAsk(r, true)}>强制关闭</button>
                   )}
                   {canManage && cancellable && (
-                    <button className="btn-ghost text-rose-600" disabled={busy} onClick={() => cancelAsk(r, false)}>取消</button>
+                    <button className="btn-chip" disabled={busy} onClick={() => cancelAsk(r, false)}>取消</button>
                   )}
                 </div>
               </div>

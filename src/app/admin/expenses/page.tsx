@@ -338,23 +338,23 @@ export default function AdminExpensesPage() {
                       <td className="px-4 py-3"><StatusTag status={e.status} /></td>
                       <td className="px-4 py-3 text-ink-400 whitespace-nowrap">{formatDateTime(e.createdAt)}</td>
                       <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="inline-flex flex-wrap justify-end gap-1">
                           <button
-                            className="btn-secondary btn-sm text-xs px-2.5"
+                            className="btn-chip"
                             disabled={pending}
                             onClick={() => startEdit(e)}
                           >
                             编辑
                           </button>
                           <button
-                            className="text-xs px-2.5 py-1 rounded-lg bg-ink-100 text-ink-600 disabled:opacity-40"
+                            className={`btn-chip ${e.status === 'published' ? '' : 'btn-chip-accent'}`}
                             disabled={pending}
                             onClick={() => toggleStatus(e)}
                           >
                             {e.status === 'published' ? '下架' : '上架'}
                           </button>
                           <button
-                            className="text-xs px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 disabled:opacity-40"
+                            className="btn-chip btn-chip-danger"
                             disabled={pending}
                             onClick={() => removeOne(e)}
                           >

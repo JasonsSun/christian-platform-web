@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { apiPost } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
+import { eventTypeLabel } from '@/lib/labels';
+import { formatDateTime } from '@/lib/format';
 import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
 
 interface OutboxEvent {
@@ -68,7 +70,7 @@ export default function AdminEventsPage() {
 
       {msg ? <div role="status" className="mb-4 text-sm text-primary-700 bg-primary-50 rounded-xl px-4 py-2">{msg}</div> : null}
 
-      {loading ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : items.length === 0 ? (
+      {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : items.length === 0 ? (
         <Empty label="暂无事件" />
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
@@ -87,13 +89,17 @@ export default function AdminEventsPage() {
             <tbody>
               {items.map((e) => (
                 <tr key={e.id} className="border-t border-ink-100">
-                  <td className="px-4 py-3 font-mono text-xs text-primary-700">{e.eventType}</td>
-                  <td className="px-4 py-3 text-ink-500">{e.createdAt?.slice(0, 16).replace('T', ' ')}</td>
+                  <td className="px-4 py-3">
+                    {/* 中文给人读，英文码留给排障：只有码时整列都是 content.approved 这种串 */}
+                    <div className="text-ink-700">{eventTypeLabel(e.eventType)}</div>
+                    <div className="font-mono text-[11px] text-ink-400">{e.eventType}</div>
+                  </td>
+                  <td className="px-4 py-3 text-ink-500">{formatDateTime(e.createdAt) || '—'}</td>
                   <td className="px-4 py-3 text-center">
                     <Badge tone={STATUS_MAP[e.status]?.tone || 'gray'}>{STATUS_MAP[e.status]?.label || e.status}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => setOpenId(openId === e.id ? null : e.id)} className="text-primary-600 hover:underline text-xs">
+                    <button onClick={() => setOpenId(openId === e.id ? null : e.id)} className="btn-chip">
                       {openId === e.id ? '收起' : '查看'}
                     </button>
                   </td>

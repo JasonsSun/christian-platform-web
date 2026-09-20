@@ -2,6 +2,7 @@
 
 import { Fragment, useState } from 'react';
 import { apiPost, apiPatch, apiDelete } from '@/lib/api';
+import { formatDateTime } from '@/lib/format';
 import { useApi } from '@/lib/useApi';
 import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox } from '../_components';
 import {
@@ -182,7 +183,7 @@ export default function AdminNotificationsPage() {
         </div>
       )}
 
-      {loading ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
+      {loading && !data ? <Loading /> : error ? <ErrorBox message={error} onRetry={reload} /> : (
         <div className="space-y-6">
           <div className="glass rounded-2xl overflow-hidden shadow-soft">
             <div className="flex items-center justify-between px-4 py-3 border-b border-ink-100">
@@ -225,7 +226,7 @@ export default function AdminNotificationsPage() {
                         {t.enabled ? <Badge tone="green">启用</Badge> : <Badge tone="gray">停用</Badge>}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+                        <div className="inline-flex flex-wrap items-center justify-end gap-1">
                           <button
                             onClick={() => {
                               if (editing === t.id) { setEditing(null); setDraft(null); return; }
@@ -234,20 +235,20 @@ export default function AdminNotificationsPage() {
                               setDraft({ code: t.code, channel: t.channel, titleTpl: t.titleTpl, bodyTpl: t.bodyTpl, enabled: t.enabled });
                               tip('');
                             }}
-                            className="btn-secondary btn-sm text-xs px-3"
+                            className="btn-chip"
                           >
                             {editing === t.id ? '收起' : '编辑'}
                           </button>
                           <button
                             onClick={() => toggle(t)}
                             disabled={busy === t.id}
-                            className="btn-secondary btn-sm text-xs px-3 disabled:opacity-50"
+                            className={`btn-chip ${t.enabled ? '' : 'btn-chip-accent'} disabled:opacity-50`}
                           >
                             {t.enabled ? '停用' : '启用'}
                           </button>
                           <button
                             onClick={() => { setConfirmDel(confirmDel === t.id ? '' : t.id); tip(''); }}
-                            className="text-xs py-1 px-3 rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50"
+                            className="btn-chip btn-chip-danger"
                           >
                             删除
                           </button>
@@ -262,14 +263,14 @@ export default function AdminNotificationsPage() {
                             <span className="text-rose-700">
                               确认删除模板「{t.code}」（{channelLabel(t.channel)}）？删除后此编码的通知将回退为默认文案。
                             </span>
-                            <div className="ml-auto flex gap-2">
-                              <button onClick={() => setConfirmDel('')} className="btn-secondary btn-sm text-xs px-3">取消</button>
+                            <div className="ml-auto inline-flex gap-1">
+                              <button onClick={() => setConfirmDel('')} className="btn-chip">取消</button>
                               <button
                                 onClick={() => remove(t.id)}
                                 disabled={busy === t.id}
-                                className="text-xs py-1 px-3 rounded-lg bg-rose-600 text-white hover:bg-rose-700 disabled:opacity-50"
+                                className="btn-chip btn-chip-danger"
                               >
-                                {busy === t.id ? '删除中…' : '确认删除'}
+                                确认删除
                               </button>
                             </div>
                           </div>
@@ -339,7 +340,7 @@ export default function AdminNotificationsPage() {
                         {notifTypeLabel(r.type)}
                       </td>
                       <td className="px-4 py-3 text-ink-900">{r.title}<div className="text-xs text-ink-400">{r.body}</div></td>
-                      <td className="px-4 py-3 text-ink-500">{r.createdAt?.slice(0, 16).replace('T', ' ')}</td>
+                      <td className="px-4 py-3 text-ink-500">{formatDateTime(r.createdAt) || '—'}</td>
                       <td className="px-4 py-3 text-center">{r.read ? <Badge tone="gray">已读</Badge> : <Badge tone="gold">未读</Badge>}</td>
                     </tr>
                   ))}
