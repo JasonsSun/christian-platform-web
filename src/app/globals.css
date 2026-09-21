@@ -46,9 +46,12 @@
   --ui-border: #e6d8bd;
   --ui-text: #4a3f2f;
   /* 羊皮纸上的次要文字：#85744f 压在主卡上实测 4.16（/upload 的「单个 ≤ 4000MB」
-     这类 11px 限制说明），压到 #74653f 回到 5.22。强调色同理，#86692f 只有 4.53，
+     这类 11px 限制说明），压到 #74653f 回到 5.22。但主卡不是最坏情况：后台侧栏压在
+     --ui-hover 一档的底色上（实测 rgb(226,217,200)），#74653f 掉到 4.09，
+     侧栏栏目名（11px 眉标）首当其冲。再压到 #635535：侧栏 5.20、主卡 6.65，
+     次要文字仍然是灰调，不会和正文抢层级。强调色同理，#86692f 只有 4.53，
      和 .text-primary-600 收进同一档 #7d6127（5.16），链接和正文不再两套深浅。 */
-  --ui-muted: #74653f;
+  --ui-muted: #635535;
   --ui-accent: #7d6127;
   --ui-accent-soft: rgba(184, 134, 11, 0.12);
 }
@@ -1976,6 +1979,12 @@ a[class~="rounded-2xl"]:hover,
   border-radius: 1px;
   background: currentColor;
 }
+/* 静止时四根等高、又是 2px 宽，看着像一串省略号而不是声波条；
+   给一个参差的静止轮廓，播起来仍然由下面的 keyframes 接管。 */
+.eq > i:nth-child(1) { height: 45%; }
+.eq > i:nth-child(2) { height: 85%; }
+.eq > i:nth-child(3) { height: 35%; }
+.eq > i:nth-child(4) { height: 65%; }
 .eq.is-playing > i {
   animation: eq-bounce 0.95s ease-in-out infinite;
 }
