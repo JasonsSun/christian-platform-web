@@ -196,94 +196,97 @@ export default function AdminNotificationsPage() {
                 {form ? '收起' : '+ 新增模板'}
               </button>
             </div>
-            <table className="w-full text-sm">
-              <caption className="sr-only">通知模板</caption>
-              <thead className="bg-ink-50 text-ink-600">
-                <tr>
-                  <th scope="col" className="text-left px-4 py-3 font-medium">编码</th>
-                  <th scope="col" className="text-left px-4 py-3 font-medium">渠道</th>
-                  <th scope="col" className="text-left px-4 py-3 font-medium">标题模板</th>
-                  <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
-                  <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
-                </tr>
-              </thead>
-              <tbody>
-                {form && editorRow('new', form, setForm, create, () => setForm(null))}
+            {/* 外层壳是 overflow-hidden：不垫一层横向滚动，窄屏下模板正文会被直接裁掉 */}
+            <div className="overflow-x-auto scroll-slim">
+              <table className="w-full min-w-[760px] text-sm">
+                <caption className="sr-only">通知模板</caption>
+                <thead className="bg-ink-50 text-ink-600">
+                  <tr>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">编码</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">渠道</th>
+                    <th scope="col" className="text-left px-4 py-3 font-medium">标题模板</th>
+                    <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
+                    <th scope="col" className="text-right px-4 py-3 font-medium">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {form && editorRow('new', form, setForm, create, () => setForm(null))}
 
-                {templates.length === 0 && !form && (
-                  <tr><td colSpan={5}><Empty label="还没有通知模板，点右上角「新增模板」创建" /></td></tr>
-                )}
+                  {templates.length === 0 && !form && (
+                    <tr><td colSpan={5}><Empty label="还没有通知模板，点右上角「新增模板」创建" /></td></tr>
+                  )}
 
-                {templates.map((t) => (
-                  <Fragment key={t.id}>
-                    <tr className="border-t border-ink-100 hover:bg-primary-50/40">
-                      <td className="px-4 py-3 font-mono text-xs text-primary-700">{t.code}</td>
-                      <td className="px-4 py-3"><Badge tone="primary">{channelLabel(t.channel)}</Badge></td>
-                      <td className="px-4 py-3 text-ink-700">
-                        {t.titleTpl}
-                        {t.bodyTpl ? <div className="mt-0.5 text-xs text-ink-400 line-clamp-1">{t.bodyTpl}</div> : null}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {t.enabled ? <Badge tone="green">启用</Badge> : <Badge tone="gray">停用</Badge>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="inline-flex flex-wrap items-center justify-end gap-1">
-                          <button
-                            onClick={() => {
-                              if (editing === t.id) { setEditing(null); setDraft(null); return; }
-                              setForm(null);
-                              setEditing(t.id);
-                              setDraft({ code: t.code, channel: t.channel, titleTpl: t.titleTpl, bodyTpl: t.bodyTpl, enabled: t.enabled });
-                              tip('');
-                            }}
-                            className="btn-chip"
-                          >
-                            {editing === t.id ? '收起' : '编辑'}
-                          </button>
-                          <button
-                            onClick={() => toggle(t)}
-                            disabled={busy === t.id}
-                            className={`btn-chip ${t.enabled ? '' : 'btn-chip-accent'} disabled:opacity-50`}
-                          >
-                            {t.enabled ? '停用' : '启用'}
-                          </button>
-                          <button
-                            onClick={() => { setConfirmDel(confirmDel === t.id ? '' : t.id); tip(''); }}
-                            className="btn-chip btn-chip-danger"
-                          >
-                            删除
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {confirmDel === t.id && (
-                      <tr className="border-t border-rose-200 bg-rose-50/60">
-                        <td colSpan={5} className="px-4 py-3">
-                          <div className="flex items-center gap-3 text-sm">
-                            <span className="text-rose-700">
-                              确认删除模板「{t.code}」（{channelLabel(t.channel)}）？删除后此编码的通知将回退为默认文案。
-                            </span>
-                            <div className="ml-auto inline-flex gap-1">
-                              <button onClick={() => setConfirmDel('')} className="btn-chip">取消</button>
-                              <button
-                                onClick={() => remove(t.id)}
-                                disabled={busy === t.id}
-                                className="btn-chip btn-chip-danger"
-                              >
-                                确认删除
-                              </button>
-                            </div>
+                  {templates.map((t) => (
+                    <Fragment key={t.id}>
+                      <tr className="border-t border-ink-100 hover:bg-primary-50/40">
+                        <td className="px-4 py-3 font-mono text-xs text-primary-700">{t.code}</td>
+                        <td className="px-4 py-3"><Badge tone="primary">{channelLabel(t.channel)}</Badge></td>
+                        <td className="px-4 py-3 text-ink-700">
+                          {t.titleTpl}
+                          {t.bodyTpl ? <div className="mt-0.5 text-xs text-ink-400 line-clamp-1">{t.bodyTpl}</div> : null}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {t.enabled ? <Badge tone="green">启用</Badge> : <Badge tone="gray">停用</Badge>}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="inline-flex flex-wrap items-center justify-end gap-1">
+                            <button
+                              onClick={() => {
+                                if (editing === t.id) { setEditing(null); setDraft(null); return; }
+                                setForm(null);
+                                setEditing(t.id);
+                                setDraft({ code: t.code, channel: t.channel, titleTpl: t.titleTpl, bodyTpl: t.bodyTpl, enabled: t.enabled });
+                                tip('');
+                              }}
+                              className="btn-chip"
+                            >
+                              {editing === t.id ? '收起' : '编辑'}
+                            </button>
+                            <button
+                              onClick={() => toggle(t)}
+                              disabled={busy === t.id}
+                              className={`btn-chip ${t.enabled ? '' : 'btn-chip-accent'} disabled:opacity-50`}
+                            >
+                              {t.enabled ? '停用' : '启用'}
+                            </button>
+                            <button
+                              onClick={() => { setConfirmDel(confirmDel === t.id ? '' : t.id); tip(''); }}
+                              className="btn-chip btn-chip-danger"
+                            >
+                              删除
+                            </button>
                           </div>
                         </td>
                       </tr>
-                    )}
 
-                    {editing === t.id && draft && editorRow(t.id, draft, setDraft, () => save(t.id), () => { setEditing(null); setDraft(null); })}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
+                      {confirmDel === t.id && (
+                        <tr className="border-t border-rose-200 bg-rose-50/60">
+                          <td colSpan={5} className="px-4 py-3">
+                            <div className="flex items-center gap-3 text-sm">
+                              <span className="text-rose-700">
+                                确认删除模板「{t.code}」（{channelLabel(t.channel)}）？删除后此编码的通知将回退为默认文案。
+                              </span>
+                              <div className="ml-auto inline-flex gap-1">
+                                <button onClick={() => setConfirmDel('')} className="btn-chip">取消</button>
+                                <button
+                                  onClick={() => remove(t.id)}
+                                  disabled={busy === t.id}
+                                  className="btn-chip btn-chip-danger"
+                                >
+                                  确认删除
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+
+                      {editing === t.id && draft && editorRow(t.id, draft, setDraft, () => save(t.id), () => { setEditing(null); setDraft(null); })}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -321,32 +324,34 @@ export default function AdminNotificationsPage() {
           <div className="glass rounded-2xl overflow-hidden shadow-soft">
             <div className="px-4 py-3 font-medium text-ink-700 border-b border-ink-100">最近通知</div>
             {(data?.recent || []).length === 0 ? <Empty label="暂无通知" /> : (
-              <table className="w-full text-sm">
-                <caption className="sr-only">最近通知</caption>
-                <thead className="bg-ink-50 text-ink-600">
-                  <tr>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">接收人</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">类型</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">标题</th>
-                    <th scope="col" className="text-left px-4 py-3 font-medium">时间</th>
-                    <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(data?.recent || []).map((r) => (
-                    <tr key={r.id} className="border-t border-ink-100">
-                      <td className="px-4 py-3 text-ink-600">{r.user || '—'}</td>
-                      <td className="px-4 py-3 text-ink-600">
-                        <span className="mr-1 inline-flex items-center align-middle" aria-hidden><Glyph glyph={NOTIF_TYPE_ICON[r.type] || '🔔'} className="w-4 h-4" /></span>
-                        {notifTypeLabel(r.type)}
-                      </td>
-                      <td className="px-4 py-3 text-ink-900">{r.title}<div className="text-xs text-ink-400">{r.body}</div></td>
-                      <td className="px-4 py-3 text-ink-500">{formatDateTime(r.createdAt) || '—'}</td>
-                      <td className="px-4 py-3 text-center">{r.read ? <Badge tone="gray">已读</Badge> : <Badge tone="gold">未读</Badge>}</td>
+              <div className="overflow-x-auto scroll-slim">
+                <table className="w-full min-w-[820px] text-sm">
+                  <caption className="sr-only">最近通知</caption>
+                  <thead className="bg-ink-50 text-ink-600">
+                    <tr>
+                      <th scope="col" className="text-left px-4 py-3 font-medium">接收人</th>
+                      <th scope="col" className="text-left px-4 py-3 font-medium">类型</th>
+                      <th scope="col" className="text-left px-4 py-3 font-medium">标题</th>
+                      <th scope="col" className="text-left px-4 py-3 font-medium">时间</th>
+                      <th scope="col" className="text-center px-4 py-3 font-medium">状态</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {(data?.recent || []).map((r) => (
+                      <tr key={r.id} className="border-t border-ink-100">
+                        <td className="px-4 py-3 text-ink-600">{r.user || '—'}</td>
+                        <td className="px-4 py-3 text-ink-600">
+                          <span className="mr-1 inline-flex items-center align-middle" aria-hidden><Glyph glyph={NOTIF_TYPE_ICON[r.type] || '🔔'} className="w-4 h-4" /></span>
+                          {notifTypeLabel(r.type)}
+                        </td>
+                        <td className="px-4 py-3 text-ink-900">{r.title}<div className="text-xs text-ink-400">{r.body}</div></td>
+                        <td className="px-4 py-3 text-ink-500">{formatDateTime(r.createdAt) || '—'}</td>
+                        <td className="px-4 py-3 text-center">{r.read ? <Badge tone="gray">已读</Badge> : <Badge tone="gold">未读</Badge>}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

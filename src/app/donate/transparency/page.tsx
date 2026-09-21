@@ -181,7 +181,7 @@ export default function TransparencyPage() {
             </div>
             <div className="bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[680px] text-sm">
                   <caption className="sr-only">支出明细</caption>
                   <thead className="bg-ink-50 text-ink-600">
                     <tr>

@@ -226,7 +226,7 @@ export default function AdminGroupsPage() {
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[980px] text-sm">
               <caption className="sr-only">群组管理</caption>
               <thead className="bg-ink-50 text-ink-600">
                 <tr>

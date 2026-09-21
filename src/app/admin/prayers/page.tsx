@@ -157,7 +157,7 @@ export default function AdminPrayersPage() {
         <>
           <TableShell busy={loading}>
             {items.length === 0 ? <div className="p-4"><Empty label={q ? `没有匹配「${q}」的代祷` : '暂无代祷'} /></div> : (
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[820px] text-sm">
                 <caption className="sr-only">代祷墙管理</caption>
                 <thead className="bg-ink-50 text-ink-600">
                   <tr>

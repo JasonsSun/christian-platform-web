@@ -125,7 +125,8 @@ export default function AdminActivitiesPage() {
         <Empty label="暂无活动" hint="换个状态筛选，或清空搜索词再试" />
       ) : (
         <TableShell busy={loading}>
-          <table className="w-full text-sm">
+          {/* 手机视口下 7 列会被压成「一行一字」的竖排（探针 SQUEEZE 实测），改成交给壳横向滚 */}
+          <table className="w-full min-w-[880px] text-sm">
             <caption className="sr-only">活动管理</caption>
             <thead className="bg-ink-50 text-ink-600">
               <tr>

@@ -75,7 +75,7 @@ export default function AdminAuditPage() {
       ) : (
         <>
           <TableShell busy={loading}>
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[980px] text-sm">
                 <caption className="sr-only">审计日志</caption>
                 <thead className="bg-ink-50 text-ink-600">
                   <tr>

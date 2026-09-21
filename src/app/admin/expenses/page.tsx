@@ -307,7 +307,7 @@ export default function AdminExpensesPage() {
         <>
           <div className="glass rounded-2xl overflow-hidden shadow-soft">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[860px] text-sm">
                 <caption className="sr-only">支出公示管理</caption>
                 <thead className="bg-ink-50 text-ink-600">
                   <tr>

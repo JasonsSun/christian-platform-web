@@ -230,7 +230,7 @@ export default function AdminOrganizationsPage() {
       ) : (
         <div className="glass rounded-2xl overflow-hidden shadow-soft">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[760px] text-sm">
               <caption className="sr-only">组织管理</caption>
               <thead className="bg-ink-50 text-ink-600">
                 <tr>
@@ -333,8 +333,8 @@ export default function AdminOrganizationsPage() {
                           ) : members.length === 0 ? (
                             <p className="text-sm text-ink-400 py-3">该组织还没有成员，搜索用户后添加即可。</p>
                           ) : (
-                            <div className="rounded-xl overflow-hidden border border-ink-100 bg-white">
-                              <table className="w-full text-xs">
+                            <div className="rounded-xl overflow-x-auto border border-ink-100 bg-white">
+                              <table className="w-full min-w-[560px] text-xs">
                                 <caption className="sr-only">该组织的成员列表</caption>
                                 <thead className="bg-ink-50 text-ink-600">
                                   <tr>

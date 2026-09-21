@@ -138,7 +138,7 @@ export default function AdminDonationsPage() {
         <>
           <div className="glass rounded-2xl overflow-hidden shadow-soft">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[900px] text-sm">
                 <caption className="sr-only">捐赠管理</caption>
                 <thead className="bg-ink-50 text-ink-600">
                   <tr>
