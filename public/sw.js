@@ -1,13 +1,19 @@
 /* 圣约社区 Service Worker
  * 策略：
- *  - 壳缓存(SHELL)：首屏路由预缓存，弱网/离线可秒开
+ *  - 壳缓存(SHELL)：首屏路由预缓存，离线/断网时可秒开
  *  - 读经 API(/api/v1/bible/*)：stale-while-revalidate，读过一次的章节离线也能读
- *  - 静态资源(_next/static、图片/字体/音视频)：cache-first
- *  - 页面导航：stale-while-revalidate（先用缓存秒开，后台更新）——弱网下不再白屏
+ *  - 静态资源(_next/static、图片/字体/音视频)：cache-first（文件名带 hash，永不过期也不会长错）
+ *  - 页面导航：network-first，断网才回退缓存
+ *
+ * 导航为什么不能优先用缓存：Cache API 只按 URL 匹配，不看 Cookie。而页面 HTML 是
+ * 按 Cookie 服务端渲染的（简繁 variant、登录态都写在 HTML 里），缓存优先会把
+ * 「上一次访问」的那份 HTML 端给这一次的用户 —— 切到繁体后被塞一份简体 HTML，
+ * 客户端渲染的是繁体，React 直接报 hydration 不匹配并整页重渲染；登录态/刚发版
+ * 同理会串。离线可用是唯一的收益，network-first 断网时照样回退到缓存。
  *
  * 注意：改动本文件后必须提升 CACHE 版本号，activate 时会清理旧缓存。
  */
-const CACHE = 'covenant-shell-v3';
+const CACHE = 'covenant-shell-v4';
 const SHELL = [
   '/',
   '/bible',
@@ -49,6 +55,8 @@ self.addEventListener('fetch', (event) => {
 
   // 音频(range 请求)交给浏览器直连，避免 SW 缓存分片响应导致播放异常
   if (req.headers.has('range')) return;
+  // 自己这张脚本绝不能走缓存，否则新版本永远上不了线
+  if (url.pathname === '/sw.js') return;
 
   // 读经数据：后台更新、优先缓存（读过的章节离线可读）
   if (url.pathname.startsWith('/api/v1/bible')) {
@@ -109,17 +117,16 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-/** 导航请求：有缓存就先返回(秒开)，同时后台刷新；没缓存才等网络，网络失败回退首页缓存 */
+/** 导航请求：优先走网络（HTML 是按 Cookie 渲染的），断网才回退缓存 */
 async function navigateHandler(req) {
-  const cached = await caches.match(req);
-  const network = fetch(req)
-    .then(async (res) => {
-      if (res && res.ok) (await caches.open(CACHE)).put(req, res.clone());
-      return res;
-    })
-    .catch(() => null);
-  if (cached) return cached;
-  return (await network) || (await caches.match('/')) || Response.error();
+  try {
+    const res = await fetch(req);
+    if (res && res.ok) (await caches.open(CACHE)).put(req, res.clone());
+    return res;
+  } catch {
+    const cached = await caches.match(req);
+    return cached || (await caches.match('/')) || Response.error();
+  }
 }
 
 async function cacheFirst(req) {
