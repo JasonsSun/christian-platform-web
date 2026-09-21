@@ -5,7 +5,7 @@ import { apiDelete, apiGet, apiPost, apiPatch } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatSize } from '@/lib/format';
 import { AdminLayout, Loading, ErrorBox, Empty, Badge, PageHead, Panel, AccessState } from '../_components';
 import Portal from '@/components/Portal';
 
@@ -16,12 +16,6 @@ interface BackupFile {
   kind: 'sql.gz' | 'json';
   source: 'cron' | 'app';
   createdBy?: string;
-}
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
 export default function AdminBackupsPage() {
@@ -109,7 +103,7 @@ export default function AdminBackupsPage() {
           </p>
           <p className="mt-1.5 text-xs text-ink-400">{data.cron.note}</p>
           {data.lastBackupAt && (
-            <p className="mt-1.5 text-xs text-ink-500">最近一次备份：<span className="num">{new Date(data.lastBackupAt).toLocaleString('zh-CN')}</span></p>
+            <p className="mt-1.5 text-xs text-ink-500">最近一次备份：<span className="num">{formatDateTime(data.lastBackupAt)}</span></p>
           )}
         </Panel>
 
@@ -127,8 +121,8 @@ export default function AdminBackupsPage() {
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <Badge tone={f.kind === 'sql.gz' ? 'blue' : 'primary'}>{f.kind}</Badge>
                       <Badge tone={f.source === 'app' ? 'green' : 'gray'}>{f.source === 'app' ? '应用备份' : '自动备份'}</Badge>
-                      <span className="num text-xs text-ink-400">{formatBytes(f.size)}</span>
-                      <span className="num text-xs text-ink-400">· {formatDateTime(f.mtime) || new Date(f.mtime).toLocaleString('zh-CN')}</span>
+                      <span className="num text-xs text-ink-400">{formatSize(f.size)}</span>
+                      <span className="num text-xs text-ink-400">· {formatDateTime(f.mtime) || '时间未知'}</span>
                     </div>
                   </div>
                   <div className="inline-flex flex-wrap items-center justify-end gap-1 shrink-0">

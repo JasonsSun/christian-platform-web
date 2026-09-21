@@ -271,7 +271,7 @@ export default function AdminSystemPage() {
                 <div key={`${e.at}-${i}`} className="rounded-xl bg-ink-50 px-4 py-2.5">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
                     <Badge tone={e.level === 'error' ? 'red' : e.level === 'warn' ? 'gold' : 'gray'}>{e.level}</Badge>
-                    <span className="text-ink-400">{new Date(e.at).toLocaleString('zh-CN')}</span>
+                    <span className="text-ink-400">{formatDateTime(e.at)}</span>
                     {e.ctx?.scope && <span className="text-ink-500">scope: {e.ctx.scope}</span>}
                   </div>
                   <p className="text-sm text-ink-800 mt-1 break-words whitespace-pre-wrap">{e.message}</p>

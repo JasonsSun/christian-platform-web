@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
-import { timeAgo } from '@/lib/format';
+import { formatClock, timeAgo } from '@/lib/format';
 import { contentStatusLabel, auditActionLabel } from '@/lib/labels';
 import { IconArrowRight, IconChatDots, IconEye, IconHeart, IconRefresh } from '@/components/icons';
 import { AdminLayout, PageHead, StatCard, StatusBadge, Loading, Empty, ErrorBox, SectionTitle, Badge } from './_components';
@@ -44,7 +44,7 @@ export default function AdminDashboard() {
   const [updatedAt, setUpdatedAt] = useState('');
 
   useEffect(() => {
-    if (data) setUpdatedAt(new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }));
+    if (data) setUpdatedAt(formatClock(new Date()));
   }, [data]);
 
   if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;

@@ -3,6 +3,7 @@ import { exec, one, q, ts } from '@/server/db';
 import { ok, withApi, readJson, HttpError, num, notFound, clientIp } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
 import { audit } from '@/server/services';
+import { formatMoney } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,11 +24,6 @@ function donationLabel(row: any): string {
   }
   return String(row.display_name || '').trim() || '匿名';
 }
-
-const yuan = (cents: number) => {
-  const y = cents / 100;
-  return Number.isInteger(y) ? String(y) : y.toFixed(2);
-};
 
 export const GET = withApi(async (req: NextRequest) => {
   await requireRole(req, ['admin']);
@@ -80,7 +76,7 @@ export const GET = withApi(async (req: NextRequest) => {
       churchName: r.church_name || '',
       anonymous: !!Number(r.anonymous),
       amountCents: Number(r.amount_cents || 0),
-      amountText: yuan(Number(r.amount_cents || 0)),
+      amountText: formatMoney(Number(r.amount_cents || 0)),
       message: r.message || '',
       status: r.status,
       note: r.note || '',
@@ -95,13 +91,13 @@ export const GET = withApi(async (req: NextRequest) => {
     pageSize,
     stats: {
       totalCents: Number(agg?.confirmed_sum || 0),
-      totalAmountText: yuan(Number(agg?.confirmed_sum || 0)),
+      totalAmountText: formatMoney(Number(agg?.confirmed_sum || 0)),
       count: Number(agg?.c || 0),
       confirmedCount: Number(agg?.confirmed_count || 0),
       pendingCount: Number(agg?.pending_count || 0),
       rejectedCount: Number(agg?.rejected_count || 0),
       monthCents: Number(agg?.month_sum || 0),
-      monthAmountText: yuan(Number(agg?.month_sum || 0)),
+      monthAmountText: formatMoney(Number(agg?.month_sum || 0)),
     },
   });
 });

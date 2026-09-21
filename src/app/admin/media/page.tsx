@@ -5,7 +5,7 @@ import { apiPatch, apiPost } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatSize } from '@/lib/format';
 import { AdminLayout, SectionTitle, StatCard, Badge, Loading, TableSkeleton, Empty, ErrorBox, PageHead, Toolbar, AdminSelect } from '../_components';
 
 interface MediaFile {
@@ -26,13 +26,6 @@ const REVIEW_MAP: Record<string, { tone: 'green' | 'gold' | 'red'; label: string
   approved: { tone: 'green', label: '已通过' },
   rejected: { tone: 'red', label: '已驳回' },
 };
-
-function fmtSize(n: number) {
-  if (n <= 0) return '0 B';
-  const u = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.min(Math.floor(Math.log(n) / Math.log(1024)), 3);
-  return `${(n / Math.pow(1024, i)).toFixed(i === 0 ? 0 : 1)} ${u[i]}`;
-}
 
 export default function AdminMediaPage() {
   const [q, setQ] = useState('');
@@ -125,7 +118,7 @@ export default function AdminMediaPage() {
       <PageHead eyebrow="内容 · 媒体" title="媒体中心" sub="上传审核、文件、转码任务、失败任务与回收站" />
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6" data-reveal-group>
-        <StatCard title="文件总数" value={t?.files ?? '—'} hint={`占用 ${fmtSize(t?.bytes || 0)}`} />
+        <StatCard title="文件总数" value={t?.files ?? '—'} hint={`占用 ${formatSize(t?.bytes || 0)}`} />
         <StatCard title="待审核" value={t?.pendingReview ?? 0} />
         <StatCard title="转码中" value={t?.transcoding ?? 0} />
         <StatCard title="失败任务" value={t?.failedTasks ?? 0} />
@@ -199,7 +192,7 @@ export default function AdminMediaPage() {
                       <div className="text-xs text-ink-400">{m.owner || '系统'} · {formatDate(m.createdAt) || '—'} · 引用{m.refCount}</div>
                     </td>
                     <td className="px-4 py-3"><Badge tone="primary">{KIND_LABEL[m.kind] || m.kind}</Badge></td>
-                    <td className="px-4 py-3 text-right text-ink-600">{fmtSize(m.sizeBytes)}</td>
+                    <td className="px-4 py-3 text-right text-ink-600">{formatSize(m.sizeBytes)}</td>
                     <td className="px-4 py-3 text-center text-ink-600">
                       {m.taskCount > 0 ? `${m.taskCount} 项` : '—'}
                       {m.taskFailed > 0 ? <span className="text-rose-600 text-xs ml-1">失败{m.taskFailed}</span> : null}

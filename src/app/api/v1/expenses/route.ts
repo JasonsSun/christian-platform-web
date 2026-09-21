@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { q } from '@/server/db';
 import { ok, withApi } from '@/server/http';
+import { formatMoney } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,11 +22,6 @@ const CATEGORY_LABEL: Record<string, string> = {
   ops: '运维',
   domain: '域名/证书',
   other: '其他',
-};
-
-const yuan = (cents: number) => {
-  const y = cents / 100;
-  return Number.isInteger(y) ? String(y) : y.toFixed(2);
 };
 
 export const GET = withApi(async (req: NextRequest) => {
@@ -76,7 +72,7 @@ export const GET = withApi(async (req: NextRequest) => {
       title: r.title,
       note: r.note || '',
       amountCents: Number(r.amount_cents || 0),
-      amountText: yuan(Number(r.amount_cents || 0)),
+      amountText: formatMoney(Number(r.amount_cents || 0)),
       period: r.period,
       createdAt: r.created_at,
     })),
@@ -85,16 +81,16 @@ export const GET = withApi(async (req: NextRequest) => {
       label: CATEGORY_LABEL[r.category] || '其他',
       count: Number(r.c || 0),
       amountCents: Number(r.s || 0),
-      amountText: yuan(Number(r.s || 0)),
+      amountText: formatMoney(Number(r.s || 0)),
     })),
     byPeriod: byPeriod.map((r: any) => ({
       period: r.period,
       count: Number(r.c || 0),
       amountCents: Number(r.s || 0),
-      amountText: yuan(Number(r.s || 0)),
+      amountText: formatMoney(Number(r.s || 0)),
     })),
     totalCents,
-    totalAmountText: yuan(totalCents),
+    totalAmountText: formatMoney(totalCents),
     categories: Object.entries(CATEGORY_LABEL).map(([id, label]) => ({ id, label })),
   });
 });

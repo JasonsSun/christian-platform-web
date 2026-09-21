@@ -5,6 +5,7 @@ import { useApi } from '@/lib/useApi';
 import { apiGet, apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { scrollBehavior } from '@/lib/motion';
+import { formatDateTime } from '@/lib/format';
 import { AdminLayout, SectionTitle, Loading, ErrorBox, Empty, PageHead } from '../_components';
 import { StaffBadges } from '@/components/ModeratorBadge';
 
@@ -234,7 +235,7 @@ export default function AdminMessagesPage() {
                         >
                           {m.body}
                           <div className={`text-[10px] mt-1 ${mine ? 'text-white/70' : 'text-ink-400'}`}>
-                            {new Date(m.createdAt).toLocaleString('zh-CN', { hour12: false })}
+                            {formatDateTime(m.createdAt)}
                           </div>
                         </div>
                       </div>

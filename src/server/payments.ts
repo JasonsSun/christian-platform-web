@@ -7,6 +7,7 @@ import { notify } from './services';
 import {
   aesGcmDecrypt, buildQuery, rsaSign, rsaVerify, verifyStripeSig, verifyWechatNotifySig, wechatV3Auth,
 } from './paymentCrypto';
+import { formatMoney } from '@/lib/format';
 
 /**
  * 支付网关适配层。
@@ -458,7 +459,8 @@ export async function confirmPaid(args: {
     [args.transactionId, args.gateway, row.id]
   );
 
-  const yuan = (expect / 100).toFixed(2);
+  /** 通知里给人看的金额走全站统一口径（千分位、整数不补零）；网关对账用的 total_amount 仍是两位小数字符串 */
+  const yuan = formatMoney(expect);
   try {
     if (row.donor_id) {
       await notify(row.donor_id, 'donation.paid', '捐赠已到账', `你的一笔 ¥${yuan} 捐赠已确认，感谢你的摆上。`, '/donate/transparency');

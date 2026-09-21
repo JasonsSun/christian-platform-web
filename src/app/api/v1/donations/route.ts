@@ -3,6 +3,7 @@ import { exec, newId, one, q, ts } from '@/server/db';
 import { ok, withApi, readJson, HttpError, num, clientIp } from '@/server/http';
 import { currentUser, requireUser, UserRow } from '@/server/auth';
 import { audit } from '@/server/services';
+import { formatMoney } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,9 +32,7 @@ function donationLabel(row: any): string {
 
 /** 金额文案:非管理员恒为 **** */
 function amountText(cents: number, admin: boolean): string {
-  if (!admin) return '****';
-  const yuan = cents / 100;
-  return Number.isInteger(yuan) ? String(yuan) : yuan.toFixed(2);
+  return admin ? formatMoney(cents) : '****';
 }
 
 export const GET = withApi(async (req: NextRequest) => {

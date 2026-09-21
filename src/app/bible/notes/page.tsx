@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 import { apiGet, apiDelete } from '@/lib/api';
 import { downloadText, safeFilename } from '@/lib/download';
+import { formatDateTime } from '@/lib/format';
 import { IconBookOpen, IconChevronRight } from '@/components/icons';
 
 type BmItem = {
@@ -79,7 +80,7 @@ export default function BibleNotesPage() {
     const lines: string[] = [];
     lines.push('# 我的灵修笔记');
     lines.push('');
-    lines.push(`> 导出时间：${new Date().toLocaleString('zh-CN')}`);
+    lines.push(`> 导出时间：${formatDateTime(new Date())}`);
     lines.push(`> 共 ${items.length} 处高亮，其中 ${noteCount} 条笔记`);
     lines.push('');
     for (const g of groups) {

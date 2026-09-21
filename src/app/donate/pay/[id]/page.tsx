@@ -7,6 +7,7 @@ import { apiGet, apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useGoLogin } from '@/lib/nav';
 import { useNotice } from '@/lib/notice';
+import { formatMoney } from '@/lib/format';
 import { IconPray } from '@/components/icons';
 
 /**
@@ -203,7 +204,7 @@ export default function DonatePayPage() {
   );
 
   const amountText = useMemo(
-    () => (state ? (Number(state.amountCents || 0) / 100).toFixed(2) : '0.00'),
+    () => (state ? formatMoney(Number(state.amountCents || 0), 2) : '0.00'),
     [state]
   );
 

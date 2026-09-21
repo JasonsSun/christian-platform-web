@@ -3,6 +3,7 @@ import { exec, one, q, ts, newId } from '@/server/db';
 import { ok, withApi, readJson, HttpError, num, notFound, clientIp } from '@/server/http';
 import { requireRole, UserRow } from '@/server/auth';
 import { audit } from '@/server/services';
+import { formatMoney } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,11 +20,6 @@ export const dynamic = 'force-dynamic';
 
 const CATEGORIES = ['server', 'bandwidth', 'storage', 'ops', 'domain', 'other'] as const;
 const STATUSES = ['published', 'hidden'] as const;
-
-const yuan = (cents: number) => {
-  const y = cents / 100;
-  return Number.isInteger(y) ? String(y) : y.toFixed(2);
-};
 
 export const GET = withApi(async (req: NextRequest) => {
   await requireRole(req, ['admin']);
@@ -74,7 +70,7 @@ export const GET = withApi(async (req: NextRequest) => {
       title: r.title,
       note: r.note || '',
       amountCents: Number(r.amount_cents || 0),
-      amountText: yuan(Number(r.amount_cents || 0)),
+      amountText: formatMoney(Number(r.amount_cents || 0)),
       period: r.period,
       status: r.status,
       createdAt: r.created_at,
@@ -87,11 +83,11 @@ export const GET = withApi(async (req: NextRequest) => {
       publishedCount: Number(exp?.published_count || 0),
       hiddenCount: Number(exp?.hidden_count || 0),
       publishedCents: Number(exp?.published_sum || 0),
-      publishedAmountText: yuan(Number(exp?.published_sum || 0)),
+      publishedAmountText: formatMoney(Number(exp?.published_sum || 0)),
       incomeConfirmedCents: Number(inc?.s || 0),
-      incomeConfirmedText: yuan(Number(inc?.s || 0)),
+      incomeConfirmedText: formatMoney(Number(inc?.s || 0)),
       balanceCents: Number(inc?.s || 0) - Number(exp?.published_sum || 0),
-      balanceText: yuan(Number(inc?.s || 0) - Number(exp?.published_sum || 0)),
+      balanceText: formatMoney(Number(inc?.s || 0) - Number(exp?.published_sum || 0)),
     },
   });
 });
@@ -129,7 +125,7 @@ export const POST = withApi(async (req: NextRequest) => {
      VALUES (?,?,?,?,?,?,?,?,?)`,
     [id, category, title, note, cents, period, status, admin.id, ts()]
   );
-  await audit(admin.id, 'EXPENSE_CREATE', 'expense', id, `新增支出公示「${title}」¥${yuan(cents)} (${period})`, clientIp(req));
+  await audit(admin.id, 'EXPENSE_CREATE', 'expense', id, `新增支出公示「${title}」¥${formatMoney(cents)} (${period})`, clientIp(req));
   return ok({ id }, 201);
 });
 

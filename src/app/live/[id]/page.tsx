@@ -8,6 +8,7 @@ import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { scrollBehavior } from '@/lib/motion';
 import { apiGet, apiPost, qs } from '@/lib/api';
+import { formatDateTime } from '@/lib/format';
 import { HlsPlayer } from '@/components/HlsPlayer';
 import { Danmaku } from '@/components/Danmaku';
 import { LiveGuide } from '@/components/LiveGuide';
@@ -413,7 +414,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               <h1 className="font-display text-xl font-bold text-ink-900">{room.title}</h1>
               <p className="text-xs text-ink-400 mt-1">
                 主播 {room.owner?.displayName || '—'} · 峰值 {room.viewerPeak} 人
-                {room.scheduledAt ? ` · 约定 ${new Date(room.scheduledAt).toLocaleString('zh-CN')}` : ''}
+                {room.scheduledAt ? ` · 约定 ${formatDateTime(room.scheduledAt)}` : ''}
               </p>
             </div>
             <div className="flex items-center gap-2">

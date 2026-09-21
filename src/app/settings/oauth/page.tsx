@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useGoLogin } from '@/lib/nav';
 import { useNotice } from '@/lib/notice';
 import { IconLink } from '@/components/icons';
+import { formatDate } from '@/lib/format';
 
 /**
  * 第三方账号绑定管理
@@ -25,13 +26,6 @@ type LinkedItem = {
   display_name: string | null;
   created_at: number | string | Date;
 };
-
-function formatDate(v: LinkedItem['created_at']): string {
-  if (!v) return '';
-  const d = new Date(v as any);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
 
 export default function SettingsOAuthPage() {
   const { user, loading: authLoading } = useAuth();

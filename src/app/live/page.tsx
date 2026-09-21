@@ -6,6 +6,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { apiPost, qs } from '@/lib/api';
+import { formatDateTime } from '@/lib/format';
 import { Loading, Empty, ErrorBox } from '@/components/ui';
 import { MediaUploader } from '@/components/MediaUploader';
 import {
@@ -291,8 +292,8 @@ export default function LiveListPage() {
                   <h3 className="font-semibold text-ink-900 line-clamp-1">{r.title}</h3>
                   <p className="text-xs text-ink-400 mt-1">
                     {r.owner?.displayName || '主播'}
-                    {r.startedAt ? ` · ${new Date(r.startedAt).toLocaleString('zh-CN')}` : ''}
-                    {r.scheduledAt ? ` · 约定 ${new Date(r.scheduledAt).toLocaleString('zh-CN')}` : ''}
+                    {r.startedAt ? ` · ${formatDateTime(r.startedAt)}` : ''}
+                    {r.scheduledAt ? ` · 约定 ${formatDateTime(r.scheduledAt)}` : ''}
                   </p>
                   {r.cancelled && r.cancelReason ? (
                     <p className="text-xs text-ink-400 mt-1">取消原因:{r.cancelReason}</p>

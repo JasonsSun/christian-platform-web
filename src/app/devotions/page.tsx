@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { downloadText, safeFilename } from '@/lib/download';
+import { formatDateTime } from '@/lib/format';
 import { IconBookOpen, IconClose, IconPencil, IconPlus } from '@/components/icons';
 
 type Devotional = {
@@ -130,7 +131,7 @@ export default function DevotionsPage() {
     const lines: string[] = [];
     lines.push('# 我的灵修日记');
     lines.push('');
-    lines.push(`> 导出时间：${new Date().toLocaleString('zh-CN')}`);
+    lines.push(`> 导出时间：${formatDateTime(new Date())}`);
     lines.push(`> 共 ${items.length} 篇`);
     lines.push('');
     for (const [m, list] of grouped) {
