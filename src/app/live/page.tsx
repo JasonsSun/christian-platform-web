@@ -6,7 +6,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { apiPost, qs } from '@/lib/api';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatTimestamp } from '@/lib/format';
 import { Loading, Empty, ErrorBox } from '@/components/ui';
 import { MediaUploader } from '@/components/MediaUploader';
 import {
@@ -255,7 +255,7 @@ export default function LiveListPage() {
                 <h3 className="font-semibold text-ink-900 line-clamp-1">{r.title}</h3>
                 <p className="text-xs text-ink-400 mt-1">
                   {r.viewerPeak} 次观看
-                  {r.durationSec ? ` · ${Math.floor(r.durationSec / 60)}分${String(r.durationSec % 60).padStart(2, '0')}秒` : ''}
+                  {r.durationSec ? ` · ${formatTimestamp(r.durationSec)}` : ''}
                 </p>
               </div>
             </Link>

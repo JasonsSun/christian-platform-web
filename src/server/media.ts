@@ -4,6 +4,7 @@ import os from 'os';
 import crypto from 'crypto';
 import { one } from './db';
 import { getStorageBackend } from './storage';
+import { mediaKindLabel } from '@/lib/labels';
 
 /* ---------------- 类型判定 ---------------- */
 
@@ -14,10 +15,6 @@ const EXT_TO_KIND: Record<string, MediaKind> = {
   mp3: 'audio', wav: 'audio', m4a: 'audio', aac: 'audio', ogg: 'audio', flac: 'audio',
   mp4: 'video', mov: 'video', webm: 'video', mkv: 'video', avi: 'video',
   pdf: 'score', doc: 'doc', docx: 'doc', ppt: 'doc', pptx: 'doc', txt: 'doc', md: 'doc', xls: 'doc', xlsx: 'doc',
-};
-
-const KIND_LABEL: Record<MediaKind, string> = {
-  image: '图片', audio: '音乐', video: '视频', score: '曲谱', doc: '资料',
 };
 
 export function extOf(name: string): string {
@@ -35,9 +32,7 @@ export function kindOf(name: string, mime = ''): MediaKind | null {
   return null;
 }
 
-export function kindLabel(kind: string): string {
-  return KIND_LABEL[kind as MediaKind] || kind;
-}
+export { mediaKindLabel as kindLabel };
 
 /** 允许的扩展名白名单(按类型) */
 const ALLOWED: Record<MediaKind, string[]> = {

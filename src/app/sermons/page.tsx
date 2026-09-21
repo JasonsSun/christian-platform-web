@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { apiGet } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/I18nProvider';
-import { timeAgo } from '@/lib/format';
+import { timeAgo, formatTimestamp } from '@/lib/format';
 import { IconMicWave, IconBookOpen, IconPlay, IconHeart } from '@/components/icons';
 
 interface Sermon {
@@ -31,13 +31,6 @@ interface ListResp {
   items: Sermon[];
   total: number;
   speakers: string[];
-}
-
-function fmtDur(s: number): string {
-  if (!s || s <= 0) return '';
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
 /** 接口侧 pageSize 上限为 50 */
@@ -169,9 +162,9 @@ export default function SermonsPage() {
                 <span className="absolute top-2 left-2 text-[11px] px-2 py-0.5 rounded-full bg-black/60 text-white">
                   {s.mediaType === 'audio' ? '音频' : s.mediaType === 'video' ? '视频' : '文稿'}
                 </span>
-                {fmtDur(s.durationSec) ? (
+                {formatTimestamp(s.durationSec) ? (
                   <span className="num absolute bottom-2 right-2 text-[11px] px-2 py-0.5 rounded-full bg-black/60 text-white">
-                    {fmtDur(s.durationSec)}
+                    {formatTimestamp(s.durationSec)}
                   </span>
                 ) : null}
               </div>

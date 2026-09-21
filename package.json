@@ -8,6 +8,7 @@
     "start": "node server.js --prod",
     "test": "node scripts/test-safety.mjs",
     "test:plan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-plan-checkin.mjs",
+    "test:format": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/verify-duration-format.mjs",
     "test:group": "node scripts/test-group-owner-exit.mjs",
     "test:payments": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/test-payment-adapters.mjs",
     "test:e2e:plan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-plan-checkin.mjs",

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { apiGet, apiPost } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
-import { formatSize } from '@/lib/format';
+import { formatSize, formatDuration } from '@/lib/format';
 import QuotaCard from '@/components/QuotaCard';
 import { IconCheck } from '@/components/icons';
 import { SkeletonGrid } from './shared';
@@ -151,13 +151,10 @@ export function MyGrowth() {
     );
 
   const p = data.profile || {};
-  const hours = Math.floor((p.onlineSeconds || 0) / 3600);
-  const minutes = Math.floor(((p.onlineSeconds || 0) % 3600) / 60);
-
   const metrics: { label: string; value: string }[] = [
     { label: '注册天数', value: `${p.accountAgeDays ?? 0} 天` },
     { label: '活跃天数', value: `${p.activeDays ?? 0} 天` },
-    { label: '在线时长', value: hours ? `${hours} 小时 ${minutes} 分` : `${minutes} 分钟` },
+    { label: '在线时长', value: formatDuration(p.onlineSeconds) },
     { label: '使用次数', value: `${p.actionCount ?? 0} 次` },
     { label: '访问次数', value: `${p.visitCount ?? 0} 次` },
     { label: '发布内容', value: `${p.approvedContentCount ?? 0}/${p.contentCount ?? 0} 篇` },

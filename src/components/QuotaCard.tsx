@@ -1,6 +1,6 @@
 'use client';
 
-import { formatSize } from '@/lib/format';
+import { formatSize, formatDuration } from '@/lib/format';
 
 export interface QuotaData {
   level: number;
@@ -19,19 +19,6 @@ export interface QuotaData {
   };
   limits: { image: number; audio: number; video: number; doc: number; videoSeconds: number; audioSeconds: number };
   profile?: any;
-}
-
-export function fmtDuration(sec: number): string {
-  const s = Math.max(0, Math.round(sec || 0));
-  if (s < 60) return `${s} 秒`;
-  if (s < 3600) {
-    const m = Math.round(s / 60);
-    const rest = s % 60;
-    return rest ? `${Math.floor(s / 60)} 分 ${rest} 秒` : `${m} 分钟`;
-  }
-  const h = Math.floor(s / 3600);
-  const m = Math.round((s % 3600) / 60);
-  return m ? `${h} 小时 ${m} 分` : `${h} 小时`;
 }
 
 function Bar({ value, max, tone = 'primary', label }: { value: number; max: number; tone?: 'primary' | 'gold'; label: string }) {
@@ -98,8 +85,8 @@ export default function QuotaCard({ data, compact = false }: { data: QuotaData; 
       {!compact ? (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-            <LimitBox title="视频" main={`≤ ${fmtDuration(p.maxVideoSeconds)}`} sub={`单个 ≤ ${p.maxVideoMb}MB`} />
-            <LimitBox title="音乐" main={`≤ ${fmtDuration(p.maxAudioSeconds)}`} sub={`单个 ≤ ${p.maxAudioMb}MB`} />
+            <LimitBox title="视频" main={`≤ ${formatDuration(p.maxVideoSeconds)}`} sub={`单个 ≤ ${p.maxVideoMb}MB`} />
+            <LimitBox title="音乐" main={`≤ ${formatDuration(p.maxAudioSeconds)}`} sub={`单个 ≤ ${p.maxAudioMb}MB`} />
             <LimitBox title="图片" main={`≤ ${p.maxImageMb}MB`} sub="JPG/PNG/WEBP" />
             <LimitBox title="资料" main={`≤ ${p.maxDocMb}MB`} sub="PDF/Word/PPT" />
           </div>
@@ -123,7 +110,7 @@ export default function QuotaCard({ data, compact = false }: { data: QuotaData; 
 
           {data.profile ? (
             <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <Stat label="在线时长" value={`${Math.floor((data.profile.onlineSeconds || 0) / 60)} 分钟`} />
+              <Stat label="在线时长" value={formatDuration(data.profile.onlineSeconds)} />
               <Stat label="使用次数" value={`${data.profile.actionCount || 0} 次`} />
               <Stat label="活跃天数" value={`${data.profile.activeDays || 0} 天`} />
               <Stat label="通过媒体" value={`${data.profile.approvedMediaCount || 0} 个`} />

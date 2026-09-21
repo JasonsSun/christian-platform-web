@@ -5,6 +5,7 @@ import { requireRole, UserRow } from '@/server/auth';
 import { audit, notify } from '@/server/services';
 import { recomputeProfile, penalizeRejectedMedia, getQuota } from '@/server/quota';
 import { requireModeratorModule } from '@/server/moderation';
+import { formatDuration } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,10 +31,11 @@ export const POST = withApi(async (req: NextRequest, ctx: { params: { id: string
     if (action === 'reject') await penalizeRejectedMedia(m.owner_id);
     const after = await recomputeProfile(m.owner_id).catch(() => null);
     if (after) {
+      const quota = await getQuota(m.owner_id).catch(() => null);
+      // 原来写的是 Math.round(秒/60) + 「分钟」：30 秒的策略会被说成「1 分钟」，取不到配额就说「0 分钟」
+      const limitText = quota ? ` · 视频最长 ${formatDuration(quota.policy.maxVideoSeconds)}` : '';
       await notify(m.owner_id, 'quota_changed', '你的上传额度已更新',
-        `当前等级「${after.levelName}」· 信任分 ${after.trustScore}· 视频最长 ${
-          Math.round((await getQuota(m.owner_id).catch(() => null))?.policy.maxVideoSeconds || 0) / 60
-        } 分钟`, '/upload');
+        `当前等级「${after.levelName}」· 信任分 ${after.trustScore}${limitText}`, '/upload');
     }
     await notify(m.owner_id, action === 'approve' ? 'media_approved' : 'media_rejected',
       action === 'approve' ? '媒体已通过审核' : '媒体未通过审核',

@@ -10,7 +10,7 @@ import { useConfirmNav } from '@/lib/confirm';
 import Portal from '@/components/Portal';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { useNotice } from '@/lib/notice';
-import { formatDate, formatSize, MEDIA_REVIEW_LABEL } from '@/lib/format';
+import { formatDate, formatSize } from '@/lib/format';
 import QuotaCard, { type QuotaData } from '@/components/QuotaCard';
 import BackplaySettingCard from '@/components/BackplaySettingCard';
 import CheckinHeatmap from '@/components/CheckinHeatmap';

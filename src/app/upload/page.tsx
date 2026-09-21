@@ -4,9 +4,9 @@ import { useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { API_BASE, tokenStore } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { formatSize } from '@/lib/format';
+import { formatSize, formatDuration } from '@/lib/format';
 import { useApi } from '@/lib/useApi';
-import QuotaCard, { fmtDuration, QuotaData } from '@/components/QuotaCard';
+import QuotaCard, { QuotaData } from '@/components/QuotaCard';
 import { IconCheck, IconDocument, IconFilm, IconImage, IconLock, IconMusicNote } from '@/components/icons';
 
 const KINDS = [
@@ -52,8 +52,8 @@ export default function UploadPage() {
 
   const hint = useMemo(() => {
     if (!quota) return '加载配额中…';
-    if (kind === 'video') return `≤ ${quota.policy.maxVideoMb}MB,时长 ≤ ${fmtDuration(quota.policy.maxVideoSeconds)}`;
-    if (kind === 'audio') return `≤ ${quota.policy.maxAudioMb}MB,时长 ≤ ${fmtDuration(quota.policy.maxAudioSeconds)}`;
+    if (kind === 'video') return `≤ ${quota.policy.maxVideoMb}MB,时长 ≤ ${formatDuration(quota.policy.maxVideoSeconds)}`;
+    if (kind === 'audio') return `≤ ${quota.policy.maxAudioMb}MB,时长 ≤ ${formatDuration(quota.policy.maxAudioSeconds)}`;
     if (kind === 'image') return `≤ ${quota.policy.maxImageMb}MB,JPG/PNG/WEBP/GIF`;
     return `≤ ${quota.policy.maxDocMb}MB,PDF/Word/PPT/Excel/TXT`;
   }, [kind, quota]);
@@ -234,7 +234,7 @@ export default function UploadPage() {
           <div className="text-sm text-ink-600">
             <div>
               {result.title || result.fileName}（{result.kindLabel},{formatSize(result.sizeBytes)}
-              {result.durationSec ? `,${result.durationSec}s` : ''}）
+              {result.durationSec ? `,${formatDuration(result.durationSec)}` : ''}）
             </div>
             <div className="text-xs text-ink-400 mt-1">处理任务:{result.tasks.map((t) => t.type).join('、') || '无'}</div>
             {result.quota?.next ? (

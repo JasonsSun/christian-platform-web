@@ -6,6 +6,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import { saveProgress, clearProgress, resumableAt, touchRecent } from '@/lib/watchHistory';
+import { formatTimestamp } from '@/lib/format';
 import { scrollBehavior } from '@/lib/motion';
 import { useBackgroundPlay, useMediaBackplay } from '@/lib/backplay';
 import { stopSpeechSessionIfAny } from '@/lib/speechSession';
@@ -83,11 +84,13 @@ export function useMaybePlayer(): PlayerCtx | null {
   return useContext(Ctx);
 }
 
+/**
+ * 播放时钟：0 也要显示成 0:00（formatTimestamp 会把 0 让给调用方，这里补回来）。
+ * 超过一小时交给 formatTimestamp 进位成 h:mm:ss——直播回放常常不止一小时，
+ * 原来这里会一路加下去显示成 75:32。
+ */
 export function formatTime(sec: number): string {
-  if (!isFinite(sec) || sec < 0) sec = 0;
-  const s = Math.floor(sec % 60);
-  const m = Math.floor(sec / 60);
-  return `${m}:${String(s).padStart(2, '0')}`;
+  return formatTimestamp(sec) || '0:00';
 }
 
 /* ---------------- 播放模式 ---------------- */

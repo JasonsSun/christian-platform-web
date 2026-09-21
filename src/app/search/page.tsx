@@ -5,8 +5,8 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { qs } from '@/lib/api';
-import { formatDate } from '@/lib/format';
-import { activityCategoryLabel, groupCategoryLabel } from '@/lib/labels';
+import { formatDate, formatTimestamp } from '@/lib/format';
+import { activityCategoryLabel, groupCategoryLabel, mediaKindLabel } from '@/lib/labels';
 import type { ContentItem, SongItem, ActivityItem, GroupItem } from '@/lib/types';
 import { SearchSectionSkeleton } from '@/components/Skeleton';
 import {
@@ -378,8 +378,8 @@ function SearchInner() {
                   <Link key={m.id} href={`/media/${m.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
                     <h4 className="font-semibold text-ink-900 truncate">{m.title}</h4>
                     <p className="text-xs text-ink-500 mt-1 truncate">
-                      {m.kind === 'audio' ? '音频' : m.kind === 'video' ? '视频' : m.kind === 'image' ? '图片' : m.kind === 'score' ? '曲谱' : '资料'}
-                      {m.durationSec ? ` · ${Math.round(m.durationSec / 60)} 分钟` : ''}
+                      {mediaKindLabel(m.kind)}
+                      {m.durationSec ? ` · ${formatTimestamp(m.durationSec)}` : ''}
                     </p>
                   </Link>
                 ))}

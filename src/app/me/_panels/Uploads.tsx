@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { apiDelete } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 
-import { formatDate, formatSize, MEDIA_REVIEW_LABEL } from '@/lib/format';
+import { formatDate, formatSize } from '@/lib/format';
+import { contentStatusLabel } from '@/lib/labels';
 import type { MediaItem } from '@/lib/types';
 import { Glyph } from '@/components/icons';
 import { SkeletonGrid, ErrorBlock, EmptyBlock } from './shared';
@@ -60,7 +61,7 @@ export function MyUploads() {
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-ink-900 truncate">{m.title}</h3>
                 <span className={`px-2 py-0.5 rounded-full border text-xs whitespace-nowrap ${REVIEW_TONE[m.reviewStatus] || 'bg-ink-100 text-ink-600 border-ink-200'}`}>
-                  {MEDIA_REVIEW_LABEL[m.reviewStatus] || m.reviewStatus}
+                  {contentStatusLabel(m.reviewStatus)}
                 </span>
               </div>
               <div className="text-xs text-ink-400 mt-1">{m.kindLabel} · <span className="num">{formatSize(m.sizeBytes)}</span> · {formatDate(m.createdAt)}</div>

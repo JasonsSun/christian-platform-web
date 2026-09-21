@@ -6,6 +6,7 @@ import { apiGet, apiPost } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
+import { logLevelLabel, errorScopeLabel } from '@/lib/labels';
 import { channelLabel, notifJobReasonLabel, notifJobStatusLabel, notifTypeLabel } from '@/lib/notificationMeta';
 import { AdminLayout, Badge, Loading, Empty, ErrorBox, SectionTitle, PageHead, Panel, AccessState } from '../_components';
 
@@ -270,9 +271,9 @@ export default function AdminSystemPage() {
               {errData.items.map((e, i) => (
                 <div key={`${e.at}-${i}`} className="rounded-xl bg-ink-50 px-4 py-2.5">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <Badge tone={e.level === 'error' ? 'red' : e.level === 'warn' ? 'gold' : 'gray'}>{e.level}</Badge>
+                    <Badge tone={e.level === 'error' || e.level === 'fatal' ? 'red' : e.level === 'warning' ? 'gold' : 'gray'}>{logLevelLabel(e.level)}</Badge>
                     <span className="text-ink-400">{formatDateTime(e.at)}</span>
-                    {e.ctx?.scope && <span className="text-ink-500">scope: {e.ctx.scope}</span>}
+                    {e.ctx?.scope && <span className="text-ink-500">范围：{errorScopeLabel(e.ctx.scope)}</span>}
                   </div>
                   <p className="text-sm text-ink-800 mt-1 break-words whitespace-pre-wrap">{e.message}</p>
                 </div>

@@ -14,7 +14,8 @@ import { scheduleMediaPipeline } from '@/server/mediaPipeline';
 import { validateUpload, extOf, guessMime, kindLabel, publicUrlFor } from '@/server/media';
 import { commitToStorage } from '@/server/storage';
 import { probeDuration } from '@/server/transcode';
-import { assertUploadAllowed, assertDurationAllowed, getQuota, fmtMin, MB } from '@/server/quota';
+import { assertUploadAllowed, assertDurationAllowed, getQuota, MB } from '@/server/quota';
+import { formatDuration, formatSize } from '@/lib/format';
 import { guardWrite } from '@/server/guard';
 
 export const dynamic = 'force-dynamic';
@@ -125,7 +126,7 @@ export const POST = withApi(async (req: NextRequest) => {
   await getQuota(user.id, true).catch(() => {});
 
   await audit(user.id, 'MEDIA_UPLOAD', 'media', id,
-    `上传${kindLabel(kind)}:${rawName}(${(saved.size / MB).toFixed(1)}MB${duration ? `,${duration}s` : ''})`,
+    `上传${kindLabel(kind)}:${rawName}(${formatSize(saved.size)}${duration ? `,${formatDuration(duration)}` : ''})`,
     clientIp(req));
   await notifyRole(['moderator', 'admin'], 'media_pending', '新的媒体待审核',
     `${user.display_name} 上传了${kindLabel(kind)}「${title}」`, '/admin/media');
@@ -141,7 +142,7 @@ export const POST = withApi(async (req: NextRequest) => {
     quota: {
       level: quota.level, levelName: quota.levelName, trustScore: quota.trustScore,
       maxVideoMb: quota.policy.maxVideoMb, maxAudioMb: quota.policy.maxAudioMb,
-      maxVideoDuration: fmtMin(quota.policy.maxVideoSeconds),
+      maxVideoDuration: formatDuration(quota.policy.maxVideoSeconds),
       dailyUploads: quota.policy.dailyUploads,
       todayCount: quota.usage.todayCount + 1,
       remainingTotalMb: Math.round(Math.max(0, quota.usage.totalBytesLimit - quota.usage.totalBytes - saved.size) / MB),

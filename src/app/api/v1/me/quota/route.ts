@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
 import { ok, withApi, num } from '@/server/http';
 import { requireUser, UserRow } from '@/server/auth';
-import { getQuota, fmtMin } from '@/server/quota';
+import { getQuota } from '@/server/quota';
+import { formatDuration } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -15,8 +16,8 @@ export const GET = withApi(async (req: NextRequest) => {
     ...view,
     hints: [
       `当前等级「${view.levelName}」· 信任分 ${view.trustScore}`,
-      `视频最长 ${fmtMin(view.policy.maxVideoSeconds)} / 单个 ≤ ${view.policy.maxVideoMb}MB`,
-      `音乐最长 ${fmtMin(view.policy.maxAudioSeconds)} / 单个 ≤ ${view.policy.maxAudioMb}MB`,
+      `视频最长 ${formatDuration(view.policy.maxVideoSeconds)} / 单个 ≤ ${view.policy.maxVideoMb}MB`,
+      `音乐最长 ${formatDuration(view.policy.maxAudioSeconds)} / 单个 ≤ ${view.policy.maxAudioMb}MB`,
       `今日已上传 ${view.usage.todayCount}/${view.policy.dailyUploads} 个`,
       view.next
         ? `再得 ${view.next.gap} 信任分升级「${view.next.name}」:${view.next.gains}`

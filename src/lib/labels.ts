@@ -264,3 +264,50 @@ export function jobStatusLabel(status?: string | null): string {
   if (!status) return '-';
   return JOB_STATUS_LABEL[status] || status;
 }
+
+/** 媒体类型：图片 / 音乐 / 视频 / 曲谱 / 资料 */
+export const MEDIA_KIND_LABEL: Record<string, string> = {
+  image: '图片', audio: '音乐', video: '视频', score: '曲谱', doc: '资料',
+};
+
+export function mediaKindLabel(kind?: string | null): string {
+  if (!kind) return '-';
+  return MEDIA_KIND_LABEL[kind] || kind;
+}
+
+/** 备份文件类型：文件名后缀（sql.gz / json）直接印到后台列表上 */
+export const BACKUP_KIND_LABEL: Record<string, string> = {
+  'sql.gz': 'SQL 备份',
+  json: 'JSON 备份',
+};
+
+export function backupKindLabel(kind?: string | null): string {
+  if (!kind) return '-';
+  return BACKUP_KIND_LABEL[kind] || kind;
+}
+
+/** 日志级别：系统页的运行错误流里 error / warning 混在中文句子中间。
+ *  取值对齐 server/monitor 的 Severity，别写成 warn——那永远匹配不上。 */
+export const LOG_LEVEL_LABEL: Record<string, string> = {
+  debug: '调试',
+  info: '提示',
+  warning: '警告',
+  error: '错误',
+  fatal: '致命',
+};
+
+export function logLevelLabel(level?: string | null): string {
+  if (!level) return '-';
+  return LOG_LEVEL_LABEL[level] || level;
+}
+
+/** 出错来源（server/monitor 的 ErrorContext.scope）：中文界面里别印 api / browser */
+export const ERROR_SCOPE_LABEL: Record<string, string> = {
+  api: '接口',
+  browser: '浏览器',
+};
+
+export function errorScopeLabel(scope?: string | null): string {
+  if (!scope) return '-';
+  return ERROR_SCOPE_LABEL[scope] || scope;
+}

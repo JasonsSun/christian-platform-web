@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { apiPatch, apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
-import { formatSize } from '@/lib/format';
+import { formatSize, formatDuration } from '@/lib/format';
 import { AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox, RoleBadge, PageHead, Toolbar, AdminSelect, TableShell, Th, TableSkeleton } from '../_components';
 
 interface Policy {
@@ -27,10 +27,9 @@ interface GrowthUser {
 const LEVEL_TONE = ['bg-ink-100 text-ink-700', 'bg-sky-100 text-sky-700', 'bg-emerald-100 text-emerald-700',
   'bg-primary-100 text-primary-700', 'bg-gold-100 text-gold-800', 'bg-purple-100 text-purple-700'];
 
+/** 这一页 0 表示「不限」而不是「0 秒」，所以只借 formatDuration 出时长文案 */
 function fmtDur(sec: number) {
-  if (!sec) return '不限';
-  if (sec >= 3600) return `${(sec / 3600).toFixed(sec % 3600 === 0 ? 0 : 1)} 小时`;
-  return `${Math.round(sec / 60)} 分钟`;
+  return sec ? formatDuration(sec) : '不限';
 }
 
 /** 一个带标题和单位提示的数字输入框 */
@@ -117,7 +116,7 @@ export default function AdminQuotasPage() {
             <StatCard title="画像用户" value={data.stats.users} hint="已生成成长画像" />
             <StatCard title="平均信任分" value={data.stats.avgScore} hint="满分 100" />
             <StatCard title="占用存储" value={formatSize(data.stats.storageBytes)} hint="全站媒体" />
-            <StatCard title="累计在线" value={`${Math.round(data.stats.onlineSeconds / 3600)} 小时`} hint="全站合计" />
+            <StatCard title="累计在线" value={formatDuration(data.stats.onlineSeconds)} hint="全站合计" />
           </div>
 
           {/* 等级分布 */}
@@ -284,7 +283,7 @@ export default function AdminQuotasPage() {
                         </span>
                       </td>
                       <td className="py-2.5 pr-3 font-semibold text-ink-900">{u.trustScore}</td>
-                      <td className="py-2.5 pr-3 text-ink-600">{Math.round(u.onlineSeconds / 60)} 分</td>
+                      <td className="py-2.5 pr-3 text-ink-600">{formatDuration(u.onlineSeconds)}</td>
                       <td className="py-2.5 pr-3 text-ink-600">{u.actionCount}</td>
                       <td className="py-2.5 pr-3 text-ink-600">{u.activeDays}</td>
                       <td className="py-2.5 pr-3 text-ink-600">{u.contentCount}（{u.approvedContentCount}）</td>

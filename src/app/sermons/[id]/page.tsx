@@ -7,6 +7,7 @@ import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { useNotice } from '@/lib/notice';
+import { formatTimestamp } from '@/lib/format';
 import { HlsPlayer } from '@/components/HlsPlayer';
 import {
   IconArrowLeft,
@@ -37,13 +38,6 @@ interface Sermon {
   status: string;
   createdAt: string;
   liked?: boolean;
-}
-
-function fmtDur(s: number): string {
-  if (!s || s <= 0) return '';
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
 export default function SermonDetailPage({ params }: { params: { id: string } }) {
@@ -151,8 +145,8 @@ export default function SermonDetailPage({ params }: { params: { id: string } })
                 </span>
                 <div>
                   <div className="font-medium text-ink-900">音频讲道</div>
-                  {fmtDur(data.durationSec) ? (
-                    <div className="num text-xs text-ink-400">时长 {fmtDur(data.durationSec)}</div>
+                  {formatTimestamp(data.durationSec) ? (
+                    <div className="num text-xs text-ink-400">时长 {formatTimestamp(data.durationSec)}</div>
                   ) : null}
                 </div>
               </div>

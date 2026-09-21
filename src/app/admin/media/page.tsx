@@ -6,6 +6,7 @@ import { useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { formatDate, formatSize } from '@/lib/format';
+import { MEDIA_KIND_LABEL, mediaKindLabel } from '@/lib/labels';
 import { AdminLayout, SectionTitle, StatCard, Badge, Loading, TableSkeleton, Empty, ErrorBox, PageHead, Toolbar, AdminSelect } from '../_components';
 
 interface MediaFile {
@@ -14,7 +15,6 @@ interface MediaFile {
   refCount: number; taskCount: number; taskFailed: number; createdAt: string; owner: string; url: string;
 }
 
-const KIND_LABEL: Record<string, string> = { image: '图片', audio: '音乐', video: '视频', score: '曲谱', doc: '资料' };
 const STATUS_MAP: Record<string, { tone: 'green' | 'gold' | 'red' | 'gray'; label: string }> = {
   ready: { tone: 'green', label: '就绪' },
   transcoding: { tone: 'gold', label: '转码中' },
@@ -144,7 +144,7 @@ export default function AdminMediaPage() {
           onChange={setKind}
           options={[
             { value: '', label: '全部类型' },
-            ...Object.entries(KIND_LABEL).map(([value, label]) => ({ value, label })),
+            ...Object.entries(MEDIA_KIND_LABEL).map(([value, label]) => ({ value, label })),
           ]}
         />
         <AdminSelect
@@ -191,7 +191,7 @@ export default function AdminMediaPage() {
                       <div className="font-medium text-ink-900 line-clamp-1 max-w-[240px]">{m.title || m.fileName}</div>
                       <div className="text-xs text-ink-400">{m.owner || '系统'} · {formatDate(m.createdAt) || '—'} · 引用{m.refCount}</div>
                     </td>
-                    <td className="px-4 py-3"><Badge tone="primary">{KIND_LABEL[m.kind] || m.kind}</Badge></td>
+                    <td className="px-4 py-3"><Badge tone="primary">{mediaKindLabel(m.kind)}</Badge></td>
                     <td className="px-4 py-3 text-right text-ink-600">{formatSize(m.sizeBytes)}</td>
                     <td className="px-4 py-3 text-center text-ink-600">
                       {m.taskCount > 0 ? `${m.taskCount} 项` : '—'}

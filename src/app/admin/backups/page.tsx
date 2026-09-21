@@ -6,6 +6,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { formatDateTime, formatSize } from '@/lib/format';
+import { backupKindLabel } from '@/lib/labels';
 import { AdminLayout, Loading, ErrorBox, Empty, Badge, PageHead, Panel, AccessState } from '../_components';
 import Portal from '@/components/Portal';
 
@@ -119,7 +120,7 @@ export default function AdminBackupsPage() {
                   <div className="flex-1 min-w-[200px]">
                     <p className="font-medium text-ink-900 text-sm truncate">{f.name}</p>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <Badge tone={f.kind === 'sql.gz' ? 'blue' : 'primary'}>{f.kind}</Badge>
+                      <Badge tone={f.kind === 'sql.gz' ? 'blue' : 'primary'}>{backupKindLabel(f.kind)}</Badge>
                       <Badge tone={f.source === 'app' ? 'green' : 'gray'}>{f.source === 'app' ? '应用备份' : '自动备份'}</Badge>
                       <span className="num text-xs text-ink-400">{formatSize(f.size)}</span>
                       <span className="num text-xs text-ink-400">· {formatDateTime(f.mtime) || '时间未知'}</span>

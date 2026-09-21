@@ -74,6 +74,32 @@ export function formatMoney(cents?: number | null, decimals?: number): string {
 
 export const initials = (name?: string) => (name || '?').slice(0, 1).toUpperCase();
 
+/**
+ * 时长（秒）-> 口语化文案：27 秒 / 4 分 12 秒 / 1 小时 5 分。
+ * 搜索页原来写的是 Math.round(秒/60) + 「分钟」，一条 27 秒的音频就被印成「0 分钟」；
+ * 服务端 fmtMin、QuotaCard、后台配额页、直播列表各有自己的版本，口径全不一样。
+ */
+export function formatDuration(sec?: number | null): string {
+  const s = Math.max(0, Math.round(Number(sec) || 0));
+  if (s < 60) return `${s} 秒`;
+  if (s < 3600) {
+    const rest = s % 60;
+    return rest ? `${Math.floor(s / 60)} 分 ${rest} 秒` : `${Math.round(s / 60)} 分钟`;
+  }
+  const h = Math.floor(s / 3600);
+  const m = Math.round((s % 3600) / 60);
+  return m ? `${h} 小时 ${m} 分` : `${h} 小时`;
+}
+
+/** 时长（秒）-> 播放器那种 m:ss（过一小时补成 h:mm:ss）；无时长返回空串，让调用方整段不渲染 */
+export function formatTimestamp(sec?: number | null): string {
+  const s = Math.max(0, Math.floor(Number(sec) || 0));
+  if (!s) return '';
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}:${pad2(s % 60)}`;
+  return `${Math.floor(m / 60)}:${pad2(m % 60)}:${pad2(s % 60)}`;
+}
+
 /** 文件大小格式化 */
 export function formatSize(n?: number): string {
   if (!n || n <= 0) return '0 B';
@@ -87,13 +113,3 @@ export function formatIp(ip?: string | null): string {
   const s = String(ip || '').replace(/^::ffff:/, '');
   return s || '-';
 }
-
-/** 媒体类型中文标签 */
-export const MEDIA_KIND_LABEL: Record<string, string> = {
-  image: '图片', audio: '音乐', video: '视频', score: '曲谱', doc: '资料',
-};
-
-/** 媒体审核状态标签 */
-export const MEDIA_REVIEW_LABEL: Record<string, string> = {
-  pending: '待审核', approved: '已通过', rejected: '已驳回',
-};

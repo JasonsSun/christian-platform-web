@@ -1,5 +1,7 @@
 import { q, one, exec, ts } from './db';
 import { HttpError } from './http';
+import { mediaKindLabel } from '@/lib/labels';
+import { formatDuration } from '@/lib/format';
 
 /**
  * 用户成长画像 + 动态上传配额
@@ -338,27 +340,14 @@ export async function getQuota(userId: string, refresh = false): Promise<QuotaVi
 function gainText(next: QuotaPolicy, cur: QuotaPolicy): string {
   const parts: string[] = [];
   if (next.maxVideoSeconds > cur.maxVideoSeconds) {
-    parts.push(`视频时长 ${fmtMin(cur.maxVideoSeconds)}→${fmtMin(next.maxVideoSeconds)}`);
+    parts.push(`视频时长 ${formatDuration(cur.maxVideoSeconds)}→${formatDuration(next.maxVideoSeconds)}`);
   }
   if (next.maxVideoMb > cur.maxVideoMb) parts.push(`单视频 ${cur.maxVideoMb}MB→${next.maxVideoMb}MB`);
   if (next.maxAudioSeconds > cur.maxAudioSeconds) {
-    parts.push(`音频时长 ${fmtMin(cur.maxAudioSeconds)}→${fmtMin(next.maxAudioSeconds)}`);
+    parts.push(`音频时长 ${formatDuration(cur.maxAudioSeconds)}→${formatDuration(next.maxAudioSeconds)}`);
   }
   if (next.dailyUploads > cur.dailyUploads) parts.push(`每日 ${cur.dailyUploads}→${next.dailyUploads} 个`);
   return parts.join('，') || '更多权益';
-}
-
-export function fmtMin(sec: number): string {
-  const s = Math.max(0, Math.round(sec || 0));
-  if (s < 60) return `${s} 秒`;
-  if (s < 3600) {
-    const m = Math.round(s / 60);
-    const rest = s % 60;
-    return rest ? `${Math.floor(s / 60)} 分 ${rest} 秒` : `${m} 分钟`;
-  }
-  const h = Math.floor(s / 3600);
-  const m = Math.round((s % 3600) / 60);
-  return m ? `${h} 小时 ${m} 分` : `${h} 小时`;
 }
 
 /* ---------------- 对外:上传前校验 ---------------- */
@@ -379,7 +368,7 @@ export async function assertUploadAllowed(userId: string, kind: MediaKind, sizeB
   const limit = maxBytesFor(kind, p);
   if (sizeBytes > limit) {
     throw new HttpError(413, 'QUOTA_FILE_TOO_LARGE',
-      `当前等级「${view.levelName}」单个${kindLabel(kind)}不能超过 ${(limit / MB).toFixed(0)}MB（` +
+      `当前等级「${view.levelName}」单个${mediaKindLabel(kind)}不能超过 ${(limit / MB).toFixed(0)}MB（` +
       `本文件 ${(sizeBytes / MB).toFixed(1)}MB）。提升信任分可解锁更大文件。`);
   }
   if (view.usage.todayCount >= p.dailyUploads) {
@@ -402,13 +391,9 @@ export function assertDurationAllowed(kind: MediaKind, durationSec: number, view
   const limit = kind === 'video' ? view.policy.maxVideoSeconds : view.policy.maxAudioSeconds;
   if (durationSec > limit) {
     throw new HttpError(413, 'QUOTA_DURATION_EXCEEDED',
-      `当前等级「${view.levelName}」的${kindLabel(kind)}最长 ${fmtMin(limit)}，` +
-      `本文件 ${fmtMin(durationSec)}。继续使用或发布内容即可解锁更长时长。`);
+      `当前等级「${view.levelName}」的${mediaKindLabel(kind)}最长 ${formatDuration(limit)}，` +
+      `本文件 ${formatDuration(durationSec)}。继续使用或发布内容即可解锁更长时长。`);
   }
-}
-
-function kindLabel(kind: MediaKind): string {
-  return ({ image: '图片', audio: '音乐', video: '视频', score: '曲谱', doc: '资料' } as any)[kind] || kind;
 }
 
 /* ---------------- 活跃上报 ---------------- */
