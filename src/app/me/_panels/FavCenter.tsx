@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import { useApi } from '@/lib/useApi';
 import { Glyph, IconBookMarked, IconBooks, IconMusicNote } from '@/components/icons';
+import { ErrorBlock, SkeletonGrid } from './shared';
 
 import type { ContentItem, SongItem } from '@/lib/types';
 
@@ -14,6 +15,9 @@ function FavSection({
   empty,
   emptyHref,
   emptyLabel,
+  loading,
+  error,
+  onRetry,
   children,
 }: {
   title: string;
@@ -22,6 +26,9 @@ function FavSection({
   empty: string;
   emptyHref: string;
   emptyLabel: string;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -31,7 +38,12 @@ function FavSection({
         <h3 className="font-display text-lg font-bold text-ink-900">{title}</h3>
         <span className="text-xs text-ink-400">({count})</span>
       </div>
-      {count === 0 ? (
+      {/* 三类状态要分开：拉取失败显示成空态，等于告诉用户「你没收藏过东西」 */}
+      {error && count === 0 ? (
+        <ErrorBlock msg={error} onRetry={onRetry || (() => undefined)} />
+      ) : loading && count === 0 ? (
+        <SkeletonGrid />
+      ) : count === 0 ? (
         <div className="text-center py-10 bg-white rounded-2xl border border-ink-100">
           <p className="text-ink-500 mb-3">{empty}</p>
           <Link href={emptyHref} className="btn-primary">{emptyLabel}</Link>
@@ -45,9 +57,9 @@ function FavSection({
 
 /** 统一收藏中心：聚合「收藏内容 + 收藏诗歌 + 读经书签」 */
 export function MyFavCenter() {
-  const { data: cf } = useApi<{ items: ContentItem[] }>(`/me/favorites`, []);
-  const { data: sf } = useApi<{ items: SongItem[] }>(`/songs/favorites`, []);
-  const { data: bm } = useApi<{
+  const { data: cf, loading: cfLoading, error: cfError, reload: cfReload } = useApi<{ items: ContentItem[] }>(`/me/favorites`, []);
+  const { data: sf, loading: sfLoading, error: sfError, reload: sfReload } = useApi<{ items: SongItem[] }>(`/songs/favorites`, []);
+  const { data: bm, loading: bmLoading, error: bmError, reload: bmReload } = useApi<{
     items: { id: string; version: string; bookId: string; bookName: string; chapter: number; verse: number; note: string }[];
   }>(`/bible/bookmarks`, []);
 
@@ -57,7 +69,7 @@ export function MyFavCenter() {
 
   return (
     <div className="space-y-8">
-      <FavSection title="收藏的内容" icon={<IconBooks className="w-5 h-5" strokeWidth={1.7} />} count={contents.length} empty="还没有收藏任何内容" emptyHref="/community" emptyLabel="去发现内容">
+      <FavSection title="收藏的内容" icon={<IconBooks className="w-5 h-5" strokeWidth={1.7} />} count={contents.length} empty="还没有收藏任何内容" emptyHref="/community" emptyLabel="去发现内容" loading={cfLoading} error={cfError} onRetry={cfReload}>
         <div className="grid sm:grid-cols-2 gap-4">
           {contents.map((c) => (
             <Link key={c.id} href={`/contents/${c.id}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
@@ -73,7 +85,7 @@ export function MyFavCenter() {
         </div>
       </FavSection>
 
-      <FavSection title="收藏的诗歌" icon={<IconMusicNote className="w-5 h-5" strokeWidth={1.7} />} count={songs.length} empty="还没有收藏任何诗歌" emptyHref="/songs" emptyLabel="去发现诗歌">
+      <FavSection title="收藏的诗歌" icon={<IconMusicNote className="w-5 h-5" strokeWidth={1.7} />} count={songs.length} empty="还没有收藏任何诗歌" emptyHref="/songs" emptyLabel="去发现诗歌" loading={sfLoading} error={sfError} onRetry={sfReload}>
         <div className="grid sm:grid-cols-2 gap-4">
           {songs.map((s) => (
             <Link key={s.id} href={`/songs/${s.id}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">
@@ -91,7 +103,7 @@ export function MyFavCenter() {
         </div>
       </FavSection>
 
-      <FavSection title="读经书签" icon={<IconBookMarked className="w-5 h-5" strokeWidth={1.7} />} count={bookmarks.length} empty="还没有读经书签" emptyHref="/bible" emptyLabel="去读经">
+      <FavSection title="读经书签" icon={<IconBookMarked className="w-5 h-5" strokeWidth={1.7} />} count={bookmarks.length} empty="还没有读经书签" emptyHref="/bible" emptyLabel="去读经" loading={bmLoading} error={bmError} onRetry={bmReload}>
         <div className="grid sm:grid-cols-2 gap-4">
           {bookmarks.map((b) => (
             <Link key={b.id} href={`/bible/${b.version}/${b.bookId}/${b.chapter}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover">

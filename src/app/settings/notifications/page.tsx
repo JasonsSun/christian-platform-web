@@ -64,11 +64,13 @@ export default function NotificationSettingsPage() {
   }, []);
 
   const path = user ? '/me/notification-prefs' : null;
-  const { data, loading, reload } = useApi<PrefsPayload>(path, [user?.id]);
+  const { data, loading, error: prefsError, reload } = useApi<PrefsPayload>(path, [user?.id]);
   const { run, pending } = useAction();
 
   const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [bind, setBind] = useState<BindState | null>(null);
+  // 拉不到绑定状态时不能当成「未绑定」—— 那会让已绑定的用户以为掉线，重新扫一遍码。
+  const [bindError, setBindError] = useState<string | null>(null);
   const [qr, setQr] = useState<{ qrSvg: string; scene: string; expiresAt: string; mode: string } | null>(null);
   const [toast, setToast] = useState<string>('');
 
@@ -76,10 +78,19 @@ export default function NotificationSettingsPage() {
     if (data?.prefs) setPrefs(data.prefs);
   }, [data?.prefs]);
 
+  const refreshBind = useCallback(async () => {
+    try {
+      setBind(await apiGet<BindState>('/me/wechat/bind'));
+      setBindError(null);
+    } catch (e: any) {
+      setBindError(e?.message || '微信绑定状态读取失败');
+    }
+  }, []);
+
   useEffect(() => {
     if (!user) return;
-    apiGet<BindState>('/me/wechat/bind').then(setBind).catch(() => undefined);
-  }, [user?.id]);
+    refreshBind();
+  }, [user?.id, refreshBind]);
 
   useEffect(() => {
     if (wxResult === 'bound') setToast('微信绑定成功');
@@ -97,11 +108,14 @@ export default function NotificationSettingsPage() {
       try {
         const s = await apiGet<BindState>('/me/wechat/bind');
         setBind(s);
+        setBindError(null);
         if (s.bound) {
           setQr(null);
           setToast('微信绑定成功');
           reload();
         }
+      } catch (e: any) {
+        setBindError(e?.message || '微信绑定状态读取失败');
       } finally {
         polling.current = false;
       }
@@ -128,10 +142,11 @@ export default function NotificationSettingsPage() {
   }
 
   async function unbind() {
-    await run(() => apiDelete('/me/wechat/bind'));
-    setBind(await apiGet<BindState>('/me/wechat/bind'));
+    // run 失败时返回 null，用它区分文案，否则解绑失败也会显示「已解除绑定」
+    const ok = await run(() => apiDelete('/me/wechat/bind').then(() => true));
     setQr(null);
-    setToast('已解除绑定');
+    await refreshBind();
+    setToast(ok ? '已解除绑定' : '解绑失败，请稍后重试');
   }
 
   if (!user) {
@@ -165,121 +180,143 @@ export default function NotificationSettingsPage() {
         </div>
       )}
 
-      {/* 通道开关 */}
-      <section className="space-y-3">
-        {CHANNELS.map((c) => {
-          const on = prefs?.[c.key] ?? false;
-          const meta = c.key === 'email' ? ch?.email : c.key === 'wechat' ? ch?.wechat : c.key === 'sms' ? ch?.sms : { available: true };
-          const unavailable = c.key !== 'inapp' && !meta?.available;
-          return (
-            <div key={c.key} className="bg-white rounded-2xl border border-ink-100 shadow-soft p-4 flex items-center gap-4">
-              <div className="w-11 h-11 rounded-xl bg-ink-100 text-ink-500 flex items-center justify-center flex-shrink-0">{c.icon}</div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-ink-900">{c.label}</h2>
-                  {unavailable && (
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-ink-100 text-ink-600">未配置</span>
-                  )}
+      {/* 读取失败时不要把开关全画成「关」—— 用户会以为自己的设置被清了 */}
+      {!loading && !prefs && prefsError && (
+        <div className="text-center py-12 rounded-2xl border border-ink-100 bg-white mb-6">
+          <p className="text-rose-600 mb-3 text-sm">{prefsError}</p>
+          <button onClick={reload} className="btn-secondary">重试</button>
+        </div>
+      )}
+
+      {prefs && (
+        <>
+          {/* 通道开关 */}
+          <section className="space-y-3">
+            {CHANNELS.map((c) => {
+              const on = prefs?.[c.key] ?? false;
+              const meta = c.key === 'email' ? ch?.email : c.key === 'wechat' ? ch?.wechat : c.key === 'sms' ? ch?.sms : { available: true };
+              const unavailable = c.key !== 'inapp' && !meta?.available;
+              return (
+                <div key={c.key} className="bg-white rounded-2xl border border-ink-100 shadow-soft p-4 flex items-center gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-ink-100 text-ink-500 flex items-center justify-center flex-shrink-0">{c.icon}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-semibold text-ink-900">{c.label}</h2>
+                      {unavailable && (
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-ink-100 text-ink-600">未配置</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-ink-500 mt-0.5">{c.desc}</p>
+                  </div>
+                  <button
+                    disabled={pending || c.key === 'inapp'}
+                    onClick={() => save({ [c.key]: !on } as Partial<Prefs>)}
+                    aria-label={c.label}
+                    // 开关只有圆点位移这一处视觉差异，读屏要靠 aria-pressed 才知道当前是开还是关
+                    aria-pressed={on}
+                    className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 disabled:opacity-60 ${
+                      on ? 'bg-primary-500' : 'bg-ink-200'
+                    }`}
+                  >
+                    <span className={`block w-5 h-5 rounded-full bg-white transition-transform mx-1 ${on ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
                 </div>
-                <p className="text-sm text-ink-500 mt-0.5">{c.desc}</p>
+              );
+            })}
+          </section>
+
+          {/* 每日提醒 */}
+          <DailyReminderSettings prefs={prefs} onChange={save} />
+
+          {/* 免打扰与频率 */}
+          <section className="mt-6 bg-white rounded-2xl border border-ink-100 shadow-soft p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold text-ink-900">免打扰时段</h2>
+                <p className="text-sm text-ink-500 mt-0.5">该时段内只累积站内通知，外发投递顺延</p>
               </div>
               <button
-                disabled={pending || c.key === 'inapp'}
-                onClick={() => save({ [c.key]: !on } as Partial<Prefs>)}
-                aria-label={c.label}
-                // 开关只有圆点位移这一处视觉差异，读屏要靠 aria-pressed 才知道当前是开还是关
-                aria-pressed={on}
-                className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 disabled:opacity-60 ${
-                  on ? 'bg-primary-500' : 'bg-ink-200'
-                }`}
+                disabled={pending}
+                onClick={() => save({ quietEnabled: !prefs?.quietEnabled })}
+                aria-label="免打扰时段"
+                aria-pressed={!!prefs?.quietEnabled}
+                className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 ${prefs?.quietEnabled ? 'bg-primary-500' : 'bg-ink-200'}`}
               >
-                <span className={`block w-5 h-5 rounded-full bg-white transition-transform mx-1 ${on ? 'translate-x-5' : 'translate-x-0'}`} />
+                <span className={`block w-5 h-5 rounded-full bg-white transition-transform mx-1 ${prefs?.quietEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
               </button>
             </div>
-          );
-        })}
-      </section>
 
-      {/* 每日提醒 */}
-      <DailyReminderSettings prefs={prefs} onChange={save} />
+            {prefs?.quietEnabled && (
+              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-ink-100">
+                <label className="sr-only" htmlFor="quiet-from">
+                  免打扰开始时间
+                </label>
+                <input
+                  id="quiet-from"
+                  name="quietFrom"
+                  type="time" value={prefs.quietFrom}
+                  onChange={(e) => setPrefs({ ...prefs, quietFrom: e.target.value })}
+                  onBlur={() => save({ quietFrom: prefs.quietFrom })}
+                  className="rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900"
+                />
+                <span className="text-ink-400">至</span>
+                <label className="sr-only" htmlFor="quiet-to">
+                  免打扰结束时间
+                </label>
+                <input
+                  id="quiet-to"
+                  name="quietTo"
+                  type="time" value={prefs.quietTo}
+                  onChange={(e) => setPrefs({ ...prefs, quietTo: e.target.value })}
+                  onBlur={() => save({ quietTo: prefs.quietTo })}
+                  className="rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900"
+                />
+              </div>
+            )}
 
-      {/* 免打扰与频率 */}
-      <section className="mt-6 bg-white rounded-2xl border border-ink-100 shadow-soft p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-semibold text-ink-900">免打扰时段</h2>
-            <p className="text-sm text-ink-500 mt-0.5">该时段内只累积站内通知，外发投递顺延</p>
-          </div>
-          <button
-            disabled={pending}
-            onClick={() => save({ quietEnabled: !prefs?.quietEnabled })}
-            aria-label="免打扰时段"
-            aria-pressed={!!prefs?.quietEnabled}
-            className={`w-12 h-7 rounded-full transition-colors flex-shrink-0 ${prefs?.quietEnabled ? 'bg-primary-500' : 'bg-ink-200'}`}
-          >
-            <span className={`block w-5 h-5 rounded-full bg-white transition-transform mx-1 ${prefs?.quietEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-          </button>
-        </div>
-
-        {prefs?.quietEnabled && (
-          <div className="flex items-center gap-3 mt-4 pt-4 border-t border-ink-100">
-            <label className="sr-only" htmlFor="quiet-from">
-              免打扰开始时间
-            </label>
-            <input
-              id="quiet-from"
-              name="quietFrom"
-              type="time" value={prefs.quietFrom}
-              onChange={(e) => setPrefs({ ...prefs, quietFrom: e.target.value })}
-              onBlur={() => save({ quietFrom: prefs.quietFrom })}
-              className="rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900"
-            />
-            <span className="text-ink-400">至</span>
-            <label className="sr-only" htmlFor="quiet-to">
-              免打扰结束时间
-            </label>
-            <input
-              id="quiet-to"
-              name="quietTo"
-              type="time" value={prefs.quietTo}
-              onChange={(e) => setPrefs({ ...prefs, quietTo: e.target.value })}
-              onBlur={() => save({ quietTo: prefs.quietTo })}
-              className="rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-900"
-            />
-          </div>
-        )}
-
-        <div className="mt-4 pt-4 border-t border-ink-100">
-          <h2 id="digest-label" className="font-semibold text-ink-900 mb-2">外发频率</h2>
-          <div className="flex gap-1 bg-ink-100/60 rounded-xl p-1" role="group" aria-labelledby="digest-label">
-            {([['realtime', '实时'], ['daily', '每日汇总'], ['off', '仅站内']] as [Digest, string][]).map(([k, label]) => (
-              <button
-                key={k}
-                disabled={pending}
-                onClick={() => save({ digest: k })}
-                aria-pressed={prefs?.digest === k}
-                className={`flex-1 min-w-0 whitespace-nowrap px-2 py-2 rounded-lg text-sm font-medium transition-all ${
-                  prefs?.digest === k ? 'bg-white text-primary-700 shadow-sm' : 'text-ink-500 hover:text-ink-700'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+            <div className="mt-4 pt-4 border-t border-ink-100">
+              <h2 id="digest-label" className="font-semibold text-ink-900 mb-2">外发频率</h2>
+              <div className="flex gap-1 bg-ink-100/60 rounded-xl p-1" role="group" aria-labelledby="digest-label">
+                {([['realtime', '实时'], ['daily', '每日汇总'], ['off', '仅站内']] as [Digest, string][]).map(([k, label]) => (
+                  <button
+                    key={k}
+                    disabled={pending}
+                    onClick={() => save({ digest: k })}
+                    aria-pressed={prefs?.digest === k}
+                    className={`flex-1 min-w-0 whitespace-nowrap px-2 py-2 rounded-lg text-sm font-medium transition-all ${
+                      prefs?.digest === k ? 'bg-white text-primary-700 shadow-sm' : 'text-ink-500 hover:text-ink-700'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        </>
+      )}
 
       {/* 微信绑定 */}
       <section className="mt-6 bg-white rounded-2xl border border-ink-100 shadow-soft p-5">
         <div className="flex items-center gap-2 mb-1">
           <h2 className="font-semibold text-ink-900">微信绑定</h2>
-          {!bind?.wechatEnabled && (
+          {/* 读取失败时 bind 为 null，不能据此判定「演示模式」，也别在状态未知时显示 */}
+          {bind && !bind.wechatEnabled && (
             <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">演示模式</span>
           )}
         </div>
         <p className="text-sm text-ink-500 mb-4">
           扫码完成微信身份与本站账号的对齐。绑定后才能在微信里收到提醒 —— 光扫一个网站链接是拿不到推送权限的。
         </p>
+
+        {bindError && (
+          <div className="mb-4 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 flex items-center gap-3">
+            <p className="text-sm text-rose-700 flex-1">{bindError}</p>
+            <button onClick={refreshBind} disabled={pending} className="btn-secondary btn-sm text-sm px-4">
+              重试
+            </button>
+          </div>
+        )}
 
         {bind?.bound ? (
           <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-primary-50 border border-primary-200">
@@ -298,7 +335,7 @@ export default function NotificationSettingsPage() {
               dangerouslySetInnerHTML={{ __html: qr.qrSvg }}
             />
             <p className="text-xs text-ink-400">二维码 10 分钟内有效，绑定成功后本页自动更新</p>
-            {!bind?.wechatEnabled && (
+            {bind && !bind.wechatEnabled && (
               <a
                 href={`/api/v1/wechat/callback?demo=1&scene=${qr.scene}`}
                 className="btn-secondary btn-sm text-sm px-4"

@@ -56,7 +56,7 @@ export default function FeedbackPage() {
   const [content, setContent] = useState('');
   const [contact, setContact] = useState('');
 
-  const { data, loading, reload } = useApi<{ items: FeedbackItem[] }>(user ? '/feedback' : null, [user]);
+  const { data, loading, error, reload } = useApi<{ items: FeedbackItem[] }>(user ? '/feedback' : null, [user]);
   const items = data?.items || [];
 
   async function submit() {
@@ -170,7 +170,14 @@ export default function FeedbackPage() {
       <h2 className="font-display text-lg font-bold text-ink-900 mb-3">我提交过的建议</h2>
 
       {loading && <div className="py-10 text-center text-ink-400">加载中…</div>}
-      {!loading && items.length === 0 && (
+      {/* 拉取失败不能显示成「还没有提交过建议」—— 那会让用户以为自己写过的建议丢了 */}
+      {!loading && error && items.length === 0 && (
+        <div className="py-10 text-center rounded-2xl border border-ink-100 bg-white">
+          <p className="text-sm text-rose-600 mb-3">{error}</p>
+          <button type="button" onClick={reload} className="btn-secondary">重试</button>
+        </div>
+      )}
+      {!loading && !error && items.length === 0 && (
         <div className="py-10 text-center text-ink-400 border border-dashed border-ink-200 rounded-2xl">
           还没有提交过建议
         </div>

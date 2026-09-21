@@ -55,6 +55,8 @@ export default function AdminMessagesPage() {
   const [peerId, setPeerId] = useState<string>('');
   const [thread, setThread] = useState<Thread | null>(null);
   const [loadingThread, setLoadingThread] = useState(false);
+  const [threadError, setThreadError] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -65,11 +67,13 @@ export default function AdminMessagesPage() {
   const load = useCallback(async (id: string) => {
     if (!id) return;
     setLoadingThread(true);
+    setThreadError(null);
     try {
       const t = await apiGet<Thread>(`/admin/messages/${id}`);
       setThread(t);
-    } catch {
+    } catch (e: any) {
       setThread(null);
+      setThreadError(e?.message || '会话加载失败');
     } finally {
       setLoadingThread(false);
     }
@@ -77,7 +81,10 @@ export default function AdminMessagesPage() {
 
   useEffect(() => {
     if (peerId) load(peerId);
-    else setThread(null);
+    else {
+      setThread(null);
+      setThreadError(null);
+    }
   }, [peerId, load]);
 
   useEffect(() => {
@@ -88,11 +95,14 @@ export default function AdminMessagesPage() {
     const body = text.trim();
     if (!body || !peerId || sending) return;
     setSending(true);
+    setSendError(null);
     try {
       await apiPost(`/admin/messages/${peerId}`, { body });
       setText('');
       await load(peerId);
       await reload();
+    } catch (e: any) {
+      setSendError(e?.message || '发送失败，请稍后重试');
     } finally {
       setSending(false);
     }
@@ -101,6 +111,9 @@ export default function AdminMessagesPage() {
   // 未开过会话的管理成员，放在「发起会话」里
   const convIds = new Set(convs.map((c) => c.peer.id));
   const others = staff.filter((s) => !convIds.has(s.id));
+
+  const activePeer =
+    thread?.peer ?? convs.find((c) => c.peer.id === peerId)?.peer ?? staff.find((s) => s.id === peerId) ?? null;
 
   const Avatar = ({ p }: { p: Peer }) => (
     <div
@@ -189,10 +202,11 @@ export default function AdminMessagesPage() {
             ) : (
               <>
                 <div className="px-5 py-3 border-b border-ink-100 flex items-center gap-2">
-                  {thread ? (
+                  {/* 对方信息左侧列表里就有，不必等会话接口返回 —— 否则拉取失败时这里会一直挂着「加载中…」 */}
+                  {activePeer ? (
                     <>
-                      <span className="font-medium text-ink-800">{thread.peer.displayName}</span>
-                      <StaffBadges role={thread.peer.role} scopes={thread.peer.scopes} compact />
+                      <span className="font-medium text-ink-800">{activePeer.displayName}</span>
+                      <StaffBadges role={activePeer.role} scopes={activePeer.scopes} compact />
                     </>
                   ) : (
                     <span className="text-sm text-ink-400">加载中…</span>
@@ -201,6 +215,14 @@ export default function AdminMessagesPage() {
 
                 <div className="flex-1 overflow-y-auto p-5 space-y-3 max-h-[420px]">
                   {loadingThread && !thread ? <Loading /> : null}
+                  {!loadingThread && threadError && (
+                    <div className="text-center py-10">
+                      <p className="text-sm text-rose-600 mb-3">{threadError}</p>
+                      <button className="btn-secondary btn-sm text-sm px-4" onClick={() => load(peerId)}>
+                        重试
+                      </button>
+                    </div>
+                  )}
                   {(thread?.items || []).map((m) => {
                     const mine = m.fromId === user?.id;
                     return (
@@ -234,6 +256,9 @@ export default function AdminMessagesPage() {
                     {sending ? '发送中…' : '发送'}
                   </button>
                 </div>
+                {sendError && (
+                  <p role="alert" className="px-3 pb-3 -mt-1 text-xs text-rose-600">{sendError}</p>
+                )}
               </>
             )}
           </div>

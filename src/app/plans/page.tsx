@@ -36,8 +36,8 @@ export default function PlansPage() {
   const goLogin = useGoLogin();
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const { data: list, reload: reloadList, loading } = useApi<PlanListResp>('/plans');
-  const { data: detail, reload: reloadDetail } = useApi<PlanDetailResp>(
+  const { data: list, reload: reloadList, loading, error: listError } = useApi<PlanListResp>('/plans');
+  const { data: detail, reload: reloadDetail, error: detailError } = useApi<PlanDetailResp>(
     activeId ? `/plans/${activeId}` : null,
     [activeId]
   );
@@ -91,7 +91,12 @@ export default function PlansPage() {
         {/* 计划列表 */}
         {!activeId && (
           <>
-            {loading ? (
+            {listError ? (
+              <div className="text-center py-12 rounded-2xl border border-ink-100 bg-white">
+                <p className="text-rose-600 mb-3 text-sm">{listError}</p>
+                <button onClick={reloadList} className="btn-secondary">重试</button>
+              </div>
+            ) : loading ? (
               <div className="grid sm:grid-cols-2 gap-5">
                 {[0, 1, 2, 3].map((i) => <div key={i} className="h-40 rounded-2xl bg-white animate-pulse" />)}
               </div>
@@ -224,7 +229,14 @@ export default function PlansPage() {
           </>
         )}
 
-        {activeId && !detail && (
+        {activeId && detailError && !detail && (
+          <div className="text-center py-12 rounded-2xl border border-ink-100 bg-white">
+            <p className="text-rose-600 mb-3 text-sm">{detailError}</p>
+            <button onClick={reloadDetail} className="btn-secondary">重试</button>
+          </div>
+        )}
+
+        {activeId && !detail && !detailError && (
           <div className="space-y-2 animate-pulse">
             {[0, 1, 2, 3, 4].map((i) => <div key={i} className="h-16 rounded-xl bg-white" />)}
           </div>
