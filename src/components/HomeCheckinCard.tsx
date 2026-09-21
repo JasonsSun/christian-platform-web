@@ -13,7 +13,9 @@ import { IconCalendar, IconCheck } from '@/components/icons';
 export default function HomeCheckinCard() {
   const { user } = useAuth();
   const { success, error: toastError } = useNotice();
-  const { data, loading, reload } = useApi<any>('/me/growth', [user?.id]);
+  // 路径为 null 时 useApi 不发请求：登录态是异步水合的，写死路径会让未登录访客
+  // 每次开首页都白发一个必须鉴权的请求（控制台两条 401）
+  const { data, loading, reload } = useApi<any>(user ? '/me/growth' : null, [user?.id]);
   const { run, pending } = useAction();
 
   if (!user) return null;

@@ -21,7 +21,7 @@ interface OnboardingView {
  */
 export default function OnboardingCard() {
   const { user } = useAuth();
-  const { data, reload } = useApi<OnboardingView>('/me/onboarding', [user?.id]);
+  const { data, reload } = useApi<OnboardingView>(user ? '/me/onboarding' : null, [user?.id]);
   const [closed, setClosed] = useState(false);
 
   if (!user || closed || !data) return null;
