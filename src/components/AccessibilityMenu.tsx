@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { useA11y, useDialogFocus, useEscape, type FontScale } from '@/lib/a11y';
 
-export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
+export default function AccessibilityMenu({ tone = 'dark', align = 'right', up = false }: { tone?: 'dark' | 'light'; align?: 'left' | 'right'; up?: boolean }) {
   const { t } = useI18n();
   const { fontScale, contrast, reduceMotion, setFontScale, setContrast, setReduceMotion } = useA11y();
   const [open, setOpen] = useState(false);
@@ -51,7 +51,7 @@ export default function AccessibilityMenu({ tone = 'dark' }: { tone?: 'dark' | '
       {open && (
         <div
           ref={dlgRef}
-          className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-pop border border-ink-100 p-4 z-50 text-ink-800"
+          className={`absolute ${align === 'left' ? 'left-0' : 'right-0'} ${up ? 'bottom-full mb-2' : 'mt-2'} w-64 bg-white rounded-2xl shadow-pop border border-ink-100 p-4 z-50 text-ink-800`}
           role="dialog"
           aria-label={t('pref.a11yPanel')}
           data-guard="a11y-menu"

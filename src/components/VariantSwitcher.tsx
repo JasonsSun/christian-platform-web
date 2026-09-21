@@ -7,7 +7,7 @@ import type { Variant } from '@/lib/i18n/config';
 const VARIANT_LABEL: Record<Variant, string> = { s: '简', t: '繁' };
 const VARIANT_FULL: Record<Variant, string> = { s: '简体', t: '繁體' };
 
-export default function VariantSwitcher({ tone = 'dark' }: { tone?: 'dark' | 'light' }) {
+export default function VariantSwitcher({ tone = 'dark', align = 'right', up = false }: { tone?: 'dark' | 'light'; align?: 'left' | 'right'; up?: boolean }) {
   const { variant, setVariant } = useI18n();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -46,7 +46,7 @@ export default function VariantSwitcher({ tone = 'dark' }: { tone?: 'dark' | 'li
         <span>{VARIANT_LABEL[variant]}</span>
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-28 bg-white rounded-2xl shadow-pop border border-ink-100 py-2 overflow-hidden z-50">
+        <div className={`absolute ${align === 'left' ? 'left-0' : 'right-0'} ${up ? 'bottom-full mb-2' : 'mt-2'} w-28 bg-white rounded-2xl shadow-pop border border-ink-100 py-2 overflow-hidden z-50`}>
           {(['s', 't'] as Variant[]).map((v) => (
             <button
               key={v}

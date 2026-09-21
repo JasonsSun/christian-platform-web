@@ -5,8 +5,7 @@ import { usePathname } from 'next/navigation';
 import { moduleOfPath } from '@/lib/siteModules';
 import { useDisabledModules } from '@/lib/useSiteModules';
 import { useI18n } from '@/lib/i18n/I18nProvider';
-import VariantSwitcher from '@/components/VariantSwitcher';
-import AccessibilityMenu from '@/components/AccessibilityMenu';
+import QuickPrefsDock from '@/components/QuickPrefsDock';
 import { isBareRoute } from '@/lib/bareRoutes';
 
 // 移动端底部标签栏：始终线性描边（与全站图标语言一致），激活态靠「颜色 + 加粗描边 +
@@ -91,13 +90,9 @@ export default function MobileNav({ disabledModules = [] }: { disabledModules?: 
 
   return (
     <>
-    {/* 移动端简繁 / 无障碍入口：顶部右侧胶囊，避免挤占底部标签栏。
-        导航栏 64px 高，胶囊压在它下沿 8px：z-[60] 高于导航的 z-50，所以是胶囊盖住导航而不是被裁；
-        再往下挪会撞上 /groups、/activities hero 里右对齐的「创建团契 / 发布活动」按钮（top≈102）。 */}
-    <div className="nav-quick-pill md:hidden fixed top-14 right-2 z-[60] flex items-center gap-1 rounded-full bg-primary-950/90 border border-white/15 px-1 py-1 shadow-lg backdrop-blur">
-      <VariantSwitcher tone="light" />
-      <AccessibilityMenu tone="light" />
-    </div>
+    {/* 移动端简繁 / 无障碍入口：默认一颗可拖动的圆点，点开才展开成胶囊。
+        见 QuickPrefsDock 顶部注释 —— 常驻胶囊会在十几个移动页上压住真实内容。 */}
+    <QuickPrefsDock />
     <nav className="mobile-tabbar md:hidden fixed bottom-0 left-0 right-0 z-50 glass-tech pb-[env(safe-area-inset-bottom)]">
       <div className="flex items-center justify-around h-16">
         {shown.map((item) => {
