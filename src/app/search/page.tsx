@@ -274,7 +274,7 @@ function SearchInner() {
                   <Link key={s.id} href={`/songs/${s.id}`} className="group bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-gold-200 hover:shadow-card-hover transition-all flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gold-100 to-gold-200 flex items-center justify-center text-gold-700 flex-shrink-0"><IconMusicNote className="w-5 h-5" strokeWidth={1.6} /></div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-ink-900 truncate group-hover:text-gold-600">{s.title}</h4>
+                      <h3 className="font-semibold text-ink-900 truncate group-hover:text-gold-600">{s.title}</h3>
                       <p className="text-xs text-ink-500 truncate">{s.author}{s.category ? ` · ${s.category}` : ''}</p>
                     </div>
                   </Link>
@@ -292,7 +292,7 @@ function SearchInner() {
                   <Link key={c.id} href={`/community/${c.id}`} className="flex gap-4 bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
                     <div className="w-16 h-16 rounded-xl flex-shrink-0 bg-gradient-to-br from-primary-500 to-primary-700" />
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-ink-900 truncate">{c.title}</h4>
+                      <h3 className="font-semibold text-ink-900 truncate">{c.title}</h3>
                       <p className="text-sm text-ink-500 line-clamp-2 mt-1">{c.excerpt}</p>
                       <p className="text-xs text-ink-400 mt-1">{c.author.displayName} · {formatDate(c.createdAt)}</p>
                     </div>
@@ -309,7 +309,7 @@ function SearchInner() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.activities.slice(0, 6).map((a) => (
                   <Link key={a.id} href={`/activities/${a.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
-                    <h4 className="font-semibold text-ink-900 truncate">{a.title}</h4>
+                    <h3 className="font-semibold text-ink-900 truncate">{a.title}</h3>
                     <p className="text-xs text-ink-500 mt-1">{activityCategoryLabel(a.category)} · {a.city || a.location}</p>
                   </Link>
                 ))}
@@ -324,7 +324,7 @@ function SearchInner() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.groups.slice(0, 6).map((g) => (
                   <Link key={g.id} href={`/groups/${g.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
-                    <h4 className="font-semibold text-ink-900 truncate">{g.name}</h4>
+                    <h3 className="font-semibold text-ink-900 truncate">{g.name}</h3>
                     <p className="text-xs text-ink-500 mt-1">{groupCategoryLabel(g.category)} · {g.memberCount} 位成员</p>
                   </Link>
                 ))}
@@ -343,7 +343,7 @@ function SearchInner() {
                       {u.displayName.slice(0, 1)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-ink-900 truncate">{u.displayName}</h4>
+                      <h3 className="font-semibold text-ink-900 truncate">{u.displayName}</h3>
                       <p className="text-xs text-ink-500 truncate">{u.church || u.city || u.username}</p>
                     </div>
                   </Link>
@@ -359,7 +359,7 @@ function SearchInner() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.sermons.slice(0, 6).map((s) => (
                   <Link key={s.id} href={`/sermons/${s.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
-                    <h4 className="font-semibold text-ink-900 truncate">{s.title}</h4>
+                    <h3 className="font-semibold text-ink-900 truncate">{s.title}</h3>
                     <p className="text-xs text-ink-500 mt-1 truncate">
                       {[s.speaker, s.scripture, s.preachedAt].filter(Boolean).join(' · ')}
                     </p>
@@ -376,7 +376,7 @@ function SearchInner() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.media.slice(0, 6).map((m) => (
                   <Link key={m.id} href={`/media/${m.id}`} className="bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
-                    <h4 className="font-semibold text-ink-900 truncate">{m.title}</h4>
+                    <h3 className="font-semibold text-ink-900 truncate">{m.title}</h3>
                     <p className="text-xs text-ink-500 mt-1 truncate">
                       {mediaKindLabel(m.kind)}
                       {m.durationSec ? ` · ${formatTimestamp(m.durationSec)}` : ''}
@@ -413,7 +413,7 @@ function SearchInner() {
                 <div className="flex justify-center mb-4 text-ink-400">
                   <IconInbox className="w-12 h-12" strokeWidth={1.4} />
                 </div>
-                <h3 className="font-display text-xl font-bold text-ink-900 mb-2">没有找到「{q}」</h3>
+                <h2 className="font-display text-xl font-bold text-ink-900 mb-2">没有找到「{q}」</h2>
                 <p className="text-ink-500 mb-6">换个关键词试试，或浏览下方的热门搜索</p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {HOT_SEARCHES.slice(0, 4).map((h) => (

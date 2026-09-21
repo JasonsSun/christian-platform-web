@@ -211,8 +211,8 @@ export default function MediaDetailPage() {
               <div className="text-white text-center">
                 <div className="font-display text-xl md:text-2xl font-bold">{d.title}</div>
                 <div className="text-white/70 text-sm mt-1">
+                  {/* 时长不在这里重复：信息区的规格徽章已经带着它，视频那一路更是由播放器自己显示 */}
                   {d.owner || '圣约社区'}
-                  {d.durationSec ? ` · ${formatTime(d.durationSec)}` : ''}
                 </div>
               </div>
             </div>

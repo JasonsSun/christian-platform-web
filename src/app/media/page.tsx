@@ -224,9 +224,11 @@ export default function MediaPage() {
                         <IconPlay className="w-5 h-5 ml-0.5" strokeWidth={1.8} />
                       )}
                     </span>
-                    <span className="num text-xs text-ink-500">
-                      {m.durationSec ? formatTime(m.durationSec) : '点击播放'}
-                    </span>
+                    {/* 时长由卡片右下角那枚 chip 统一给出（视频/音频同一个位置），
+                        这里再印一遍会出现两个 0:27；只有没有时长可显示时才留一句提示 */}
+                    {m.durationSec ? null : (
+                      <span className="num text-xs text-ink-500">点击播放</span>
+                    )}
                   </button>
                 ) : m.kind === 'image' ? (
                   <Link href={`/media/${m.id}`} className="w-full h-full block">
