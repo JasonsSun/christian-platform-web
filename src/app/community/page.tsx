@@ -246,7 +246,8 @@ export default function CommunityPage() {
                 <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm">{error}</div>
               )}
 
-              {loading && (
+              {/* 换类型/排序/关键词时旧内容还留着，骨架再画上去就是两份内容叠在一屏 */}
+              {loading && items.length === 0 && (
                 <div className="space-y-4">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <ContentCardSkeleton key={i} />
@@ -269,7 +270,7 @@ export default function CommunityPage() {
                 </div>
               )}
 
-              <div data-reveal-group className="space-y-4">
+              <div data-reveal-group className={`space-y-4 transition-opacity duration-200 ${loading && items.length ? 'opacity-60' : 'opacity-100'}`}>
                 {items.map((item) => {
                   const badge = TYPE_BADGE[item.contentType];
                   return (

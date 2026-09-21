@@ -219,7 +219,9 @@ export default function TopicsPage() {
             <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm mb-5">{error}</div>
           )}
 
-          {loading && (
+          {/* 切排序/搜索时旧网格还在（items 不随 loading 清空），
+              九块骨架叠在上面等于一屏两份内容 */}
+          {loading && items.length === 0 && (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {Array.from({ length: 9 }).map((_, i) => (
                 // 每一块都对齐真实卡片的行（标题 / 元信息 / 热度条 / 底部含关注按钮），
@@ -268,7 +270,7 @@ export default function TopicsPage() {
             </div>
           )}
 
-          <div data-reveal-group className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div data-reveal-group className={`grid sm:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-200 ${loading && items.length ? 'opacity-60' : 'opacity-100'}`}>
             {items.map((t, i) => (
               <div
                 key={t.name}

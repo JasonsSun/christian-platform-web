@@ -268,7 +268,9 @@ export default function GroupsPage() {
             </div>
           </div>
 
-          {loading && (
+          {/* 网格是常驻的，骨架却无条件画在上面：换筛选/打字时同一屏出现两份内容
+              （六张假卡压在真卡上方）。有结果就只压暗，不再叠骨架。 */}
+          {loading && groups.length === 0 && (
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="bg-white rounded-2xl p-5 border border-ink-100 shadow-soft min-h-[176px] space-y-3">
@@ -297,7 +299,7 @@ export default function GroupsPage() {
             </div>
           )}
 
-          <div data-reveal-group className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <div data-reveal-group className={`grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 transition-opacity duration-200 ${loading && groups.length ? 'opacity-60' : 'opacity-100'}`}>
             {groups.map((g) => {
               const catLabel = groupCategoryLabel(g.category);
               return (
