@@ -92,15 +92,19 @@ export default function AdminCommentsPage() {
         </div>
       )}
 
-      {loading && <Loading rows={4} />}
+      {/* 搜索/翻页时 useApi 会留着上一页数据，整块列表不该消失 */}
+      {loading && items.length === 0 && <Loading rows={4} />}
       {error && <ErrorBox message={error} onRetry={reload} />}
       {!loading && !error && items.length === 0 && (
         <Empty icon="search" label="没有符合条件的评论" hint="换个关键词，或清空筛选看全站最新评论" />
       )}
 
-      {!loading && !error && items.length > 0 && (
+      {items.length > 0 && (
         <>
-          <div data-reveal-group className="space-y-3">
+          <div
+            data-reveal-group
+            className={`space-y-3 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}
+          >
             <label className="flex items-center gap-2 text-xs text-ink-500 px-1 min-h-11">
               <input
                 type="checkbox"

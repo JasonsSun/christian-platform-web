@@ -101,15 +101,19 @@ export default function AdminFeedbackPage() {
         ))}
       </div>
 
-      {loading && !data && <Loading rows={4} />}
+      {/* 切状态页签时 useApi 会留着上一批数据，列表不能因此整块消失 */}
+      {loading && items.length === 0 && <Loading rows={4} />}
       {error && <ErrorBox message={error} onRetry={reload} />}
 
       {!loading && !error && items.length === 0 && (
         <Empty label="该分类下暂无建议" hint="换一个状态页签看看别的反馈" />
       )}
 
-      {!loading && !error && items.length > 0 && (
-        <div className="space-y-4" data-reveal-group>
+      {items.length > 0 && (
+        <div
+          className={`space-y-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}
+          data-reveal-group
+        >
           {items.map((it) => (
             <FeedbackCard key={it.id} item={it} onChanged={reload} />
           ))}

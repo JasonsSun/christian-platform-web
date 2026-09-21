@@ -124,14 +124,19 @@ export default function AdminTagsPage() {
         </div>
       )}
 
-      {loading && <Loading rows={3} />}
+      {/* 搜索/排序/改写后 useApi 会留着上一批标签，云图不该闪成空白 */}
+      {loading && items.length === 0 && <Loading rows={3} />}
       {error && <ErrorBox message={error} onRetry={reload} />}
       {!loading && !error && items.length === 0 && (
         <Empty icon="search" label="还没有任何标签" hint="内容发布时带上标签，这里就会出现统计与批量改写入口" />
       )}
 
-      {!loading && !error && items.length > 0 && (
-        <div className="hair-top bg-white rounded-2xl border border-ink-100 shadow-soft p-4 sm:p-5">
+      {items.length > 0 && (
+        <div
+          className={`hair-top bg-white rounded-2xl border border-ink-100 shadow-soft p-4 sm:p-5 transition-opacity duration-200 ${
+            loading ? 'opacity-60' : 'opacity-100'
+          }`}
+        >
           <div className="flex flex-wrap gap-2">
             {items.map((t) => {
               const on = selected.includes(t.name);

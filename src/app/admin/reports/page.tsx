@@ -99,15 +99,19 @@ export default function AdminReportsPage() {
         ))}
       </div>
 
-      {loading && !data && <Loading rows={4} />}
+      {/* 切状态页签时 useApi 会留着上一批数据，列表不能因此整块消失 */}
+      {loading && items.length === 0 && <Loading rows={4} />}
       {error && <ErrorBox message={error} onRetry={reload} />}
 
       {!loading && !error && items.length === 0 && (
         <Empty label="该分类下暂无举报" hint="社区很安静，换一个状态页签看看" />
       )}
 
-      {!loading && !error && items.length > 0 && (
-        <div className="space-y-4" data-reveal-group>
+      {items.length > 0 && (
+        <div
+          className={`space-y-4 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}
+          data-reveal-group
+        >
           {items.map((r) => (
             <ReportCard key={r.id} report={r} onChanged={reload} />
           ))}
