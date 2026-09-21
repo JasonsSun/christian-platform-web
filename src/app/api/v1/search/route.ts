@@ -3,7 +3,7 @@ import { q } from '@/server/db';
 import { ok, withApi, HttpError } from '@/server/http';
 import { mapContent, mapSong, mapActivity, mapGroup } from '@/server/mappers';
 import { bookById } from '@/server/bible';
-import { ftAvailable, ensureFulltextIndex } from '@/server/searchCap';
+import { ftAvailable, ftUsableFor, ensureFulltextIndex } from '@/server/searchCap';
 import { whiteSafeColor } from '@/server/mappers';
 
 export const dynamic = 'force-dynamic';
@@ -24,12 +24,14 @@ export const GET = withApi(async (req: NextRequest) => {
   const like = `%${keyword}%`;
   const ft = ftQuery(keyword);
 
-  const [ftContents, ftSermons, ftMedia, ftPrayers] = await Promise.all([
+  // 中文关键词走 MATCH 会静默返回 0 行（默认全文解析器不按中文分词），一律回退 LIKE。
+  const canFt = ftUsableFor(keyword);
+  const [ftContents, ftSermons, ftMedia, ftPrayers] = canFt ? await Promise.all([
     ftAvailable('contents'),
     ftAvailable('sermons'),
     ftAvailable('media_files'),
     ftAvailable('prayers'),
-  ]);
+  ]) : [false, false, false, false];
 
   const contentsSql = ftContents
     ? `SELECT c.id, c.title, c.body, c.content_type, c.status, c.cover, c.tags,

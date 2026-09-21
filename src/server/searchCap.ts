@@ -26,6 +26,23 @@ export function resetFtCache(): void {
 }
 
 /**
+ * 关键词能不能交给 MATCH...AGAINST。
+ *
+ * InnoDB 默认全文解析器按空格/标点切词，一整句中文会被切成一个词，
+ * 所以 AGAINST('敬拜') 对「敬拜赞美主视觉」永远命中不了——而 LIKE 能。
+ * 中文要能全文检索，索引得建成 WITH PARSER ngram
+ * （见 migrations/004_fulltext_search.sql 顶部说明），现有索引没带 parser，
+ * 因此中文只能回退 LIKE。另外短于 innodb_ft_min_token_size（默认 3）的英文词
+ * 同样进不了索引，一并回退，否则「ab」这种查询会静默返回 0 行。
+ */
+export function ftUsableFor(keyword: string): boolean {
+  const k = keyword.trim();
+  if (!k) return false;
+  if (/[^\x00-\x7F]/.test(k)) return false;
+  return k.length >= 3;
+}
+
+/**
  * 服务启动时自动补齐全文索引，彻底免去「运维手动跑迁移 004」这一步。
  * - 用 SHOW INDEX 探测每个表是否已有 FULLTEXT，没有才创建；
  * - 成功一次即不再重试（attempted 标记）；

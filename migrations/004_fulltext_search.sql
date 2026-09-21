@@ -6,6 +6,8 @@
 -- 并手动改成 `CREATE FULLTEXT INDEX ... WITH PARSER ngram`。
 -- 搜索路由会在运行时探测索引是否存在，存在则用 MATCH...AGAINST（更快+相关度排序），
 -- 不存在则自动回退 LIKE，因此即使本迁移未执行也不会破坏搜索。
+-- 另：默认解析器不按中文分词，所以中文关键词（以及短于 min_token_size 的英文词）
+-- 无论索引在不在都走 LIKE，见 src/server/searchCap.ts 的 ftUsableFor()。
 
 CREATE FULLTEXT INDEX ft_contents ON contents (title, body, tags);
 CREATE FULLTEXT INDEX ft_sermons ON sermons (title, speaker, scripture, description);
