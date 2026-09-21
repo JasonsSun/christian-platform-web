@@ -169,13 +169,19 @@ export default function FeedbackPage() {
 
       <h2 className="font-display text-lg font-bold text-ink-900 mb-3">我提交过的建议</h2>
 
-      {loading && <div className="py-10 text-center text-ink-400">加载中…</div>}
+      {loading && items.length === 0 && <div className="py-10 text-center text-ink-400">加载中…</div>}
       {/* 拉取失败不能显示成「还没有提交过建议」—— 那会让用户以为自己写过的建议丢了 */}
       {!loading && error && items.length === 0 && (
-        <div className="py-10 text-center rounded-2xl border border-ink-100 bg-white">
+        <div role="alert" className="py-10 text-center rounded-2xl border border-ink-100 bg-white">
           <p className="text-sm text-rose-600 mb-3">{error}</p>
           <button type="button" onClick={reload} className="btn-secondary">重试</button>
         </div>
+      )}
+      {/* 提交后会自动 reload()，旧名单还在屏幕上：失败不报出来就是「提交完什么都没发生」 */}
+      {error && items.length > 0 && (
+        <p role="alert" className="mb-3 text-sm text-rose-600">
+          {error} <button type="button" onClick={reload} className="underline ml-1">重试</button>
+        </p>
       )}
       {!loading && !error && items.length === 0 && (
         <div className="py-10 text-center text-ink-400 border border-dashed border-ink-200 rounded-2xl">
@@ -183,7 +189,7 @@ export default function FeedbackPage() {
         </div>
       )}
 
-      <div className="space-y-3">
+      <div className={`space-y-3 transition-opacity duration-200 ${loading && items.length ? 'opacity-60' : 'opacity-100'}`}>
         {items.map((it) => {
           const meta = STATUS_META[it.status] || { label: it.status, cls: 'bg-ink-100 text-ink-600' };
           return (

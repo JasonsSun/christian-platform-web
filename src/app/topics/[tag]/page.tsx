@@ -105,7 +105,7 @@ export default function TopicDetailPage() {
           pageSize: PAGE_SIZE,
         })}`
       : null;
-  const { data: list, loading: listLoading } = useApi<ListResult<ContentItem>>(listPath, [tag, type, sort, page]);
+  const { data: list, loading: listLoading, error: listError, reload: reloadList } = useApi<ListResult<ContentItem>>(listPath, [tag, type, sort, page]);
 
   const items = list?.items || [];
   const total = list?.total ?? 0;
@@ -230,7 +230,7 @@ export default function TopicDetailPage() {
                   </div>
                 </div>
 
-                {listLoading && (
+                {listLoading && items.length === 0 && (
                   <div className="space-y-4">
                     {Array.from({ length: 3 }).map((_, i) => (
                       <ContentCardSkeleton key={i} />
@@ -238,13 +238,27 @@ export default function TopicDetailPage() {
                   </div>
                 )}
 
-                {!listLoading && items.length === 0 && (
+                {/* 翻页失败原先只抬 listLoading 又落下，旧数据被新页覆盖不了时
+                    看起来就像「这一页没有内容」；第一页失败更是直接被空态吃掉 */}
+                {listError && items.length === 0 && (
+                  <div className="bg-white rounded-2xl p-10 text-center border border-rose-200">
+                    <p className="text-sm text-rose-600 mb-4">{listError}</p>
+                    <button onClick={reloadList} className="btn-secondary">重试</button>
+                  </div>
+                )}
+                {listError && items.length > 0 && (
+                  <p role="alert" className="mb-3 text-sm text-rose-600">
+                    {listError} <button onClick={reloadList} className="underline ml-1">重试</button>
+                  </p>
+                )}
+
+                {!listLoading && !listError && items.length === 0 && (
                   <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-ink-200 text-ink-400">
                     该筛选条件下没有内容
                   </div>
                 )}
 
-                <div data-reveal-group className="space-y-4">
+                <div data-reveal-group className={`space-y-4 transition-opacity duration-200 ${listLoading && items.length ? 'opacity-60' : 'opacity-100'}`}>
                   {items.map((item) => {
                     const badge = TYPE_BADGE[item.contentType];
                     return (

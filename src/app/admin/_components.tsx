@@ -922,7 +922,7 @@ export function Empty({
 
 export function ErrorBox({ message, onRetry }: { message?: string; onRetry?: () => void }) {
   return (
-    <div className="py-8 px-4 sm:py-10 text-center rounded-2xl bg-rose-50 text-rose-700 border border-rose-200">
+    <div role="alert" className="py-8 px-4 sm:py-10 text-center rounded-2xl bg-rose-50 text-rose-700 border border-rose-200">
       <div className="flex items-center justify-center gap-2 font-medium">
         <IconAlert className="w-5 h-5 shrink-0" strokeWidth={1.6} />
         <span>{message || '加载失败'}</span>

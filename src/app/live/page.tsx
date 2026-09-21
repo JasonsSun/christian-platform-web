@@ -34,7 +34,7 @@ export default function LiveListPage() {
   const [reviewVideoId, setReviewVideoId] = useState<string | null>(null);
   const livePath = tab === 'reminded' ? '/live?remindedBy=1' : tab === 'live' ? '/live?status=live' : '/live';
   const { data, loading, error, reload } = useApi<{ rooms: LiveRoom[] }>(livePath, [tab]);
-  const { data: recData, loading: recLoading } = useApi<{ items: any[] }>(
+  const { data: recData, loading: recLoading, error: recError, reload: reloadRec } = useApi<{ items: any[] }>(
     tab === 'recordings' ? '/live/recordings' : null, [tab]
   );
   const { run, pending } = useAction();
@@ -236,7 +236,13 @@ export default function LiveListPage() {
 
       {loading && !rooms.length ? <Loading /> : null}
       {error ? <ErrorBox message={error} onRetry={reload} /> : null}
-      {!loading && !rooms.length ? <Empty label="暂无可观看的直播" /> : null}
+      {!loading && !error && !rooms.length ? <Empty label="暂无可观看的直播" /> : null}
+
+      {tab === 'recordings' && recError ? (
+        <p role="alert" className="mt-5 text-sm text-rose-600">
+          {recError} <button onClick={reloadRec} className="underline ml-1">重试</button>
+        </p>
+      ) : null}
 
       {tab === 'recordings' && (
         <div className={`grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5 transition-opacity duration-200 ${recLoading && recData ? 'opacity-60' : 'opacity-100'}`}>
@@ -260,7 +266,7 @@ export default function LiveListPage() {
               </div>
             </Link>
           ))}
-          {recData && !(recData.items || []).length ? <Empty label="暂无直播回放" /> : null}
+          {recData && !recError && !(recData.items || []).length ? <Empty label="暂无直播回放" /> : null}
         </div>
       )}
 

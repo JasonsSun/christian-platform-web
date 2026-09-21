@@ -16,7 +16,7 @@ export function Empty({ label = '暂无数据' }: { label?: string }) {
 
 export function ErrorBox({ message, onRetry }: { message?: string; onRetry?: () => void }) {
   return (
-    <div className="py-10 text-center rounded-2xl bg-rose-50 text-rose-700">
+    <div role="alert" className="py-10 text-center rounded-2xl bg-rose-50 text-rose-700">
       <div>{message || '加载失败'}</div>
       {onRetry ? (
         <button className="btn-secondary mt-3" onClick={onRetry}>

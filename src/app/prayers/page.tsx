@@ -52,7 +52,7 @@ export default function PrayersPage() {
   // 「我的」需要登录态;未登录时 scope 传 mine 会被后端忽略,这里直接切回全部
   const scope = tab === 'mine' && !user ? 'all' : tab;
 
-  const { data, loading, setData } = useApi<ListResult<PrayerItem>>(
+  const { data, loading, error, reload, setData } = useApi<ListResult<PrayerItem>>(
     '/prayers' + qs({ scope, pageSize: page * PAGE_SIZE }),
     [scope, page, user?.id]
   );
@@ -213,7 +213,20 @@ export default function PrayersPage() {
           ))}
         </div>
       )}
-      {!loading && items.length === 0 && (
+      {/* 原先整页没取 error：请求失败时 items 是空的，于是「这里还没有代祷」
+          把一次失败说成了空名单。失败要有失败的样子。 */}
+      {error && items.length === 0 && (
+        <div role="alert" className="bg-white rounded-3xl border border-rose-200 px-6 py-16 text-center">
+          <p className="text-rose-600 text-sm mb-4">{error}</p>
+          <button onClick={reload} className="btn-secondary">重试</button>
+        </div>
+      )}
+      {error && items.length > 0 && (
+        <p role="alert" className="mb-3 text-sm text-rose-600">
+          {error} <button onClick={reload} className="underline ml-1">重试</button>
+        </p>
+      )}
+      {!loading && !error && items.length === 0 && (
         <div className="bg-white rounded-3xl border border-dashed border-ink-200 px-6 py-16 text-center">
           <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-400 items-center justify-center mb-3">
             <IconPray className="w-6 h-6" strokeWidth={1.6} />
@@ -222,7 +235,7 @@ export default function PrayersPage() {
         </div>
       )}
 
-      <div data-reveal-group className="space-y-3">
+      <div data-reveal-group className={`space-y-3 transition-opacity duration-200 ${loading && items.length ? 'opacity-60' : 'opacity-100'}`}>
         {items.map((p) => (
           <article
             key={p.id}
