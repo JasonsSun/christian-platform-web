@@ -20,7 +20,8 @@ import {
   type Variant,
 } from './config';
 import { getDictionary } from './dict';
-import { convert, loadVariantDict, onVariantReady } from './variant';
+import { loadVariantDict, onVariantReady } from './variant';
+import { startTraditionalDomText } from './domVariant';
 
 type Vars = Record<string, string | number>;
 
@@ -29,7 +30,7 @@ type I18nContextValue = {
   setLocale: (l: Locale) => void;
   variant: Variant;
   setVariant: (v: Variant) => void;
-  /** 将简体文本按当前 variant 转换（variant==='t' 转繁体，否则原样） */
+  /** 兼容旧调用：渲染阶段不做转换，繁体由 domVariant 在挂载后统一补转 */
   convert: (text: string) => string;
   t: (key: string, vars?: Vars) => string;
 };
@@ -115,33 +116,42 @@ export function I18nProvider({
     }
   }, []);
 
-  const convertForVariant = useCallback(
-    (text: string) => (variant === 't' ? convert(text, 't') : text),
-    [variant]
-  );
+  /**
+   * 渲染阶段一律不转换。
+   *
+   * 词典是按需载入的：服务端首屏「没词典」、客户端某个 Suspense 边界 hydration 时「已经有
+   * 词典」，两边渲染出的文字不一样，React 会报 hydration 不匹配（#425）并把整棵子树丢掉
+   * 重渲染。繁体的显示统一交给 domVariant 在挂载后补转，这里只保留接口形状。
+   */
+  const convertForVariant = useCallback((text: string) => text, []);
 
   const t = useCallback(
     (key: string, vars?: Vars) => {
-      let str = lookup(getDictionary(locale), key) ?? lookup(getDictionary(DEFAULT_LOCALE), key) ?? key;
-      if (variant === 't') str = convert(str, 't');
-      if (vars) {
-        for (const [k, v] of Object.entries(vars)) {
-          str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v));
-        }
-      }
-      return str;
+      const str =
+        lookup(getDictionary(locale), key) ?? lookup(getDictionary(DEFAULT_LOCALE), key) ?? key;
+      if (!vars) return str;
+      return Object.entries(vars).reduce(
+        (acc, [k, v]) => acc.replace(new RegExp(`\\{${k}\\}`, 'g'), String(v)),
+        str
+      );
     },
-    [locale, variant]
+    [locale]
   );
 
-  // 只有切到繁体才载入简繁词典（6MB，按需加载），载入完成后重渲染一次让译文生效
-  const [, forceRender] = useState(0);
+  // 只有切到繁体才载入简繁词典（6MB，按需加载），载入完成后重挂一次补转
+  const [dictTick, setDictTick] = useState(0);
   useEffect(() => {
     if (variant !== 't') return;
-    const unsub = onVariantReady(() => forceRender((n) => n + 1));
+    const unsub = onVariantReady(() => setDictTick((n) => n + 1));
     void loadVariantDict();
     return unsub;
   }, [variant]);
+
+  // 词典就绪后重挂一次：首挂时 convert() 还是原样返回，正文里没走 t() 的中文要再扫一遍
+  useEffect(() => {
+    if (variant !== 't') return;
+    return startTraditionalDomText();
+  }, [variant, dictTick]);
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, variant, setVariant, convert: convertForVariant, t }}>
