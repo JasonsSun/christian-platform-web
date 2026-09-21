@@ -57,7 +57,15 @@ export default function MediaPage() {
   const player = usePlayer();
   const [kind, setKind] = useState('');
   const [source, setSource] = useState('');
+  const [input, setInput] = useState('');
   const [q, setQ] = useState('');
+  // 搜索框防抖：q 进了 deps 就是每敲一个字发一个请求。过期响应 useApi 已经会丢弃，
+  // 不再「后发的先回」把列表停在打了一半的关键词上，但每个字仍是一次真实往返
+  // （挂载后一律 noCache），350ms 合并一次就够（与 /devotions 同一做法）
+  useEffect(() => {
+    const t = setTimeout(() => setQ(input.trim()), 350);
+    return () => clearTimeout(t);
+  }, [input]);
   const query = `kind=${kind}&source=${source}&q=${encodeURIComponent(q)}`;
   const { data, loading, error, reload } = useApi<{
     items: MediaItem[];
@@ -91,6 +99,10 @@ export default function MediaPage() {
 
   const total = data?.total ?? 0;
   const hasMore = items.length > 0 && items.length < total;
+  // 换类型/来源/关键词时 useApi 会留着旧 data 只把 loading 抬起来。
+  // 整块网格跟着 loading 拆掉重装就是「整页空白 → 弹回来」，
+  // 后台表格用 TableShell 的 busy 压暗解决，这里同一个口径。
+  const busy = loading && items.length > 0;
 
   async function loadMore() {
     setMoreLoading(true);
@@ -162,8 +174,8 @@ export default function MediaPage() {
           aria-label="搜索媒体标题或文件名"
           className="input-styled flex-1 min-w-[160px]"
           placeholder="搜索标题 / 文件名"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
         />
         {items.filter((m) => m.kind === 'audio').length > 0 ? (
           <button
@@ -179,16 +191,24 @@ export default function MediaPage() {
         ) : null}
       </div>
 
-      {loading ? (
+      {loading && items.length === 0 ? (
         <div className="py-20 text-center text-ink-400">加载中…</div>
-      ) : error ? (
+      ) : error && items.length === 0 ? (
         <div className="py-20 text-center text-rose-600">{error} <button onClick={reload} className="underline ml-2">重试</button></div>
       ) : items.length === 0 ? (
         <div className="py-20 text-center text-ink-400 border border-dashed border-ink-200 rounded-2xl">
-          暂无已审核通过的媒体
+          {kind || source || q ? '没有符合当前筛选的媒体' : '暂无已审核通过的媒体'}
+          {kind || source || q ? (
+            <button
+              onClick={() => { setKind(''); setSource(''); setInput(''); setQ(''); }}
+              className="block mx-auto mt-3 text-sm text-primary-600 hover:underline"
+            >
+              清除筛选
+            </button>
+          ) : null}
         </div>
       ) : (
-        <div data-reveal-group className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+        <div data-reveal-group className={`grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 transition-opacity duration-200 ${busy ? 'opacity-60' : 'opacity-100'}`}>
           {items.map((m) => (
             <div key={m.id} className="glass rounded-2xl overflow-hidden shadow-soft card-hover flex flex-col">
               <div className="relative bg-ink-100 flex items-center justify-center" style={{ height: 172 }}>
@@ -280,9 +300,14 @@ export default function MediaPage() {
         </div>
       )}
 
-      {!loading && !error && items.length > 0 ? (
+      {items.length > 0 && !loading ? (
         <div className="mt-8 flex flex-col items-center gap-3">
-          {hasMore ? (
+          {/* 列表留着旧结果，失败就得在这儿说：不报出来会变成「筛了半天没反应」 */}
+          {error ? (
+            <p role="alert" className="text-sm text-rose-600">
+              {error} <button onClick={reload} className="underline ml-1">重试</button>
+            </p>
+          ) : hasMore ? (
             <button onClick={loadMore} disabled={moreLoading} className="btn-secondary">
               {moreLoading ? '加载中…' : `加载更多（还有 ${Math.max(0, total - items.length)} 项）`}
             </button>

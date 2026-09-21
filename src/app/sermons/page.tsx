@@ -38,10 +38,19 @@ const PAGE_SIZE = 24;
 
 export default function SermonsPage() {
   const { t, convert } = useI18n();
+  const [input, setInput] = useState('');
   const [q, setQ] = useState('');
   const [seriesId, setSeriesId] = useState('');
   const [speaker, setSpeaker] = useState('');
   const [sort, setSort] = useState('new');
+
+  // 搜索框防抖：q 进了 deps 就是每敲一个字发一个请求。过期响应 useApi 已经会丢弃，
+  // 不再「后发的先回」把列表停在打了一半的关键词上，但每个字仍是一次真实往返
+  // （挂载后一律 noCache），350ms 合并一次就够（与 /devotions 同一做法）
+  useEffect(() => {
+    const timer = setTimeout(() => setQ(input.trim()), 350);
+    return () => clearTimeout(timer);
+  }, [input]);
 
   const query = `q=${encodeURIComponent(q)}&seriesId=${seriesId}&speaker=${encodeURIComponent(speaker)}&sort=${sort}`;
   const { data: seriesData } = useApi<{ items: { id: string; title: string }[] }>('/sermon-series');
@@ -76,6 +85,10 @@ export default function SermonsPage() {
 
   const total = data?.total ?? 0;
   const hasMore = items.length > 0 && items.length < total;
+  // 换系列/讲员/排序时 useApi 会留着旧 data 只把 loading 抬起来。
+  // 整块列表跟着 loading 拆掉重装就是「整页空白 → 弹回来」，
+  // 后台表格用 TableShell 的 busy 压暗解决，这里同一个口径。
+  const busy = loading && items.length > 0;
 
   async function loadMore() {
     setMoreLoading(true);
@@ -107,14 +120,15 @@ export default function SermonsPage() {
         </Link>
       </div>
 
-      {/* 筛选条 */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      {/* 筛选条：.input-styled 自带 w-full，放在 flex-wrap 里会各占一行
+          （桌面上下拉排成三条），改成和 /activities /groups 一样的网格 */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <input
           aria-label="搜索讲道"
-          className="input-styled flex-1 min-w-[180px]"
+          className="input-styled"
           placeholder="搜索标题 / 讲员 / 经文"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
         />
         <select aria-label="讲道系列筛选" className="input-styled" value={seriesId} onChange={(e) => setSeriesId(e.target.value)}>
           <option value="">全部系列</option>
@@ -135,16 +149,26 @@ export default function SermonsPage() {
         </select>
       </div>
 
-      {loading ? (
+      {loading && items.length === 0 ? (
         <div className="text-center text-ink-400 py-20">加载中…</div>
-      ) : error ? (
+      ) : error && items.length === 0 ? (
         <div className="text-center text-rose-600 py-20">
           {error} <button onClick={reload} className="underline ml-2">重试</button>
         </div>
       ) : items.length === 0 ? (
-        <div className="text-center text-ink-400 py-20">暂无讲道，敬请期待。</div>
+        <div className="text-center text-ink-400 py-20">
+          {q || seriesId || speaker ? '没有符合当前筛选的讲道。' : '暂无讲道，敬请期待。'}
+          {q || seriesId || speaker ? (
+            <button
+              onClick={() => { setInput(''); setQ(''); setSeriesId(''); setSpeaker(''); }}
+              className="block mx-auto mt-3 text-sm text-primary-600 hover:underline"
+            >
+              清除筛选
+            </button>
+          ) : null}
+        </div>
       ) : (
-        <div data-reveal-group className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div data-reveal-group className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 transition-opacity duration-200 ${busy ? 'opacity-60' : 'opacity-100'}`}>
           {items.map((s) => (
             <Link
               key={s.id}
@@ -204,6 +228,28 @@ export default function SermonsPage() {
           ))}
         </div>
       )}
+
+      {items.length > 0 && !loading ? (
+        <div className="mt-8 flex flex-col items-center gap-3">
+          {/* 列表留着旧结果，失败就得在这儿说：不报出来会变成「筛了半天没反应」 */}
+          {error ? (
+            <p role="alert" className="text-sm text-rose-600">
+              {error} <button onClick={reload} className="underline ml-1">重试</button>
+            </p>
+          ) : hasMore ? (
+            <button onClick={loadMore} disabled={moreLoading} className="btn-secondary">
+              {moreLoading ? '加载中…' : `加载更多（还有 ${Math.max(0, total - items.length)} 篇）`}
+            </button>
+          ) : (
+            <p className="text-xs text-ink-400">已显示全部 {total} 篇</p>
+          )}
+          {moreError && (
+            <p role="alert" className="text-xs text-rose-600">
+              {moreError} <button onClick={loadMore} className="underline ml-1">重试</button>
+            </p>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
