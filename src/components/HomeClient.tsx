@@ -580,10 +580,12 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
                     >
                       {/* 一枚大音符当底纹：音频卡原先是一整块纯色，空得像是没加载出来 */}
                       <IconMusicNote className="absolute -right-4 -bottom-6 w-32 h-32 text-white/10 pointer-events-none" strokeWidth={1.2} />
-                      <span className="w-14 h-14 rounded-full bg-ui-surface text-primary-700 flex items-center justify-center shadow-card group-hover:scale-110 transition">
+                      {/* 底子是从不随主题变的 primary-600→800 渐变，圆盘就不能再用 --ui-surface：
+                          深色主题下它会翻成近黑，和渐变只差 2:1，圆盘整块糊掉。/media 同一套。 */}
+                      <span className="relative w-14 h-14 rounded-full bg-white/95 text-primary-900 flex items-center justify-center shadow-card transition group-hover:scale-110">
                         {player.isCurrent(m.id) && player.playing ? <IconPause className="w-6 h-6" /> : <IconPlay className="w-6 h-6 translate-x-0.5" />}
                       </span>
-                      <span className="num inline-flex items-center gap-2 text-xs text-white/85">
+                      <span className="relative num inline-flex items-center gap-2 text-xs text-white/85">
                         <span className={`eq ${player.isCurrent(m.id) && player.playing ? 'is-playing' : ''}`} aria-hidden="true">
                           <i /><i /><i /><i />
                         </span>

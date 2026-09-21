@@ -209,26 +209,33 @@ export default function MediaPage() {
                   </Link>
                 ) : m.kind === 'audio' ? (
                   <button
+                    type="button"
                     onClick={() => player.playTrack({
                       id: m.id, title: m.title, artist: m.owner || '圣约社区', url: m.url,
                       poster: m.posterUrl, durationSec: m.durationSec,
                     })}
-                    className="w-full h-full flex flex-col items-center justify-center gap-2 group"
+                    className="relative w-full h-full bg-gradient-to-br from-primary-600 to-primary-800 flex flex-col items-center justify-center gap-2.5 group"
                     title="在线播放"
                     aria-label={`播放 ${m.title}`}
                   >
-                    <span className="w-12 h-12 rounded-full bg-primary-600 text-white flex items-center justify-center shadow-card group-hover:scale-110 transition">
+                    {/* 音频没有封面，原先是一整块纯灰，看起来像没加载出来；
+                        这里和首页的音频卡共用同一套底纹 + 声波条 */}
+                    <IconMusicNote className="absolute -right-4 -bottom-6 w-32 h-32 text-white/10 pointer-events-none" strokeWidth={1.2} />
+                    <span className="relative w-14 h-14 rounded-full bg-white/95 text-primary-900 flex items-center justify-center shadow-card transition group-hover:scale-110">
                       {player.isCurrent(m.id) && player.playing ? (
-                        <IconPause className="w-5 h-5" strokeWidth={1.8} />
+                        <IconPause className="w-6 h-6" strokeWidth={1.8} />
                       ) : (
-                        <IconPlay className="w-5 h-5 ml-0.5" strokeWidth={1.8} />
+                        <IconPlay className="w-6 h-6 translate-x-0.5" strokeWidth={1.8} />
                       )}
                     </span>
-                    {/* 时长由卡片右下角那枚 chip 统一给出（视频/音频同一个位置），
-                        这里再印一遍会出现两个 0:27；只有没有时长可显示时才留一句提示 */}
-                    {m.durationSec ? null : (
-                      <span className="num text-xs text-ink-500">点击播放</span>
-                    )}
+                    <span className="relative num inline-flex items-center gap-2 text-xs text-white/85">
+                      <span className={`eq ${player.isCurrent(m.id) && player.playing ? 'is-playing' : ''}`} aria-hidden="true">
+                        <i /><i /><i /><i />
+                      </span>
+                      {/* 时长由卡片右下角那枚 chip 统一给出（视频/音频同一个位置），
+                          这里再印一遍会出现两个 0:27；只有没有时长可显示时才留一句提示 */}
+                      {m.durationSec ? null : '点击播放'}
+                    </span>
                   </button>
                 ) : m.kind === 'image' ? (
                   <Link href={`/media/${m.id}`} className="w-full h-full block">

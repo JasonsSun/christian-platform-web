@@ -199,7 +199,7 @@ export default function MediaDetailPage() {
             <div className="relative z-10 flex flex-col items-center gap-4 px-4">
               <button
                 onClick={playThis}
-                className="w-20 h-20 rounded-full bg-ui-surface hover:bg-white text-primary-700 shadow-card-hover flex items-center justify-center transition"
+                className="w-20 h-20 rounded-full bg-white/95 hover:bg-white text-primary-900 shadow-card-hover flex items-center justify-center transition"
                 title={audioActive && player.playing ? '暂停' : '播放'}
               >
                 {audioActive && player.playing ? (
