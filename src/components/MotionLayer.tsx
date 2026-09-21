@@ -23,10 +23,17 @@ function motionAllowed(): boolean {
   return typeof window.IntersectionObserver === 'function';
 }
 
-/** 首屏以下的元素才值得藏起来等浮现；已经在视野里的直接放过，避免进页面时整屏淡入。 */
+/**
+ * 只有「离首屏还有一屏多」的元素才值得藏起来等浮现。
+ *
+ * 阈值不能贴着视口底边：首页 hero 占满 100vh，紧接着的统计卡正好落在折叠线下方几
+ * 十像素，按 0.92 判定会把首屏以下整条藏成 opacity:0 —— 用户看到的就是 hero 底下
+ * 一大片空白（实测 1907x1000 下统计卡 top=990、视口 1000，整块不可见）。留出一屏
+ * 余量后，折叠线上第一块内容始终是画出来的，动效只在往下滚之后才登场。
+ */
 function belowFold(el: Element): boolean {
   const r = el.getBoundingClientRect();
-  return r.top > window.innerHeight * 0.92;
+  return r.top > window.innerHeight * 1.5;
 }
 
 function countUp(el: HTMLElement) {
@@ -68,16 +75,19 @@ export default function MotionLayer() {
 
   useEffect(() => {
     if (!motionAllowed()) return;
+    const show = (el: HTMLElement) => {
+      el.classList.add('js-reveal-in');
+      // 计数可以落在被观察元素自己身上，也可以藏在它里面（统计卡：格子浮现、数字跑）
+      if (el.hasAttribute('data-count')) countUp(el);
+      else el.querySelectorAll<HTMLElement>('[data-count]').forEach(countUp);
+    };
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
           if (!e.isIntersecting) continue;
           const el = e.target as HTMLElement;
           io.unobserve(el);
-          el.classList.add('js-reveal-in');
-          // 计数可以落在被观察元素自己身上，也可以藏在它里面（统计卡：格子浮现、数字跑）
-          if (el.hasAttribute('data-count')) countUp(el);
-          else el.querySelectorAll<HTMLElement>('[data-count]').forEach(countUp);
+          show(el);
         }
       },
       { rootMargin: '0px 0px -6% 0px', threshold: 0.01 },
@@ -118,10 +128,32 @@ export default function MotionLayer() {
     const main = document.getElementById('main-content');
     if (main) mo.observe(main, { childList: true, subtree: true });
 
+    // 兜底：IntersectionObserver 的回调由渲染帧驱动，后台标签页、帧被卡住或元素被
+    // 换掉时可能一次都不派发。滚到底还是一片 opacity:0 是不可接受的失效模式，所以
+    // 滚动时自己扫一遍；没有藏起来的元素时只是一次空查询。
+    let sweepRaf = 0;
+    const sweep = () => {
+      if (sweepRaf) return;
+      sweepRaf = requestAnimationFrame(() => {
+        sweepRaf = 0;
+        document
+          .querySelectorAll<HTMLElement>('.js-reveal:not(.js-reveal-in)')
+          .forEach((el) => {
+            if (el.getBoundingClientRect().top < window.innerHeight) {
+              io.unobserve(el);
+              show(el);
+            }
+          });
+      });
+    };
+    window.addEventListener('scroll', sweep, { passive: true });
+
     return () => {
       io.disconnect();
       mo.disconnect();
+      window.removeEventListener('scroll', sweep);
       if (pending) cancelAnimationFrame(pending);
+      if (sweepRaf) cancelAnimationFrame(sweepRaf);
     };
   }, [pathname]);
 

@@ -145,8 +145,11 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
   return (
     <div className="relative overflow-hidden">
       {/* Hero：主内容在 <main className="pt-16 md:pt-20"> 里，min-h 若写成整屏会再叠上
-          header 那 64/80px，底部凭空多出一条空白带。扣掉 header 才刚好铺满一屏。 */}
-      <section className="relative min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] flex items-center overflow-hidden py-10 md:py-14">
+          header 那 64/80px，底部凭空多出一条空白带。扣掉 header 才刚好铺满一屏。
+          上限 780px：内容本身只有 ~750px，100vh 在 1080p 屏上会把 hero 拉到 920px，
+          文字居中后底下凭空多出 180px 渐变空白（实测就是用户看到的「一片空白」）。
+          封顶后首屏底部能露出统计卡的上沿，看着像「下面还有东西」。 */}
+      <section className="relative min-h-[calc(100vh-4rem)] md:min-h-[min(calc(100vh-5rem),780px)] flex items-center overflow-hidden py-10 md:py-14">
         <div className="absolute inset-0 bg-animated-gradient" />
         <div className="absolute inset-0 mesh-bg opacity-60" />
         <div className="absolute inset-0 dot-grid opacity-40" />
@@ -340,7 +343,9 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
                 placeholder={t('home.searchPlaceholder')}
                 className="w-full pl-4 pr-28 py-3 rounded-xl border-2 border-ink-200 bg-ink-50/50 text-ink-900 placeholder:text-ink-400 focus:outline-none focus:border-primary-500 focus:bg-white focus:ring-4 focus:ring-primary-100 transition-all"
               />
-              <button type="submit" className="absolute right-1.5 top-1/2 -translate-y-1/2 h-11 btn-primary btn-sm px-4 text-sm">{t('home.search')}</button>
+              {/* 垂直居中用 top/bottom + my-auto 而不是 -translate-y-1/2：.btn-primary:active
+                  自己写了 transform，按压那一下会把位移量整条顶掉，按钮会跳 22px。 */}
+              <button type="submit" className="absolute right-1.5 top-0 bottom-0 my-auto h-11 btn-primary btn-sm px-4 text-sm">{t('home.search')}</button>
             </form>
             <div className="flex flex-wrap gap-2">
               {recents.length > 0 ? recents.map((q) => (

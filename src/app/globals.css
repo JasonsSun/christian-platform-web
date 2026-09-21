@@ -1813,10 +1813,13 @@ a[class~="rounded-2xl"]:hover,
 /* —— 按钮：按压回弹 + 掠过的高光 ——
    ::before 而不是 ::after：.btn-shimmer 已经占了 after。
    overflow 只加在真正跑光带的三档上：.btn-secondary/.btn-ghost 里常有绝对定位的
-   角标（未读数、NEW 片），一并裁掉就看不见了一半。 */
-.btn-primary,
+   角标（未读数、NEW 片），一并裁掉就看不见了一半。
+   必须套 :where()：这条规则排在所有 @layer 之外，同优先级下会反过来顶掉站点上的
+   .absolute（实测首页搜索框里的「搜索」按钮因此掉到左边压住占位符）。零特异性之
+   后，显式写了定位/溢出工具类的地方按工具类走，没写的仍然拿到这里的默认值。 */
+:where(.btn-primary,
 .btn-gold,
-.btn-danger {
+.btn-danger) {
   position: relative;
   overflow: hidden;
 }
