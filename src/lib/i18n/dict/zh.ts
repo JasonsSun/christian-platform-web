@@ -29,7 +29,7 @@ const zh = {
     shareTitle: '推荐给朋友',
     shareSystem: '分享本系统',
     toggleMenu: '切换菜单',
-    feedback: '💡 给平台提建议',
+    feedback: '给平台提建议',
     catalog: '全部功能',
     catalogHint: '找不到入口？一键全站搜索',
     group: {

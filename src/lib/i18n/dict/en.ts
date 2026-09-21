@@ -31,7 +31,7 @@ const en: Dict = {
     shareTitle: 'Share with Friends',
     shareSystem: 'Share',
     toggleMenu: 'Toggle menu',
-    feedback: '💡 Feedback',
+    feedback: 'Feedback',
     catalog: 'Browse',
     catalogHint: "Can't find it? Search the whole site",
     group: {

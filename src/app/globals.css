@@ -656,6 +656,12 @@ html, body {
 @media (max-width: 767px) {
   html.has-player main { padding-bottom: 176px; }
   html.has-player footer { padding-bottom: 176px; }
+
+  /* 没开播放器时，fixed 的底部导航照样会压住页脚最后一行：
+     实测「隐私政策/服务条款/使用帮助」占 760~780px，而导航从 778px 起，整行被切掉。 */
+  html:not(.has-player) footer {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 /* 悬浮迷你播放器出现时，桌面端底部留出空间，避免遮挡右下角内容 */

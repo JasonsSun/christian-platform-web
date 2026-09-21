@@ -40,16 +40,24 @@ export default function Footer() {
             <p className="text-ink-400 leading-relaxed mb-6">
               {t('footer.tagline')}
             </p>
+            {/* 原先这里排了 微信/微博/QQ/邮箱 四个 <button>，但没有一个带 onClick —— 每一页底部
+                都有四颗点了没反应的按钮。只保留真有去处的两个：微信绑定页，和下面「联系方式」
+                里同一个邮箱（做成 mailto）；微博和 QQ 站内没有对应账号，宁可不放。 */}
             <div className="flex gap-3">
-              {['微信', '微博', 'QQ', '邮箱'].map((platform) => (
-                <button
-                  key={platform}
-                  className="w-10 h-10 rounded-full bg-white/10 hover:bg-primary-500/30 flex items-center justify-center text-sm transition-colors border border-white/5 hover:border-primary-400/50"
-                  title={platform}
-                >
-                  <span className="text-xs">{platform[0]}</span>
-                </button>
-              ))}
+              <Link
+                href="/wechat/bind"
+                title="微信绑定"
+                className="w-11 h-11 rounded-full bg-white/10 hover:bg-primary-500/30 flex items-center justify-center transition-colors border border-white/5 hover:border-primary-400/50"
+              >
+                <span className="text-xs">微信</span>
+              </Link>
+              <a
+                href="mailto:support@shengyue.com"
+                title="发邮件给我们"
+                className="w-11 h-11 rounded-full bg-white/10 hover:bg-primary-500/30 flex items-center justify-center transition-colors border border-white/5 hover:border-primary-400/50"
+              >
+                <span className="text-xs">邮箱</span>
+              </a>
             </div>
           </div>
 
@@ -126,13 +134,14 @@ export default function Footer() {
                 <svg className="w-5 h-5 text-primary-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <span>support@shengyue.com</span>
+                <span><a href="mailto:support@shengyue.com" className="hover:text-white transition-colors">support@shengyue.com</a></span>
               </li>
               <li className="flex items-start gap-3 text-ink-400">
                 <svg className="w-5 h-5 text-primary-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-                <span>400-888-0000</span>
+                {/* 手机端看到客服电话却拨不出去等于没有：做成 tel: 链接，样式仍由 li 继承 */}
+                <a href="tel:4008880000" className="hover:text-white transition-colors">400-888-0000</a>
               </li>
               <li className="flex items-start gap-3 text-ink-400">
                 <svg className="w-5 h-5 text-primary-400 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
