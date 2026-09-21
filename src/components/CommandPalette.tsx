@@ -18,10 +18,132 @@ import { useDialogFocus } from '@/lib/a11y';
 import {
   MagnifyingGlassIcon,
   ArrowRightIcon,
-  SparklesIcon,
+  HomeIcon,
+  BookOpenIcon,
+  ClipboardDocumentListIcon,
+  DocumentTextIcon,
+  MusicalNoteIcon,
+  HeartIcon,
+  Squares2X2Icon,
+  PresentationChartBarIcon,
+  FilmIcon,
+  RadioIcon,
+  UsersIcon,
+  HashtagIcon,
+  CalendarDaysIcon,
+  RssIcon,
+  ChatBubbleLeftRightIcon,
+  MegaphoneIcon,
+  HandRaisedIcon,
+  CurrencyDollarIcon,
+  MapPinIcon,
+  EnvelopeIcon,
+  BellIcon,
+  UserIcon,
+  UserCircleIcon,
+  PencilSquareIcon,
+  ShieldCheckIcon,
+  NoSymbolIcon,
+  ClockIcon,
+  KeyIcon,
+  PuzzlePieceIcon,
+  Cog6ToothIcon,
+  CommandLineIcon,
+  BoltIcon,
+  NewspaperIcon,
+  ChartBarIcon,
+  ServerIcon,
+  ArchiveBoxIcon,
+  BuildingOfficeIcon,
+  CloudArrowUpIcon,
 } from '@heroicons/react/24/outline';
 
 export const COMMAND_PALETTE_EVENT = 'open-command-palette';
+
+type IconCmp = React.ComponentType<{ className?: string }>;
+
+/** 按入口给图标：结果里 40 多行如果共用一个「分组图标」，就又是一排一模一样的方框，
+ *  比纯文字好不了多少。静态入口逐个映射，动态结果（书卷 / 诗歌 / 用户…）按分组兜底。 */
+const HREF_ICON: Record<string, IconCmp> = {
+  '/': HomeIcon,
+  '/bible': BookOpenIcon,
+  '/plans': ClipboardDocumentListIcon,
+  '/devotions': DocumentTextIcon,
+  '/songs': MusicalNoteIcon,
+  '/songs/favorites': HeartIcon,
+  '/songs/collections': Squares2X2Icon,
+  '/sermons': PresentationChartBarIcon,
+  '/media': FilmIcon,
+  '/live': RadioIcon,
+  '/community': ChatBubbleLeftRightIcon,
+  '/topics': HashtagIcon,
+  '/calendar': CalendarDaysIcon,
+  '/feed': RssIcon,
+  '/groups': UsersIcon,
+  '/activities': MegaphoneIcon,
+  '/prayers': HandRaisedIcon,
+  '/donate': CurrencyDollarIcon,
+  '/nearby': MapPinIcon,
+  '/search': MagnifyingGlassIcon,
+  '/messages': EnvelopeIcon,
+  '/notifications': BellIcon,
+  '/friends': UserCircleIcon,
+  '/me': UserIcon,
+  '/feedback': PencilSquareIcon,
+  '/settings/privacy': ShieldCheckIcon,
+  '/settings/notifications': BellIcon,
+  '/settings/blocked': NoSymbolIcon,
+  '/settings/sessions': ClockIcon,
+  '/settings/two-factor': KeyIcon,
+  '/settings/oauth': PuzzlePieceIcon,
+  '/community/create': PencilSquareIcon,
+  '/activities/new': CalendarDaysIcon,
+  '/upload': CloudArrowUpIcon,
+  '/donate/new': CurrencyDollarIcon,
+  '/bible/notes': DocumentTextIcon,
+  '/admin': CommandLineIcon,
+  '/admin/contents': NewspaperIcon,
+  '/admin/users': UsersIcon,
+  '/admin/audit': ShieldCheckIcon,
+  '/admin/songs': MusicalNoteIcon,
+  '/admin/sermons': PresentationChartBarIcon,
+  '/admin/activities': MegaphoneIcon,
+  '/admin/media': FilmIcon,
+  '/admin/live': RadioIcon,
+  '/admin/groups': BuildingOfficeIcon,
+  '/admin/prayers': HandRaisedIcon,
+  '/admin/donations': CurrencyDollarIcon,
+  '/admin/expenses': ChartBarIcon,
+  '/admin/system': ServerIcon,
+  '/admin/backups': ArchiveBoxIcon,
+  '/admin/settings': Cog6ToothIcon,
+};
+
+const GROUP_ICON: Record<string, IconCmp> = {
+  导航: Squares2X2Icon,
+  我的: UserIcon,
+  设置: Cog6ToothIcon,
+  快捷操作: BoltIcon,
+  管理后台: ShieldCheckIcon,
+  圣经书卷: BookOpenIcon,
+  经文: BookOpenIcon,
+  社区内容: ChatBubbleLeftRightIcon,
+  诗歌: MusicalNoteIcon,
+  讲道: PresentationChartBarIcon,
+  团契: UsersIcon,
+  活动: CalendarDaysIcon,
+  媒体: FilmIcon,
+  用户: UserCircleIcon,
+};
+const itemIcon = (item: Item): IconCmp => HREF_ICON[item.href] || GROUP_ICON[item.group] || MagnifyingGlassIcon;
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="rounded-md border border-ui-border bg-ui-rail px-1.5 py-0.5 font-sans text-[10px] leading-none text-ui-muted">
+      {children}
+    </kbd>
+  );
+}
 
 type Item = {
   id: string;
@@ -155,6 +277,18 @@ function scoreItem(item: Item, q: string): number {
     i = p + 1;
   }
   return 20;
+}
+
+/** 把同组结果并到一起：按分数排序会把「诗歌库 / 诗歌管理 / 诗篇 / 我的诗歌收藏」打散，
+ *  分组标题于是重复出现（实测「导航」出现两次）。组按首次出现排序，组内保持分数序。 */
+function regroupByScore(items: Item[]): Item[] {
+  const buckets = new Map<string, Item[]>();
+  for (const it of items) {
+    const b = buckets.get(it.group);
+    if (b) b.push(it);
+    else buckets.set(it.group, [it]);
+  }
+  return [...buckets.values()].flat();
 }
 
 export default function CommandPalette() {
@@ -304,7 +438,7 @@ export default function CommandPalette() {
       .sort((a, b) => b.s - a.s)
       .map((x) => x.it);
     if (!q) return local.slice(0, 12);
-    return [...remote, ...local].slice(0, 40);
+    return regroupByScore([...remote, ...local]).slice(0, 40);
   }, [query, remote]);
 
   useEffect(() => {
@@ -346,49 +480,63 @@ export default function CommandPalette() {
         aria-hidden
       />
       <div className="relative w-full max-w-xl animate-slide-up">
-        <div className="glass-tech rounded-3xl shadow-pop overflow-hidden border border-white/15">
+        {/* 实色浮层而非 .glass-tech：12% 白玻璃压在深色导航上会被冲淡成一块灰紫，
+            面板等于没有面板（用户原话「太难看」）。浮层一律走 --ui-* 令牌，三主题换值。 */}
+        <div className="overflow-hidden rounded-2xl border border-ui-border bg-ui-surface shadow-pop">
           {/* 顶部辉光线 */}
           <div className="h-px w-full bg-gradient-to-r from-transparent via-primary-400 to-transparent" />
 
-          <div className="flex items-center gap-3 px-5 py-4 border-b border-ui-border">
-            <MagnifyingGlassIcon className="w-5 h-5 text-primary-500 shrink-0" />
+          {/* 输入框自带 .input-styled：面板一打开就聚焦，全局 3px 琥珀 :focus-visible
+              会在面板里再套一个金框，这个类的 focus:outline-none + 主题色光环正好替掉它。 */}
+          <div className="relative px-3 pt-3 pb-1">
+            <MagnifyingGlassIcon className="pointer-events-none absolute left-5 top-1/2 z-10 h-[18px] w-[18px] -translate-y-1/2 text-ui-muted" />
             <input
-              aria-label="全站搜索"
+              aria-label="搜索关键词"
               ref={inputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onInputKeyDown}
               placeholder="搜索页面、经文、诗歌、讲道、团契…"
-              className="flex-1 bg-transparent outline-none text-base text-ink-900 placeholder:text-ink-400"
+              className="input-styled input-field input-icon input-suffix"
               role="combobox"
               aria-expanded
               aria-autocomplete="list"
               aria-controls={listId}
               aria-activedescendant={activeOptionId}
             />
-            {loading && (
-              <span className="w-4 h-4 rounded-full border-2 border-primary-500/30 border-t-primary-500 animate-spin shrink-0" />
+            {loading ? (
+              <span className="absolute right-5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 rounded-full border-2 border-primary-500/30 border-t-primary-500 animate-spin" />
+            ) : (
+              <span className="absolute right-5 top-1/2 z-10 -translate-y-1/2">
+                <Kbd>Esc</Kbd>
+              </span>
             )}
-            <kbd className="hidden sm:inline-block px-2 py-0.5 text-[10px] rounded-md bg-ink-100 text-ink-600 border border-ink-200">
-              Esc
-            </kbd>
           </div>
 
-          <div ref={listRef} id={listId} role="listbox" aria-label="搜索结果" className="max-h-[52vh] overflow-y-auto py-2">
+          <div ref={listRef} id={listId} role="listbox" aria-label="搜索结果" className="max-h-[52vh] overflow-y-auto px-2 pb-2 pt-1">
             {results.length === 0 ? (
-              <div className="px-5 py-10 text-center text-sm text-ink-500">
-                {loading ? '搜索中…' : '没有找到匹配项'}
+              <div className="flex flex-col items-center gap-1.5 px-5 py-12 text-center">
+                <span className="mb-1 grid h-11 w-11 place-items-center rounded-full bg-ui-hover">
+                  <MagnifyingGlassIcon className="h-5 w-5 text-ui-muted" />
+                </span>
+                <p className="text-sm font-medium text-ui-text">{loading ? '搜索中…' : `没有找到「${query.trim()}」`}</p>
+                {!loading && (
+                  <p className="text-xs text-ui-muted">换个说法试试：页面名、圣经书卷、诗歌或团契名称</p>
+                )}
               </div>
             ) : (
               results.map((item, idx) => {
                 const showGroup = item.group !== lastGroup;
                 lastGroup = item.group;
                 const isActive = idx === active;
+                const Icon = itemIcon(item);
                 return (
                   <div key={item.id}>
                     {showGroup && (
-                      <div className="eyebrow px-5 pt-3 pb-1">
-                        {item.group}
+                      <div className="flex items-center gap-2 px-3 pb-1 pt-3">
+                        {/* 不用 .eyebrow：那 0.14em 字距是给拉丁字母的，中文「导航」被拉开反而散 */}
+                        <span className="text-[11px] font-semibold text-ui-muted">{item.group}</span>
+                        <span className="h-px flex-1 bg-ui-border" />
                       </div>
                     )}
                     <button
@@ -400,29 +548,24 @@ export default function CommandPalette() {
                       data-idx={idx}
                       onMouseEnter={() => setActive(idx)}
                       onClick={() => go(item.href)}
-                      className={`w-full min-h-[44px] flex items-center gap-3 px-5 py-2.5 text-left transition-colors ${
-                        // 选中条用 inset 阴影画：换成 border-left 会把整行文字推右 2px
-                        isActive ? 'bg-primary-50 shadow-[inset_2px_0_0_var(--ui-accent)]' : 'hover:bg-ink-50'
+                      className={`flex w-full min-h-[44px] items-center gap-3 rounded-xl px-2.5 py-2 text-left transition-colors ${
+                        isActive ? 'bg-ui-accent-soft text-ui-accent' : 'text-ui-text hover:bg-ui-hover'
                       }`}
                     >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                          isActive ? 'bg-primary-500 shadow-glow' : 'bg-ui-muted'
-                        }`}
-                      />
+                      <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
+                        isActive ? 'bg-ui-surface shadow-[0_2px_8px_-2px_rgba(19,22,37,0.22)]' : 'bg-ui-hover text-ui-muted'
+                      }`}>
+                        <Icon className="h-[18px] w-[18px]" />
+                      </span>
                       <span className="flex-1 min-w-0">
-                        <span
-                          className={`block truncate text-sm ${
-                            isActive ? 'text-primary-700 font-medium' : 'text-ink-800'
-                          }`}
-                        >
+                        <span className={`block truncate text-sm ${isActive ? 'font-semibold' : 'font-medium'}`}>
                           {item.label}
                         </span>
                         {item.hint && (
-                          <span className="block truncate text-xs text-ink-400">{item.hint}</span>
+                          <span className="block truncate text-xs text-ui-muted">{item.hint}</span>
                         )}
                       </span>
-                      {isActive && <ArrowRightIcon className="w-4 h-4 text-primary-500 shrink-0" />}
+                      {isActive && <ArrowRightIcon className="h-4 w-4 shrink-0" />}
                     </button>
                   </div>
                 );
@@ -430,12 +573,20 @@ export default function CommandPalette() {
             )}
           </div>
 
-          <div className="flex items-center justify-between gap-3 px-5 py-2.5 border-t border-ui-border text-[11px] text-ink-400">
-            <span className="inline-flex items-center gap-1">
-              <SparklesIcon className="w-3.5 h-3.5 text-gold-500" />
-              ↑↓ 选择 · Enter 打开
+          <div className="flex items-center justify-between gap-3 border-t border-ui-border px-4 py-2.5 text-[11px] text-ui-muted">
+            <span className="inline-flex items-center gap-1.5">
+              <Kbd>↑</Kbd>
+              <Kbd>↓</Kbd>
+              选择
+              <Kbd>Enter</Kbd>
+              打开
             </span>
-            <span className="hidden sm:inline">⌘K / Ctrl+K 唤起</span>
+            <span className="hidden items-center gap-1.5 sm:inline-flex">
+              <Kbd>⌘K</Kbd>
+              /
+              <Kbd>Ctrl K</Kbd>
+              唤起
+            </span>
           </div>
         </div>
       </div>
