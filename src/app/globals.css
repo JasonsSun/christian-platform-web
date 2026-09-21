@@ -1996,6 +1996,12 @@ a[class~="rounded-2xl"]:hover,
    白，那条白描边等于没画，整条栏和页面糊在一起。这里只覆盖底色/描边/投影，模糊留着，
    底色仍由 --ui-border / --ui-surface 随主题走。 */
 [data-theme="light"] .mobile-tabbar { background: rgba(255, 255, 255, 0.88); }
+/* 抽屉展开时摘掉右上角「简繁 / 无障碍」胶囊：它压在抽屉第一行上（实测胶囊
+   112x54@270,56 与「圣经」行 158x48@199,81 相交，标签被切一半）。抽屉里的
+   「显示与偏好」本来就含语言 / 字形 / 主题 / 字号 / 对比 / 动效，是它的超集，
+   收起抽屉后胶囊照旧回来，不丢入口。 */
+html:has([data-nav-mobile-open="1"]) .nav-quick-pill { display: none; }
+
 .mobile-tabbar {
   border-top: 1px solid var(--ui-border);
   box-shadow: 0 -12px 32px -16px rgba(21, 27, 58, 0.28);

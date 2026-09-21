@@ -94,7 +94,7 @@ export default function MobileNav({ disabledModules = [] }: { disabledModules?: 
     {/* 移动端简繁 / 无障碍入口：顶部右侧胶囊，避免挤占底部标签栏。
         导航栏 64px 高，胶囊压在它下沿 8px：z-[60] 高于导航的 z-50，所以是胶囊盖住导航而不是被裁；
         再往下挪会撞上 /groups、/activities hero 里右对齐的「创建团契 / 发布活动」按钮（top≈102）。 */}
-    <div className="md:hidden fixed top-14 right-2 z-[60] flex items-center gap-1 rounded-full bg-primary-950/90 border border-white/15 px-1 py-1 shadow-lg backdrop-blur">
+    <div className="nav-quick-pill md:hidden fixed top-14 right-2 z-[60] flex items-center gap-1 rounded-full bg-primary-950/90 border border-white/15 px-1 py-1 shadow-lg backdrop-blur">
       <VariantSwitcher tone="light" />
       <AccessibilityMenu tone="light" />
     </div>

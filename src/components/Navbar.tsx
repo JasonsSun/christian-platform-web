@@ -17,10 +17,11 @@ import { COMMAND_PALETTE_EVENT } from '@/components/CommandPalette';
 import { isBareRoute } from '@/lib/bareRoutes';
 import { IconShare } from '@/components/icons';
 
+// 图标与底部标签栏同一套描边路径：同一个入口在两处出现时得长一样。
 const topLinks = [
-  { href: '/', key: 'nav.home' },
-  { href: '/bible', key: 'nav.bible' },
-  { href: '/community', key: 'nav.community' },
+  { href: '/', key: 'nav.home', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+  { href: '/bible', key: 'nav.bible', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+  { href: '/community', key: 'nav.community', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
 ];
 
 const navGroups = [
@@ -255,8 +256,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { t } = useI18n();
-
+  const { t, locale } = useI18n();
   const { data: frReq } = useApi<{ total: number }>(user ? '/friends/requests?pageSize=1' : null, [user?.id]);
   const { unread: liveUnread } = useNotifications();
 
@@ -500,19 +500,36 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
         {/* max-h-0 只是裁掉高度，链接仍在 Tab 序里：收起时必须同时移出焦点序列，
             否则窄屏键盘用户会先穿过十几条看不见的菜单项才走到真正能看的地方。
             用 invisible 而非直接不渲染，保留 max-h 的展开动画。 */}
-        <div className={`xl:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'visible max-h-[75vh] overflow-y-auto pb-4' : 'invisible max-h-0'}`}>
+        <div data-nav-mobile-open={isMobileMenuOpen ? '1' : undefined} className={`xl:hidden overflow-hidden transition-all duration-300 ${isMobileMenuOpen ? 'visible max-h-[75vh] overflow-y-auto pb-4' : 'invisible max-h-0'}`}>
           {/* 用实色卡片而非 .glass：glass 带 backdrop-filter，叠在深色导航上会被冲淡成灰紫，
               浅色文字对比度不足（暗色主题下更明显）。实色卡片在任何主题/滚动态下都可读。 */}
           <div data-nav-mobile-menu="1" className="bg-white rounded-2xl p-4 space-y-2 shadow-card border border-ink-100">
             {/* 双列而非单列长列表：导航项已有 12 个，单列在平板/窄桌面会拉出一整屏还要滚动 */}
-            <div className="grid grid-cols-2 gap-2">
-              {mobileLinks.map((link) => (
-                <Link key={link.href} href={link.href} className={`block px-4 py-3 rounded-xl font-medium whitespace-nowrap transition-all ${
-                  isActive(link.href) ? 'bg-primary-100 text-primary-700' : 'text-ink-700 hover:bg-ink-100'
-                }`}>
-                  {t(link.key)}
-                </Link>
-              ))}
+            {/* 双列省纵向空间，但窄到放不下就必须退单列，不能裁字。标签可用宽 =
+                (vw-72)/2 再减图标座 66：中文最长「读经计划」56px，340px 起放得下；
+                英文最长「Community」实测 89px，要 384px 起。按语言挑断点，免得中文
+                在 360/375 这两种最常见宽度上白白多滚一屏。 */}
+            <div data-nav-grid="1" className={`grid gap-2 ${locale === 'zh' ? 'grid-cols-1 min-[340px]:grid-cols-2' : 'grid-cols-1 min-[384px]:grid-cols-2'}`}>
+              {mobileLinks.map((link) => {
+                const active = isActive(link.href);
+                return (
+                  // 窄屏只放文字会显得空、也认不出入口：补上和桌面目录同一套描边图标。
+                  // 标签不写 whitespace-nowrap —— 英文「Reading Plans」在 320px 下加图标会顶出
+                  // 单元格，宁可让它折行也不能裁字。图标座 32px + py-2 = 48px 行高，热区不缩水。
+                  <Link key={link.href} href={link.href} className={`flex items-center gap-2.5 min-w-0 px-3 py-2 rounded-xl font-medium transition-all ${
+                    active ? 'bg-primary-100 text-primary-700' : 'text-ink-700 hover:bg-ink-100'
+                  }`}>
+                    <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg transition-colors ${
+                      active ? 'bg-primary-500/20 text-primary-700' : 'bg-ink-100 text-ink-500'
+                    }`}>
+                      <svg className="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={active ? 2 : 1.7} d={link.icon} />
+                      </svg>
+                    </span>
+                    <span className="min-w-0 leading-tight">{t(link.key)}</span>
+                  </Link>
+                );
+              })}
             </div>
 
             <MenuRow onClick={() => { setShareOpen(true); setIsMobileMenuOpen(false); }}>
