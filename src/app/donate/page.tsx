@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useApi } from '@/lib/useApi';
+import { apiGet } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { timeAgo } from '@/lib/format';
@@ -67,9 +68,48 @@ export default function DonatePage() {
   const pageSize = 20;
 
   const { data, loading, error, reload } = useApi<DonationListResult>(
-    `/donations?page=${page}&pageSize=${pageSize}`,
-    [page, user?.id]
+    `/donations?page=1&pageSize=${pageSize}`,
+    [user?.id]
   );
+
+  // 「加载更多」必须是追加。原先把 page 放进请求路径，点一下第二页就把第一页
+  // 从屏幕上换掉 —— 刚读到的那几条凭空消失，滚过的位置也跟着跳。
+  const [extra, setExtra] = useState<DonationItem[]>([]);
+  const [moreLoading, setMoreLoading] = useState(false);
+  const [moreError, setMoreError] = useState<string | null>(null);
+
+  // 按 id 去重：两次请求之间有新登记时会重叠
+  const items = useMemo(() => {
+    const seen = new Set<string>();
+    const out: DonationItem[] = [];
+    for (const d of [...(data?.items || []), ...extra]) {
+      if (seen.has(d.id)) continue;
+      seen.add(d.id);
+      out.push(d);
+    }
+    return out;
+  }, [data, extra]);
+
+  function refresh() {
+    setExtra([]);
+    setPage(1);
+    setMoreError(null);
+    reload();
+  }
+
+  async function loadMore() {
+    setMoreLoading(true);
+    setMoreError(null);
+    try {
+      const r = await apiGet<DonationListResult>(`/donations?page=${page + 1}&pageSize=${pageSize}`);
+      setExtra((cur) => [...cur, ...(r.items || [])]);
+      setPage((p) => p + 1);
+    } catch (e: any) {
+      setMoreError(e?.message || '加载更多失败，请稍后重试');
+    } finally {
+      setMoreLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (params.get('ok') === '1') {
@@ -86,7 +126,7 @@ export default function DonatePage() {
   }, [params]);
 
   const admin = !!data?.viewerIsAdmin;
-  const hasMore = !!data && page * pageSize < data.total;
+  const hasMore = !!data && items.length > 0 && items.length < data.total;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -169,34 +209,51 @@ export default function DonatePage() {
               按时间倒序 · 金额统一脱敏为 ****元 · 不区分教会，统一呈现个人与团体捐赠
             </p>
           </div>
-          <button className="btn-secondary text-sm" onClick={reload}>刷新</button>
+          <button className="btn-secondary text-sm" onClick={refresh}>刷新</button>
         </div>
 
-        {loading && !data ? (
+        {loading && !items.length ? (
           <div className="py-16 text-center text-ink-400">加载中…</div>
-        ) : error ? (
-          <div className="py-12 text-center rounded-2xl bg-rose-50 text-rose-700">
+        ) : error && !items.length ? (
+          <div role="alert" className="py-12 text-center rounded-2xl bg-rose-50 text-rose-700">
             <div>{error}</div>
             <button className="btn-secondary mt-3" onClick={reload}>重试</button>
           </div>
-        ) : !data || data.items.length === 0 ? (
+        ) : !items.length ? (
           <div className="py-16 text-center text-ink-400 border border-dashed border-ink-200 rounded-2xl">
             暂无公示的捐赠记录，欢迎成为第一位奉献者
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden">
-            {data.items.map((item) => (
+          <div
+            className={`bg-white rounded-2xl border border-ink-100 shadow-soft overflow-hidden transition-opacity duration-200 ${
+              loading || moreLoading ? 'opacity-60' : 'opacity-100'
+            }`}
+          >
+            {items.map((item) => (
               <DonationRow key={item.id} item={item} admin={admin} />
             ))}
           </div>
         )}
 
+        {/* 刷新失败时旧名录还在屏上，报错要落在列表下面，而不是把列表顶掉 */}
+        {error && items.length > 0 && (
+          <p role="alert" className="mt-3 text-center text-sm text-rose-600">
+            {error} <button onClick={reload} className="underline">重试</button>
+          </p>
+        )}
+
         {hasMore && (
           <div className="flex justify-center mt-5">
-            <button className="btn-secondary" disabled={loading} onClick={() => setPage((p) => p + 1)}>
-              {loading ? '加载中…' : '加载更多'}
+            <button className="btn-secondary" disabled={moreLoading} onClick={loadMore}>
+              {moreLoading ? '加载中…' : `加载更多（还有 ${Math.max(0, (data?.total ?? 0) - items.length)} 条）`}
             </button>
           </div>
+        )}
+
+        {moreError && (
+          <p role="alert" className="mt-3 text-center text-sm text-rose-600">
+            {moreError} <button onClick={loadMore} className="underline">重试</button>
+          </p>
         )}
       </section>
 

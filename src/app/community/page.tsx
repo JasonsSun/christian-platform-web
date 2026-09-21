@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useCallback, useEffect } from 'react';
-import { apiPost, qs } from '@/lib/api';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { apiGet, apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
@@ -71,18 +71,66 @@ export default function CommunityPage() {
     if (kw) setQ(kw);
   }, []);
 
-  const contentsPath =
+  const contentsPathFor = (p: number) =>
     '/contents' +
     qs({
       type: type === 'all' ? undefined : type,
       q: q || undefined,
       status: 'published',
       sort,
-      page: 1,
+      page: p,
       pageSize: 20,
     });
+  const contentsPath = contentsPathFor(1);
   const { data, loading, error, setData } = useApi<ListResult<ContentItem>>(contentsPath, [type, q, sort]);
-  const items = data?.items || [];
+
+  // 页脚写着「共 N 条内容」，列表却永远停在第一页 20 条 —— 第 21 条以后够不到。
+  // 与 /media /sermons 同一套追加写法：后续页单独存，筛选一变就清空。
+  const [extra, setExtra] = useState<ContentItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [moreLoading, setMoreLoading] = useState(false);
+  const [moreError, setMoreError] = useState<string | null>(null);
+  useEffect(() => {
+    setExtra([]);
+    setPage(1);
+    setMoreError(null);
+  }, [type, q, sort]);
+
+  // 按 id 去重：两次请求之间有新内容时会重叠
+  const items = useMemo(() => {
+    const seen = new Set<string>();
+    const out: ContentItem[] = [];
+    for (const c of [...(data?.items || []), ...extra]) {
+      if (seen.has(c.id)) continue;
+      seen.add(c.id);
+      out.push(c);
+    }
+    return out;
+  }, [data, extra]);
+
+  /** 乐观更新要同时打到第一页和追加页，否则第 21 条之后点了没反应 */
+  const patchContent = useCallback(
+    (id: string, patch: Partial<ContentItem>) => {
+      const f = (list: ContentItem[]) => list.map((c) => (c.id === id ? { ...c, ...patch } : c));
+      setData((prev) => (prev ? { ...prev, items: f(prev.items) } : prev));
+      setExtra(f);
+    },
+    [setData]
+  );
+
+  async function loadMoreContents() {
+    setMoreLoading(true);
+    setMoreError(null);
+    try {
+      const r = await apiGet<ListResult<ContentItem>>(contentsPathFor(page + 1));
+      setExtra((cur) => [...cur, ...(r.items || [])]);
+      setPage((p) => p + 1);
+    } catch (e: any) {
+      setMoreError(e?.message || '加载更多失败，请稍后重试');
+    } finally {
+      setMoreLoading(false);
+    }
+  }
 
   const { data: prayersData, loading: prayersLoading, setData: setPrayers } = useApi<ListResult<PrayerItem>>(
     '/prayers' + qs({ scope: 'all' }),
@@ -105,17 +153,9 @@ export default function CommunityPage() {
         return;
       }
       const res = await likeAction.run(() => apiPost<{ liked: boolean; likeCount: number }>(`/contents/${item.id}/like`));
-      if (res) {
-        setData((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            items: prev.items.map((c) => (c.id === item.id ? { ...c, liked: res.liked, likeCount: res.likeCount } : c)),
-          };
-        });
-      }
+      if (res) patchContent(item.id, { liked: res.liked, likeCount: res.likeCount });
     },
-    [user, likeAction, goLogin, notice, setData]
+    [user, likeAction, goLogin, notice, patchContent]
   );
 
   const [prayerBody, setPrayerBody] = useState('');
@@ -270,7 +310,7 @@ export default function CommunityPage() {
                 </div>
               )}
 
-              <div data-reveal-group className={`space-y-4 transition-opacity duration-200 ${loading && items.length ? 'opacity-60' : 'opacity-100'}`}>
+              <div data-reveal-group className={`space-y-4 transition-opacity duration-200 ${(loading || moreLoading) && items.length ? 'opacity-60' : 'opacity-100'}`}>
                 {items.map((item) => {
                   const badge = TYPE_BADGE[item.contentType];
                   return (
@@ -344,6 +384,19 @@ export default function CommunityPage() {
                   );
                 })}
               </div>
+
+              {items.length > 0 && items.length < (data?.total ?? 0) && (
+                <div className="flex justify-center mt-5">
+                  <button className="btn-secondary" disabled={moreLoading} onClick={loadMoreContents}>
+                    {moreLoading ? '加载中…' : `加载更多（还有 ${(data?.total ?? 0) - items.length} 条）`}
+                  </button>
+                </div>
+              )}
+              {moreError && (
+                <p role="alert" className="mt-3 text-center text-sm text-rose-600">
+                  {moreError} <button onClick={loadMoreContents} className="underline">重试</button>
+                </p>
+              )}
             </div>
 
             {/* 右侧栏 */}
