@@ -234,13 +234,13 @@ export default function LiveListPage() {
         )}
       </div>
 
-      {loading ? <Loading /> : null}
+      {loading && !rooms.length ? <Loading /> : null}
       {error ? <ErrorBox message={error} onRetry={reload} /> : null}
       {!loading && !rooms.length ? <Empty label="暂无可观看的直播" /> : null}
 
       {tab === 'recordings' && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5">
-          {recLoading ? <Loading /> : null}
+        <div className={`grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5 transition-opacity duration-200 ${recLoading && recData ? 'opacity-60' : 'opacity-100'}`}>
+          {recLoading && !recData ? <Loading /> : null}
           {(recData?.items || []).map((r: any) => (
             <Link key={r.roomId} href={`/media/${r.mediaId}`} className="glass rounded-2xl overflow-hidden card-hover">
               <div className="relative aspect-video bg-ink-900 flex items-center justify-center">
@@ -260,11 +260,13 @@ export default function LiveListPage() {
               </div>
             </Link>
           ))}
-          {!recLoading && !(recData?.items || []).length ? <Empty label="暂无直播回放" /> : null}
+          {recData && !(recData.items || []).length ? <Empty label="暂无直播回放" /> : null}
         </div>
       )}
 
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5">
+      {/* 切 Tab 时 useApi 留着旧的 rooms，列表是常驻的：不压暗的话
+          骨架叠在旧卡片下面，一屏两份内容 */}
+      <div className={`grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5 transition-opacity duration-200 ${loading && rooms.length ? 'opacity-60' : 'opacity-100'}`}>
         {rooms.map((r) => {
           const b = badgeOf(r);
           const isOwner = !!user && user.id === r.owner?.id;

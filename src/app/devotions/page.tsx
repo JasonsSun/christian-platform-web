@@ -359,9 +359,15 @@ export default function DevotionsPage() {
             </div>
 
             {/* 列表 */}
-            {error ? (
+            {/* 换月份/版本/关键词时 useApi 留着旧 data：整块门在 loading 上
+                就是「列表换成三张骨架再弹回来」。列表留着、压暗，
+                失败在还有结果时也报出来（原先 error 会直接把列表藏掉）。 */}
+            {error && items.length > 0 ? (
+              <p role="alert" className="text-rose-600 text-sm mb-3">{error}</p>
+            ) : null}
+            {error && items.length === 0 ? (
               <p role="alert" className="text-rose-600 text-sm">{error}</p>
-            ) : loading ? (
+            ) : loading && items.length === 0 ? (
               <div className="space-y-3">
                 {[0, 1, 2].map((i) => (
                   <div key={i} className="glass rounded-2xl p-5 h-24 animate-pulse border border-white/40" />
@@ -389,7 +395,7 @@ export default function DevotionsPage() {
                 )}
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className={`space-y-5 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
                 {grouped.map(([m, list]) => (
                   <div key={m}>
                     <p className="text-xs font-semibold text-ink-400 mb-2 px-1">{fmtMonth(m)}</p>

@@ -55,7 +55,7 @@ export default function BlockedUsersPage() {
         </div>
       )}
 
-      {loading && (
+      {loading && items.length === 0 && (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="bg-white rounded-2xl h-16 animate-pulse border border-ink-100" />
@@ -63,11 +63,19 @@ export default function BlockedUsersPage() {
         </div>
       )}
 
-      {error && (
+      {error && items.length === 0 && (
         <div className="text-center text-rose-600 py-10">
           <p>{error}</p>
           <button onClick={reload} className="btn-secondary mt-3">重试</button>
         </div>
+      )}
+
+      {/* 解除屏蔽会 reload()，旧列表还在：整块门在 !loading 上就是
+          「点一下取消，整张名单换成骨架再弹回来」 */}
+      {error && items.length > 0 && (
+        <p role="alert" className="mb-3 text-sm text-rose-600">
+          {error} <button onClick={reload} className="underline ml-1">重试</button>
+        </p>
       )}
 
       {!loading && !error && items.length === 0 && (
@@ -77,8 +85,8 @@ export default function BlockedUsersPage() {
         </div>
       )}
 
-      {!loading && !error && items.length > 0 && (
-        <div className="space-y-3">
+      {items.length > 0 && (
+        <div className={`space-y-3 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
           {items.map((u) => (
             <div key={u.id} className="bg-white rounded-2xl p-4 border border-ink-100 flex items-center gap-3">
               <span

@@ -132,17 +132,28 @@ export default function NotificationsPage() {
         </button>
       </div>
 
-      {loading && (
+      {/* 点「已读」「全部已读」都会 reload()，而 useApi 是留着旧 data 只抬 loading 的。
+          四块渲染全跟着 loading 拆掉，就是每点一次整张列表换成五张骨架再弹回来。
+          与后台 TableShell 的 busy 同一口径：列表留着，压暗。 */}
+      {loading && items.length === 0 && (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (<div key={i} className="bg-white rounded-2xl h-20 animate-pulse border border-ink-100" />))}
         </div>
       )}
 
-      {error && (
+      {error && items.length === 0 && (
         <div className="text-center py-12">
           <p className="text-rose-600 mb-3">{error}</p>
           <button onClick={reload} className="btn-secondary">重试</button>
         </div>
+      )}
+
+      {/* 列表还在屏幕上，失败就不能只写在空态里：点「全部已读」失败时
+          不报出来会变成「按了没反应」 */}
+      {error && items.length > 0 && (
+        <p role="alert" className="mb-3 text-sm text-rose-600">
+          {error} <button onClick={reload} className="underline ml-1">重试</button>
+        </p>
       )}
 
       {!loading && !error && items.length === 0 && (
@@ -155,7 +166,9 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      {!loading && !error && items.length > 0 && filtered.length === 0 && (
+      {/* 「该分类下暂无」也是一份结论，不能跟着 loading 拆：在 系统 分类下点「全部已读」，
+          旧列表是空的，这一句被 loading 撤掉后又换回一句「还没有通知」再换回来 */}
+      {items.length > 0 && !error && filtered.length === 0 && (
         <div className="text-center py-16 bg-white rounded-2xl border border-ink-100 shadow-soft">
           <div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3">
             <IconInbox className="w-7 h-7" strokeWidth={1.6} />
@@ -164,8 +177,8 @@ export default function NotificationsPage() {
         </div>
       )}
 
-      {!loading && !error && filtered.length > 0 && (
-        <div className="space-y-3">
+      {filtered.length > 0 && (
+        <div className={`space-y-3 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
           {filtered.map((n) => (
             <button
               key={n.id}

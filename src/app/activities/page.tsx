@@ -144,7 +144,7 @@ export default function ActivitiesPage() {
           </div>
         </div>
 
-        {loading && (
+        {loading && items.length === 0 && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="bg-white rounded-3xl h-72 animate-pulse border border-ink-100" />
@@ -152,13 +152,22 @@ export default function ActivitiesPage() {
           </div>
         )}
 
-        {error && (
+        {error && items.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
             <p className="text-rose-600">{error}</p>
             <button onClick={reload} className="btn-secondary">
               重试
             </button>
           </div>
+        )}
+
+        {/* 换城市/分类/关键词时 useApi 留着旧 data，整块门在 !loading 上就是
+            「整页换成骨架 → 弹回来」（与 /media /sermons 同一处缺陷）。
+            列表留着、压暗；失败也要在还有结果时说。 */}
+        {error && items.length > 0 && (
+          <p role="alert" className="mb-4 text-sm text-rose-600">
+            {error} <button onClick={reload} className="underline ml-1">重试</button>
+          </p>
         )}
 
         {!loading && !error && items.length === 0 && (
@@ -171,10 +180,10 @@ export default function ActivitiesPage() {
           </div>
         )}
 
-        {!loading && !error && items.length > 0 && (
+        {items.length > 0 && (
           <>
             <p className="text-sm text-ink-500 mb-4">共 {data?.total ?? items.length} 个活动</p>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className={`grid md:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-200 ${loading ? 'opacity-60' : 'opacity-100'}`}>
               {items.map((a) => (
                 <ActivityCard key={a.id} a={a} />
               ))}
