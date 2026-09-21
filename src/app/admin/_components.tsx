@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboard
 import type { ReviewTask } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
 import { useEscape } from '@/lib/a11y';
+import { contentStatusLabel } from '@/lib/labels';
 import {
   IconAlert,
   IconBan,
@@ -830,11 +831,13 @@ export function StatusBadge({ status }: { status: string }) {
     suspended: { tone: 'red', label: '已封禁' },
     published: { tone: 'green', label: '已发布' },
     pending: { tone: 'gold', label: '待审核' },
+    // 后台首页把待审内容直接喂进来，schema 里这个值叫 pending_review，漏了就印英文。
+    pending_review: { tone: 'gold', label: '待审核' },
     rejected: { tone: 'red', label: '已驳回' },
     draft: { tone: 'gray', label: '草稿' },
     approved: { tone: 'green', label: '已通过' },
   };
-  const m = map[status] || { tone: 'gray' as BadgeTone, label: status };
+  const m = map[status] || { tone: 'gray' as BadgeTone, label: contentStatusLabel(status) };
   return <Badge tone={m.tone}>{m.label}</Badge>;
 }
 

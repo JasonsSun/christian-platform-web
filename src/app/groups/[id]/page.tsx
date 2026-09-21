@@ -10,6 +10,7 @@ import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { timeAgo } from '@/lib/format';
+import { groupCategoryLabel } from '@/lib/labels';
 import type { Author, GroupItem } from '@/lib/types';
 import RichText from '@/components/RichText';
 import Portal from '@/components/Portal';
@@ -256,7 +257,7 @@ export default function GroupDetailPage() {
                 {data.category && (
                   <>
                     <span>·</span>
-                    <span>{data.category}</span>
+                    <span>{groupCategoryLabel(data.category)}</span>
                   </>
                 )}
               </div>

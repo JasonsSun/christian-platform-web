@@ -13,6 +13,7 @@ export const CONTENT_STATUS_LABEL: Record<string, string> = {
   rejected: '已驳回',
   active: '正常',
   suspended: '已封禁',
+  approved: '已通过',
 };
 
 export function contentStatusLabel(status?: string | null): string {
@@ -213,8 +214,53 @@ export const GROUP_CATEGORY_LABEL: Record<string, string> = {
   service: '服务',
   hobby: '兴趣',
   worship: '敬拜',
+  other: '其他',
 };
 
 export function groupCategoryLabel(category?: string | null): string {
   return GROUP_CATEGORY_LABEL[category || ''] || '团契';
+}
+
+/** 举报处理状态：schema 默认 open，队列里最常见的就是它 */
+export const REPORT_STATUS_LABEL: Record<string, string> = {
+  open: '待处理',
+  upheld: '已成立下架',
+  dismissed: '已驳回',
+};
+
+export function reportStatusLabel(status?: string | null): string {
+  if (!status) return '-';
+  return REPORT_STATUS_LABEL[status] || status;
+}
+
+/** 媒体处理任务名（media/[id] 详情里的流水线一行） */
+export const MEDIA_TASK_TYPE_LABEL: Record<string, string> = {
+  scan: '安全扫描',
+  transcode: '转码',
+  poster: '封面',
+  thumbnail: '缩略图',
+  audio_normalize: '音频标准化',
+  process: '处理',
+};
+
+export function mediaTaskTypeLabel(taskType?: string | null): string {
+  if (!taskType) return '-';
+  return MEDIA_TASK_TYPE_LABEL[taskType] || taskType;
+}
+
+/** 异步作业状态：media_tasks / 通知投递等共用 */
+export const JOB_STATUS_LABEL: Record<string, string> = {
+  pending: '排队中',
+  queued: '排队中',
+  running: '进行中',
+  done: '已完成',
+  succeeded: '已完成',
+  completed: '已完成',
+  failed: '失败',
+  skipped: '已跳过',
+};
+
+export function jobStatusLabel(status?: string | null): string {
+  if (!status) return '-';
+  return JOB_STATUS_LABEL[status] || status;
 }

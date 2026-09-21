@@ -6,7 +6,7 @@ import { apiDelete, apiPatch, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
-import { CONTENT_TYPE_LABEL } from '@/lib/labels';
+import { CONTENT_TYPE_LABEL, CONTENT_STATUS_LABEL } from '@/lib/labels';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import Portal from '@/components/Portal';
 import { AdminLayout, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, AdminSelect, Pagination, AccessState } from '../_components';
@@ -33,17 +33,12 @@ const STATUS_TABS = [
   { key: 'published', label: '已发布', tone: 'green' as const },
   { key: 'pending_review', label: '待审核', tone: 'gold' as const },
   { key: 'draft', label: '草稿', tone: 'gray' as const },
-  { key: 'rejected', label: '已下架', tone: 'red' as const },
+  { key: 'rejected', label: '已驳回', tone: 'red' as const },
 ];
 
 const TYPE_LABEL = CONTENT_TYPE_LABEL;
 
-const STATUS_LABEL: Record<string, string> = {
-  published: '已发布',
-  pending_review: '待审核',
-  draft: '草稿',
-  rejected: '已下架',
-};
+const STATUS_LABEL: Record<string, string> = CONTENT_STATUS_LABEL;
 
 export default function AdminContentsPage() {
   const { user, loading: authLoading } = useAuth();

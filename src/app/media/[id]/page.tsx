@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useApi } from '@/lib/useApi';
 import { apiPost } from '@/lib/api';
 import { formatDate, formatSize } from '@/lib/format';
+import { jobStatusLabel, mediaTaskTypeLabel } from '@/lib/labels';
 import { usePlayer, formatTime, type Track } from '@/lib/player';
 import { getProgress, resumableAt, saveProgress, clearProgress, touchRecent } from '@/lib/watchHistory';
 import { useBackgroundPlay, useMediaBackplay } from '@/lib/backplay';
@@ -309,9 +310,9 @@ export default function MediaDetailPage() {
                       )}
                     </span>
                     <span className="font-medium text-ink-700 w-24 flex-shrink-0">
-                      {{ scan: '安全扫描', transcode: '转码', poster: '封面', thumbnail: '缩略图', audio_normalize: '音频标准化', process: '处理' }[t.taskType] || t.taskType}
+                      {mediaTaskTypeLabel(t.taskType)}
                     </span>
-                    <span className="text-ink-500 flex-1">{t.output || t.error || t.status}</span>
+                    <span className="text-ink-500 flex-1">{t.output || t.error || jobStatusLabel(t.status)}</span>
                   </div>
                 ))}
               </div>

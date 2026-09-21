@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { formatDate } from '@/lib/format';
+import { GROUP_CATEGORY_LABEL } from '@/lib/labels';
 import {
   AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar,
 } from '../_components';
@@ -28,9 +29,9 @@ interface GroupDetail {
   members: GroupMember[];
 }
 
-const CATEGORY_LABEL: Record<string, string> = {
-  prayer: '祷告', study: '查经', worship: '敬拜', fellowship: '团契', service: '服侍', other: '其他',
-};
+// 前台 /groups 的筛选项就是这套词（读经 / 服务 / 兴趣…），后台原来另写了一份（查经 / 服侍），
+// 同一个团契在两边显示成两个分类名。
+const CATEGORY_LABEL: Record<string, string> = GROUP_CATEGORY_LABEL;
 const M_ROLE_LABEL: Record<string, string> = { owner: '团长', admin: '管理', moderator: '管理', member: '成员' };
 
 function Avatar({ name, color, size = 34 }: { name: string; color: string; size?: number }) {

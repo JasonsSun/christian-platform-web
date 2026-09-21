@@ -5,6 +5,7 @@ import { apiGet, apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
+import { reportStatusLabel } from '@/lib/labels';
 import { AdminLayout, Loading, Empty, ErrorBox, PageHead, AccessState } from '@/app/admin/_components';
 
 interface ReportItem {
@@ -207,7 +208,7 @@ function ReportCard({ report, onChanged }: { report: ReportItem; onChanged: () =
           <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
             report.status === 'upheld' ? 'bg-rose-50 text-rose-700' : 'bg-ink-100 text-ink-600'
           }`}>
-            {report.status === 'upheld' ? '已成立下架' : report.status === 'dismissed' ? '已驳回' : report.status}
+            {reportStatusLabel(report.status)}
           </span>
         </div>
       )}

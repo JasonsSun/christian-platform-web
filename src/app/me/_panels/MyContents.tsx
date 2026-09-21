@@ -6,6 +6,7 @@ import { useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { Glyph, IconChatDots, IconHeart } from '@/components/icons';
+import { contentStatusLabel } from '@/lib/labels';
 import type { ContentItem } from '@/lib/types';
 import { SkeletonGrid, ErrorBlock, EmptyBlock } from './shared';
 
@@ -65,7 +66,7 @@ export function MyContents() {
                 <span className="num">{c.commentCount}</span>
               </span>
               <span className="ml-auto px-2 py-0.5 rounded-full border border-ink-200 text-ink-500 whitespace-nowrap">
-                {c.status === 'published' ? '已发布' : c.status === 'pending_review' ? '审核中' : c.status}
+                {contentStatusLabel(c.status)}
               </span>
             </div>
           </Link>
