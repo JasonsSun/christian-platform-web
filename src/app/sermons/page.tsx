@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
+import { apiGet } from '@/lib/api';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { timeAgo } from '@/lib/format';
 import { IconMicWave, IconBookOpen, IconPlay, IconHeart } from '@/components/icons';
@@ -39,6 +40,9 @@ function fmtDur(s: number): string {
   return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
+/** 接口侧 pageSize 上限为 50 */
+const PAGE_SIZE = 24;
+
 export default function SermonsPage() {
   const { t, convert } = useI18n();
   const [q, setQ] = useState('');
@@ -46,13 +50,54 @@ export default function SermonsPage() {
   const [speaker, setSpeaker] = useState('');
   const [sort, setSort] = useState('new');
 
+  const query = `q=${encodeURIComponent(q)}&seriesId=${seriesId}&speaker=${encodeURIComponent(speaker)}&sort=${sort}`;
   const { data: seriesData } = useApi<{ items: { id: string; title: string }[] }>('/sermon-series');
-  const { data, loading, error, reload } = useApi<ListResp>(
-    `/sermons?q=${encodeURIComponent(q)}&seriesId=${seriesId}&speaker=${encodeURIComponent(speaker)}&sort=${sort}&pageSize=24`,
-    [q, seriesId, speaker, sort]
-  );
+  const { data, loading, error, reload } = useApi<ListResp>(`/sermons?${query}&pageSize=${PAGE_SIZE}`, [
+    q,
+    seriesId,
+    speaker,
+    sort,
+  ]);
 
-  const items = data?.items || [];
+  // 追加页与筛选条件绑定：换了系列/讲员却没清空追加项，列表里会混进上一次筛选的结果
+  const [extra, setExtra] = useState<Sermon[]>([]);
+  const [page, setPage] = useState(1);
+  const [moreLoading, setMoreLoading] = useState(false);
+  const [moreError, setMoreError] = useState<string | null>(null);
+  useEffect(() => {
+    setExtra([]);
+    setPage(1);
+    setMoreError(null);
+  }, [q, seriesId, speaker, sort]);
+
+  const items = useMemo(() => {
+    const seen = new Set<string>();
+    const out: Sermon[] = [];
+    for (const s of [...(data?.items || []), ...extra]) {
+      if (seen.has(s.id)) continue;
+      seen.add(s.id);
+      out.push(s);
+    }
+    return out;
+  }, [data, extra]);
+
+  const total = data?.total ?? 0;
+  const hasMore = items.length > 0 && items.length < total;
+
+  async function loadMore() {
+    setMoreLoading(true);
+    setMoreError(null);
+    try {
+      const r = await apiGet<ListResp>(`/sermons?${query}&page=${page + 1}&pageSize=${PAGE_SIZE}`);
+      setExtra((cur) => [...cur, ...(r.items || [])]);
+      setPage((p) => p + 1);
+    } catch (e: any) {
+      setMoreError(e?.message || '加载更多失败，请稍后重试');
+    } finally {
+      setMoreLoading(false);
+    }
+  }
+
   const speakers = data?.speakers || [];
 
   const titleEl = useMemo(() => convert(t('nav.sermons')), [t]);
@@ -100,7 +145,9 @@ export default function SermonsPage() {
       {loading ? (
         <div className="text-center text-ink-400 py-20">加载中…</div>
       ) : error ? (
-        <div className="text-center text-rose-600 py-20">{error}</div>
+        <div className="text-center text-rose-600 py-20">
+          {error} <button onClick={reload} className="underline ml-2">重试</button>
+        </div>
       ) : items.length === 0 ? (
         <div className="text-center text-ink-400 py-20">暂无讲道，敬请期待。</div>
       ) : (

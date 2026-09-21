@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
+import { apiGet } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { formatDate, formatSize } from '@/lib/format';
 import { usePlayer, formatTime } from '@/lib/player';
@@ -18,6 +19,9 @@ import {
   IconUpload,
 } from '@/components/icons';
 import type { MediaItem } from '@/lib/types';
+
+/** 首页与每次「加载更多」的条数：48 在 4 列布局下刚好铺满 12 行 */
+const PAGE_SIZE = 48;
 
 const KINDS = [
   { key: '', label: '全部' },
@@ -54,14 +58,54 @@ export default function MediaPage() {
   const [kind, setKind] = useState('');
   const [source, setSource] = useState('');
   const [q, setQ] = useState('');
+  const query = `kind=${kind}&source=${source}&q=${encodeURIComponent(q)}`;
   const { data, loading, error, reload } = useApi<{
     items: MediaItem[];
     total: number;
     byKind: { kind: string; label: string; c: number }[];
     bySource?: { source: string; c: number }[];
-  }>(`/media?kind=${kind}&source=${source}&q=${encodeURIComponent(q)}&pageSize=48`, [kind, source, q]);
+  }>(`/media?${query}&pageSize=${PAGE_SIZE}`, [kind, source, q]);
 
-  const items = data?.items || [];
+  // 追加的后续页：单独存，筛选一变就清空，否则会出现「全部」里混着「视频」的条目
+  const [extra, setExtra] = useState<MediaItem[]>([]);
+  const [page, setPage] = useState(1);
+  const [moreLoading, setMoreLoading] = useState(false);
+  const [moreError, setMoreError] = useState<string | null>(null);
+  useEffect(() => {
+    setExtra([]);
+    setPage(1);
+    setMoreError(null);
+  }, [kind, source, q]);
+
+  // 按 id 去重：第一页与追加页在两次请求之间有新增数据时会重叠
+  const items = useMemo(() => {
+    const seen = new Set<string>();
+    const out: MediaItem[] = [];
+    for (const m of [...(data?.items || []), ...extra]) {
+      if (seen.has(m.id)) continue;
+      seen.add(m.id);
+      out.push(m);
+    }
+    return out;
+  }, [data, extra]);
+
+  const total = data?.total ?? 0;
+  const hasMore = items.length > 0 && items.length < total;
+
+  async function loadMore() {
+    setMoreLoading(true);
+    setMoreError(null);
+    try {
+      const r = await apiGet<{ items: MediaItem[] }>(`/media?${query}&page=${page + 1}&pageSize=${PAGE_SIZE}`);
+      setExtra((cur) => [...cur, ...(r.items || [])]);
+      setPage((p) => p + 1);
+    } catch (e: any) {
+      setMoreError(e?.message || '加载更多失败，请稍后重试');
+    } finally {
+      setMoreLoading(false);
+    }
+  }
+
   const countOf = (k: string) => data?.byKind?.find((b) => b.kind === k)?.c ?? 0;
   const countSource = (s: string) => data?.bySource?.find((b) => b.source === s)?.c ?? 0;
 
@@ -226,6 +270,23 @@ export default function MediaPage() {
           ))}
         </div>
       )}
+
+      {!loading && !error && items.length > 0 ? (
+        <div className="mt-8 flex flex-col items-center gap-3">
+          {hasMore ? (
+            <button onClick={loadMore} disabled={moreLoading} className="btn-secondary">
+              {moreLoading ? '加载中…' : `加载更多（还有 ${Math.max(0, total - items.length)} 项）`}
+            </button>
+          ) : (
+            <p className="text-xs text-ink-400">已显示全部 {total} 项</p>
+          )}
+          {moreError && (
+            <p role="alert" className="text-xs text-rose-600">
+              {moreError} <button onClick={loadMore} className="underline ml-1">重试</button>
+            </p>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
