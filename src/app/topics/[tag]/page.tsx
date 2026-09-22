@@ -119,7 +119,8 @@ export default function TopicDetailPage() {
         <div className="absolute inset-0 mesh-bg opacity-70" />
         <div className="absolute inset-0 dot-grid opacity-25" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <Link href="/topics" className="inline-flex items-center gap-1.5 text-white/70 hover:text-white text-sm mb-4 transition-colors min-h-[44px]">
+          {/* w-fit 而不是 inline-flex：眉标也是行内盒，两个挨着的行内盒在 320px 下会挤进同一行叠在一起 */}
+          <Link href="/topics" className="flex w-fit items-center gap-1.5 text-white/70 hover:text-white text-sm mb-4 transition-colors min-h-[44px]">
             <IconArrowLeft className="w-4 h-4" strokeWidth={1.6} />
             返回话题广场
           </Link>
@@ -291,7 +292,7 @@ export default function TopicDetailPage() {
                             </p>
                           </div>
                         </Link>
-                        <div className="flex items-center gap-3 mt-4 text-sm text-ink-500">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-4 text-sm text-ink-500">
                           <span
                             className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
                             data-user-id={item.author?.id}
@@ -304,9 +305,9 @@ export default function TopicDetailPage() {
                           >
                             {(item.author?.displayName || item.author?.username || '?').slice(0, 1)}
                           </span>
-                          <span className="text-ink-700 font-medium">{item.author?.displayName}</span>
-                          <span className="text-ink-400">·</span>
-                          <span>{timeAgo(item.publishedAt || item.createdAt)}</span>
+                          <span className="text-ink-700 font-medium whitespace-nowrap">{item.author?.displayName}</span>
+                          <span className="text-ink-400" aria-hidden>·</span>
+                          <span className="whitespace-nowrap">{timeAgo(item.publishedAt || item.createdAt)}</span>
                           <div className="ml-auto flex items-center gap-4">
                             <span className="flex items-center gap-1">
                               <IconHeart className="w-4 h-4" strokeWidth={1.6} />

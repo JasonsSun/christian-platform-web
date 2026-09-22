@@ -244,21 +244,23 @@ export default function GroupDetailPage() {
             <IconArrowLeft className="w-4 h-4" strokeWidth={1.6} />
             返回团契列表
           </Link>
-          <div className="mt-2 flex items-start gap-4">
+          <div className="mt-2 flex flex-wrap items-start gap-4">
             <div className="w-20 h-20 rounded-3xl bg-white/15 backdrop-blur-sm flex items-center justify-center text-white flex-shrink-0 border border-white/25">
               <Glyph glyph={data.cover || '👥'} className="w-9 h-9" />
             </div>
-            <div className="flex-1 min-w-0">
+            {/* min-w 是给 320~390 的：不给下限，这一列会被右侧那颗 flex-shrink-0 的按钮挤到
+                只剩 140px，标题和简介就竖着一列一个字了。宁可让按钮掉到下一行。 */}
+            <div className="flex-1 min-w-[220px]">
               <h1 className="font-display text-2xl sm:text-3xl font-bold text-white">{data.name}</h1>
               <p className="text-white/80 mt-2 text-sm leading-relaxed">{data.description}</p>
-              <div className="flex items-center gap-3 mt-3 text-white/70 text-sm">
-                <span><span className="num font-semibold text-white/90">{data.memberCount}</span> 成员</span>
-                <span>·</span>
-                <span>{data.city || '线上'}</span>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-white/70 text-sm">
+                <span className="whitespace-nowrap"><span className="num font-semibold text-white/90">{data.memberCount}</span> 成员</span>
+                <span aria-hidden>·</span>
+                <span className="whitespace-nowrap">{data.city || '线上'}</span>
                 {data.category && (
                   <>
-                    <span>·</span>
-                    <span>{groupCategoryLabel(data.category)}</span>
+                    <span aria-hidden>·</span>
+                    <span className="whitespace-nowrap">{groupCategoryLabel(data.category)}</span>
                   </>
                 )}
               </div>

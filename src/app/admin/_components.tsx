@@ -406,7 +406,9 @@ export function PageHead({
 }) {
   return (
     <div className="flex items-end justify-between gap-3 flex-wrap mb-5 lg:mb-6">
-      <div className="flex-1 min-w-0">
+      {/* 这里不能写 min-w-0：flex-1 的基准是 0，右侧 actions 又是 shrink-0，
+          320px 下标题列会被压到 50px 宽，「审核队列」竖着一行一个字。给个下限让它换行。 */}
+      <div className="flex-1 min-w-[160px]">
         {eyebrow ? <div className="eyebrow mb-1.5">{eyebrow}</div> : null}
         <h1 className="font-display text-2xl font-bold text-ink-900 flex items-center gap-3">
           <span

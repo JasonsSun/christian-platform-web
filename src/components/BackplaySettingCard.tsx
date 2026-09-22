@@ -20,9 +20,9 @@ export default function BackplaySettingCard() {
       <div className="flex items-start gap-4">
         <div className="w-10 h-10 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0"><IconMoon className="w-5 h-5" strokeWidth={1.7} /></div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h2 className="font-semibold text-ink-900">后台播放</h2>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${enabled ? 'bg-primary-50 text-primary-600' : 'bg-ink-100 text-ink-600'}`}>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h2 className="font-semibold text-ink-900 whitespace-nowrap">后台播放</h2>
+            <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${enabled ? 'bg-primary-50 text-primary-600' : 'bg-ink-100 text-ink-600'}`}>
               {enabled ? '息屏继续播放' : '息屏立即停止'}
             </span>
           </div>

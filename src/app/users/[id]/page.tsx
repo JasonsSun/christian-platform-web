@@ -39,8 +39,8 @@ function ContentCard({ item }: { item: ContentItem }) {
       <div className="flex-1 min-w-0">
         <h2 className="font-display font-bold text-lg text-ink-900 truncate">{item.title}</h2>
         <p className="text-sm text-ink-500 line-clamp-2 mt-1">{item.excerpt || item.body?.slice(0, 80)}</p>
-        <div className="flex items-center gap-4 mt-3 text-sm text-ink-500">
-          <span>{timeAgo(item.publishedAt || item.createdAt)}</span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-ink-500">
+          <span className="whitespace-nowrap">{timeAgo(item.publishedAt || item.createdAt)}</span>
           <span className="flex items-center gap-1">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
             <span className="sr-only">点赞</span>{item.likeCount}

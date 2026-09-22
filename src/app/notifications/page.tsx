@@ -71,9 +71,9 @@ export default function NotificationsPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* 头部 */}
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex flex-wrap items-center justify-between gap-y-2 mb-5">
         <div className="flex items-center gap-3">
-          <h1 className="font-display text-2xl font-bold text-ink-900">通知中心</h1>
+          <h1 className="font-display text-2xl font-bold text-ink-900 whitespace-nowrap">通知中心</h1>
           {unreadCount > 0 && (
             <span className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-1.5 rounded-full bg-rose-600 text-white text-xs font-semibold">
               {unreadCount > 99 ? '99+' : unreadCount}

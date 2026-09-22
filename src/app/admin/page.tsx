@@ -187,8 +187,7 @@ export default function AdminDashboard() {
             {growthTotal === 0 ? (
               <p className="absolute inset-x-0 top-[38%] px-2 text-center text-xs text-ink-500">
                 近 7 天没有新注册，平台冷启动阶段属正常
-                <Link href="/admin/users" className="text-primary-600 hover:underline ml-1 py-3 -my-3">看用户管理</Link>
-                的存量构成
+                <Link href="/admin/users" className="text-primary-600 hover:underline ml-1 py-3 -my-3 whitespace-nowrap">看用户管理的存量构成</Link>
               </p>
             ) : null}
           </div>

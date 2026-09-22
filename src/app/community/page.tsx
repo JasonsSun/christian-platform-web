@@ -349,11 +349,11 @@ export default function CommunityPage() {
                           </p>
                         </div>
                       </Link>
-                      <div className="flex items-center gap-3 mt-4 text-sm text-ink-500">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-4 text-sm text-ink-500">
                         <Avatar user={item.author} size={28} />
-                        <span className="text-ink-700 font-medium">{item.author.displayName}</span>
-                        <span className="text-ink-400">·</span>
-                        <span>{timeAgo(item.publishedAt || item.createdAt)}</span>
+                        <span className="text-ink-700 font-medium whitespace-nowrap">{item.author.displayName}</span>
+                        <span className="text-ink-400" aria-hidden>·</span>
+                        <span className="whitespace-nowrap">{timeAgo(item.publishedAt || item.createdAt)}</span>
                         <div className="ml-auto flex items-center gap-4">
                           <button
                             onClick={() => handleLike(item)}

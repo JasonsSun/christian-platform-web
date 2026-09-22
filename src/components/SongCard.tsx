@@ -23,7 +23,7 @@ export default function SongCard({
   const meta = audioTypeMeta(s.audioType);
   const listen = vocalListenTarget(s);
   return (
-    <div className="group relative bg-white rounded-2xl p-4 shadow-soft hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5 border border-ink-100 hover:border-gold-200 flex items-center gap-4">
+    <div className="group relative bg-white rounded-2xl p-4 shadow-soft hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5 border border-ink-100 hover:border-gold-200 flex flex-wrap items-center gap-x-4 gap-y-2">
       {/* 整卡可点用「铺满式链接」实现：交互元素不能嵌套在 <a> 里，试听/投稿按钮要留在链接外面（靠 z-10 盖回上层） */}
       <Link
         href={`/songs/${s.id}`}
@@ -34,7 +34,9 @@ export default function SongCard({
         <IconMusicNote className="w-6 h-6" strokeWidth={1.7} />
         <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-gold-400/0 group-hover:bg-gold-300/70 transition-colors blur-[1px]" />
       </div>
-      <div className="flex-1 min-w-0">
+      {/* min-w 配上面的 flex-wrap：不给下限，320 下这一列会被右边的试听按钮和播放量
+          （都是 shrink-0）压到 60 来像素，歌名竖着一行一个字。宁可让按钮掉到下一行。 */}
+      <div className="flex-1 min-w-[160px]">
         <p className="font-semibold text-ink-900 group-hover:text-gold-600 transition-colors truncate">{s.title}</p>
         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span className="text-xs text-ink-500 truncate">{s.author}</span>
