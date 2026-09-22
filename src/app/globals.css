@@ -673,6 +673,22 @@ html, body {
   html.has-player footer { padding-bottom: 128px; }
 }
 
+/* 勾选框要点得准只能靠包它的那层借热区：方框按站点惯例画成 h-5 w-5 = 20px，
+   实测拇指打得到的就是 21×20，偏一格落到行里别的东西上。
+   给 input 自己加 padding 是无效的 —— Blink 会把非 appearance:none 的表单控件 padding 归零
+   （规则确实命中了，计算样式仍是 padding:0px），::after 也不行（不生成伪元素）。
+   所以热区加在 <label> 上：点 label 的任意位置都会切换里面的控件，
+   负 margin 抵掉 padding，外框尺寸与对齐一点没变，方框视觉上也没长大。 */
+.tap-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 0.5rem;
+  margin: -0.5rem;
+  cursor: pointer;
+}
+
 /* 移动端全局优化：更大点击热区 + 禁用长按选中导致的误操作 */
 @media (max-width: 767px) {
   html { -webkit-text-size-adjust: 100%; }

@@ -201,13 +201,15 @@ export default function AdminContentsPage() {
               <thead className="bg-ink-50 text-ink-600">
                 <tr className="whitespace-nowrap">
                   <th scope="col" className="w-10 px-3 py-3">
-                    <input
-                      aria-label="全选本页内容"
-                      type="checkbox"
-                      className="h-5 w-5 align-middle cursor-pointer"
-                      checked={allChecked}
-                      onChange={() => setSelected(allChecked ? [] : items.map((i) => i.id))}
-                    />
+                    <label className="tap-box align-middle">
+                      <input
+                        aria-label="全选本页内容"
+                        type="checkbox"
+                        className="h-5 w-5"
+                        checked={allChecked}
+                        onChange={() => setSelected(allChecked ? [] : items.map((i) => i.id))}
+                      />
+                    </label>
                   </th>
                   <Th>标题</Th>
                   <Th className="w-24">作者</Th>
@@ -222,7 +224,9 @@ export default function AdminContentsPage() {
                 {items.map((c) => (
                   <tr key={c.id} className="border-t border-ink-100 hover:bg-ink-50/60">
                     <td className="px-3 py-3">
-                      <input aria-label={`选择内容「${c.title}」`} type="checkbox" className="h-5 w-5 align-middle cursor-pointer" checked={selected.includes(c.id)} onChange={() => toggle(c.id)} />
+                      <label className="tap-box align-middle">
+                        <input aria-label={`选择内容「${c.title}」`} type="checkbox" className="h-5 w-5" checked={selected.includes(c.id)} onChange={() => toggle(c.id)} />
+                      </label>
                     </td>
                     <td className="px-3 py-3">
                       <Link href={`/contents/${c.id}`} className="font-medium text-ink-800 hover:text-primary-600 line-clamp-1 py-3 -my-3">

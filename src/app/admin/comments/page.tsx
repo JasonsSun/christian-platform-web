@@ -117,13 +117,17 @@ export default function AdminCommentsPage() {
             {items.map((c) => (
               <div key={c.id} className="hair-top bg-white rounded-2xl p-4 border border-ink-100 shadow-soft">
                 <div className="flex items-start gap-3">
-                  <input
-                    aria-label={`选择 ${c.author.displayName} 的评论`}
-                    type="checkbox"
-                    checked={selected.includes(c.id)}
-                    onChange={() => setSelected((s) => (s.includes(c.id) ? s.filter((x) => x !== c.id) : [...s, c.id]))}
-                    className="mt-1 h-5 w-5 flex-shrink-0 cursor-pointer"
-                  />
+                  {/* .tap-box 的负 margin 是不带 !important 的层外规则，站里的 mt-1 顶不过它，
+                      所以这 4px 微调直接去掉：方框改为与首行文字顶对齐，实测更好看。 */}
+                  <label className="tap-box">
+                    <input
+                      aria-label={`选择 ${c.author.displayName} 的评论`}
+                      type="checkbox"
+                      checked={selected.includes(c.id)}
+                      onChange={() => setSelected((s) => (s.includes(c.id) ? s.filter((x) => x !== c.id) : [...s, c.id]))}
+                      className="h-5 w-5"
+                    />
+                  </label>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500 mb-1.5">
                       <span className="inline-flex items-center gap-1.5 min-w-0">
@@ -138,7 +142,7 @@ export default function AdminCommentsPage() {
                       <span>·</span>
                       <span>
                         评论于{' '}
-                        <Link href={`/contents/${c.content.id}`} className="text-primary-600 hover:underline py-2 -my-2">
+                        <Link href={`/contents/${c.content.id}`} className="text-primary-600 hover:underline py-2.5 -my-2.5">
                           {c.content.title}
                         </Link>
                       </span>
