@@ -43,6 +43,7 @@ function Avatar({ m, size = 32 }: { m: Member; size?: number }) {
   return (
     <span
       className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
+      data-user-id={m.id}
       style={{
         backgroundColor: m.avatarColor || '#3d52d9',
         width: size,
@@ -80,7 +81,7 @@ export default function GovernanceTeam() {
             className="rounded-2xl border p-4"
             style={{ backgroundColor: `${ADMIN_BADGE.color}12`, borderColor: `${ADMIN_BADGE.color}44` }}
           >
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
               <span className="text-lg" aria-hidden>
                 {ADMIN_BADGE.icon}
               </span>
@@ -94,7 +95,7 @@ export default function GovernanceTeam() {
                 {admins.map((a) => (
                   <Link
                     key={a.id}
-                    href={`/u/${a.username}`}
+                    href={`/users/${a.id}`}
                     className="flex items-center gap-2 rounded-xl bg-ui-surface px-2.5 py-1.5 hover:bg-white transition"
                   >
                     <Avatar m={a} size={26} />
@@ -113,7 +114,7 @@ export default function GovernanceTeam() {
                 className="rounded-2xl border border-ink-100 p-4 flex flex-col"
                 style={{ borderTopColor: m.color, borderTopWidth: 3 }}
               >
-                <div className="flex items-center gap-2 mb-1.5">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1.5">
                   <span className="inline-flex" aria-hidden>
                     <Glyph glyph={m.icon} className="w-5 h-5" strokeWidth={1.7} style={{ color: m.color }} />
                   </span>
@@ -128,7 +129,7 @@ export default function GovernanceTeam() {
                     {m.moderators.map((p) => (
                       <Link
                         key={p.id}
-                        href={`/u/${p.username}`}
+                        href={`/users/${p.id}`}
                         className="flex items-center gap-2 rounded-xl hover:bg-ink-50 px-1.5 py-1 transition -mx-1.5"
                       >
                         <Avatar m={p} size={26} />

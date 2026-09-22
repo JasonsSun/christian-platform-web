@@ -323,6 +323,7 @@ export default function GroupPlans({
                       <div key={m.userId} className="flex items-center gap-3">
                         <span
                           className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
+                          data-user-id={m.userId}
                           style={{
                             backgroundColor: m.avatarColor || '#3d52d9',
                             width: 32,
