@@ -138,7 +138,7 @@ export default function SongsPage() {
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 md:mb-6 text-glow">赞美诗歌</h1>
           <p className="text-base sm:text-xl text-white/95 max-w-2xl mx-auto mb-6 md:mb-8 font-serif italic">
-            "我要向耶和华歌唱，称颂他的大名。" —— 诗篇 66:2
+            “我要向耶和华歌唱，称颂他的大名。” —— 诗篇 66:2
           </p>
 
           {isList && (

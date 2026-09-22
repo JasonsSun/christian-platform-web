@@ -207,7 +207,7 @@ export default function BibleHome() {
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 md:mb-6">在线圣经</h1>
           <p className="text-base sm:text-xl text-white/70 max-w-2xl mx-auto mb-6 md:mb-8 font-serif italic">
-            "你的话是我脚前的灯，是我路上的光。" —— 诗篇 119:105
+            “你的话是我脚前的灯，是我路上的光。” —— 诗篇 119:105
           </p>
 
           <form
@@ -642,9 +642,12 @@ export default function BibleHome() {
                         key={b.id}
                         href={`/bible/${activeVersion}/${b.id}`}
                         data-spot
-                        className="spot group bg-white rounded-2xl p-4 shadow-soft hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 border border-ink-100 hover:border-primary-200"
+                        className="spot group bg-white rounded-2xl p-3.5 sm:p-4 shadow-soft hover:shadow-card-hover transition-all duration-300 hover:-translate-y-1 border border-ink-100 hover:border-primary-200"
                       >
-                        <div className="font-display font-semibold text-ink-900 group-hover:text-primary-600 transition-colors">
+                        {/* 320px 下两列卡片只剩 110px 内容宽，而「帖撒罗尼迦前书」是 7 个全角字：
+                            16px 会裂成 6+1，末尾孤零零吊一个「书」。缩到 15px 让它留在一行，
+                            text-balance 兜底 —— 万一还是换行，也切成 4+3 而不是 6+1。 */}
+                        <div className="font-display font-semibold text-[15px] leading-snug text-balance sm:text-base text-ink-900 group-hover:text-primary-600 transition-colors">
                           {b.name}
                         </div>
                         <div className="flex items-center justify-between mt-2">
