@@ -101,7 +101,7 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
         setTimeout(() => setAttempt((n) => n + 1), 1500);
       } else {
         setState('error');
-        setErrMsg('播放出错,请刷新重试');
+        setErrMsg('播放出错，请刷新重试');
       }
     };
 
@@ -170,7 +170,7 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
         }
 
         setState('error');
-        setErrMsg('播放出错,请刷新重试');
+        setErrMsg('播放出错，请刷新重试');
       });
     };
 
@@ -197,7 +197,7 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
     setup().catch(() => {
       if (!cancelled) {
         setState('error');
-        setErrMsg('播放器加载失败,请刷新重试');
+        setErrMsg('播放器加载失败，请刷新重试');
       }
     });
 
@@ -324,7 +324,7 @@ export function HlsPlayer({ src, poster, live, className }: Props) {
               <p className="text-white/90 text-sm">
                 {state === 'loading' ? '正在连接直播…' : '等待主播开播…'}
               </p>
-              {live && <p className="text-white/50 text-xs">直播即将开始,请稍候</p>}
+              {live && <p className="text-white/50 text-xs">直播即将开始，请稍候</p>}
             </>
           )}
         </div>

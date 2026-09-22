@@ -51,7 +51,7 @@ export default function SpeechMiniCard({ raised = false }: { raised?: boolean })
                   : '已暂停'}
             </span>
             {!s.backplayable && s.state !== 'loading' ? (
-              <span className="shrink-0 text-[10px] px-1 rounded bg-amber-50 text-amber-700" title="本机语音在息屏后会被系统挂起;开启后台播放后改用在线语音即可息屏续听">
+              <span className="shrink-0 text-[10px] px-1 rounded bg-amber-50 text-amber-700" title="本机语音在息屏后会被系统挂起；开启后台播放后改用在线语音即可息屏续听">
                 息屏暂停
               </span>
             ) : null}

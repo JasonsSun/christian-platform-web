@@ -85,7 +85,7 @@ export default function LiveListPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-ink-900">直播</h1>
-          <p className="text-sm text-ink-500 mt-1">主日崇拜、祷告会、特会,与弟兄姐妹实时相聚。</p>
+          <p className="text-sm text-ink-500 mt-1">主日崇拜、祷告会、特会，与弟兄姐妹实时相聚。</p>
         </div>
         {user && (
           <button className="btn-primary" onClick={() => setShowCreate((v) => !v)}>

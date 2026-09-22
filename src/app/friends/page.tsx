@@ -230,7 +230,7 @@ export default function FriendsPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">弟兄姐妹</h1>
-      <p className="text-ink-500 mb-6">发现、关注并加好友,建立更紧密的信仰同行关系</p>
+      <p className="text-ink-500 mb-6">发现、关注并加好友，建立更紧密的信仰同行关系</p>
 
       {/* Tabs */}
       <div className="flex gap-2 mb-6 border-b border-ink-200">
@@ -320,7 +320,7 @@ export default function FriendsPage() {
           {friends.loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
           {friends.error && <div className="text-center py-12"><p className="text-rose-600 mb-3">{friends.error}</p><button onClick={friends.reload} className="btn-secondary">重试</button></div>}
           {!friends.loading && !friends.error && (friends.data?.items?.length ?? 0) === 0 && (
-            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3"><IconHandshake className="w-7 h-7" strokeWidth={1.6} /></div><p className="text-ink-600">还没有好友,去「发现」里加好友吧</p></div>
+            <div className="text-center py-16"><div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3"><IconHandshake className="w-7 h-7" strokeWidth={1.6} /></div><p className="text-ink-600">还没有好友，去「发现」里加好友吧</p></div>
           )}
           {!friends.loading && !friends.error && (friends.data?.items?.length ?? 0) > 0 && (
             <div className="grid sm:grid-cols-2 gap-4">

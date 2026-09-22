@@ -79,7 +79,7 @@ export default function QuotaCard({ data, compact = false }: { data: QuotaData; 
           <div className="text-xs text-gold-700 mt-1.5">升级后:{next.gains}</div>
         </div>
       ) : (
-        <div className="mt-4 text-xs text-gold-700">已达最高等级,享有全部上传权益</div>
+        <div className="mt-4 text-xs text-gold-700">已达最高等级，享有全部上传权益</div>
       )}
 
       {!compact ? (

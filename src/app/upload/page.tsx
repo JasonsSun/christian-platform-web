@@ -102,7 +102,7 @@ export default function UploadPage() {
         else setError(j?.message || `上传失败(${xhr.status})`);
       } catch { setError(`上传失败(${xhr.status})`); }
     };
-    xhr.onerror = () => { setBusy(false); setError('网络错误,上传失败'); };
+    xhr.onerror = () => { setBusy(false); setError('网络错误，上传失败'); };
     xhr.send(fd);
   }
 
@@ -123,7 +123,7 @@ export default function UploadPage() {
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="font-display text-3xl font-bold text-ink-900">上传文件</h1>
-      <p className="text-ink-500 mt-1 text-sm mb-5">上传后的文件需经管理员审核,通过后才会在「媒体与资料」公开展示</p>
+      <p className="text-ink-500 mt-1 text-sm mb-5">上传后的文件需经管理员审核，通过后才会在「媒体与资料」公开展示</p>
 
       {quota ? <QuotaCard data={quota} /> : (
         <div className="glass rounded-2xl p-5 mb-5 text-sm text-ink-400">正在计算你的上传额度…</div>
@@ -228,7 +228,7 @@ export default function UploadPage() {
         <div className="mt-6 glass rounded-2xl p-6 shadow-soft border border-emerald-100">
           <div className="flex items-center gap-2 mb-3">
             <IconCheck className="w-6 h-6 text-emerald-600" strokeWidth={2} />
-            <span className="font-medium text-ink-900">上传成功,已进入审核队列</span>
+            <span className="font-medium text-ink-900">上传成功，已进入审核队列</span>
             <span className="ml-auto px-2.5 py-0.5 rounded-full bg-gold-100 text-gold-800 text-xs">待审核</span>
           </div>
           <div className="text-sm text-ink-600">

@@ -35,9 +35,9 @@ function VocalWantedCard({ song, onSubmit }: { song: SongDetail; onSubmit: () =>
       </p>
       <p className="text-white/60 text-xs leading-relaxed mb-3">
         {song.audioType === 'instrumental'
-          ? '平台上这首目前只有纯伴奏音频,没有人声演唱。'
-          : '平台上这首目前只有歌词,还没有任何音频。'}
-        你可以先在线听别处的演唱版,也欢迎上传你自己或诗班的录音——审核通过后,大家会优先听到人声版本。
+          ? '平台上这首目前只有纯伴奏音频，没有人声演唱。'
+          : '平台上这首目前只有歌词，还没有任何音频。'}
+        你可以先在线听别处的演唱版，也欢迎上传你自己或诗班的录音——审核通过后，大家会优先听到人声版本。
       </p>
       <div className="flex flex-wrap gap-2">
         <a
@@ -57,7 +57,7 @@ function VocalWantedCard({ song, onSubmit }: { song: SongDetail; onSubmit: () =>
         </button>
       </div>
       <p className="text-white/70 text-[11px] mt-3 leading-relaxed">
-        平台不转载版权录音:试听会跳转到 {target.source} 播放
+        平台不转载版权录音：试听会跳转到 {target.source} 播放
         {target.verified ? '（该链接已由管理员核实是人声演唱）' : ',请自行挑选演唱版本'};
         上传的录音请确保你拥有版权或已获授权。
       </p>

@@ -123,11 +123,11 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
     ? room.cancelled
       ? (room.cancelReason ? `该直播间已被取消:${room.cancelReason}` : '该直播间已被取消')
       : room.expired
-        ? '已过约定开播时间,该直播间已过期,无法开播'
+        ? '已过约定开播时间，该直播间已过期，无法开播'
         : room.reviewStatus === 'pending'
-          ? '直播间审核中,请等待管理员通过后再开播'
+          ? '直播间审核中，请等待管理员通过后再开播'
           : room.reviewStatus === 'rejected'
-            ? (room.reviewNote ? `直播间未通过审核:${room.reviewNote}` : '直播间未通过审核,无法开播')
+            ? (room.reviewNote ? `直播间未通过审核:${room.reviewNote}` : '直播间未通过审核，无法开播')
             : null
     : null;
 
@@ -276,7 +276,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
   async function startLive() {
     const r = await run(() => apiPost(`/live/${id}/start`));
     if (r) { notice.success('已开始直播'); reload(); }
-    else notice.error('开播失败,请查看提示');
+    else notice.error('开播失败，请查看提示');
   }
   async function endLive() {
     confirmNav({
@@ -300,8 +300,8 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
     confirmNav({
       title: force ? '强制关闭并取消直播' : '取消本场直播',
       desc: force
-        ? `将立即结束「${room.title}」并标记取消,观众看到「已取消」。用于直播内容违规等紧急情况。`
-        : `取消后「${room.title}」将不再对外展示,数据保留。如需再播请新建一场。`,
+        ? `将立即结束「${room.title}」并标记取消，观众看到「已取消」。用于直播内容违规等紧急情况。`
+        : `取消后「${room.title}」将不再对外展示，数据保留。如需再播请新建一场。`,
       danger: true,
       confirmText: force ? '强制关闭' : '确认取消',
       cancelText: '再想想',
@@ -363,7 +363,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               <div className="relative aspect-video bg-ink-900/90 rounded-xl flex flex-col items-center justify-center text-center px-6">
                 <IconLock className="w-14 h-14 mb-3 text-white/70" strokeWidth={1.4} />
                 <p className="text-white/90 font-medium">无权限观看直播</p>
-                <p className="text-white/50 text-sm mt-1">仅主播本人与超管可观看进行中的直播;回放视频所有人可看。</p>
+                <p className="text-white/50 text-sm mt-1">仅主播本人与超管可观看进行中的直播；回放视频所有人可看。</p>
               </div>
             ) : (
               <HlsPlayer src={null} poster={room.coverUrl} live={false} />
@@ -461,12 +461,12 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
           {/* 状态横幅:取消/过期/审核中/驳回 */}
           {room.cancelled ? (
             <div className="rounded-xl px-4 py-3 bg-ink-100/80 border border-ink-200 text-sm text-ink-600">
-              该直播间已取消{room.cancelReason ? `:「${room.cancelReason}」` : ''}。数据保留,不再对外展示。
+              该直播间已取消{room.cancelReason ? `:「${room.cancelReason}」` : ''}。数据保留，不再对外展示。
             </div>
           ) : null}
           {room.expired && !room.cancelled ? (
             <div className="rounded-xl px-4 py-3 bg-ink-100/80 border border-ink-200 text-sm text-ink-600">
-              已过约定开播时间,该直播间已过期,无法再开播。如需直播请新建一场。
+              已过约定开播时间，该直播间已过期，无法再开播。如需直播请新建一场。
             </div>
           ) : null}
           {room.reviewStatus === 'pending' && !room.cancelled ? (
@@ -491,7 +491,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
           {(canManage || canSeeGuide) && (
             <div className="glass rounded-2xl p-5 space-y-3">
               {!canManage && canSeeGuide && (
-                <p className="text-sm text-ink-500">审核员视角:您可查看开播指南,但不具备开播与推流权限。</p>
+                <p className="text-sm text-ink-500">审核员视角：您可查看开播指南，但不具备开播与推流权限。</p>
               )}
 
               {/* 开播 / 推流 / 管理:仅主播本人 + 超管(不含审核员) */}
@@ -536,10 +536,10 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                       ? <Link href={`/media/${room.recordingMediaId}`} className="btn-secondary text-sm"><IconFilm className="w-4 h-4 shrink-0" strokeWidth={1.8} />查看录像</Link>
                       : recordTimeout
                         ? <span className="text-xs text-ink-400">本次未生成录像（服务端未录制或时长过短），可在管理台手动上传回放</span>
-                        : <span className="text-xs text-amber-700 inline-flex items-center gap-1"><IconHourglass className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />录像生成中,自动刷新…</span>
+                        : <span className="text-xs text-amber-700 inline-flex items-center gap-1"><IconHourglass className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />录像生成中，自动刷新…</span>
                   )}
                   {room.recordEnabled && room.status !== 'ended' && (
-                    <span className="text-xs text-ink-400">本场已开启保存录像,结束后自动入库审核</span>
+                    <span className="text-xs text-ink-400">本场已开启保存录像，结束后自动入库审核</span>
                   )}
                   {isStaff && !isOwner && (
                     <Link href="/admin/live" className="text-xs text-ink-400 hover:text-ink-600 ml-auto">批量管理 →</Link>
@@ -561,7 +561,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                   </div>
                   <p className="text-xs text-ink-400">
                     也可直接把完整地址 <code className="text-emerald-200">{room.rtmpUrl}</code> 作为服务器填入(串流密钥留空)。
-                    直播地址随机生成,他人无法猜到。
+                    直播地址随机生成，他人无法猜到。
                   </p>
                 </div>
               )}
@@ -569,7 +569,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               {/* 开播后:展示直播间链接,方便主播分享给会友 */}
               {canManage && room.live && (
                 <div className="text-sm space-y-2 border-t border-ink-100 pt-3">
-                  <p className="text-ink-500">本场正在直播,把下面的链接发给会友即可观看:</p>
+                  <p className="text-ink-500">本场正在直播，把下面的链接发给会友即可观看：</p>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 bg-ink-900 text-sky-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">
                       {typeof window !== 'undefined' ? `${window.location.origin}/live/${room.id}` : `/live/${room.id}`}
@@ -592,8 +592,8 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
           <div className="px-4 py-3 border-b border-ink-100 font-semibold text-ink-900">直播聊天</div>
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
             {room.cancelled ? (
-              <p className="text-sm text-ink-400">该直播间已取消,聊天已关闭。</p>
-            ) : messages.length === 0 ? <p className="text-sm text-ink-400">还没有人发言,来抢沙发~</p> : null}
+              <p className="text-sm text-ink-400">该直播间已取消，聊天已关闭。</p>
+            ) : messages.length === 0 ? <p className="text-sm text-ink-400">还没有人发言，来抢沙发~</p> : null}
             {messages.map((m) => {
               const mine = !!user?.id && !!m.userId && m.userId === user.id;
               return (

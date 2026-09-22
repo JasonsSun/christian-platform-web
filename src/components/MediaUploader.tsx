@@ -187,7 +187,7 @@ export function MediaUploader({
         }
       };
 
-      xhr.onerror = () => updateItem(item.id, { status: 'error', error: '网络错误,上传失败' });
+      xhr.onerror = () => updateItem(item.id, { status: 'error', error: '网络错误，上传失败' });
       xhr.onabort = () => updateItem(item.id, { status: 'error', error: '已取消上传' });
 
       xhr.send(fd);

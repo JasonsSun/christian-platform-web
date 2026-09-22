@@ -60,7 +60,7 @@ export default function AdminLivePage() {
   async function review(id: string, approve: boolean, note: string) {
     const r = await run(() => apiPost(`/live/${id}/review`, { approve, note: note || undefined }));
     if (r) {
-      notice.success(approve ? '已通过审核,直播间可以开播' : '已驳回该直播间');
+      notice.success(approve ? '已通过审核，直播间可以开播' : '已驳回该直播间');
       reload();
     }
   }
@@ -69,7 +69,7 @@ export default function AdminLivePage() {
       title: approve ? `通过「${r.title}」` : `驳回「${r.title}」`,
       desc: approve
         ? '通过后该直播间即可开始推流。'
-        : '驳回后创建者无法开播,并会在直播页看到驳回原因。',
+        : '驳回后创建者无法开播，并会在直播页看到驳回原因。',
       danger: !approve,
       confirmText: approve ? '通过' : '驳回',
       cancelText: '再想想',
@@ -85,8 +85,8 @@ export default function AdminLivePage() {
     confirmNav({
       title: force ? '强制关闭并取消直播' : '取消该直播间',
       desc: force
-        ? `将立即结束「${r.title}」并标记取消,观众看到「已取消」。用于直播内容违规等紧急情况。`
-        : `「${r.title}」将不再对外展示,数据保留。创建者如需再播请新建一场。`,
+        ? `将立即结束「${r.title}」并标记取消，观众看到「已取消」。用于直播内容违规等紧急情况。`
+        : `「${r.title}」将不再对外展示，数据保留。创建者如需再播请新建一场。`,
       danger: true,
       confirmText: force ? '强制关闭' : '确认取消',
       cancelText: '再想想',
@@ -122,7 +122,7 @@ export default function AdminLivePage() {
       <PageHead
         eyebrow="活动 · 直播"
         title="直播管理"
-        sub={<>审核直播间、强制关闭违规直播、取消预约。取消/过期不删除数据,只对外隐藏。<span className="text-ink-400">（审核员仅可审核,强制关闭与取消由管理员操作）</span></>}
+        sub={<>审核直播间、强制关闭违规直播、取消预约。取消/过期不删除数据，只对外隐藏。<span className="text-ink-400">（审核员仅可审核，强制关闭与取消由管理员操作）</span></>}
       />
 
       {/* 超管看完整管理统计;审核员仅看「待审核」数,不暴露总数/直播中/已关闭等管理视角 */}
