@@ -15,6 +15,9 @@ const CONV_ATTRS = ['placeholder', 'aria-label', 'title', 'alt'];
 /** 转换这些节点的文字没有意义，甚至会把脚本改坏 */
 const SKIP = 'script,style,textarea,title,meta,noscript,code,pre';
 
+/** 一次改写：from 是动它之前 DOM 里的样子，to 是写进去的繁体 */
+type Undo = { from: string; to: string };
+
 export function startTraditionalDomText(): () => void {
   if (typeof window === 'undefined' || typeof document === 'undefined' || typeof MutationObserver === 'undefined') {
     return () => undefined;
@@ -25,11 +28,21 @@ export function startTraditionalDomText(): () => void {
   const selfText = new Map<Node, string>();
   const selfAttr = new Map<Element, Map<string, string>>();
 
+  // 每一份改写都要留还原的余地。切回简体时观察器只是断开，文字还留在繁体上：
+  // React 的 props 里自始至终是简体原文，它比对虚拟 DOM 觉得「没变」，就不会再去碰那个
+  // 文本节点 —— 所以这一页要刷到重载才回得来。只能自己记、自己还。
+  const textUndo = new Map<Text, Undo>();
+  const attrUndo = new Map<Element, Map<string, Undo>>();
+  let titleUndo: Undo | null = null;
+
   const fixText = (node: Text) => {
     const host = node.parentElement;
     if (!host || host.closest(SKIP)) return;
     const next = convert(node.data, 't');
     if (next === node.data) return;
+    // 每次都记「我替换掉的那一份」：React 中途换过文字的话，这里存的就是它的新内容，
+    // 还原时还给它的也是新的，不会把用户的操作覆盖掉。
+    textUndo.set(node, { from: node.data, to: next });
     selfText.set(node, next);
     node.data = next;
   };
@@ -40,9 +53,12 @@ export function startTraditionalDomText(): () => void {
       if (!v) continue;
       const next = convert(v, 't');
       if (next === v) continue;
-      let map = selfAttr.get(el);
-      if (!map) selfAttr.set(el, (map = new Map()));
-      map.set(name, next);
+      let map = attrUndo.get(el);
+      if (!map) attrUndo.set(el, (map = new Map()));
+      map.set(name, { from: v, to: next });
+      let mine = selfAttr.get(el);
+      if (!mine) selfAttr.set(el, (mine = new Map()));
+      mine.set(name, next);
       el.setAttribute(name, next);
     }
   };
@@ -95,6 +111,7 @@ export function startTraditionalDomText(): () => void {
     selfTitle = null;
     const next = convert(now, 't');
     if (next === now) return;
+    titleUndo = { from: now, to: next };
     selfTitle = next;
     document.title = next;
   };
@@ -114,5 +131,22 @@ export function startTraditionalDomText(): () => void {
   return () => {
     observer.disconnect();
     titleObserver.disconnect();
+    // 还原只认「还是我写进去的那一份」。中途被 React 换过的节点，现在挂的是新的简体
+    // 原文，硬塞回旧文字等于把用户的操作吞掉，所以那种一律不动。
+    for (const [node, u] of textUndo) {
+      if (node.isConnected && node.data === u.to) node.data = u.from;
+    }
+    textUndo.clear();
+    for (const [el, attrs] of attrUndo) {
+      if (!el.isConnected) continue;
+      for (const [name, u] of attrs) {
+        if (el.getAttribute(name) === u.to) el.setAttribute(name, u.from);
+      }
+    }
+    attrUndo.clear();
+    selfText.clear();
+    selfAttr.clear();
+    if (titleUndo && document.title === titleUndo.to) document.title = titleUndo.from;
+    titleUndo = null;
   };
 }
