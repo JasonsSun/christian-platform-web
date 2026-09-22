@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n/I18nProvider';
+import { loadVariantDict } from '@/lib/i18n/variant';
 import type { Variant } from '@/lib/i18n/config';
 
 const VARIANT_LABEL: Record<Variant, string> = { s: '简', t: '繁' };
@@ -28,7 +29,12 @@ export default function VariantSwitcher({ tone = 'dark', align = 'right', up = f
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          // 点开这一层就已经是要换字形了，趁读菜单这几秒把 500KB 简繁词典先要回来：
+          // 冷启动时点「繁體」到字真的变了实测 331ms（本机），走蜂窝网络还要更久。
+          if (!open) void loadVariantDict();
+          setOpen(!open);
+        }}
         className={`inline-flex items-center justify-center gap-1 min-h-[44px] px-2.5 py-2 rounded-lg text-sm font-medium transition-colors ${base}`}
         title="简繁切换"
         aria-label="切换简体或繁体"
