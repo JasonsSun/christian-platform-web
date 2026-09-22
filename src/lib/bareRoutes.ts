@@ -6,7 +6,13 @@
     它们是站点流程中的子页，需要保留导航才能自然回到上下文。 */
 const BARE_PREFIXES = ['/login', '/forgot', '/reset'];
 
+/* 歌词投屏页（/songs/<id>/present）：整页是一块黑幕，控制栏就贴在屏幕顶边。
+   全站导航是 z-50 的 fixed 顶栏，正好把它整个盖住 —— 命中测试量到的是导航里的容器，
+   「退出投屏」在桌面和手机上都点不到。底部标签栏同理，压在进度条和提示上。 */
+const BARE_SUFFIXES = ['/present'];
+
 export function isBareRoute(pathname?: string | null): boolean {
   const p = pathname || '/';
-  return BARE_PREFIXES.some((r) => p === r || p.startsWith(`${r}/`));
+  return BARE_PREFIXES.some((r) => p === r || p.startsWith(`${r}/`))
+    || BARE_SUFFIXES.some((r) => p.endsWith(r) || p.endsWith(`${r}/`));
 }
