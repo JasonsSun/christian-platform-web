@@ -19,7 +19,13 @@ const EDGE = 8;
 const TOP_MIN = 72; // 导航栏 64 + 8：圆点不再压进导航的命中区
 const TABBAR = 64;
 const SIDE_DEFAULT: Side = 'right';
-const Y_DEFAULT = 76;
+/* 默认停在读经页顶部工具条之下。量到的原状：main 的 pt-16（64）+ 读经页自己的 py-8（32）
+   把「阅读排版与主题」那颗齿轮推到 y 97..141、贴着右边 330..374，而圆点默认 76..120、
+   338..382 —— 齿轮 43% 的面积被压住，中心正好落在圆点上，真实可点只剩底下 13px，
+   这颗键在默认位置等于按不到（x 光：沿中线 x=352 从 89 到 125 全是圆点）。
+   挪到 152 是让开那一条工具带；TOP_MIN 仍是 72，用户真要把圆点拖到上面去是明摆的选择，
+   不替他改。首帧与 readPos 的默认值同用一个常量，所以这一改不会在挂载时多跳一次。 */
+const Y_DEFAULT = 152;
 
 type Side = 'left' | 'right';
 type Pos = { side: Side; y: number };
