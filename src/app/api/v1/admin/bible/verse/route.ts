@@ -44,6 +44,8 @@ export const PATCH = withApi(async (req: NextRequest) => {
   );
   // 章节接口有 1h 内存缓存，改完必须失效，否则前台仍显示旧经文
   cacheDelPrefix('bible:chapter:');
+  // 后台统计（空经文/超长经文计数）也缓存了这份文本的体检结果
+  cacheDelPrefix('admin:bible:');
 
   return ok({ version, book, chapter, verse, text });
 });

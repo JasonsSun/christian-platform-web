@@ -19,7 +19,6 @@ interface BibleData {
   totals: { versions: number; books: number; verses: number };
   byVersion: VersionRow[];
   byBook: BookRow[];
-  preview: { version: string; bookId: string; chapter: number; verse: number; text: string }[];
   issues: { emptyText: number; longText: number };
 }
 interface BibleMeta {
