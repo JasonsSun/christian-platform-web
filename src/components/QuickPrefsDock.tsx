@@ -7,9 +7,13 @@
  * 真实压住内容（/community 一个 chip 的中心点完全点不到，/prayers 的「8 条代祷」、
  * /topics 的 TOP 徽章被 100% 盖住）。现在默认只留一颗 44px 圆点，点开才展开成胶囊，
  * 并且圆点可拖动、松手吸附左右边、位置记进 localStorage，键盘方向键也能挪。
+ *
+ * 停靠位不再是一个写死的常数：挂载和换页时按当前这一页量一个出来，往下让开每一颗
+ * 「要瞄准才点得到」的小控件（见 AIM_W / AIM_H）。用户拖过之后完全听他的。
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import VariantSwitcher from '@/components/VariantSwitcher';
 import AccessibilityMenu from '@/components/AccessibilityMenu';
 
@@ -19,13 +23,16 @@ const EDGE = 8;
 const TOP_MIN = 72; // 导航栏 64 + 8：圆点不再压进导航的命中区
 const TABBAR = 64;
 const SIDE_DEFAULT: Side = 'right';
-/* 默认停在读经页顶部工具条之下。量到的原状：main 的 pt-16（64）+ 读经页自己的 py-8（32）
-   把「阅读排版与主题」那颗齿轮推到 y 97..141、贴着右边 330..374，而圆点默认 76..120、
-   338..382 —— 齿轮 43% 的面积被压住，中心正好落在圆点上，真实可点只剩底下 13px，
-   这颗键在默认位置等于按不到（x 光：沿中线 x=352 从 89 到 125 全是圆点）。
-   挪到 152 是让开那一条工具带；TOP_MIN 仍是 72，用户真要把圆点拖到上面去是明摆的选择，
-   不替他改。首帧与 readPos 的默认值同用一个常量，所以这一改不会在挂载时多跳一次。 */
+/* 默认位置的起点，不是终点：真正停在哪由下面 parkY 按当前这一页量。
+   读经页的「阅读排版与主题」齿轮在 y 97..141，通知中心的页签条在 y 160..200，
+   每页页头那条带子高度不同 —— 上一个写死的 152 让开了齿轮，
+   正好把「系统」那一格切掉 31%，文字只剩「系」。 */
 const Y_DEFAULT = 152;
+/* 只躲「要瞄准才点得到」的控件。通知页页签一格 85×40，压掉 24px 基本就按不到了；
+   整张卡片 358×105 被压掉一角还剩九成可点，为它一路往下躲会把圆点推出首屏。 */
+const AIM_W = 140;
+const AIM_H = 60;
+const AIM_SEL = 'a,button,input,select,summary,label';
 
 type Side = 'left' | 'right';
 type Pos = { side: Side; y: number };
@@ -33,6 +40,14 @@ type Pos = { side: Side; y: number };
 function clampY(y: number) {
   const max = Math.max(TOP_MIN, (typeof window === 'undefined' ? 844 : window.innerHeight) - TABBAR - DOT - 8);
   return Math.min(max, Math.max(TOP_MIN, Math.round(y)));
+}
+
+function hasPos() {
+  try {
+    return !!localStorage.getItem(POS_KEY);
+  } catch {
+    return false;
+  }
 }
 
 function readPos(): Pos {
@@ -47,18 +62,69 @@ function readPos(): Pos {
   }
 }
 
+/** 圆点这一格压到了哪颗要瞄准的控件，返回它的下沿（没有则 null）。
+ *  圆点自己 z-60 盖在最上面，所以要从命中栈往下找到第一个不是它的东西。 */
+function aimBottom(root: HTMLElement | null, side: Side, top: number): number | null {
+  const cx = side === 'right' ? innerWidth - EDGE - DOT / 2 : EDGE + DOT / 2;
+  let bottom: number | null = null;
+  for (const [dx, dy] of [[0, 0], [-14, -14], [14, -14], [-14, 14], [14, 14]]) {
+    const x = cx + dx;
+    const y = top + DOT / 2 + dy;
+    if (x < 0 || x >= innerWidth || y < 0 || y >= innerHeight) continue;
+    const stack = document.elementsFromPoint(x, y);
+    const hit = stack.find((e) => !(root && root.contains(e)));
+    const host = hit?.closest?.(AIM_SEL) as HTMLElement | null;
+    if (!host) continue;
+    const r = host.getBoundingClientRect();
+    if (r.width < AIM_W || r.height < AIM_H) bottom = Math.max(bottom ?? 0, r.bottom);
+  }
+  return bottom;
+}
+
+/** 从起点往下让开每一颗要瞄准的控件，最多让 6 次（一屏页头不会超过这个数）。 */
+function parkY(root: HTMLElement | null, side: Side): number {
+  const max = Math.max(TOP_MIN, innerHeight - TABBAR - DOT - EDGE);
+  let y = clampY(Y_DEFAULT);
+  for (let i = 0; i < 6; i += 1) {
+    const b = aimBottom(root, side, y);
+    if (b === null) break;
+    const next = clampY(b + EDGE);
+    if (next <= y || next >= max) break;
+    y = next;
+  }
+  return y;
+}
+
 export default function QuickPrefsDock() {
+  const pathname = usePathname();
   // 首帧必须和服务端一致，所以持久位置在挂载后才读；展开态不持久，每次进页面都是圆点。
   const [pos, setPos] = useState<Pos>({ side: SIDE_DEFAULT, y: Y_DEFAULT });
+  const [ready, setReady] = useState(false);
   const [open, setOpen] = useState(false);
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const dotRef = useRef<HTMLButtonElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const movedRef = useRef(0);
 
+  // 挂载后（以及换页后）重新挑一个停靠位：这一页的页头带子落在哪，量了才知道。
+  // 用户自己拖过就完全听他的，不再自动挪。
+  // 页头常常是数据回来才画出来的 —— /notifications 那一排页签就是，
+  // 挂载那一刻量一次会量到空气，所以隔 350 / 900 / 1600ms 再各量一次。
+  // parkY 每次都从 Y_DEFAULT 重新量，所以补量是幂等的，不会越挪越远。
   useEffect(() => {
-    setPos(readPos());
-  }, []);
+    if (hasPos()) {
+      setPos(readPos());
+      setReady(true);
+      return;
+    }
+    const tick = () => {
+      setPos({ side: SIDE_DEFAULT, y: parkY(wrapRef.current, SIDE_DEFAULT) });
+      setReady(true);
+    };
+    tick();
+    const ts = [350, 900, 1600].map((ms) => window.setTimeout(tick, ms));
+    return () => ts.forEach(clearTimeout);
+  }, [pathname]);
 
   useEffect(() => {
     const onResize = () => setPos((p) => ({ ...p, y: clampY(p.y) }));
@@ -162,6 +228,9 @@ export default function QuickPrefsDock() {
   // 圆点拖到下半屏后，往下开的无障碍面板（≈250px）会顶出屏幕，这时改成往上开。
   // open 在服务端恒为 false，所以这里不会在 SSR 阶段读到 window。
   const up = open && typeof window !== 'undefined' && pos.y + 300 > window.innerHeight - TABBAR;
+  // 量好停靠位之前先不画：否则第一帧停在猜的 152，下一帧才滑到该待的地方，
+  // 每进一页都能看到圆点跳一下。
+  if (!ready) return null;
 
   return (
     <div
