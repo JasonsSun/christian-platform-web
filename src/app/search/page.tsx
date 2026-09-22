@@ -338,8 +338,8 @@ function SearchInner() {
               <SectionTitle icon={<IconUser className="w-5 h-5 text-primary-500" strokeWidth={1.6} />} title="用户" total={data.users.length} href={`/friends?q=${enc}`} />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.users.slice(0, 6).map((u) => (
-                  <Link key={u.id} href={`/me/${u.id}`} className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0" style={{ background: u.avatarColor }}>
+                  <Link key={u.id} href={`/users/${u.id}`} className="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-soft border border-ink-100 hover:border-primary-200 hover:shadow-card-hover transition-all">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0" data-user-id={u.id} style={{ background: u.avatarColor }}>
                       {u.displayName.slice(0, 1)}
                     </div>
                     <div className="flex-1 min-w-0">

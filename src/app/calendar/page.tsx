@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { qs, apiPost, apiDelete, clearApiCache } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
+import { activityCategoryLabel } from '@/lib/labels';
 import { Skeleton } from '@/components/Skeleton';
 import {
   Glyph,
@@ -45,16 +46,6 @@ interface ReminderState {
 }
 
 const WEEK = ['一', '二', '三', '四', '五', '六', '日'];
-
-const CATEGORY_LABEL: Record<string, string> = {
-  fellowship: '团契',
-  worship: '敬拜',
-  study: '学习',
-  service: '服事',
-  prayer: '祷告',
-  outreach: '外展',
-  other: '其他',
-};
 
 /** 与 src/server/activityReminders.ts 的 LEAD_OPTIONS 保持一致 */
 const LEAD_OPTIONS = [30, 120, 1440, 4320];
@@ -365,7 +356,7 @@ export default function CalendarPage() {
                                 <Glyph glyph={a.cover || '📅'} className="h-3.5 w-3.5" />
                               </span>
                               <span className="text-xs px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 border border-primary-100">
-                                {CATEGORY_LABEL[a.category] || a.category}
+                                {activityCategoryLabel(a.category)}
                               </span>
                               <span className="ml-auto text-xs text-ink-500">{a.startTime}</span>
                             </div>

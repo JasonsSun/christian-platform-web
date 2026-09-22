@@ -11,6 +11,7 @@ import { useConfirmNav } from '@/lib/confirm';
 import { timeAgo } from '@/lib/format';
 import type { FriendStatus, FriendRequestItem, FriendItem } from '@/lib/types';
 import { IconHandshake, IconInbox, IconSearch } from '@/components/icons';
+import { useUserCardChanges } from '@/components/UserQuickCard';
 
 interface UserCard {
   id: string;
@@ -29,10 +30,11 @@ interface UserCard {
 
 type Tab = 'discover' | 'friends' | 'requests';
 
-function Avatar({ name, color, size = 48 }: { name: string; color: string; size?: number }) {
+function Avatar({ name, color, size = 48, userId }: { name: string; color: string; size?: number; userId?: string }) {
   return (
     <div
       className="rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
+      data-user-id={userId}
       style={{ background: color, width: size, height: size, fontSize: size * 0.4 }}
     >
       {name.slice(0, 1)}
@@ -64,7 +66,7 @@ function RequestRow({
 
   return (
     <div className={`bg-white rounded-2xl p-4 border border-ink-100 shadow-soft flex gap-3 items-center ${isPending ? '' : 'opacity-80'}`}>
-      <Link href={`/users/${r.peer.id}`}><Avatar name={r.peer.displayName} color={r.peer.avatarColor} size={52} /></Link>
+      <Link href={`/users/${r.peer.id}`}><Avatar name={r.peer.displayName} color={r.peer.avatarColor} size={52} userId={r.peer.id} /></Link>
       <div className="min-w-0 flex-1">
         <Link href={`/users/${r.peer.id}`} className="font-semibold text-ink-900 hover:text-primary-600">{r.peer.displayName}</Link>
         <p className="text-xs text-ink-500">{r.peer.city || '—'}{r.peer.church ? ` · ${r.peer.church}` : ''}</p>
@@ -141,6 +143,22 @@ export default function FriendsPage() {
   );
 
   const follow = useAction();
+
+  /** 从资料卡里改了关注 / 好友状态：行内按钮立刻跟着对齐，不必刷新整页 */
+  useUserCardChanges((change) => {
+    disc.setData((prev) =>
+      prev
+        ? {
+            ...prev,
+            items: prev.items.map((x) =>
+              x.id === change.id
+                ? { ...x, following: change.following, friendStatus: change.friendStatus, followers: change.followers }
+                : x
+            ),
+          }
+        : prev
+    );
+  });
 
   function refresh() {
     setNonce((n) => n + 1);
@@ -279,7 +297,7 @@ export default function FriendsPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               {disc.data!.items.map((u) => (
                 <div key={u.id} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover flex gap-3">
-                  <Link href={`/users/${u.id}`}><Avatar name={u.displayName} color={u.avatarColor} size={52} /></Link>
+                  <Link href={`/users/${u.id}`}><Avatar name={u.displayName} color={u.avatarColor} size={52} userId={u.id} /></Link>
                   <div className="min-w-0 flex-1">
                     <Link href={`/users/${u.id}`} className="font-semibold text-ink-900 hover:text-primary-600">{u.displayName}</Link>
                     <p className="text-xs text-ink-500">{u.city || '—'}{u.church ? ` · ${u.church}` : ''}</p>
@@ -287,20 +305,23 @@ export default function FriendsPage() {
                     <p className="text-xs text-ink-400 mt-1.5">{u.followers} 粉丝 · {u.contents} 内容</p>
                   </div>
                   <div className="flex flex-col gap-2 self-center">
-                    {u.friendStatus === 'friends' ? (
-                      <>
-                        <span className="btn-secondary btn-sm px-3 text-sm text-center opacity-70">已加好友</span>
-                        <Link href={`/messages/${u.id}`} className="btn-primary btn-sm px-3 text-sm text-center">私信</Link>
-                      </>
-                    ) : u.friendStatus === 'pending_sent' ? (
-                      <span className="btn-secondary btn-sm px-3 text-sm text-center opacity-70">已发送</span>
-                    ) : u.friendStatus === 'pending_received' ? (
-                      <Link href="/friends?tab=requests" className="btn-gold btn-sm px-3 text-sm text-center">待你确认</Link>
-                    ) : (
-                      <button onClick={() => sendRequest(u)} disabled={busy === `add:${u.id}`} className="btn-primary btn-sm px-3 text-sm disabled:opacity-60">
-                        {busy === `add:${u.id}` ? '发送中…' : '加好友'}
-                      </button>
-                    )}
+                    {/* 自己那一行不给「加好友 / 私信」：服务端本来就用「不能添加自己为好友」挡掉，
+                        摆在界面上只是让人点一下才知道不行 */}
+                    {user?.id !== u.id &&
+                      (u.friendStatus === 'friends' ? (
+                        <>
+                          <span className="btn-secondary btn-sm px-3 text-sm text-center opacity-70">已加好友</span>
+                          <Link href={`/messages/${u.id}`} className="btn-primary btn-sm px-3 text-sm text-center">私信</Link>
+                        </>
+                      ) : u.friendStatus === 'pending_sent' ? (
+                        <span className="btn-secondary btn-sm px-3 text-sm text-center opacity-70">已发送</span>
+                      ) : u.friendStatus === 'pending_received' ? (
+                        <Link href="/friends?tab=requests" className="btn-gold btn-sm px-3 text-sm text-center">待你确认</Link>
+                      ) : (
+                        <button onClick={() => sendRequest(u)} disabled={busy === `add:${u.id}`} className="btn-primary btn-sm px-3 text-sm disabled:opacity-60">
+                          {busy === `add:${u.id}` ? '发送中…' : '加好友'}
+                        </button>
+                      ))}
                     {user?.id !== u.id && (
                       <button onClick={() => toggleFollow(u)} disabled={follow.pending} className={`px-3 py-1 text-xs rounded-lg ${u.following ? 'text-ink-500 hover:text-rose-600' : 'text-primary-600 hover:text-primary-700'}`}>
                         {u.following ? '已关注' : '关注'}
@@ -326,7 +347,7 @@ export default function FriendsPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               {friends.data!.items.map((f) => (
                 <div key={f.id} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover flex gap-3 items-center">
-                  <Link href={`/users/${f.id}`}><Avatar name={f.displayName} color={f.avatarColor} size={52} /></Link>
+                  <Link href={`/users/${f.id}`}><Avatar name={f.displayName} color={f.avatarColor} size={52} userId={f.id} /></Link>
                   <div className="min-w-0 flex-1">
                     <Link href={`/users/${f.id}`} className="font-semibold text-ink-900 hover:text-primary-600">{f.displayName}</Link>
                     <p className="text-xs text-ink-500">{f.city || '—'}{f.church ? ` · ${f.church}` : ''}</p>

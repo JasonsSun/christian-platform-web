@@ -24,6 +24,7 @@ function MsgAvatar({ user, size = 32 }: { user: ChatUser; size?: number }) {
   return (
     <span
       className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
+      data-user-id={user.id}
       style={{ backgroundColor: user.avatarColor || '#3d52d9', width: size, height: size, fontSize: size * 0.4 }}
     >
       {(user.displayName || user.username || '?').slice(0, 1)}

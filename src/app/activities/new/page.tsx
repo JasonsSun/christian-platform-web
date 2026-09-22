@@ -15,6 +15,7 @@ import { Glyph } from '@/components/icons';
 import { useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
+import { ACTIVITY_CATEGORY_LABEL } from '@/lib/labels';
 import dynamic from 'next/dynamic';
 
 // 地图组件依赖 Leaflet(CDN)，创建页只是选点时才用，按需加载
@@ -22,13 +23,11 @@ const LocationMap = dynamic(() => import('@/components/LocationMap'), { ssr: fal
 
 const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南京'];
 
-const CATEGORIES = [
-  { value: 'fellowship', label: '团契' },
-  { value: 'worship', label: '崇拜' },
-  { value: 'retreat', label: '退修会' },
-  { value: 'training', label: '培训' },
-  { value: 'service', label: '服务' },
-];
+// 分类名只认 lib/labels 那一份，这里决定的是表单开放哪几类、按什么顺序排
+const CATEGORIES: { value: string; label: string }[] = (['fellowship', 'worship', 'retreat', 'training', 'service'] as const).map((v) => ({
+  value: v,
+  label: ACTIVITY_CATEGORY_LABEL[v],
+}));
 
 const COVERS = ['📅', '🙏', '📖', '🎶', '🌿', '✨', '🕊️', '❤️'];
 // 按钮的名字只有 emoji，读屏念出来是「日历」「双手合十」这种噪音，也听不出当前选中的是哪一个

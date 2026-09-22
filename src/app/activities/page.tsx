@@ -10,17 +10,17 @@ import { useNotice } from '@/lib/notice';
 import { countdown, formatDateTime } from '@/lib/format';
 import type { ActivityItem } from '@/lib/types';
 import { Glyph, IconCalendar } from '@/components/icons';
-import { activityCategoryLabel } from '@/lib/labels';
+import { activityCategoryLabel, ACTIVITY_CATEGORY_LABEL } from '@/lib/labels';
 
 const CITIES = ['上海', '北京', '杭州', '广州', '深圳', '成都', '南京'];
 
+// 分类名只认 lib/labels 那一份，这里决定的是筛选开放哪几类、按什么顺序排
 const CATEGORIES = [
   { value: '', label: '全部' },
-  { value: 'worship', label: '崇拜' },
-  { value: 'fellowship', label: '团契' },
-  { value: 'retreat', label: '退修会' },
-  { value: 'training', label: '培训' },
-  { value: 'service', label: '服务' },
+  ...(['worship', 'fellowship', 'retreat', 'training', 'service'] as const).map((v) => ({
+    value: v,
+    label: ACTIVITY_CATEGORY_LABEL[v],
+  })),
 ];
 
 const SORT_TABS = [
@@ -28,10 +28,11 @@ const SORT_TABS = [
   { key: 'latest', label: '最新发布' },
 ];
 
-function Avatar({ name, color, size = 36 }: { name: string; color: string; size?: number }) {
+function Avatar({ name, color, size = 36, userId }: { name: string; color: string; size?: number; userId?: string }) {
   return (
     <div
       className="rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
+      data-user-id={userId}
       style={{ background: color, width: size, height: size, fontSize: size * 0.4 }}
     >
       {name.slice(0, 1)}
@@ -278,7 +279,7 @@ function ActivityCard({ a }: { a: ActivityItem }) {
         </div>
 
         <div className="mt-auto flex items-center gap-2 pt-2 border-t border-ink-100">
-          <Avatar name={a.organizer.displayName} color={a.organizer.avatarColor} size={28} />
+          <Avatar name={a.organizer.displayName} color={a.organizer.avatarColor} size={28} userId={a.organizer.id} />
           <span className="text-xs text-ink-500 truncate">{a.organizer.displayName} 主办</span>
           <span className="ml-auto text-xs text-primary-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
             查看详情 →

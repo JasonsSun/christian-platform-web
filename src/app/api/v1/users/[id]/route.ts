@@ -4,6 +4,7 @@ import { ok, withApi, notFound } from '@/server/http';
 import { currentUser, UserRow, userStats } from '@/server/auth';
 import { mapContent } from '@/server/mappers';
 import { whiteSafeColor } from '@/server/mappers';
+import { friendStatusSql } from '@/server/friendStatusSql';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,12 +14,14 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
   const viewer = (await currentUser(req)) as UserRow | null;
   const key = ctx.params.id;
   const row = await one<any>(
-    `SELECT u.id, u.username, u.display_name, u.role, u.status, u.avatar_color, u.bio, u.city, u.church,
+    `SELECT u.id, u.username, u.display_name, u.role, u.status, u.avatar_color, u.avatar_url, u.bio, u.city, u.church,
             DATE_FORMAT(u.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
             ${viewer ? `EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = ? AND f.followee_id = u.id)` : '0'} AS following,
-            ${viewer ? `EXISTS(SELECT 1 FROM user_blocks b WHERE b.blocker_id = ? AND b.blocked_id = u.id)` : '0'} AS blocked
+            ${viewer ? `EXISTS(SELECT 1 FROM user_blocks b WHERE b.blocker_id = ? AND b.blocked_id = u.id)` : '0'} AS blocked,
+            ${friendStatusSql(!!viewer)} AS friendStatus
      FROM users u WHERE u.id = ? OR u.username = ?`,
-    viewer ? [viewer.id, viewer.id, key, key] : [key, key]
+    // 顺序即 SELECT 子句里占位符出现的顺序：following → blocked → friendStatus(4) → 定位键(2)
+    viewer ? [viewer.id, viewer.id, viewer.id, viewer.id, viewer.id, viewer.id, key, key] : [key, key]
   );
   if (!row) throw notFound('用户不存在');
   // 支持 /users/<id> 与 /users/<username> 两种访问方式（@提及链接用 username 更友好）
@@ -42,12 +45,14 @@ export const GET = withApi(async (req: NextRequest, ctx: Ctx) => {
     displayName: row.display_name,
     role: row.role,
     avatarColor: whiteSafeColor(row.avatar_color),
+    avatarUrl: row.avatar_url || '',
     bio: row.bio,
     city: row.city,
     church: row.church,
     createdAt: row.created_at,
     following: !!row.following,
     blocked: !!row.blocked,
+    friendStatus: viewer ? row.friendStatus || 'none' : 'none',
     isMe: viewer?.id === id,
     stats,
     contents: contents.map(mapContent),

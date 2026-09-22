@@ -25,6 +25,7 @@ function Avatar({ user, size = 40 }: { user: Author; size?: number }) {
   return (
     <span
       className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
+      data-user-id={user.id}
       style={{
         backgroundColor: user.avatarColor || '#3d52d9',
         width: size,

@@ -32,10 +32,11 @@ interface Participant {
 
 type Detail = ActivityItem & { participants: Participant[]; checkinCount: number; checkedIn: boolean; lat?: number | null; lng?: number | null };
 
-function Avatar({ name, color, size = 40 }: { name: string; color: string; size?: number }) {
+function Avatar({ name, color, size = 40, userId }: { name: string; color: string; size?: number; userId?: string }) {
   return (
     <div
       className="rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
+      data-user-id={userId}
       style={{ background: color, width: size, height: size, fontSize: size * 0.4 }}
     >
       {name.slice(0, 1)}
@@ -297,7 +298,7 @@ export default function ActivityDetailPage() {
               <div><div className="font-semibold">{convert(a.city)} · {convert(a.location)}</div></div>
             </div>
             <Link href={`/users/${a.organizer.id}`} className="flex items-center gap-3 text-ink-700 hover:text-primary-600 transition-colors">
-              <Avatar name={a.organizer.displayName} color={a.organizer.avatarColor} size={40} />
+              <Avatar name={a.organizer.displayName} color={a.organizer.avatarColor} size={40} userId={a.organizer.id} />
               <div>
                 <div className="font-semibold">{a.organizer.displayName}</div>
                 <div className="text-xs text-ink-500">组织者</div>
@@ -435,7 +436,7 @@ export default function ActivityDetailPage() {
                 <div className="space-y-2">
                   {confirmed.map((p) => (
                     <Link key={p.id} href={`/users/${p.id}`} className="flex items-center gap-3 p-2 rounded-xl hover:bg-primary-50 transition-colors">
-                      <Avatar name={p.displayName} color={p.avatarColor} size={36} />
+                      <Avatar name={p.displayName} color={p.avatarColor} size={36} userId={p.id} />
                       <div className="min-w-0">
                         <div className="font-medium text-ink-800 truncate">{p.displayName}</div>
                         <div className="text-xs text-ink-500">{p.city || '—'}</div>
@@ -452,7 +453,7 @@ export default function ActivityDetailPage() {
                 <div className="space-y-2">
                   {waitlist.map((p) => (
                     <Link key={p.id} href={`/users/${p.id}`} className="flex items-center gap-3 p-2 rounded-xl hover:bg-primary-50 transition-colors">
-                      <Avatar name={p.displayName} color={p.avatarColor} size={36} />
+                      <Avatar name={p.displayName} color={p.avatarColor} size={36} userId={p.id} />
                       <div className="min-w-0">
                         <div className="font-medium text-ink-800 truncate">{p.displayName}</div>
                         <div className="text-xs text-ink-500">{p.city || '—'}</div>

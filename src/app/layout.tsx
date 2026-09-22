@@ -27,6 +27,7 @@ import dynamic from 'next/dynamic'
 const CommandPalette = dynamic(() => import('@/components/CommandPalette')) as unknown as typeof import('@/components/CommandPalette').default
 import ScrollProgress from '@/components/ScrollProgress'
 import MotionLayer from '@/components/MotionLayer'
+import UserQuickCard from '@/components/UserQuickCard'
 import type { Metadata } from 'next'
 
 const SITE_URL = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://amen.dpdns.org';
@@ -111,6 +112,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <MotionLayer />
                   {/* 全局命令面板：⌘K / Ctrl+K */}
                   <CommandPalette />
+                  {/* 点头像就地加好友 / 关注：接管全站带 data-user-id 的头像 */}
+                  <UserQuickCard />
                   {/* 无障碍：键盘跳过导航直达主内容 */}
                   <a href="#main-content" className="skip-link">跳到主要内容</a>
                   <Navbar disabledModules={offModules} />

@@ -388,7 +388,7 @@ export default function HomeClient({ initialHome = null, initialMedia = null }: 
                         <p className="text-ink-500 text-sm line-clamp-2 mb-2">{c.excerpt}</p>
                         <div className="flex items-center gap-3 text-xs text-ink-400 flex-wrap">
                           <span className="flex items-center gap-1">
-                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" style={{ background: c.author.avatarColor }}>
+                            <span className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" data-user-id={c.author.id} style={{ background: c.author.avatarColor }}>
                               {c.author.displayName.slice(0, 1)}
                             </span>
                             {c.author.displayName}

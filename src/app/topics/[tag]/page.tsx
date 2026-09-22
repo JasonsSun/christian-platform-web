@@ -294,6 +294,7 @@ export default function TopicDetailPage() {
                         <div className="flex items-center gap-3 mt-4 text-sm text-ink-500">
                           <span
                             className="inline-flex items-center justify-center rounded-full text-white font-semibold flex-shrink-0"
+                            data-user-id={item.author?.id}
                             style={{
                               backgroundColor: item.author?.avatarColor || '#3d52d9',
                               width: 26,

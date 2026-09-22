@@ -15,10 +15,11 @@ interface Thread {
   items: MessageItem[];
 }
 
-function Avatar({ name, color, size = 36 }: { name: string; color: string; size?: number }) {
+function Avatar({ name, color, size = 36, userId }: { name: string; color: string; size?: number; userId?: string }) {
   return (
     <div
       className="rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
+      data-user-id={userId}
       style={{ background: color, width: size, height: size, fontSize: size * 0.4 }}
     >
       {name.slice(0, 1)}
@@ -134,7 +135,7 @@ export default function MessageThreadPage() {
       {peer && (
         <div className="flex items-center gap-3 pb-4 border-b border-ink-200">
           <Link href="/messages" className="text-ink-400 hover:text-ink-600">←</Link>
-          <Avatar name={peer.displayName} color={peer.avatarColor} size={40} />
+          <Avatar name={peer.displayName} color={peer.avatarColor} size={40} userId={peer.id} />
           <div>
             <h2 className="font-semibold text-ink-900">{peer.displayName}</h2>
             {peer.city && <p className="text-xs text-ink-500">{peer.city}</p>}

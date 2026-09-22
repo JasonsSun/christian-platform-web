@@ -1774,6 +1774,17 @@ html[data-a11y-reduce-motion="1"] *::after {
 /* shadow-glow 是装饰用的品牌光，不能当成层次令牌压掉，只补一层落影 */
 .shadow-glow { box-shadow: 0 0 40px rgba(79, 109, 245, 0.3), var(--el-2); }
 
+/* 可点的头像：点下去出资料卡（components/UserQuickCard.tsx 按 [data-user-id] 委托接管全站头像）。
+   不给指针和悬停描边，这颗圆片看起来就和不可点的装饰没区别，用户不会去点它。
+   描边用品牌蓝而不是主题描边色：三种主题下它都是站内最亮的那支蓝，压在深色卡面或羊皮纸上都读得出。 */
+[data-user-id] {
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+[data-user-id]:hover { box-shadow: 0 0 0 2.5px rgba(79, 109, 245, 0.9); }
+[data-user-id]:active { transform: scale(0.94); }
+
 /* —— 卡片：抬升与发丝渐变描边 ——
    只给「真的可点」的卡加抬升，纯信息块乱动会显得廉价；位移压到 4px（原 card-hover 的
    8px 在长列表里像抽风）。transform 不计入 CLS，所以这条不影响稳定性门。 */

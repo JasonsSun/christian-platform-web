@@ -26,10 +26,11 @@ interface UserCard {
   following: boolean;
 }
 
-function Avatar({ name, color, size = 40 }: { name: string; color: string; size?: number }) {
+function Avatar({ name, color, size = 40, userId }: { name: string; color: string; size?: number; userId?: string }) {
   return (
     <div
       className="rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
+      data-user-id={userId}
       style={{ background: color, width: size, height: size, fontSize: size * 0.4 }}
     >
       {name.slice(0, 1)}
@@ -142,7 +143,7 @@ export default function NearbyPage() {
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {uItems.map((u) => (
                   <Link key={u.id} href={`/users/${u.id}`} className="bg-white rounded-2xl p-4 border border-ink-100 card-hover flex items-center gap-3">
-                    <Avatar name={u.displayName} color={u.avatarColor} size={44} />
+                    <Avatar name={u.displayName} color={u.avatarColor} size={44} userId={u.id} />
                     <div className="min-w-0">
                       <h3 className="font-semibold text-ink-900 truncate">{u.displayName}</h3>
                       <p className="text-xs text-ink-500 truncate">{u.church || '—'} · {u.followers} 粉丝</p>

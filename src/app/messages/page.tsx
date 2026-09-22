@@ -9,10 +9,11 @@ import { timeAgo } from '@/lib/format';
 import { IconMail, IconSearch } from '@/components/icons';
 import type { Conversation } from '@/lib/types';
 
-function Avatar({ name, color, size = 48 }: { name: string; color: string; size?: number }) {
+function Avatar({ name, color, size = 48, userId }: { name: string; color: string; size?: number; userId?: string }) {
   return (
     <div
       className="rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0"
+      data-user-id={userId}
       style={{ background: color, width: size, height: size, fontSize: size * 0.4 }}
     >
       {name.slice(0, 1)}
@@ -137,7 +138,7 @@ export default function MessagesPage() {
               }`}
             >
               <div className="relative">
-                <Avatar name={c.peer.displayName} color={c.peer.avatarColor} size={48} />
+                <Avatar name={c.peer.displayName} color={c.peer.avatarColor} size={48} userId={c.peer.id} />
                 {/* 在线状态指示：当前无在线数据，统一显示离线 */}
                 <span
                   className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white bg-ink-300"
