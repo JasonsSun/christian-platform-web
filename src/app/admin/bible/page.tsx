@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useApi, useAction } from '@/lib/useApi';
 import { apiPatch, qs } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { versionLabel } from '@/lib/bibleMeta';
 import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
 
 /* ----------------------------- 类型 ----------------------------- */
@@ -281,8 +282,12 @@ export default function AdminBiblePage() {
                   onChange={(e) => { setVersion(e.target.value); setChapter(1); }}
                   className={SELECT_CLS}
                 >
+                  {/* 这一页其他地方（版本概览的徽章、书卷清单副标题）用的都是 CUV 这个库里的键，
+                      下拉只写中文会让「和合本」和「CUV」看着像两回事。 */}
                   {(admin.data?.byVersion || []).map((v) => (
-                    <option key={v.version} value={v.version}>{v.version.toUpperCase()}</option>
+                    <option key={v.version} value={v.version}>
+                      {versionLabel(v.version)}（{v.version.toUpperCase()}）
+                    </option>
                   ))}
                 </select>
                 <select

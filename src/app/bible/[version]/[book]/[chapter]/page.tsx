@@ -19,14 +19,11 @@ const ReadingAngel = dynamic(() => import('@/components/ReadingAngel'), { ssr: f
 const ShareModal = dynamic(() => import('@/components/ShareModal'), { ssr: false }) as unknown as typeof import('@/components/ShareModal').default;
 import { useTheme } from '@/lib/theme';
 import { READING_PLANS } from '@/lib/readingPlans';
+import { VERSIONS, versionLabel } from '@/lib/bibleMeta';
 import { IconAlert, IconBookOpen, IconCalendar, IconHeadphones, IconPause, IconPencil, IconPlay, IconSpeaker } from '@/components/icons';
 
-/** 可供「对照阅读」的译本（与 @/server/bible 的 VERSIONS 保持一致） */
-const CMP_VERSIONS = [
-  { id: 'cuv', label: '和合本' },
-  { id: 'cuvs', label: '和合本修订版' },
-  { id: 'kjv', label: 'KJV 钦定本' },
-];
+/** 可供「对照阅读」的译本：直接铺 @/lib/bibleMeta 那份表，标签不再另抄一遍 */
+const CMP_VERSIONS = VERSIONS.map((v) => ({ id: v.id, label: versionLabel(v.id) }));
 
 type VerseItem = { verse: number; text: string };
 type ChapterResp = {
@@ -741,7 +738,7 @@ export default function ReadChapter() {
 
   const buildText = () => {
     if (!data) return '';
-    const head = `${data.book.name} 第 ${data.chapter} 章（${data.version}）\n`;
+    const head = `${data.book.name} 第 ${data.chapter} 章（${versionLabel(data.version)}）\n`;
     const body = data.verses.map((v) => `${v.verse} ${v.text}`).join('\n');
     return head + body;
   };
@@ -1041,7 +1038,7 @@ export default function ReadChapter() {
           </div>
           
           <h1 className="font-display text-3xl md:text-4xl font-bold text-ink-900 mb-2">{data?.book.name ?? book}</h1>
-          <p className="text-ink-400 text-sm">第 {chapter} 章 · {data?.book.abbr || '创'} · {version === 'cuvs' ? '和合本' : 'KJV'}</p>
+          <p className="text-ink-400 text-sm">第 {chapter} 章 · {data?.book.abbr || '创'} · {versionLabel(version)}</p>
 
           {/* 来自读经计划的「去读经」入口：提示正在读计划的第几天，读完会自动打卡 */}
           {(() => {

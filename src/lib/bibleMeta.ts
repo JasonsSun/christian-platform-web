@@ -104,6 +104,18 @@ export const VERSIONS = [
   { id: 'kjv', name: '英王钦定本 (KJV)', fullName: 'King James Version', language: 'en' },
 ];
 
+/** 界面用的短名。VERSIONS[].name 带括号后缀，标题行放不下；后台/分享文案/对照页都从这里取。 */
+const VERSION_SHORT: Record<string, string> = {
+  cuv: '和合本',
+  cuvs: '和合本修订版',
+  kjv: 'KJV 钦定本',
+};
+
+export function versionLabel(id?: string | null): string {
+  if (!id) return '';
+  return VERSION_SHORT[id] || id.toUpperCase();
+}
+
 export const BOOKS: Book[] = [
   { id: 'genesis', name: '创世记', abbr: '创', chapters: 50, testament: 'old', category: '摩西五经', dbId: 'Gen' },
   { id: 'exodus', name: '出埃及记', abbr: '出', chapters: 40, testament: 'old', category: '摩西五经', dbId: 'Exo' },

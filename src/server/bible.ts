@@ -5,7 +5,7 @@
  * 这里用 re-export 保持 @/server/bible 的旧引用全部可用。
  * VERSES 仅 seed.ts 播种数据库时使用，属服务端常量。
  */
-export { BOOKS, VERSIONS, bookById, toDbBookId } from '@/lib/bibleMeta';
+export { BOOKS, VERSIONS, versionLabel, bookById, toDbBookId } from '@/lib/bibleMeta';
 export type { Book } from '@/lib/bibleMeta';
 
 type RawVerse = { version: string; book: string; chapter: number; start?: number; verses: string[] };

@@ -2,15 +2,9 @@
 export const revalidate = 300;
 
 import type { Metadata } from 'next';
-import { BOOKS } from '@/server/bible';
+import { BOOKS, versionLabel } from '@/server/bible';
 import { one } from '@/server/db';
 import { ogCardMetadata } from '@/lib/og';
-
-const VERSION_LABEL: Record<string, string> = {
-  cuv: '和合本',
-  cuvs: '和合本修订版',
-  kjv: 'KJV',
-};
 
 export async function generateMetadata({
   params,
@@ -37,7 +31,7 @@ export async function generateMetadata({
     title,
     description: first.slice(0, 110),
     kind: '圣经',
-    meta: VERSION_LABEL[params.version] || params.version,
+    meta: versionLabel(params.version),
     path: `/bible/${params.version}/${params.book}/${chapter}`,
   });
 }
