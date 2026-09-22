@@ -227,16 +227,45 @@ export default function LiveListPage() {
 
       <div className="flex gap-2 mt-5 flex-wrap" role="group" aria-label="直播列表筛选">
         <button aria-pressed={tab === 'live'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'live' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('live')}>正在直播</button>
-        <button aria-pressed={tab === 'all'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'all' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('all')}>全部预告</button>
+        <button aria-pressed={tab === 'all'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'all' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('all')}>全部直播</button>
         <button aria-pressed={tab === 'recordings'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'recordings' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('recordings')}>直播回放</button>
         {user && (
           <button aria-pressed={tab === 'reminded'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'reminded' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('reminded')}>我的预约</button>
         )}
       </div>
 
-      {loading && !rooms.length ? <Loading /> : null}
-      {error ? <ErrorBox message={error} onRetry={reload} /> : null}
-      {!loading && !error && !rooms.length ? <Empty label="暂无可观看的直播" /> : null}
+      {loading && !rooms.length && tab !== 'recordings' ? <Loading /> : null}
+      {error && tab !== 'recordings' ? <ErrorBox message={error} onRetry={reload} /> : null}
+      {/* 本地库里直播中 0 场、直播间 8 场：默认这一档以前只剩一句
+          「暂无可观看的直播」，首屏就一个虚线框，另外两档明明有内容却没有任何入口。
+          现在按页签各说各话，并把路铺在旁边。
+          回放档不参与这三行 —— rooms 取的是 /live，跟 recData 不是一回事，
+          以前 0 场直播时切到「直播回放」会在回放网格上方冒出一句不相干的空态。 */}
+      {!loading && !error && !rooms.length && tab !== 'recordings' ? (
+        <Empty
+          label={
+            tab === 'live' ? '此刻没有正在进行的直播'
+              : tab === 'reminded' ? '还没有预约任何直播'
+              : '这里还没有直播间'
+          }
+          hint={
+            tab === 'live' ? '可以先翻翻全部直播，错过的场次也能在回放里补上。'
+              : tab === 'reminded' ? '在直播卡片上点「预约」，开播前会提醒你。'
+              : '安排好的直播、往期结束的场次都会列在这里。'
+          }
+        >
+          {tab === 'live' || tab === 'reminded' ? (
+            <button className="btn-secondary" onClick={() => setTab('all')}>
+              看全部直播
+            </button>
+          ) : null}
+          {tab === 'live' || tab === 'all' ? (
+            <button className="btn-secondary" onClick={() => setTab('recordings')}>
+              看直播回放
+            </button>
+          ) : null}
+        </Empty>
+      ) : null}
 
       {tab === 'recordings' && recError ? (
         <p role="alert" className="mt-5 text-sm text-rose-600">
@@ -266,12 +295,26 @@ export default function LiveListPage() {
               </div>
             </Link>
           ))}
-          {recData && !recError && !(recData.items || []).length ? <Empty label="暂无直播回放" /> : null}
+          {/* 这一档现在只画回放：以前下面还跟着全部直播间那八张卡，
+              于是「暂无直播回放」和一堆非回放的卡片同屏，等于页签没筛东西。 */}
+          {recData && !recError && !(recData.items || []).length ? (
+            <div className="sm:col-span-2 lg:col-span-3">
+              <Empty label="暂无直播回放" hint="开播时勾上「保存录像」，直播结束后经审核通过就会出现在这里。">
+                <button className="btn-secondary" onClick={() => setTab('all')}>
+                  看全部直播
+                </button>
+              </Empty>
+            </div>
+          ) : null}
         </div>
       )}
 
       {/* 切 Tab 时 useApi 留着旧的 rooms，列表是常驻的：不压暗的话
-          骨架叠在旧卡片下面，一屏两份内容 */}
+          骨架叠在旧卡片下面，一屏两份内容。
+          「直播回放」是唯一不画这份列表的档：rooms 取的是 /live（全部直播间），
+          以前点进回放页签，上面一句「暂无直播回放」、下面却跟着八张非回放的房间卡，
+          等于这个页签什么也没筛。 */}
+      {tab !== 'recordings' && (
       <div className={`grid sm:grid-cols-2 lg:grid-cols-3 gap-5 mt-5 transition-opacity duration-200 ${loading && rooms.length ? 'opacity-60' : 'opacity-100'}`}>
         {rooms.map((r) => {
           const b = badgeOf(r);
@@ -338,6 +381,7 @@ export default function LiveListPage() {
           );
         })}
       </div>
+      )}
     </div>
   );
 }
