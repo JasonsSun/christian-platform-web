@@ -134,16 +134,22 @@ import { StaffBadges } from '@/components/ModeratorBadge';
  * 侧边导航（按模块范围过滤）。
  *
  * 每个条目声明它属于哪个治理模块：
- *  - module     : 该模块的审核员可见（管理员全部可见）
+ *  - module     : 该模块的审核员可见（管理员全部可见）；写数组表示命中其中任一个即可，
+ *                 用于一个入口同时归多个模块管（评论管理既在「评论」职责里，也一直是「文章」在用）
  *  - adminOnly  : 系统治理权，仅管理员（用户封禁/团契处置/财务/设置/权限分配）
  *  - 两者都不填 : 全体管理成员可见（仪表盘、管理消息）
  *
  * 于是「每个审核员看到的后台菜单不一样」是数据驱动的：
  * 管理员分配/撤销模块后，该审核员刷新即可看到菜单变化。
+ *
+ * module 只能填 MODULE_ORDER 里登记过的键：权限中心照着那份表发牌，填错一个字母
+ * 就是那张牌发出去没人认得 —— 静态门 scan-admin-gates.mjs 会双向对账。
  */
+type NavScope = { adminOnly?: boolean; module?: ModuleKey | ModuleKey[] };
+
 const NAV_GROUPS: {
   group: string;
-  items: { href: string; label: string; adminOnly?: boolean; module?: ModuleKey }[];
+  items: ({ href: string; label: string } & NavScope)[];
 }[] = [
   { group: '概览', items: [
     { href: '/admin', label: '仪表盘' },
@@ -154,7 +160,7 @@ const NAV_GROUPS: {
   { group: '内容', items: [
     { href: '/admin/contents', label: '内容管理', module: 'contents' },
     { href: '/admin/reviews', label: '内容审核', module: 'contents' },
-    { href: '/admin/comments', label: '评论管理', module: 'contents' },
+    { href: '/admin/comments', label: '评论管理', module: ['comments', 'contents'] },
     { href: '/admin/tags', label: '标签管理', module: 'contents' },
     { href: '/admin/reports', label: '举报处理', module: 'reports' },
     { href: '/admin/prayers', label: '代祷墙管理', module: 'prayers' },
@@ -197,11 +203,13 @@ const NAV_GROUPS: {
  * 那么只分到「文章」模块的审核员手动输 /admin/sermons 就能进到完整的讲道管理页，
  * 新建/编辑/删除一个不少，点下去全是 403 —— 门看着立着，其实量的是角色这一个字。
  */
-function navItemVisible(user: User | null, item: { adminOnly?: boolean; module?: ModuleKey }) {
+function navItemVisible(user: User | null, item: NavScope) {
   if (!user || (user.role !== 'admin' && user.role !== 'moderator')) return false;
   if (item.adminOnly) return user.role === 'admin';
   if (!item.module) return true;
-  return user.role === 'admin' || (user.moderatorScopes || []).includes(item.module);
+  const scopes = user.moderatorScopes || [];
+  const modules = Array.isArray(item.module) ? item.module : [item.module];
+  return user.role === 'admin' || modules.some((m) => scopes.includes(m));
 }
 
 export function canEnterAdmin(user: User | null, href: string) {
@@ -229,7 +237,7 @@ export function AdminNav() {
   const current = flat.filter((it) => isActive(it.href)).sort((a, b) => b.href.length - a.href.length)[0];
 
   // 与页面门共用 navItemVisible：入口藏了、页面却放行，等于把后台路径留给会手动输网址的人。
-  const canSee = (it: { adminOnly?: boolean; module?: ModuleKey }) => navItemVisible(user, it);
+  const canSee = (it: NavScope) => navItemVisible(user, it);
 
   const kw = query.trim();
   const groups = NAV_GROUPS.map((g) => ({

@@ -6,7 +6,10 @@ import { requireRole } from '@/server/auth';
 export const dynamic = 'force-dynamic';
 
 export const GET = withApi(async (req: NextRequest) => {
-  await requireRole(req, ['admin', 'moderator']);
+  const staff = await requireRole(req, ['admin', 'moderator']);
+  // 审计留痕按 /admin/audit 的口径仅限管理员。仪表盘原来把最近 12 条一起发给任何
+  // 管理成员，等于在另一页上把那条「仅限平台管理员查看」的规矩作废了。
+  const isAdmin = staff.role === 'admin';
 
   const [totals] = await q<any>(`
     SELECT
@@ -34,12 +37,14 @@ export const GET = withApi(async (req: NextRequest) => {
   const growth = await q<any>(`
     SELECT DATE(created_at) AS d, COUNT(*) AS c FROM users
     WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) GROUP BY DATE(created_at) ORDER BY d`);
-  const recentAudit = await q<any>(`
-    SELECT a.id, a.action, a.entity_type, a.entity_id, a.detail, a.ip,
-           DATE_FORMAT(a.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
-           u.display_name AS actor_name
-    FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_id
-    ORDER BY a.created_at DESC LIMIT 12`);
+  const recentAudit = isAdmin
+    ? await q<any>(`
+        SELECT a.id, a.action, a.entity_type, a.entity_id, a.detail, a.ip,
+               DATE_FORMAT(a.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at,
+               u.display_name AS actor_name
+        FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_id
+        ORDER BY a.created_at DESC LIMIT 12`)
+    : [];
   const topContent = await q<any>(`
     SELECT c.id, c.title, c.like_count, c.view_count, c.comment_count, c.status
     FROM contents c ORDER BY c.view_count DESC LIMIT 8`);

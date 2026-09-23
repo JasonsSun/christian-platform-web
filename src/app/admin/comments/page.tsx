@@ -54,13 +54,13 @@ export default function AdminCommentsPage() {
   if (!user)
     return (
       <AdminLayout>
-        <AccessState title="请先登录" desc="评论审核只对内容模块审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/comments" />
+        <AccessState title="请先登录" desc="评论审核只对评论 / 内容模块的审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/comments" />
       </AdminLayout>
     );
   if (!canSee)
     return (
       <AdminLayout>
-        <AccessState kind="ban" title="无权限访问" desc="需要内容模块的审核员或管理员账号，才能删除与批量处置评论。" />
+        <AccessState kind="ban" title="无权限访问" desc="需要评论或内容模块的审核权限，或管理员账号，才能删除与批量处置评论。" />
       </AdminLayout>
     );
 

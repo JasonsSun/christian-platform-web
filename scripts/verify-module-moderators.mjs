@@ -2,7 +2,8 @@
 //   1) 权限等级 admin > 模块审核员(moderator + scope) > 普通成员
 //   2) 审核员只能在自己被分配的模块里治理（含删除下放），越模块一律 403
 //   3) 无任何模块的审核员 = 无治理权
-//   4) 治理团队公示接口公开可见；管理层私信对普通成员 403
+//   4) 每张能单独发出的模块牌都管得到对应治理入口（评论牌 = 评论管理页）
+//   5) 治理团队公示接口公开可见；管理层私信对普通成员 403
 //
 // 运行: BASE=http://127.0.0.1:3200 node scripts/verify-module-moderators.mjs
 import fs from 'node:fs';
@@ -63,18 +64,31 @@ const setScopes = async (userId, modules) => {
 const [[admin]] = await conn.query("SELECT id, role FROM users WHERE status='active' AND role='admin' LIMIT 1");
 if (!admin) { console.log('缺少 admin 账号'); await conn.end(); process.exit(1); }
 
+// 上一趟跑到一半崩了就不走到清理，这些 e2e_ 账号会留在库里：它们都带模块授权，
+// 会出现在社区页的治理团队公示里。开跑前先扫一遍，别让一次崩溃留下常驻的假审核员。
+const [[stale]] = await conn.query(
+  `SELECT GROUP_CONCAT(id) AS ids, COUNT(*) AS n FROM users WHERE username LIKE 'e2e\\_%'`
+);
+if (Number(stale.n) > 0) {
+  await conn.query(`DELETE FROM users WHERE username LIKE 'e2e\\_%'`);
+  console.log(`先清掉上一趟崩溃残留的 ${stale.n} 个 e2e 账号`);
+}
+
 const member = await mkUser('e2e_member_' + rand(), 'member');
 const prayersMod = await mkUser('e2e_prayers_' + rand(), 'moderator');
 const contentMod = await mkUser('e2e_content_' + rand(), 'moderator');
+const commentMod = await mkUser('e2e_comment_' + rand(), 'moderator');
 const noScopeMod = await mkUser('e2e_noscope_' + rand(), 'moderator');
 await setScopes(prayersMod.id, ['prayers']);
 await setScopes(contentMod.id, ['contents', 'comments']);
+await setScopes(commentMod.id, ['comments']);
 await setScopes(noScopeMod.id, []);
 
 const T_ADMIN = tokenFor(admin);
 const T_MEM = tokenFor(member);
 const T_PRAY = tokenFor(prayersMod);
 const T_CONT = tokenFor(contentMod);
+const T_CMT = tokenFor(commentMod);
 const T_NONE = tokenFor(noScopeMod);
 
 const api = async (method, path, tok, body) => {
@@ -130,6 +144,19 @@ check('无模块审核员不可看代祷管理 (403)', (await api('GET', '/admin
 check('管理员可看媒体中心 (200)', (await api('GET', '/admin/media', T_ADMIN)).status === 200);
 check('普通成员不可看后台 (403)', (await api('GET', '/admin/prayers', T_MEM)).status === 403);
 
+// 「评论」是一张可以单独发出的牌（权限中心能勾、治理团队页也公示），
+// 那它就必须真管得到评论治理那一页；只认 contents 时这张牌发出去是空的。
+console.log('\n【评论模块单独发牌也管得到评论治理】');
+const cmtGet = await api('GET', '/admin/comments', T_CMT);
+check('评论审核员可看评论管理 (200)', cmtGet.status === 200, `status=${cmtGet.status}`);
+check('兼任评论+文章的审核员可看评论管理 (200)', (await api('GET', '/admin/comments', T_CONT)).status === 200);
+check('代祷审核员不可看评论管理 (403)', (await api('GET', '/admin/comments', T_PRAY)).status === 403);
+check('无模块审核员不可看评论管理 (403)', (await api('GET', '/admin/comments', T_NONE)).status === 403);
+const cmtDel = await api('DELETE', '/admin/comments', T_CMT);
+check('评论审核员能过守卫（没选评论报 422，而不是 403）', cmtDel.status === 422, `status=${cmtDel.status}`);
+const cmtDelNo = await api('DELETE', '/admin/comments', T_PRAY);
+check('代祷审核员删评论仍被拒 (403)', cmtDelNo.status === 403, `status=${cmtDelNo.status}`);
+
 console.log('\n【系统治理权仍仅管理员】');
 check('文章审核员不可看用户管理 (403)', (await api('GET', '/admin/users', T_CONT)).status === 403);
 check('文章审核员不可看权限中心 (403)', (await api('GET', '/admin/roles', T_CONT)).status === 403);
@@ -157,6 +184,9 @@ const contentBox = (team.json?.modules || []).find((m) => m.key === 'contents');
 check('兼任两模块的审核员出现在各自模块框',
   !(contentBox?.moderators || []).some((m) => m.id === prayersMod.id) &&
   (contentBox?.moderators || []).some((m) => m.id === contentMod.id));
+const commentsBox = (team.json?.modules || []).find((m) => m.key === 'comments');
+check('公示在「评论互动」名下的人，评论管理确实点得开',
+  (commentsBox?.moderators || []).some((m) => m.id === commentMod.id) && cmtGet.status === 200);
 
 console.log('\n【管理层私信：普通成员完全隔离】');
 check('普通成员读管理消息被拒 (403)', (await api('GET', '/admin/messages', T_MEM)).status === 403);
@@ -172,7 +202,8 @@ check('管理员可读取该会话 (200)', thread.status === 200, `status=${thre
 // 清理
 await conn.query(`DELETE FROM staff_messages WHERE from_id IN (?,?) OR to_id IN (?,?)`,
   [prayersMod.id, admin.id, prayersMod.id, admin.id]);
-await conn.query(`DELETE FROM users WHERE id IN (?,?,?,?)`, [member.id, prayersMod.id, contentMod.id, noScopeMod.id]);
+await conn.query(`DELETE FROM users WHERE id IN (?,?,?,?,?)`,
+  [member.id, prayersMod.id, contentMod.id, commentMod.id, noScopeMod.id]);
 await conn.end();
 
 console.log(`\n通过 ${pass} 项，失败 ${fail} 项`);

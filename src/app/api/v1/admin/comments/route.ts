@@ -14,6 +14,10 @@ export const dynamic = 'force-dynamic';
  * 之前全站评论只有内容详情页内的增删接口，没有任何治理入口 —— 被举报或含违规
  * 内容的评论只能靠删整篇内容才能清掉。这里补上全站评论视图：按关键词/作者/内容
  * 搜索、删除单条或批量，删除后回写 contents.comment_count 保证计数不漂移。
+ *
+ * 把关认「评论」或「文章」任一模块：评论治理本来就是这两个模块的共同职责，
+ * 只认其中一个，另一个模块的审核员就会被公示在治理团队页的「评论互动」名下，
+ * 点进对应后台页却是无权限访问 —— 那张牌发出去管不到任何东西。
  */
 
 const str = (v: unknown) => (typeof v === 'string' ? v : v == null ? '' : String(v));
@@ -24,7 +28,7 @@ const num = (v: string | null, d: number) => {
 
 /** GET /api/v1/admin/comments?q=&page=&pageSize= */
 export const GET = withApi(async (req: NextRequest) => {
-  await requireModeratorModule(req, 'contents');
+  await requireModeratorModule(req, ['comments', 'contents']);
   const sp = new URL(req.url).searchParams;
   const page = num(sp.get('page'), 1);
   const pageSize = Math.min(num(sp.get('pageSize'), 20), 50);
@@ -79,7 +83,7 @@ export const GET = withApi(async (req: NextRequest) => {
  * 删除后回写所属内容的 comment_count（不小于 0），避免删评论后计数虚高。
  */
 export const DELETE = withApi(async (req: NextRequest) => {
-  const user = (await requireModeratorModule(req, 'contents')) as UserRow;
+  const user = (await requireModeratorModule(req, ['comments', 'contents'])) as UserRow;
   const sp = new URL(req.url).searchParams;
   const ids = str(sp.get('ids')).split(',').map((s) => s.trim()).filter(Boolean).slice(0, 100);
   if (!ids.length) throw new HttpError(422, 'VALIDATION_FAILED', '请先选择要删除的评论');

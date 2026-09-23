@@ -49,18 +49,22 @@ export async function userModuleScopes(user: UserRow | null): Promise<ModuleKey[
 /**
  * 抛出式守卫：要求「该模块的审核员」或「管理员」。
  * 用于纯管理端写操作（该操作不存在"作者本人"这一放行分支时）。
+ *
+ * module 也可以给一组：命中其中任一个即通过。一个治理入口同时归属多个模块时用这种写法，
+ * 只认其中一个就会让另一个模块的审核员被公示在治理团队页上、点进对应后台页却是 403。
  */
 export async function requireModeratorModule(
   req: NextRequest | Request,
-  module: ModuleKey
+  module: ModuleKey | ModuleKey[]
 ): Promise<UserRow> {
   const user = await requireUser(req);
   if (user.role === 'admin') return user;
   if (user.role !== 'moderator') throw forbidden('需要审核员权限');
   const scopes = await getModeratorScopes(user.id);
-  if (!scopes.includes(module)) {
-    const meta = MODULE_META[module];
-    throw forbidden(`你不是「${meta.fullLabel}」模块的审核员，无权执行该操作`);
+  const wanted = Array.isArray(module) ? module : [module];
+  if (!wanted.some((m) => scopes.includes(m))) {
+    const names = wanted.map((m) => MODULE_META[m].fullLabel).join('、');
+    throw forbidden(`你不是「${names}」模块的审核员，无权执行该操作`);
   }
   return user;
 }

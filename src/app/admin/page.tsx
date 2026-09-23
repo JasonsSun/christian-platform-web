@@ -72,6 +72,13 @@ export default function AdminDashboard() {
   if (!data) return <AdminLayout><Empty label="暂无数据" hint="统计接口没有返回内容，可稍后重试" /></AdminLayout>;
 
   const t = data.totals;
+  // 卡面上的快捷入口和侧栏读同一道门：仪表盘对全体管理成员开放，模块页却不是，
+  // 于是只分到「评论」的审核员点用户数、点待审核，张张落到「无权限访问」。
+  // 进不去就不给链接（数字照看，箭头和「点此处理」一起收掉）。
+  const go = (href: string) => (canEnterAdmin(user, href) ? href : undefined);
+  // 「最近审计日志」面板整块按 /admin/audit 的门收放：接口那边已经不往下发留痕了，
+  // 这里再留一个空面板反而像渲染坏了。
+  const seeAudit = canEnterAdmin(user, '/admin/audit');
   const byDay = new Map<string, number>((data.growth || []).map((g) => {
     const raw = String(g.d);
     return [raw.length > 10 ? raw.slice(0, 10) : raw, g.c] as [string, number];
@@ -104,18 +111,18 @@ export default function AdminDashboard() {
           data-reveal-group 让六格逐格浮上来、data-count 让数字跑到位（.num 保证等宽数位，
           计数过程中卡片宽度不变，不会左右抽动）。 */}
       <div data-reveal-group className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4 mb-6 lg:mb-8">
-        <StatCard title="用户数" value={t.users} hint={`封禁 ${t.suspended}`} href="/admin/users" />
-        <StatCard title="已发布内容" value={t.published} hint={`总计 ${t.contents}`} href="/admin/contents" />
+        <StatCard title="用户数" value={t.users} hint={`封禁 ${t.suspended}`} href={go('/admin/users')} />
+        <StatCard title="已发布内容" value={t.published} hint={`总计 ${t.contents}`} href={go('/admin/contents')} />
         <StatCard
           title="待审核"
           value={t.pendingTasks}
-          hint={t.pendingTasks > 0 ? '点此处理' : '已清空'}
-          href="/admin/reviews"
+          hint={go('/admin/reviews') ? (t.pendingTasks > 0 ? '点此处理' : '已清空') : undefined}
+          href={go('/admin/reviews')}
           accent={t.pendingTasks > 0}
         />
-        <StatCard title="活动数" value={t.activities} hint={`待审 ${t.pendingEvents}`} href="/admin/activities" />
-        <StatCard title="报名数" value={t.registrations} href="/admin/checkins" />
-        <StatCard title="团契数" value={t.groupCount} href="/admin/groups" />
+        <StatCard title="活动数" value={t.activities} hint={`待审 ${t.pendingEvents}`} href={go('/admin/activities')} />
+        <StatCard title="报名数" value={t.registrations} href={go('/admin/checkins')} />
+        <StatCard title="团契数" value={t.groupCount} href={go('/admin/groups')} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
@@ -126,7 +133,7 @@ export default function AdminDashboard() {
             <span className="num text-xs text-ink-500 shrink-0">共 {statusTotal} 篇</span>
           </div>
           {data.byStatus.length === 0 ? (
-            <Empty label="暂无内容" href="/admin/contents" hrefLabel="去内容管理" />
+            <Empty label="暂无内容" href={go('/admin/contents')} hrefLabel="去内容管理" />
           ) : (
             <div className="flex flex-col gap-3">
               {data.byStatus.map((s) => {
@@ -195,7 +202,7 @@ export default function AdminDashboard() {
             {growthTotal === 0 ? (
               <p className="absolute inset-x-0 top-[38%] px-2 text-center text-xs text-ink-500">
                 近 7 天没有新注册，平台冷启动阶段属正常
-                <Link href="/admin/users" className="text-primary-600 hover:underline ml-1 py-3 -my-3 whitespace-nowrap">看用户管理的存量构成</Link>
+                {go('/admin/users') && <Link href="/admin/users" className="text-primary-600 hover:underline ml-1 py-3 -my-3 whitespace-nowrap">看用户管理的存量构成</Link>}
               </p>
             ) : null}
           </div>
@@ -203,11 +210,13 @@ export default function AdminDashboard() {
       </div>
 
       <div data-reveal-group className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-        {/* 最近审计日志：只留 6 条 + 入口，不再套一层内滚动 */}
+        {/* 最近审计日志：只留 6 条 + 入口，不再套一层内滚动。
+            整块跟 /admin/audit 同一道门：留痕仅限管理员，接口对非管理员也不发了。 */}
+        {seeAudit && (
         <div className="card-tech hover:!transform-none rounded-2xl p-4 sm:p-5">
           <div className="flex items-baseline justify-between gap-3 mb-4">
             <SectionTitle>最近审计日志</SectionTitle>
-            <PanelLink href="/admin/audit">查看全部</PanelLink>
+            <PanelLink href={go('/admin/audit')}>查看全部</PanelLink>
           </div>
           {data.recentAudit.length === 0 ? (
             <Empty label="暂无审计日志" hint="管理员与审核员的每一次处置都会留痕在这里" />
@@ -235,12 +244,13 @@ export default function AdminDashboard() {
             </ul>
           )}
         </div>
+        )}
 
-        {/* 热门内容 Top8 */}
-        <div className="card-tech hover:!transform-none rounded-2xl p-4 sm:p-5">
+        {/* 热门内容 Top8：审计面板收掉时占满整行，不然右半空着一块 */}
+        <div className={`card-tech hover:!transform-none rounded-2xl p-4 sm:p-5${seeAudit ? '' : ' lg:col-span-2'}`}>
           <div className="flex items-baseline justify-between gap-3 mb-4">
             <SectionTitle>热门内容 Top8</SectionTitle>
-            <PanelLink href="/admin/contents">内容管理</PanelLink>
+            <PanelLink href={go('/admin/contents')}>内容管理</PanelLink>
           </div>
           {data.topContent.length === 0 ? (
             <Empty label="暂无内容" />
@@ -287,8 +297,9 @@ export default function AdminDashboard() {
   );
 }
 
-/** 面板右上角的「查看全部 →」：箭头只在做位移，不改变文字宽度。 */
-function PanelLink({ href, children }: { href: string; children: string }) {
+/** 面板右上角的「查看全部 →」：箭头只在做位移，不改变文字宽度。给不出 href 就不出现。 */
+function PanelLink({ href, children }: { href?: string; children: string }) {
+  if (!href) return null;
   return (
     <Link
       href={href}
