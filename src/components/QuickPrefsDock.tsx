@@ -9,7 +9,9 @@
  * 并且圆点可拖动、松手吸附左右边、位置记进 localStorage，键盘方向键也能挪。
  *
  * 停靠位不再是一个写死的常数：挂载和换页时按当前这一页量一个出来，往下让开每一颗
- * 「要瞄准才点得到」的小控件（见 AIM_W / AIM_H）。用户拖过之后完全听他的。
+ * 「要瞄准才点得到」的小控件（见 AIM_W / AIM_H），也让开铺到圆点那一列上的每一行字
+ * （见 textLinesInColumn —— 副标题末尾被啃掉两三个字，按盒面积是量不出来的）。
+ * 用户拖过之后完全听他的。
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -33,9 +35,16 @@ const Y_DEFAULT = 152;
 const AIM_W = 140;
 const AIM_H = 60;
 const AIM_SEL = 'a,button,input,select,summary,label';
+/* 页头带子的下界（按圆点的**上沿**算，圆点底部因此最多到 HEAD_BAND + 44）：
+   往上够不到时才往下让，让到这儿为止；再往下就是正文列，怎么停都会压到某一行，追下去没有终点。
+   300 是量出来的：/activities 要让到 258 才躲开通栏的「发布活动」按钮（358×50，
+   比 AIM_H 矮，是要瞄准的热区）。 */
+const HEAD_BAND = 300;
 
 type Side = 'left' | 'right';
 type Pos = { side: Side; y: number };
+/** 一行印出来的字占了哪一段纵向区间 */
+type LineBox = { top: number; bottom: number };
 
 function clampY(y: number) {
   const max = Math.max(TOP_MIN, (typeof window === 'undefined' ? 844 : window.innerHeight) - TABBAR - DOT - 8);
@@ -62,37 +71,90 @@ function readPos(): Pos {
   }
 }
 
-/** 圆点这一格压到了哪颗要瞄准的控件，返回它的下沿（没有则 null）。
- *  圆点自己 z-60 盖在最上面，所以要从命中栈往下找到第一个不是它的东西。 */
-function aimBottom(root: HTMLElement | null, side: Side, top: number): number | null {
+/** 圆点那一列里所有「要瞄准才点得到」的控件盒。
+ *
+ * 和字形行盒一样不能打点采样：/groups 的「创建团契」占 y 117..161，圆点停在 80..124 只擦着
+ * 它 7px 的上沿，五个采样点（圆心 ±14）全在它上面，量出来是「干净」—— 圆点就那么把按钮切掉一角。
+ * 命中测试还另有一层漏子：页头那层科技感网格是盖在内容上的兄弟节点，elementsFromPoint 第一个
+ * 捞到的是它，closest 往上找不到按钮，整颗控件就这么没了。所以直接量控件自己的矩形。
+ */
+function aimBoxesInColumn(root: HTMLElement | null, side: Side): LineBox[] {
   const cx = side === 'right' ? innerWidth - EDGE - DOT / 2 : EDGE + DOT / 2;
+  const out: LineBox[] = [];
+  for (const el of Array.from(document.querySelectorAll(AIM_SEL))) {
+    if (el === root || (root && (root.contains(el) || el.contains(root)))) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width < 8 || r.height < 8) continue;
+    if (r.right <= cx - DOT / 2 || r.left >= cx + DOT / 2) continue;
+    // 整张卡片 358×105 压掉一角还剩九成可点，不必躲；小方块才是要瞄准的
+    if (r.width >= AIM_W && r.height >= AIM_H) continue;
+    const cs = getComputedStyle(el);
+    if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity < 0.05) continue;
+    out.push({ top: r.top, bottom: r.bottom });
+  }
+  return out;
+}
+
+/** 圆点压住了哪一行**印出来的字**：先把这一列里的字形行盒一次性量出来。
+ *
+ * 让开控件的老规则管不到这里：/feed 的副标题铺到 x=366，圆点停在 y 152 只啃掉末尾 8%
+ * 的盒面积，按「整盒被压两成」判什么都算不上缺陷，可屏幕上确实看不见「呈现」两个字。
+ * /activities 的副标题被啃 9%，/calendar 与 /community 页脚那句经文被啃掉一角。
+ * 所以量的是 Range.getClientRects 的每一个行盒，压着几个字算几个。
+ */
+function textLinesInColumn(root: HTMLElement | null, side: Side): LineBox[] {
+  const cx = side === 'right' ? innerWidth - EDGE - DOT / 2 : EDGE + DOT / 2;
+  const out: LineBox[] = [];
+  const range = document.createRange();
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const el = node.parentElement;
+    if (!el || !(node.textContent || '').trim()) continue;
+    if (el === root || root?.contains(el) || el.closest('script,style,[hidden]')) continue;
+    // 停靠位只在页头那一带里挑，正文列的字犯不着一个个量
+    const host = el.getBoundingClientRect();
+    if (host.bottom < TOP_MIN || host.top > HEAD_BAND + DOT) continue;
+    const cs = getComputedStyle(el);
+    // 窄屏抽屉收起来时是 invisible + max-h-0：visibility 会继承，量子元素自己就够
+    if (cs.display === 'none' || cs.visibility === 'hidden' || +cs.opacity < 0.05) continue;
+    range.selectNodeContents(node);
+    for (const lr of Array.from(range.getClientRects())) {
+      if (lr.width < 1 || lr.height < 1) continue;
+      if (lr.right <= cx - DOT / 2 || lr.left >= cx + DOT / 2) continue;
+      out.push({ top: lr.top, bottom: lr.bottom });
+    }
+  }
+  return out;
+}
+
+/** 圆点占的这 44px 压到了哪一格，返回它的下沿（没有则 null）。传进来的矩形已经筛过列了。 */
+function boxBottom(boxes: LineBox[], top: number): number | null {
   let bottom: number | null = null;
-  for (const [dx, dy] of [[0, 0], [-14, -14], [14, -14], [-14, 14], [14, 14]]) {
-    const x = cx + dx;
-    const y = top + DOT / 2 + dy;
-    if (x < 0 || x >= innerWidth || y < 0 || y >= innerHeight) continue;
-    const stack = document.elementsFromPoint(x, y);
-    const hit = stack.find((e) => !(root && root.contains(e)));
-    const host = hit?.closest?.(AIM_SEL) as HTMLElement | null;
-    if (!host) continue;
-    const r = host.getBoundingClientRect();
-    if (r.width < AIM_W || r.height < AIM_H) bottom = Math.max(bottom ?? 0, r.bottom);
+  for (const b of boxes) {
+    if (b.bottom <= top || b.top >= top + DOT) continue;
+    bottom = Math.max(bottom ?? 0, b.bottom);
   }
   return bottom;
 }
 
-/** 从起点往下让开每一颗要瞄准的控件，最多让 6 次（一屏页头不会超过这个数）。 */
+/** 让路：从起点往两边等距外扩，取第一个「既不压控件也不压字」的停靠位，挪得越少越好。
+ *
+ * 为什么往上优先得靠距离说话：/calendar 往上 7px 就落进页头右侧那片空白，往下要挪 65px
+ * 才干净，可那儿正好压住「全部」下拉右侧的原生箭头（它 326 宽，按 AIM 规则算不用瞄准的，
+ * 量具看不见那枚箭头），看着就像个 bug。
+ * 只在页头带子 [TOP_MIN, HEAD_BAND] 里找，再往下就是正文列，怎么停都会压到某一行，追下去
+ * 没有终点。找不到就退回起点 —— 停在一个挪了一半的位置比停在原地更糟。 */
 function parkY(root: HTMLElement | null, side: Side): number {
-  const max = Math.max(TOP_MIN, innerHeight - TABBAR - DOT - EDGE);
-  let y = clampY(Y_DEFAULT);
-  for (let i = 0; i < 6; i += 1) {
-    const b = aimBottom(root, side, y);
-    if (b === null) break;
-    const next = clampY(b + EDGE);
-    if (next <= y || next >= max) break;
-    y = next;
+  const start = clampY(Y_DEFAULT);
+  const lowest = Math.min(HEAD_BAND, Math.max(TOP_MIN, innerHeight - TABBAR - DOT - EDGE));
+  const boxes = aimBoxesInColumn(root, side).concat(textLinesInColumn(root, side));
+  const blockedAt = (y: number) => boxBottom(boxes, y) !== null;
+  if (!blockedAt(start)) return start;
+  for (let d = 1; d <= HEAD_BAND; d += 1) {
+    if (start - d >= TOP_MIN && !blockedAt(start - d)) return start - d;
+    if (start + d <= lowest && !blockedAt(start + d)) return start + d;
   }
-  return y;
+  return start;
 }
 
 export default function QuickPrefsDock() {
