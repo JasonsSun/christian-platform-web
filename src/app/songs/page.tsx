@@ -3,9 +3,11 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
+import { useAuth } from '@/lib/auth';
 import { qs, apiGet } from '@/lib/api';
 import { formatDate } from '@/lib/format';
 import RecentPlays from '@/components/RecentPlays';
+import { Empty } from '@/components/ui';
 import dynamic from 'next/dynamic';
 
 // 投稿弹窗点击才出现，按需加载
@@ -30,6 +32,7 @@ const FILTER_TABS = [
 type FilterTab = (typeof FILTER_TABS)[number]['id'];
 
 export default function SongsPage() {
+  const { user, loading: authLoading } = useAuth();
   const [input, setInput] = useState('');
   const [q, setQ] = useState('');
   const [category, setCategory] = useState('');
@@ -58,7 +61,9 @@ export default function SongsPage() {
     });
   const { data, loading, error } = useApi<SongsResp>(isList ? path : null, [q, category, sort, tab]);
 
-  const favoritesPath = tab === 'favorites' ? '/songs/favorites' : null;
+  // 未登录不去要 /songs/favorites：这一趟必然 401，红色的「加载失败」会把「你还没登录」
+  // 说成站点坏了（下面改成立在原地的登录门）。
+  const favoritesPath = tab === 'favorites' && user ? '/songs/favorites' : null;
   const {
     data: favData,
     loading: favLoading,
@@ -136,10 +141,22 @@ export default function SongsPage() {
             <IconMusicNote className="w-4 h-4 text-white" strokeWidth={1.7} />
             <span className="num text-white font-medium">
               {tab === 'favorites'
-                ? `${favItems.length} 首收藏`
+                ? // 匿名没有「我的」可数，摆一个「0 首收藏」是假数字；登录态还没落定时也一样，
+                  // 先给标签，等真数据到了再报数。
+                  (!authLoading && !user
+                    ? '登录后查看收藏'
+                    : favData
+                      ? `${favItems.length} 首收藏`
+                      : '我的收藏')
                 : tab === 'vocal'
-                  ? `${vocalCount} 首有人声演唱`
-                  : `${libTotal ?? '—'} 首诗歌 · ${vocalCount} 首有人声`}
+                  ? // 「只要人声」页签上的 0 由下面的空态卡片负责说（它还带着投稿入口），
+                    // 页眉这行是站名一样的品牌位，摆一个「0 首有人声演唱」读起来像坏了。
+                    (vocalCount ? `${vocalCount} 首有人声演唱` : '人声演唱版本')
+                  : // 人声版本站内还没上架（库里 14 首全是纯音乐），把「0 首有人声」摆在页眉
+                    // 读起来像出了故障。数为 0 的那半句直接不报，只留总量。
+                    (vocalCount
+                      ? `${libTotal ?? '—'} 首诗歌 · ${vocalCount} 首有人声`
+                      : `${libTotal ?? '—'} 首诗歌`)}
             </span>
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 md:mb-6 text-glow">赞美诗歌</h1>
@@ -377,41 +394,52 @@ export default function SongsPage() {
         )}
 
         {/* 我的收藏模式 */}
-        {tab === 'favorites' && (
-          <>
-            {favLoading && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <SongCardSkeleton key={i} />
-                ))}
-              </div>
-            )}
-            {favError && (
-              <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm">
-                加载失败：{favError}
-                {favError.includes('401') || favError.includes('登录') ? (
-                  <Link href="/login?next=/songs" className="underline ml-1">去登录</Link>
-                ) : null}
-              </div>
-            )}
-            {!favLoading && !favError && favItems.length === 0 && (
-              <div className="bg-white rounded-2xl p-12 shadow-soft border border-ink-100 text-center">
-                <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-gold-100 to-gold-200 flex items-center justify-center text-gold-600">
-                  <IconStar className="w-8 h-8" strokeWidth={1.5} />
+        {tab === 'favorites' && !authLoading && !user ? (
+          <Empty label="登录后即可查看我的收藏" hint="收藏挂在账号下，换设备、换个浏览器登录都能带过去。">
+            <Link className="btn-primary" href="/login?next=%2Fsongs">
+              去登录
+            </Link>
+            <button type="button" className="btn-secondary" onClick={() => setTab('all')}>
+              先逛逛诗歌
+            </button>
+          </Empty>
+        ) : (
+          tab === 'favorites' && (
+            <>
+              {favLoading && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <SongCardSkeleton key={i} />
+                  ))}
                 </div>
-                <h2 className="font-display text-xl font-bold text-ink-900 mb-2">还没有收藏的诗歌</h2>
-                <p className="text-ink-500 mb-4">在诗歌详情页点击收藏，让喜爱的诗歌常伴左右</p>
-                <Link href="/songs" className="btn-primary btn-sm inline-block px-6 text-sm">去逛逛诗歌</Link>
-              </div>
-            )}
-            {!favLoading && !favError && favItems.length > 0 && (
-              <div data-reveal-group className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
-                {favItems.map((s) => (
-                  <SongCard key={s.id} s={s} onRequestVocal={openSubmit} />
-                ))}
-              </div>
-            )}
-          </>
+              )}
+              {favError && (
+                <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm">
+                  加载失败：{favError}
+                  {favError.includes('401') || favError.includes('登录') ? (
+                    <Link href="/login?next=/songs" className="underline ml-1">去登录</Link>
+                  ) : null}
+                </div>
+              )}
+              {!favLoading && !favError && favItems.length === 0 && (
+                <div className="bg-white rounded-2xl p-12 shadow-soft border border-ink-100 text-center">
+                  <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-gold-100 to-gold-200 flex items-center justify-center text-gold-600">
+                    <IconStar className="w-8 h-8" strokeWidth={1.5} />
+                  </div>
+                  <h2 className="font-display text-xl font-bold text-ink-900 mb-2">还没有收藏的诗歌</h2>
+                  <p className="text-ink-500 mb-4">在诗歌详情页点击收藏，让喜爱的诗歌常伴左右</p>
+                  <Link href="/songs" className="btn-primary btn-sm inline-block px-6 text-sm">去逛逛诗歌</Link>
+                </div>
+              )}
+              {!favLoading && !favError && favItems.length > 0 && (
+                <div data-reveal-group className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                  {favItems.map((s) => (
+                    <SongCard key={s.id} s={s} onRequestVocal={openSubmit} />
+                  ))}
+                </div>
+              )}
+            </>
+          )
         )}
       </div>
 
