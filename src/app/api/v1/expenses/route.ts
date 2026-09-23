@@ -45,21 +45,24 @@ export const GET = withApi(async (req: NextRequest) => {
     `SELECT e.id, e.category, e.title, e.note, e.amount_cents, e.period,
             DATE_FORMAT(e.created_at,'%Y-%m-%dT%H:%i:%sZ') AS created_at
      FROM expenses e ${whereSql}
-     ORDER BY e.period DESC, e.created_at DESC, e.id DESC`
+     ORDER BY e.period DESC, e.created_at DESC, e.id DESC`,
+    args
   );
 
   // 分类汇总
   const byCategory = await q<any>(
     `SELECT category, COUNT(*) AS c, COALESCE(SUM(amount_cents),0) AS s
      FROM expenses ${whereSql.replace(/\be\./g, '')}
-     GROUP BY category ORDER BY s DESC`
+     GROUP BY category ORDER BY s DESC`,
+    args
   );
 
   // 月度汇总(近12个月)
   const byPeriod = await q<any>(
     `SELECT period, COUNT(*) AS c, COALESCE(SUM(amount_cents),0) AS s
      FROM expenses ${whereSql.replace(/\be\./g, '')}
-     GROUP BY period ORDER BY period DESC LIMIT 12`
+     GROUP BY period ORDER BY period DESC LIMIT 12`,
+    args
   );
 
   const totalCents = byCategory.reduce((acc: number, r: any) => acc + Number(r.s || 0), 0);
