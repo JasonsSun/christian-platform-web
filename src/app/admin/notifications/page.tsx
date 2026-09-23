@@ -340,12 +340,12 @@ export default function AdminNotificationsPage() {
                     {(data?.recent || []).map((r) => (
                       <tr key={r.id} className="border-t border-ink-100">
                         <td className="px-4 py-3 text-ink-600">{r.user || '—'}</td>
-                        <td className="px-4 py-3 text-ink-600">
+                        <td className="px-4 py-3 text-ink-600 whitespace-nowrap">
                           <span className="mr-1 inline-flex items-center align-middle" aria-hidden><Glyph glyph={NOTIF_TYPE_ICON[r.type] || '🔔'} className="w-4 h-4" /></span>
                           {notifTypeLabel(r.type)}
                         </td>
                         <td className="px-4 py-3 text-ink-900">{r.title}<div className="text-xs text-ink-400">{r.body}</div></td>
-                        <td className="px-4 py-3 text-ink-500">{formatDateTime(r.createdAt) || '—'}</td>
+                        <td className="px-4 py-3 text-ink-500 whitespace-nowrap">{formatDateTime(r.createdAt) || '—'}</td>
                         <td className="px-4 py-3 text-center">{r.read ? <Badge tone="gray">已读</Badge> : <Badge tone="gold">未读</Badge>}</td>
                       </tr>
                     ))}

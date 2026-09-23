@@ -157,7 +157,7 @@ export default function AdminDonationsPage() {
                       <td className="px-4 py-3">
                         <div className="text-ink-800 font-medium">
                           {d.displayName}
-                          {d.anonymous ? <span className="ml-1.5 text-[11px] text-ink-400">（匿名展示）</span> : null}
+                          {d.anonymous ? <span className="ml-1.5 text-[11px] text-ink-400 whitespace-nowrap">（匿名展示）</span> : null}
                         </div>
                         <div className="text-xs text-ink-400 mt-0.5">
                           {d.donor ? `@${d.donor.username} · ${d.donor.displayName}` : '账号已注销'}
@@ -183,7 +183,7 @@ export default function AdminDonationsPage() {
                           <div className="text-xs text-ink-400 mt-1">{formatDateTime(d.reviewedAt)}</div>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-ink-400">{formatDateTime(d.createdAt)}</td>
+                      <td className="px-4 py-3 text-ink-400 whitespace-nowrap">{formatDateTime(d.createdAt)}</td>
                       <td className="px-4 py-3">
                         <div className="inline-flex flex-wrap justify-end gap-1">
                           <button

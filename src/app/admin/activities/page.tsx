@@ -152,7 +152,7 @@ export default function AdminActivitiesPage() {
                   </td>
                   {/* 接口给的是带 Z 的 UTC 串，slice 出来的墙上时间比本机早 8 小时，
                       会和活动详情页（formatDateTime）对不上同一场活动 */}
-                  <td className="px-4 py-3 text-ink-600">{formatDateTime(a.startAt) || '—'}</td>
+                  <td className="px-4 py-3 text-ink-600 whitespace-nowrap">{formatDateTime(a.startAt) || '—'}</td>
                   <td className="num px-4 py-3 text-center">
                     <span className="font-medium text-ink-900">{a.confirmed}</span>
                     <span className="text-ink-400">/{a.capacity}</span>

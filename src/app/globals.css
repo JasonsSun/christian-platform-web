@@ -490,6 +490,16 @@ html, body {
     }
   }
 
+  /* 表头一律不换行，理由和上面按钮那条一样：中文的最小宽度只有一个字，所以列宽被压时
+     表头不会把表格撑开，只会被挤成竖排 —— 1280 下 /admin/audit 的「对象类型」只剩 40px
+     内容宽、裂成两行，/admin/donations 的「真实金额」差 1px 也裂了。列数固定，
+     宁可让表格多滚一点。
+     真要某一列换行，得写 !whitespace-normal：本文件这条在 @layer utilities 里、
+     且 .admin-scope th 比单类名的工具类更具体，不带 ! 盖不动它。 */
+  .admin-scope th {
+    white-space: nowrap;
+  }
+
   /* 紧凑档：后台筛选条、配额数字表单这类密集排布用的。
      站点上直接写 py-1 / px-2.5 是无效的——本文件的组件类都在 @layer utilities 块里
      且排在 @tailwind utilities 之后，同优先级下反过来盖掉工具类，所以 .input-styled

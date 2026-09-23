@@ -108,7 +108,7 @@ export default function AdminEventsPage() {
                     <div className="text-ink-700">{eventTypeLabel(e.eventType)}</div>
                     <div className="font-mono text-[11px] text-ink-400">{e.eventType}</div>
                   </td>
-                  <td className="num px-4 py-3 text-ink-500">{formatDateTime(e.createdAt) || '—'}</td>
+                  <td className="num px-4 py-3 text-ink-500 whitespace-nowrap">{formatDateTime(e.createdAt) || '—'}</td>
                   <td className="px-4 py-3 text-center">
                     <Badge tone={STATUS_MAP[e.status]?.tone || 'gray'}>{STATUS_MAP[e.status]?.label || e.status}</Badge>
                   </td>

@@ -324,7 +324,7 @@ export default function AdminExpensesPage() {
                   {data.items.map((e) => (
                     <tr key={e.id} className="border-t border-ink-100 hover:bg-ink-50/50 align-top">
                       <td className="px-4 py-3 text-ink-500 whitespace-nowrap font-medium">{e.period}</td>
-                      <td className="px-4 py-3 text-ink-600">
+                      <td className="px-4 py-3 text-ink-600 whitespace-nowrap">
                         {CATEGORY_OPTIONS.find((c) => c.id === e.category)?.label || e.category}
                       </td>
                       <td className="px-4 py-3 max-w-[240px]">

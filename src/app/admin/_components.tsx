@@ -511,7 +511,8 @@ export function TableShell({
   );
 }
 
-/** 表头统一档：13px + 字距 + 弱色，永远小于表格正文的 14px，读起来是「列名」不是「内容」。 */
+/** 表头统一档：13px + 字距 + 弱色，永远小于表格正文的 14px，读起来是「列名」不是「内容」。
+ *  不换行由 globals.css 的 .admin-scope th 统一兜底，不在这里各写一份。 */
 export function Th({ children, className = '' }: { children?: ReactNode; className?: string }) {
   return (
     <th scope="col" className={`text-left px-3 lg:px-4 py-3 text-[13px] font-semibold tracking-wide text-ink-500 ${className}`}>
