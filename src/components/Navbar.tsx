@@ -285,6 +285,20 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
+  /* 「全部功能」目录有自己的 Esc，头像下拉和窄屏抽屉却是漏网的：点开之后按 Esc 什么
+     都不会发生，只能再点一次触发器或点页面别处（实测两处 Esc 后弹层仍在）。
+     只在真的开着时挂监听，否则 Esc 会和命令面板、分享弹窗抢同一次按键。 */
+  useEffect(() => {
+    if (!menuOpen && !isMobileMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setMenuOpen(false);
+      setIsMobileMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [menuOpen, isMobileMenuOpen]);
+
   const isStaff = user?.role === 'admin' || user?.role === 'moderator';
 
   /** 该 href 所属模块是否已下线（不属于任何模块的路径恒为可见） */
@@ -419,7 +433,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                 </Link>
 
                 <div className="relative" ref={boxRef}>
-                  <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white/10 transition-colors">
+                  <button onClick={() => setMenuOpen(!menuOpen)} aria-haspopup="true" aria-expanded={menuOpen} className="flex items-center gap-2 px-2 py-1.5 rounded-xl hover:bg-white/10 transition-colors">
                     {user.avatarUrl && !avatarFailed ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={user.avatarUrl} alt={user.displayName} onError={() => setAvatarFailed(true)} className="w-8 h-8 rounded-full object-cover shrink-0"  decoding="async" loading="lazy" />
