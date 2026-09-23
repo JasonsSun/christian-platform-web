@@ -15,7 +15,13 @@ import { moduleOfPath } from '@/lib/siteModules';
 import { useDisabledModules } from '@/lib/useSiteModules';
 import { COMMAND_PALETTE_EVENT } from '@/components/CommandPalette';
 import { isBareRoute } from '@/lib/bareRoutes';
-import { IconShare } from '@/components/icons';
+import { IconBell, IconChat, IconCheckCircle, IconLightbulb, IconLock, IconLogout, IconPencil, IconSettings, IconShare, IconShield, IconUser, IconUsers } from '@/components/icons';
+
+/* 头像下拉与窄屏抽屉的账号区是同一批入口，行样式统一在这里定义：
+   以前两行各写一遍类名，图标只给「给平台提建议」补过一颗，其余全是裸文字。 */
+const MENU_ROW = 'flex items-center gap-2.5 px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap';
+const MENU_ROW_LG = 'flex items-center gap-2.5 px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap';
+const MENU_ICON = 'w-4 h-4 shrink-0';
 
 // 图标与底部标签栏同一套描边路径：同一个入口在两处出现时得长一样。
 const topLinks = [
@@ -428,30 +434,58 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
                     </span>
                   </button>
                   {menuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-pop border border-ink-100 py-2 overflow-hidden">
-                      <Link href="/me" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.profile')}</Link>
-                      {!moduleOff('/community/create') && <Link href="/community/create" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.createContent')}</Link>}
-                      {!moduleOff('/messages') && <Link href="/messages" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.messages')}</Link>}
-                      <Link href="/friends?tab=requests" className="flex items-center justify-between gap-2 px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">
-                        <span>{t('nav.friendRequests')}</span>
+                    <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-pop border border-ink-100 py-2 overflow-hidden">
+                      <Link href="/me" className={MENU_ROW}>
+                        <IconUser className={MENU_ICON} strokeWidth={1.8} />
+                        <span>{t('nav.profile')}</span>
+                      </Link>
+                      {!moduleOff('/community/create') && (
+                        <Link href="/community/create" className={MENU_ROW}>
+                          <IconPencil className={MENU_ICON} strokeWidth={1.8} />
+                          <span>{t('nav.createContent')}</span>
+                        </Link>
+                      )}
+                      {!moduleOff('/messages') && (
+                        <Link href="/messages" className={MENU_ROW}>
+                          <IconChat className={MENU_ICON} strokeWidth={1.8} />
+                          <span>{t('nav.messages')}</span>
+                        </Link>
+                      )}
+                      <Link href="/friends?tab=requests" className={MENU_ROW}>
+                        <IconUsers className={MENU_ICON} strokeWidth={1.8} />
+                        <span className="flex-1">{t('nav.friendRequests')}</span>
                         {!!frReq?.total && (
                           <span className="min-w-[18px] h-4 px-1 rounded-full bg-primary-600 text-white text-[10px] flex items-center justify-center">
                             {frReq.total > 99 ? '99+' : frReq.total}
                           </span>
                         )}
                       </Link>
-                      <Link href="/feedback" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.feedback')}</Link>
-                      {isStaff && <Link href="/admin" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.admin')}</Link>}
-                      {isStaff && <Link href="/admin/reviews" className="block px-4 py-2.5 text-sm text-ink-700 hover:bg-primary-50 whitespace-nowrap">{t('nav.reviewQueue')}</Link>}
+                      <Link href="/feedback" className={MENU_ROW}>
+                        <IconLightbulb className={MENU_ICON} strokeWidth={1.8} />
+                        <span>{t('nav.feedback')}</span>
+                      </Link>
+                      {isStaff && (
+                        <Link href="/admin" className={MENU_ROW}>
+                          <IconShield className={MENU_ICON} strokeWidth={1.8} />
+                          <span>{t('nav.admin')}</span>
+                        </Link>
+                      )}
+                      {isStaff && (
+                        <Link href="/admin/reviews" className={MENU_ROW}>
+                          <IconCheckCircle className={MENU_ICON} strokeWidth={1.8} />
+                          <span>{t('nav.reviewQueue')}</span>
+                        </Link>
+                      )}
                       <div className="divider-gradient my-1" />
                       <button
                         onClick={async () => {
                           await logout();
                           router.push('/');
                         }}
-                        className="block w-full text-left px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 whitespace-nowrap"
+                        className="flex items-center gap-2.5 w-full text-left px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50 whitespace-nowrap"
                       >
-                        {t('nav.logout')}
+                        <IconLogout className={MENU_ICON} strokeWidth={1.8} />
+                        <span>{t('nav.logout')}</span>
                       </button>
                     </div>
                   )}
@@ -545,33 +579,58 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
 
             {user ? (
               <>
-                <Link href="/me" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.profile')}</Link>
-                <Link href="/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.notifications')}</Link>
-                <Link href="/settings/notifications" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.reminderSettings')}</Link>
-                <Link href="/settings/privacy" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">私信隐私</Link>
-                <Link href="/feedback" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.feedback')}</Link>
-                <Link href="/friends?tab=requests" className="flex items-center justify-between gap-2 px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">
-                  <span>{t('nav.friendRequests')}</span>
+                <Link href="/me" className={MENU_ROW_LG}>
+                  <IconUser className={MENU_ICON} strokeWidth={1.8} />
+                  <span>{t('nav.profile')}</span>
+                </Link>
+                <Link href="/notifications" className={MENU_ROW_LG}>
+                  <IconBell className={MENU_ICON} strokeWidth={1.8} />
+                  <span>{t('nav.notifications')}</span>
+                </Link>
+                <Link href="/settings/notifications" className={MENU_ROW_LG}>
+                  <IconSettings className={MENU_ICON} strokeWidth={1.8} />
+                  <span>{t('nav.reminderSettings')}</span>
+                </Link>
+                <Link href="/settings/privacy" className={MENU_ROW_LG}>
+                  <IconLock className={MENU_ICON} strokeWidth={1.8} />
+                  <span>私信隐私</span>
+                </Link>
+                <Link href="/feedback" className={MENU_ROW_LG}>
+                  <IconLightbulb className={MENU_ICON} strokeWidth={1.8} />
+                  <span>{t('nav.feedback')}</span>
+                </Link>
+                <Link href="/friends?tab=requests" className={MENU_ROW_LG}>
+                  <IconUsers className={MENU_ICON} strokeWidth={1.8} />
+                  <span className="flex-1">{t('nav.friendRequests')}</span>
                   {!!frReq?.total && (
                     <span className="min-w-[18px] h-4 px-1 rounded-full bg-primary-600 text-white text-[10px] flex items-center justify-center">
                       {frReq.total > 99 ? '99+' : frReq.total}
                     </span>
                   )}
                 </Link>
-                {isStaff && <Link href="/admin" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 whitespace-nowrap">{t('nav.admin')}</Link>}
+                {isStaff && (
+                  <Link href="/admin" className={MENU_ROW_LG}>
+                    <IconShield className={MENU_ICON} strokeWidth={1.8} />
+                    <span>{t('nav.admin')}</span>
+                  </Link>
+                )}
                 <button
                   onClick={async () => {
                     await logout();
                     router.push('/');
                   }}
-                  className="block w-full px-4 py-3 rounded-xl font-medium text-rose-600 text-left hover:bg-rose-50 whitespace-nowrap"
+                  className="flex items-center gap-2.5 w-full px-4 py-3 rounded-xl font-medium text-rose-600 text-left hover:bg-rose-50 whitespace-nowrap"
                 >
-                  {t('nav.logout')}
+                  <IconLogout className={MENU_ICON} strokeWidth={1.8} />
+                  <span>{t('nav.logout')}</span>
                 </button>
               </>
             ) : (
               <>
-                <Link href="/login" className="block px-4 py-3 rounded-xl font-medium text-ink-700 hover:bg-ink-100 text-center whitespace-nowrap">{t('nav.login')}</Link>
+                <Link href="/login" className={MENU_ROW_LG}>
+                  <IconUser className={MENU_ICON} strokeWidth={1.8} />
+                  <span>{t('nav.login')}</span>
+                </Link>
                 <Link href="/login?mode=register" className="block px-4 py-3 rounded-xl font-semibold bg-gradient-to-r from-primary-600 to-primary-500 text-white text-center shadow-lg shadow-primary-500/25 whitespace-nowrap">
                   {t('nav.register')}
                 </Link>
