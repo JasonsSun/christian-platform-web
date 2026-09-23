@@ -43,6 +43,9 @@ export default function AdminEventsPage() {
   }
 
   const items = data?.items || [];
+  // byStatus 不带筛选，data.total 跟着状态筛选走：筛「失败」时「事件总数」原来会变成
+  // 失败的条数，和旁边三张状态卡对不上账。四张卡统一按全库口径。
+  const allCount = (data?.byStatus ?? []).reduce((n, s) => n + s.c, 0);
 
   return (
     <AdminLayout>
@@ -58,7 +61,7 @@ export default function AdminEventsPage() {
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" data-reveal-group>
-        <StatCard title="事件总数" value={data?.total ?? '—'} />
+        <StatCard title="事件总数" value={data ? allCount : '—'} />
         <StatCard
           title="待处理"
           value={data?.byStatus?.find((s) => s.status === 'pending')?.c ?? 0}

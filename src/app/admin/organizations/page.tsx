@@ -173,6 +173,9 @@ export default function AdminOrganizationsPage() {
   }
 
   const items = data?.items || [];
+  // byStatus 是全库口径，data.total 跟着状态筛选/搜索走。筛「待审核」时「组织总数」
+  // 原来会变成待审核的条数，和旁边三张状态卡对不上账。
+  const allCount = (data?.byStatus ?? []).reduce((n, s) => n + s.c, 0);
 
   return (
     <AdminLayout>
@@ -201,7 +204,7 @@ export default function AdminOrganizationsPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard title="组织总数" value={data?.total ?? '—'} />
+        <StatCard title="组织总数" value={data ? allCount : '—'} />
         <StatCard title="待审核" value={data?.byStatus?.find((s) => s.status === 'pending')?.c ?? 0} />
         <StatCard title="已通过" value={data?.byStatus?.find((s) => s.status === 'approved')?.c ?? 0} />
         <StatCard title="已驳回" value={data?.byStatus?.find((s) => s.status === 'rejected')?.c ?? 0} />

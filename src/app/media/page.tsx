@@ -121,6 +121,10 @@ export default function MediaPage() {
 
   const countOf = (k: string) => data?.byKind?.find((b) => b.kind === k)?.c ?? 0;
   const countSource = (s: string) => data?.bySource?.find((b) => b.source === s)?.c ?? 0;
+  // 「全部」这颗胶囊旁边的数字得和 图片/音乐/视频 同源：byKind、bySource 都是服务端
+  // 不带筛选算出来的全库分类数，只有 data.total 跟着当前筛选走。原先「全部」直接印
+  // data.total，搜一个词之后同一行里「全部」变成命中数、各类型还是全库数。
+  const kindTotal = (data?.byKind ?? []).reduce((n, b) => n + b.c, 0);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -149,7 +153,7 @@ export default function MediaPage() {
             }`}
           >
             {k.label}
-            <span className="num ml-1 text-xs opacity-70">{k.key ? countOf(k.key) : data?.total ?? 0}</span>
+            <span className="num ml-1 text-xs opacity-70">{k.key ? countOf(k.key) : kindTotal}</span>
           </button>
         ))}
       </div>

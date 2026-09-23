@@ -72,6 +72,10 @@ export default function AdminActivitiesPage() {
   const items = data?.items || [];
   const totalReg = items.reduce((a, b) => a + b.confirmed, 0);
   const totalCheckin = items.reduce((a, b) => a + b.checkins, 0);
+  // 四张卡得记同一本账：byStatus 是服务端不带筛选算出来的全库状态数，data.total 却跟着
+  // 状态筛选走。原先筛「待审核」时「活动总数」悄悄变成待审核的条数，和旁边「上线中 /
+  // 待审核」对不上，看着像数据错了。
+  const allCount = (data?.byStatus ?? []).reduce((n, s) => n + s.c, 0);
 
   return (
     <AdminLayout>
@@ -82,7 +86,7 @@ export default function AdminActivitiesPage() {
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" data-reveal-group>
-        <StatCard title="活动总数" value={data?.total ?? '—'} />
+        <StatCard title="活动总数" value={data ? allCount : '—'} />
         <StatCard title="本页报名" value={totalReg} />
         <StatCard title="本页签到" value={totalCheckin} />
         <StatCard

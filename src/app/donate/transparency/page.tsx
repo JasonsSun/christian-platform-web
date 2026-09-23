@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { qs } from '@/lib/api';
+import { Empty, ErrorBox, Loading } from '@/components/ui';
 import type { ExpenseListResult } from '@/lib/types';
 
 /**
@@ -31,8 +32,19 @@ export default function TransparencyPage() {
   const path = `/expenses${qs({ category, period })}`;
   const { data, loading, error, reload } = useApi<ExpenseListResult>(path, [category, period]);
 
+  // 未筛选那一次的快照：总览三个数字和月份胶囊都从它取。
+  // 接口里 byPeriod 是跟着筛选走的，原先直接拿当前 data —— 点中 2026-08 之后整排月份
+  // 就只剩「2026-08」一个，想再看 7 月必须先点「全部」（顺手把分类也清了）；
+  // 「累计公示支出」也会偷偷变成「本月支出」，标签没变、口径变了。
+  const [baseline, setBaseline] = useState<ExpenseListResult | null>(null);
+  useEffect(() => {
+    if (data && !category && !period) setBaseline(data);
+  }, [data, category, period]);
+  const overview = baseline ?? data;
+
   const total = data?.totalCents ?? 0;
   const maxCat = Math.max(1, ...(data?.byCategory ?? []).map((c) => c.amountCents));
+  const filtered = !!(category || period);
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -70,20 +82,20 @@ export default function TransparencyPage() {
         <div className="glass rounded-2xl p-5 shadow-soft">
           <div className="text-sm text-ink-500">累计公示支出</div>
           <div className="font-display text-3xl font-bold text-ink-900 mt-1">
-            ¥{data?.totalAmountText ?? '—'}
+            {overview ? `¥${overview.totalAmountText}` : '—'}
           </div>
         </div>
         <div className="glass rounded-2xl p-5 shadow-soft">
           <div className="text-sm text-ink-500">公示笔数</div>
           <div className="font-display text-3xl font-bold text-ink-900 mt-1">
-            {data ? data.items.length : '—'}
+            {overview ? overview.items.length : '—'}
             <span className="text-base font-medium text-ink-400 ml-1">笔</span>
           </div>
         </div>
         <div className="glass rounded-2xl p-5 shadow-soft">
           <div className="text-sm text-ink-500">覆盖月份</div>
           <div className="font-display text-3xl font-bold text-ink-900 mt-1">
-            {data?.byPeriod.length ?? '—'}
+            {overview ? overview.byPeriod.length : '—'}
             <span className="text-base font-medium text-ink-400 ml-1">个月</span>
           </div>
         </div>
@@ -113,7 +125,7 @@ export default function TransparencyPage() {
           ))}
         </div>
         <div className="flex flex-wrap gap-1.5 ml-auto">
-          {(data?.byPeriod ?? []).slice(0, 8).map((p) => (
+          {(overview?.byPeriod ?? []).map((p) => (
             <button
               key={p.period}
               onClick={() => setPeriod(period === p.period ? '' : p.period)}
@@ -128,15 +140,23 @@ export default function TransparencyPage() {
       </section>
 
       {loading && !data ? (
-        <div className="py-16 text-center text-ink-400">加载中…</div>
+        <Loading />
       ) : error ? (
-        <div className="mt-6 py-12 text-center rounded-2xl bg-rose-50 text-rose-700">
-          <div>{error}</div>
-          <button className="btn-secondary mt-3" onClick={reload}>重试</button>
+        <div className="mt-6">
+          <ErrorBox message={error} onRetry={reload} />
         </div>
       ) : !data || data.items.length === 0 ? (
-        <div className="mt-6 py-16 text-center text-ink-400 border border-dashed border-ink-200 rounded-2xl">
-          暂无公示的支出记录
+        <div className="mt-6">
+          <Empty
+            label={filtered ? '这个筛选条件下没有公示记录' : '暂无公示的支出记录'}
+            hint={filtered ? '换个月份或分类看看，也可以回到全部记录。' : '平台尚未录入开销明细，录入后这里会自动列出。'}
+          >
+            {filtered && (
+              <button className="btn-secondary text-sm" onClick={() => { setCategory(''); setPeriod(''); }}>
+                清除筛选
+              </button>
+            )}
+          </Empty>
         </div>
       ) : (
         <>

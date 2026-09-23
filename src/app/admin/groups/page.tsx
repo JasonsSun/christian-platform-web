@@ -195,7 +195,9 @@ export default function AdminGroupsPage() {
       />
 
       <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
-        <StatCard title="群组总数" value={data?.total ?? '—'} />
+        {/* 这一页没有状态分面可加总，就让标题跟着筛选走：搜「团契」时这块报的是命中数，
+            不是一张写着「群组总数」却只数出 3 的卡。 */}
+        <StatCard title={q.trim() ? '命中群组' : '群组总数'} value={data?.total ?? '—'} />
         <StatCard title="本页成员合计" value={totalMembers} />
         <StatCard title="本页动态合计" value={totalPosts} />
       </div>

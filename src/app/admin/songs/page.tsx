@@ -165,7 +165,9 @@ export default function AdminSongsPage() {
       <PageHead eyebrow="内容 · 诗歌" title="赞美诗管理" sub="诗歌、歌词、曲谱、音频与播放/收藏统计" />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard title="诗歌总数" value={data?.total ?? '—'} />
+        {/* 「其中人声版」来自全库的 byAudioType，data.total 却跟着搜索走：
+            搜一个词之后这里能读出「3 首诗歌 / 其中人声版 21」。标题跟着筛选走。 */}
+        <StatCard title={q.trim() ? '命中诗歌' : '诗歌总数'} value={data?.total ?? '—'} />
         <StatCard title="其中人声版" value={vocalCount} />
         <StatCard title="本页播放量" value={totalPlays} />
         <StatCard title="本页收藏数" value={totalFav} />

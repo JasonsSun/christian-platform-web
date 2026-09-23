@@ -65,9 +65,15 @@ export default function SongsPage() {
     error: favError,
   } = useApi<{ items: SongItem[] }>(favoritesPath, [tab]);
 
+  // 全库诗歌数：服务端算的 categories / vocalCount 都是不带筛选的口径，「全部」这颗胶囊
+  // 和页眉那句「N 首诗歌 · M 首有人声」得跟它们同源。原先两处都用 data.total ——
+  // 那是当前搜索结果，搜一个词之后「全部」变成命中数，旁边各分类还是全库数，
+  // 极端时甚至出现「3 首诗歌 · 21 首有人声」。
+  const libTotal = data ? (data.categories ?? []).reduce((n, c) => n + c.count, 0) : null;
+
   const cats = useMemo(
-    () => [{ name: '全部', count: data?.total ?? 0 }, ...(data?.categories ?? [])],
-    [data]
+    () => [{ name: '全部', count: libTotal ?? 0 }, ...(data?.categories ?? [])],
+    [data, libTotal]
   );
 
   const favItems = favData?.items ?? [];
@@ -132,8 +138,8 @@ export default function SongsPage() {
               {tab === 'favorites'
                 ? `${favItems.length} 首收藏`
                 : tab === 'vocal'
-                  ? `${data?.total ?? '—'} 首有人声演唱`
-                  : `${data?.total ?? '—'} 首诗歌 · ${vocalCount} 首有人声`}
+                  ? `${vocalCount} 首有人声演唱`
+                  : `${libTotal ?? '—'} 首诗歌 · ${vocalCount} 首有人声`}
             </span>
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 md:mb-6 text-glow">赞美诗歌</h1>
