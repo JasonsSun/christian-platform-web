@@ -1,10 +1,10 @@
 'use client';
 
 import { useId, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import { useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { useGoLogin } from '@/lib/nav';
 import { useNotice } from '@/lib/notice';
 import Portal from '@/components/Portal';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
@@ -36,7 +36,7 @@ type Props = {
  */
 export default function ReportModal({ open, onClose, contentId, onSubmitted }: Props) {
   const { user } = useAuth();
-  const router = useRouter();
+  const goLogin = useGoLogin();
   const notice = useNotice();
   const action = useAction();
   const [reason, setReason] = useState('spam');
@@ -107,7 +107,7 @@ export default function ReportModal({ open, onClose, contentId, onSubmitted }: P
               请先
               <button
                 type="button"
-                onClick={() => { onClose(); router.push('/login'); }}
+                onClick={() => { onClose(); goLogin(); }}
                 className="text-primary-600 font-medium mx-1"
               >
                 登录

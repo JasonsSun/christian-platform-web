@@ -148,7 +148,7 @@ export default function BibleNotesPage() {
         {!user && !authLoading ? (
           <div className="glass rounded-2xl p-10 text-center shadow-card border border-white/40">
             <p className="text-ink-500">登录后查看你的高亮与笔记</p>
-            <Link href="/login" className="inline-block mt-4 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-700 shadow-glow">
+            <Link href="/login?next=/bible/notes" className="inline-block mt-4 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-700 shadow-glow">
               去登录
             </Link>
           </div>

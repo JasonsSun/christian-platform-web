@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useApi, useAction } from '@/lib/useApi';
 import { apiPost, apiDelete } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { useGoLogin } from '@/lib/nav';
 import { formatDate, timeAgo } from '@/lib/format';
 import BadgeWall from '@/components/BadgeWall';
 import type { Author, ContentItem } from '@/lib/types';
@@ -61,7 +62,7 @@ function ContentCard({ item }: { item: ContentItem }) {
 
 export default function UserProfilePage() {
   const params = useParams();
-  const router = useRouter();
+  const goLogin = useGoLogin();
   const id = params.id as string;
   const { user: me } = useAuth();
 
@@ -73,7 +74,7 @@ export default function UserProfilePage() {
 
   const handleFollow = async () => {
     if (!me) {
-      router.push('/login');
+      goLogin();
       return;
     }
     if (!data) return;
@@ -88,7 +89,7 @@ export default function UserProfilePage() {
 
   const handleBlock = async () => {
     if (!me) {
-      router.push('/login');
+      goLogin();
       return;
     }
     if (!data) return;
@@ -176,7 +177,7 @@ export default function UserProfilePage() {
                       </button>
                     </>
                   ) : (
-                    <button onClick={() => router.push('/login')} className="btn-secondary px-6 py-2.5 text-sm">关注</button>
+                    <button onClick={() => goLogin()} className="btn-secondary px-6 py-2.5 text-sm">关注</button>
                   )}
                 </div>
               </div>

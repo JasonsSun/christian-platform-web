@@ -384,7 +384,7 @@ export default function SongsPage() {
               <div className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm">
                 加载失败：{favError}
                 {favError.includes('401') || favError.includes('登录') ? (
-                  <Link href="/login" className="underline ml-1">去登录</Link>
+                  <Link href="/login?next=/songs" className="underline ml-1">去登录</Link>
                 ) : null}
               </div>
             )}

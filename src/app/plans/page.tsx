@@ -139,7 +139,7 @@ export default function PlansPage() {
             )}
             {!user && (
               <p className="text-center text-sm text-ink-400 mt-6">
-                <Link href="/login" className="text-primary-600 hover:underline">登录</Link> 后可打卡记录进度
+                <Link href="/login?next=/plans" className="text-primary-600 hover:underline">登录</Link> 后可打卡记录进度
               </p>
             )}
           </>

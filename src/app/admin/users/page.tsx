@@ -62,7 +62,7 @@ export default function AdminUsersPage() {
   if (user === null)
     return (
       <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">
-        请先登录以访问管理后台。 <Link className="btn-primary ml-2" href="/login">去登录</Link>
+        请先登录以访问管理后台。 <Link className="btn-primary ml-2" href="/login?next=/admin/users">去登录</Link>
       </div>
     );
   if (user.role !== 'moderator' && user.role !== 'admin')

@@ -65,7 +65,7 @@ export default function AdminFeedbackPage() {
   if (!user) {
     return (
       <AdminLayout>
-        <AccessState title="请先登录" desc="登录管理员账号后查看平台建议" href="/login" />
+        <AccessState title="请先登录" desc="登录管理员账号后查看平台建议" href="/login?next=/admin/feedback" />
       </AdminLayout>
     );
   }

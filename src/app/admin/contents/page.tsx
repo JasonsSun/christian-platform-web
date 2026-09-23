@@ -97,7 +97,7 @@ export default function AdminContentsPage() {
   if (!user)
     return (
       <AdminLayout>
-        <AccessState title="请先登录" desc="内容总视图只对管理员与审核员开放，请先用管理账号登录。" href="/login" />
+        <AccessState title="请先登录" desc="内容总视图只对管理员与审核员开放，请先用管理账号登录。" href="/login?next=/admin/contents" />
       </AdminLayout>
     );
   if (!canSee)

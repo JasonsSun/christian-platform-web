@@ -194,7 +194,7 @@ export default function DevotionsPage() {
             <h2 className="font-display text-lg font-bold text-ink-900 mb-2">灵修日记是你的私人空间</h2>
             <p className="text-ink-500 text-sm mb-5">登录后即可记录每日灵修默想，跨设备同步，仅你自己可见。</p>
             <Link
-              href="/login"
+              href="/login?next=/devotions"
               className="inline-block px-6 py-2.5 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-primary-500 to-primary-700 shadow-glow"
             >
               去登录

@@ -61,7 +61,7 @@ export default function AdminCheckinsPage() {
   if (!user) {
     return (
       <AdminLayout>
-        <AccessState title="请先登录" desc="签到报表只对审核员与管理员开放，请先用管理账号登录。" href="/login" />
+        <AccessState title="请先登录" desc="签到报表只对审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/checkins" />
       </AdminLayout>
     );
   }

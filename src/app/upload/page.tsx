@@ -115,7 +115,7 @@ export default function UploadPage() {
         </div>
         <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
         <p className="text-ink-500 mb-6">登录后即可上传图片、音乐、视频与资料</p>
-        <Link href="/login" className="btn-primary">去登录</Link>
+        <Link href="/login?next=/upload" className="btn-primary">去登录</Link>
       </div>
     );
   }

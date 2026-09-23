@@ -136,7 +136,7 @@ export default function AdminReviewsPage() {
   if (user === null)
     return (
       <AdminLayout>
-        <AccessState title="请先登录" desc="登录审核员或管理员账号后查看审核队列。" href="/login" />
+        <AccessState title="请先登录" desc="登录审核员或管理员账号后查看审核队列。" href="/login?next=/admin/reviews" />
       </AdminLayout>
     );
   if (user.role !== 'moderator' && user.role !== 'admin')

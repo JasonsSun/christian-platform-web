@@ -155,7 +155,7 @@ export default function MePage() {
           <div className="eyebrow justify-center mb-1.5">需要登录</div>
           <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
           <p className="text-ink-500 mb-6 text-sm">登录后即可查看和管理你的个人中心</p>
-          <button onClick={() => router.push('/login')} className="btn-primary">去登录</button>
+          <button onClick={() => router.push('/login?next=/me')} className="btn-primary">去登录</button>
         </div>
       </div>
     );
@@ -328,7 +328,7 @@ export default function MePage() {
           onDone={async () => {
             setShowPwdModal(false);
             await logout();
-            router.push('/login');
+            router.push('/login?next=/me');
           }}
         />
       )}

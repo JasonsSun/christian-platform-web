@@ -132,7 +132,7 @@ export default function MediaPage() {
         {user ? (
           <Link href="/upload" className="btn-primary"><IconUpload className="w-4 h-4" strokeWidth={1.9} /> 上传文件</Link>
         ) : (
-          <Link href="/login" className="btn-secondary">登录后上传</Link>
+          <Link href="/login?next=/upload" className="btn-secondary">登录后上传</Link>
         )}
       </div>
 

@@ -37,7 +37,7 @@ export default function BlockedUsersPage() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
         <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
         <p className="text-ink-500 mb-6">登录后管理你的屏蔽列表</p>
-        <button onClick={() => router.push('/login')} className="btn-primary">去登录</button>
+        <button onClick={() => router.push('/login?next=/settings/blocked')} className="btn-primary">去登录</button>
       </div>
     );
   }

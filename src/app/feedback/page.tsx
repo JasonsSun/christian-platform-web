@@ -93,7 +93,7 @@ export default function FeedbackPage() {
         </div>
         <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
         <p className="text-ink-500 mb-6">登录后即可给平台提建议，我们会认真阅读每一条</p>
-        <Link href="/login" className="btn-primary inline-block">去登录</Link>
+        <Link href="/login?next=/feedback" className="btn-primary inline-block">去登录</Link>
       </div>
     );
   }

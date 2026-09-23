@@ -61,7 +61,7 @@ export default function AdminReportsPage() {
         <AccessState
           title="请先登录"
           desc="登录管理员账号后查看举报处理队列"
-          href="/login"
+          href="/login?next=/admin/reports"
         />
       </AdminLayout>
     );

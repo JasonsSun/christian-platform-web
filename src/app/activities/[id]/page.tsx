@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef, useId } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { apiDelete, apiGet, apiPost, apiPatch } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { useGoLogin } from '@/lib/nav';
 import { useNotice } from '@/lib/notice';
 import { formatDateTime, countdown } from '@/lib/format';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
@@ -47,7 +48,7 @@ function Avatar({ name, color, size = 40, userId }: { name: string; color: strin
 export default function ActivityDetailPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
-  const router = useRouter();
+  const goLogin = useGoLogin();
   const { user } = useAuth();
   const notice = useNotice();
 
@@ -124,7 +125,7 @@ export default function ActivityDetailPage() {
   }
 
   async function handleRegister() {
-    if (!user) { router.push('/login'); return; }
+    if (!user) { goLogin(); return; }
     setBusy(true);
     await run(async () => {
       return apiPost<{ status: string; confirmedCount: number; waitlistCount: number }>(
@@ -172,7 +173,7 @@ export default function ActivityDetailPage() {
 
   async function handleCheckin() {
     if (!user) {
-      router.push('/login');
+      goLogin();
       return;
     }
     if (!data?.registered) {
@@ -493,7 +494,7 @@ export default function ActivityDetailPage() {
             {isCancelled ? (
               <button disabled className="btn-secondary w-full opacity-60 cursor-not-allowed">活动已取消</button>
             ) : !user ? (
-              <button onClick={() => router.push('/login')} className="btn-primary w-full">登录后报名</button>
+              <button onClick={() => goLogin()} className="btn-primary w-full">登录后报名</button>
             ) : a.organizer.id === user.id ? (
               // 创建人默认就是第一参与人，无需报名；创建后即自动写入报名记录
               <div className="rounded-xl bg-primary-50 border border-primary-100 px-4 py-3 text-center">
@@ -538,7 +539,7 @@ export default function ActivityDetailPage() {
               {checkinMsg && <p className="text-xs text-emerald-600">{checkinMsg}</p>}
               {actionError && <p className="text-sm text-rose-600">{actionError}</p>}
               {!user ? (
-                <button onClick={() => router.push('/login')} className="btn-secondary w-full">登录后签到</button>
+                <button onClick={() => goLogin()} className="btn-secondary w-full">登录后签到</button>
               ) : !a.registered ? (
                 <button onClick={handleCheckin} className="btn-secondary w-full opacity-80">签到（需先报名）</button>
               ) : (
