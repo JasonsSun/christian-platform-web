@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiGet } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { scrollBehavior } from '@/lib/motion';
 import { useDialogFocus } from '@/lib/a11y';
 import {
@@ -293,6 +294,7 @@ function regroupByScore(items: Item[]): Item[] {
 
 export default function CommandPalette() {
   const router = useRouter();
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
@@ -431,15 +433,20 @@ export default function CommandPalette() {
   }, [query, open]);
 
   // 结果计算：静态命中 + 远程结果
+  const isStaff = !!user && (user.role === 'admin' || user.role === 'moderator');
   const results = useMemo<Item[]>(() => {
     const q = query.trim();
-    const local = STATIC_ITEMS.map((it) => ({ it, s: scoreItem(it, q) }))
+    /* 「管理后台」16 条对非管理员是死路：/admin/* 自己会挡「无权限访问」（只有 /admin/settings
+       连页面级判断都没有，靠接口的 requireRole 403）。命令面板全站挂，匿名访客按 ⌘K 敲
+       「管理」就能把这 16 条全翻出来。 */
+    const pool = isStaff ? STATIC_ITEMS : STATIC_ITEMS.filter((it) => it.group !== '管理后台');
+    const local = pool.map((it) => ({ it, s: scoreItem(it, q) }))
       .filter((x) => x.s > 0)
       .sort((a, b) => b.s - a.s)
       .map((x) => x.it);
     if (!q) return local.slice(0, 12);
     return regroupByScore([...remote, ...local]).slice(0, 40);
-  }, [query, remote]);
+  }, [query, remote, isStaff]);
 
   useEffect(() => {
     setActive(0);
