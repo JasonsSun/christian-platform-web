@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
@@ -40,6 +40,14 @@ export default function SongsPage() {
   const [submitTitle, setSubmitTitle] = useState('');
   const [sort, setSort] = useState<'hot' | 'new'>('hot');
   const [tab, setTab] = useState<FilterTab>('all');
+
+  // ?tab= 直链：⌘K 的「我的诗歌收藏」和未登录时那扇门的回跳都靠它落到对应页签。
+  // 跟 /friends 同一套写法（挂载后读一次 location.search），不在 useState 初值里读 ——
+  // 服务端渲染拿不到 query，写进初值会让首屏和注水后的 DOM 对不上。
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab');
+    if (t === 'all' || t === 'vocal' || t === 'favorites') setTab(t);
+  }, []);
 
   /** 打开投稿弹窗；带 title 时预填标题(用于"这首没人声版，我来投稿") */
   const openSubmit = (t?: string) => {
@@ -396,7 +404,7 @@ export default function SongsPage() {
         {/* 我的收藏模式 */}
         {tab === 'favorites' && !authLoading && !user ? (
           <Empty label="登录后即可查看我的收藏" hint="收藏挂在账号下，换设备、换个浏览器登录都能带过去。">
-            <Link className="btn-primary" href="/login?next=%2Fsongs">
+            <Link className="btn-primary" href={`/login?next=${encodeURIComponent('/songs?tab=favorites')}`}>
               去登录
             </Link>
             <button type="button" className="btn-secondary" onClick={() => setTab('all')}>

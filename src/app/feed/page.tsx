@@ -2,13 +2,18 @@
 
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
+import { useAuth } from '@/lib/auth';
 import { Loading, Empty, ErrorBox } from '@/components/ui';
 import { FeedCardSkeleton } from '@/components/Skeleton';
 import { Glyph, IconChatDots, IconDocument, IconHandshake, IconHeart, IconPray } from '@/components/icons';
 
 export default function FeedPage() {
-  const { data, loading, error, reload } = useApi<{ items: any[] }>('/feed', []);
+  const { user, loading: authLoading } = useAuth();
+  // 动态流按账号算，匿名去要必然 401：以前这一趟照发，页面上同时摆出红色的
+  // ErrorBox 和一句假空态（「还没有关注动态」—— 人家根本还没登录，一条都没看过）。
+  const { data, loading, error, reload } = useApi<{ items: any[] }>(user ? '/feed' : null, [user?.id]);
   const items = data?.items || [];
+  const needsLogin = !authLoading && !user;
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -17,15 +22,25 @@ export default function FeedPage() {
       <h1 className="font-display text-2xl font-bold text-ink-900 mb-1">关注动态</h1>
       <p className="text-sm text-ink-500 mb-6">你关注的弟兄姐妹发布的内容与代祷，按时间合并呈现。</p>
 
-      {loading ? (
+      {loading && !needsLogin ? (
         <div className="space-y-4 mt-2">
           {Array.from({ length: 4 }).map((_, i) => (
             <FeedCardSkeleton key={i} />
           ))}
         </div>
       ) : null}
-      {error ? <ErrorBox message={error} onRetry={reload} /> : null}
-      {!loading && !items.length ? (
+      {needsLogin ? (
+        <Empty label="登录后即可查看关注动态" hint="这里把你关注的人发的内容、代祷按时间合并在一起，得挂到你的账号下。">
+          <Link className="btn-primary" href="/login?next=%2Ffeed">
+            去登录
+          </Link>
+          <Link href="/friends" className="btn-secondary">
+            先去认识几位弟兄姐妹
+          </Link>
+        </Empty>
+      ) : null}
+      {!needsLogin && error ? <ErrorBox message={error} onRetry={reload} /> : null}
+      {!needsLogin && !loading && !items.length ? (
         <div className="bg-white rounded-3xl border border-dashed border-ink-200 px-6 py-16 text-center">
           <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-400 items-center justify-center mb-3">
             <IconHandshake className="w-6 h-6" strokeWidth={1.6} />

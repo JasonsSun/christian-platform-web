@@ -9,6 +9,7 @@ import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
 import { useConfirmNav } from '@/lib/confirm';
 import { timeAgo } from '@/lib/format';
+import { Empty, Loading } from '@/components/ui';
 import type { FriendStatus, FriendRequestItem, FriendItem } from '@/lib/types';
 import { IconHandshake, IconInbox, IconSearch } from '@/components/icons';
 import { useUserCardChanges } from '@/components/UserQuickCard';
@@ -109,7 +110,7 @@ function RequestRow({
 }
 
 export default function FriendsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const notice = useNotice();
   const goLogin = useGoLogin();
   const confirmNav = useConfirmNav();
@@ -129,12 +130,14 @@ export default function FriendsPage() {
     tab === 'discover' ? `/users${qs({ q, city, pageSize: 30 })}` : null,
     [tab, q, city, nonce]
   );
+  // 这两个页签的接口挂在账号下，匿名去要必然 401，界面上就是一行红色的
+  // 「未登录或令牌无效」—— 把「没登录」报成一次失败。跟 pending 角标同一口径：先有人才发请求。
   const friends = useApi<{ items: FriendItem[]; total: number }>(
-    tab === 'friends' ? '/friends' : null,
+    tab === 'friends' && user ? '/friends' : null,
     [tab, nonce]
   );
   const requests = useApi<{ items: FriendRequestItem[]; total: number; pendingTotal?: number; handledTotal?: number }>(
-    tab === 'requests' ? '/friends/requests?type=incoming' : null,
+    tab === 'requests' && user ? '/friends/requests?type=incoming' : null,
     [tab, nonce]
   );
   const pending = useApi<{ total: number; pendingTotal?: number }>(
@@ -269,6 +272,23 @@ export default function FriendsPage() {
         ))}
       </div>
 
+      {/* 没登录时这两个页签的正文该是什么：登录门，不是一行红色的「加载失败」。
+          登录态还在解析时先给一句「加载中…」，免得带 ?tab= 直链进来的人看到空档。 */}
+      {tab !== 'discover' &&
+        (authLoading && !user ? <Loading /> : !user ? (
+          <Empty
+            label={tab === 'friends' ? '登录后即可查看我的好友' : '登录后即可查看好友申请'}
+            hint="好友关系与申请都挂在你的账号下，登录后这里会自动列出。"
+          >
+            <Link className="btn-primary" href={`/login?next=${encodeURIComponent(`/friends?tab=${tab}`)}`}>
+              去登录
+            </Link>
+            <button type="button" className="btn-secondary" onClick={() => setTab('discover')}>
+              先去「发现」看看
+            </button>
+          </Empty>
+        ) : null)}
+
       {/* ============ 发现 ============ */}
       {tab === 'discover' && (
         <>
@@ -336,7 +356,7 @@ export default function FriendsPage() {
       )}
 
       {/* ============ 我的好友 ============ */}
-      {tab === 'friends' && (
+      {tab === 'friends' && user && (
         <>
           {friends.loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
           {friends.error && <div className="text-center py-12"><p className="text-rose-600 mb-3">{friends.error}</p><button onClick={friends.reload} className="btn-secondary">重试</button></div>}
@@ -367,7 +387,7 @@ export default function FriendsPage() {
       )}
 
       {/* ============ 好友申请 ============ */}
-      {tab === 'requests' && (
+      {tab === 'requests' && user && (
         <>
           {requests.loading && <div className="py-16 text-center text-ink-400">加载中…</div>}
           {requests.error && <div className="text-center py-12"><p className="text-rose-600 mb-3">{requests.error}</p><button onClick={requests.reload} className="btn-secondary">重试</button></div>}

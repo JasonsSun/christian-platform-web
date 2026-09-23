@@ -194,7 +194,7 @@ const PAGES: Item[] = [
   { id: 'p-plans', group: '导航', label: '读经计划', href: '/plans', keywords: 'plan dujing jihua' },
   { id: 'p-devotions', group: '导航', label: '灵修记录', href: '/devotions', keywords: 'devotional lingxiu' },
   { id: 'p-songs', group: '导航', label: '诗歌库', href: '/songs', keywords: 'song hymn shige zanmeishi 赞美诗' },
-  { id: 'p-songs-fav', group: '导航', label: '我的诗歌收藏', href: '/songs/favorites', keywords: 'favorite shoucang' },
+  { id: 'p-songs-fav', group: '导航', label: '我的诗歌收藏', href: '/songs?tab=favorites', keywords: 'favorite shoucang' },
   { id: 'p-songs-col', group: '导航', label: '诗歌合集', href: '/songs/collections', keywords: 'collection heji' },
   { id: 'p-sermons', group: '导航', label: '讲道', href: '/sermons', keywords: 'sermon jiangdao' },
   { id: 'p-media', group: '导航', label: '媒体资源', href: '/media', keywords: 'media meiti 音频 视频' },
