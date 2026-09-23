@@ -2,8 +2,9 @@
 
 import { Fragment, useMemo, useState } from 'react';
 import { useApi } from '@/lib/useApi';
+import { useAuth } from '@/lib/auth';
 import { apiGet, apiPatch } from '@/lib/api';
-import { AdminLayout, SectionTitle, Badge, Loading, ErrorBox, PageHead } from '../_components';
+import { canEnterAdmin, AdminLayout, SectionTitle, Badge, Loading, ErrorBox, PageHead, AccessState } from '../_components';
 import { StaffBadges } from '@/components/ModeratorBadge';
 import { Glyph, IconCheck } from '@/components/icons';
 
@@ -43,7 +44,11 @@ interface UserHit {
 }
 
 export default function AdminRolesPage() {
-  const { data, loading, error, reload } = useApi<RoleData>('/admin/roles', []);
+  const { user, loading: authLoading } = useAuth();
+  // 读写都只认 admin（requireRole(['admin'])）：审核员打开这页会看到一排点下去
+  // 全 403 的模块开关，匿名更是先撞一趟 401。这一页压根就不该对他们渲染。
+  const canSee = canEnterAdmin(user, '/admin/roles');
+  const { data, loading, error, reload } = useApi<RoleData>(canSee ? '/admin/roles' : null, [canSee]);
   const roles = data?.roles || [];
   const groups = data?.groups || [];
   const modules = data?.modules || [];
@@ -154,6 +159,20 @@ export default function AdminRolesPage() {
       })}
     </div>
   );
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="权限中心只对管理员开放，请先用管理员账号登录。" href="/login?next=/admin/roles" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="分配审核员的模块范围是管理员的权限，审核员本人不能修改。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

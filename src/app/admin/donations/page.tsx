@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { apiPatch, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { formatDateTime } from '@/lib/format';
-import { AdminLayout, StatCard, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, Pagination } from '../_components';
+import { canEnterAdmin, AdminLayout, StatCard, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, Pagination, AccessState } from '../_components';
 import type { AdminDonation, AdminDonationResult } from '@/lib/types';
 
 /**
@@ -37,25 +36,28 @@ export default function AdminDonationsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 15;
 
-  const path = `/admin/donations${qs({ status, q, page, pageSize })}`;
-  const { data, loading, error, reload } = useApi<AdminDonationResult>(path, [status, q, page]);
+  // /admin/donations 读写两端都是 requireRole(['admin'])：审核员打开只会拿到 403，
+  // 匿名更是先发一趟必然 401 的请求再看到一行裸字。门立在请求前面。
+  const canSee = canEnterAdmin(user, '/admin/donations');
+  const path = canSee ? `/admin/donations${qs({ status, q, page, pageSize })}` : null;
+  const { data, loading, error, reload } = useApi<AdminDonationResult>(path, [canSee, status, q, page]);
 
   const { run, pending } = useAction();
   const notice = useNotice();
   const confirmNav = useConfirmNav();
 
-  if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
-  if (user === null)
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">
-        请先登录以访问管理后台。 <Link className="btn-primary ml-2" href="/login?next=/admin/donations">去登录</Link>
-      </div>
+      <AdminLayout>
+        <AccessState title="请先登录" desc="捐赠明细只对平台管理员开放，请先用管理员账号登录。" href="/login?next=/admin/donations" />
+      </AdminLayout>
     );
-  if (user.role !== 'admin')
+  if (!canSee)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">
-        无权限访问（捐赠金额仅平台管理员可见）。
-      </div>
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="捐赠金额与捐赠人属于隐私数据，仅平台管理员可查看。" />
+      </AdminLayout>
     );
 
   async function confirmOne(d: AdminDonation) {

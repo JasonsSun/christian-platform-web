@@ -6,7 +6,7 @@ import { apiDelete, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
-import { AdminLayout, Loading, Empty, ErrorBox, Badge, PageHead, Pagination, Toolbar } from '../_components';
+import { canEnterAdmin, AdminLayout, Loading, Empty, ErrorBox, Badge, PageHead, Pagination, Toolbar, AccessState } from '../_components';
 import { IconChatDots } from '@/components/icons';
 
 interface CommentRow {
@@ -24,7 +24,7 @@ export default function AdminCommentsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
-  const canSee = !!user && (user.role === 'admin' || user.role === 'moderator');
+  const canSee = canEnterAdmin(user, '/admin/comments');
   const { data, loading, error, reload } = useApi<{ items: CommentRow[]; total: number }>(
     canSee ? `/admin/comments${qs({ q: search, page, pageSize })}` : null,
     [canSee, search, page]
@@ -51,8 +51,18 @@ export default function AdminCommentsPage() {
   }
 
   if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
-  if (!user) return <AdminLayout><Empty label="请先登录" /></AdminLayout>;
-  if (!canSee) return <AdminLayout><Empty label="无权限访问（需要内容模块审核员或管理员）" /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="评论审核只对内容模块审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/comments" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要内容模块的审核员或管理员账号，才能删除与批量处置评论。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

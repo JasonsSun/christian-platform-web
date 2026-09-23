@@ -6,7 +6,7 @@ import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Panel } from '../_components';
+import { canEnterAdmin, AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Panel, AccessState } from '../_components';
 
 interface AdminOrg {
   id: string; name: string; type: string; description: string; city: string; region: string;
@@ -21,9 +21,12 @@ const STATUS_MAP: Record<string, { tone: 'green' | 'gold' | 'red'; label: string
 };
 
 export default function AdminOrganizationsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const notice = useNotice();
   const confirmNav = useConfirmNav();
+  // 读列表要「组织模块的审核员」或管理员：匿名原来照发这一趟，撞回来是一行红字 401，
+  // 上面几张 StatCard 又按 ?? 0 渲染成「0 个组织」，看着像真没人建过组织。
+  const canReview = canEnterAdmin(user, '/admin/organizations');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -32,10 +35,9 @@ export default function AdminOrganizationsPage() {
     items: AdminOrg[]; total: number;
     byStatus: { status: string; c: number }[];
     byType: { type: string; c: number }[];
-  }>(`/admin/organizations?q=${encodeURIComponent(q)}&status=${status}`, [q, status]);
+  }>(canReview ? `/admin/organizations?q=${encodeURIComponent(q)}&status=${status}` : null, [canReview, q, status]);
 
   // 审核员：只能审核（通过/驳回）；删除组织仅管理员可操作
-  const canReview = !!user && (user.role === 'admin' || user.role === 'moderator');
   const canDelete = user?.role === 'admin';
 
   async function review(id: string, next: 'approved' | 'rejected') {
@@ -176,6 +178,20 @@ export default function AdminOrganizationsPage() {
   // byStatus 是全库口径，data.total 跟着状态筛选/搜索走。筛「待审核」时「组织总数」
   // 原来会变成待审核的条数，和旁边三张状态卡对不上账。
   const allCount = (data?.byStatus ?? []).reduce((n, s) => n + s.c, 0);
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="组织管理只对组织模块审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/organizations" />
+      </AdminLayout>
+    );
+  if (!canReview)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要组织模块的审核员或管理员账号，才能审核机构、查看成员。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

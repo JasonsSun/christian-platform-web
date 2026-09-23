@@ -5,9 +5,10 @@ import { apiPatch, apiPost } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
+import { useAuth } from '@/lib/auth';
 import { formatDate, formatSize } from '@/lib/format';
 import { MEDIA_KIND_LABEL, mediaKindLabel } from '@/lib/labels';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, TableSkeleton, Empty, ErrorBox, PageHead, Toolbar, AdminSelect } from '../_components';
+import { canEnterAdmin, AdminLayout, SectionTitle, StatCard, Badge, Loading, TableSkeleton, Empty, ErrorBox, PageHead, Toolbar, AdminSelect, AccessState } from '../_components';
 
 interface MediaFile {
   id: string; fileName: string; title: string; mimeType: string; kind: string; extension: string;
@@ -28,6 +29,10 @@ const REVIEW_MAP: Record<string, { tone: 'green' | 'gold' | 'red'; label: string
 };
 
 export default function AdminMediaPage() {
+  const { user, loading: authLoading } = useAuth();
+  // 媒体库的读和写都挂在 requireModeratorModule('media') 上：匿名进来先撞一趟 401，
+  // 头顶那排 StatCard 又按 ?? 0 渲染成「0 个文件 / 0 B」，红框和假 0 同屏。
+  const canSee = canEnterAdmin(user, '/admin/media');
   const [q, setQ] = useState('');
   const [kind, setKind] = useState('');
   const [status, setStatus] = useState('');
@@ -41,7 +46,10 @@ export default function AdminMediaPage() {
     total: number;
     totals: { files: number; bytes: number; failed: number; transcoding: number; trashed: number; pendingReview: number; pendingTasks: number; failedTasks: number };
     byKind: { kind: string; c: number; bytes: number }[];
-  }>(`/admin/media?q=${encodeURIComponent(q)}&kind=${kind}&status=${status}&reviewStatus=${reviewStatus}`, [q, kind, status, reviewStatus]);
+  }>(
+    canSee ? `/admin/media?q=${encodeURIComponent(q)}&kind=${kind}&status=${status}&reviewStatus=${reviewStatus}` : null,
+    [canSee, q, kind, status, reviewStatus]
+  );
 
   async function act(id: string, action: 'trash' | 'restore') {
     setBusy(id); setMsg('');
@@ -112,6 +120,22 @@ export default function AdminMediaPage() {
   const t = data?.totals;
   // 手里已有数据时不再整页换成「加载中…」：刷新会把表格抹成一行字再弹回来
   const refreshing = loading && data != null;
+  // 「重新处理」那条接口是 requireRole(['admin'])，审核员点一下必然 403
+  const isAdmin = user?.role === 'admin';
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="媒体中心只对媒体模块审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/media" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要媒体模块的审核员或管理员账号，才能查看文件、转码任务与回收站。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>
@@ -208,14 +232,16 @@ export default function AdminMediaPage() {
                       {/* 原来是四个纯文字链接：热区只有十几像素高，而且"删除"和"重新处理"
                           看起来权重一样。统一成 .btn-chip 后危险操作用红、放行用绿 */}
                       <div className="inline-flex flex-wrap justify-end gap-1">
-                        <button
-                          disabled={busy === m.id}
-                          onClick={() => reprocess(m.id)}
-                          className="btn-chip"
-                          title="重新执行转码/封面/时长探测流水线"
-                        >
-                          重新处理
-                        </button>
+                        {isAdmin ? (
+                          <button
+                            disabled={busy === m.id}
+                            onClick={() => reprocess(m.id)}
+                            className="btn-chip"
+                            title="重新执行转码/封面/时长探测流水线"
+                          >
+                            重新处理
+                          </button>
+                        ) : null}
                         {m.reviewStatus === 'pending' ? (
                           <>
                             <button disabled={busy === m.id} onClick={() => review(m.id, 'approve')} className="btn-chip btn-chip-safe">通过</button>

@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import { apiPost } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
+import { useAuth } from '@/lib/auth';
 import { eventTypeLabel } from '@/lib/labels';
 import { formatDateTime } from '@/lib/format';
-import { AdminLayout, StatCard, Badge, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
+import { canEnterAdmin, AdminLayout, Loading, StatCard, Badge, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, AccessState } from '../_components';
 
 interface OutboxEvent {
   id: string; eventType: string; payload: string; status: string;
@@ -19,6 +20,11 @@ const STATUS_MAP: Record<string, { tone: 'green' | 'gold' | 'red'; label: string
 };
 
 export default function AdminEventsPage() {
+  const { user, loading: authLoading } = useAuth();
+  // GET 要 admin 或 moderator，POST（手动派发）只认 admin —— 匿名进来原来先是
+  // 一趟 401 的红框，上面四张 StatCard 又照常渲染成 0，看着像「事件全跑光了」。
+  const canSee = canEnterAdmin(user, '/admin/events');
+  const canDispatch = user?.role === 'admin';
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -27,7 +33,7 @@ export default function AdminEventsPage() {
     items: OutboxEvent[]; total: number;
     byStatus: { status: string; c: number }[];
     byType: { type: string; c: number }[];
-  }>(`/admin/events?status=${status}`, [status]);
+  }>(canSee ? `/admin/events?status=${status}` : null, [canSee, status]);
 
   async function dispatch() {
     setBusy(true); setMsg('');
@@ -47,6 +53,20 @@ export default function AdminEventsPage() {
   // 失败的条数，和旁边三张状态卡对不上账。四张卡统一按全库口径。
   const allCount = (data?.byStatus ?? []).reduce((n, s) => n + s.c, 0);
 
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="事件中心只对管理员开放，请先用管理员账号登录。" href="/login?next=/admin/events" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要管理员账号，才能查看事务性发件箱与消费者状态。" />
+      </AdminLayout>
+    );
+
   return (
     <AdminLayout>
       <PageHead
@@ -54,9 +74,11 @@ export default function AdminEventsPage() {
         title="事件中心"
         sub="事务性发件箱（outbox）事件查询、消费者状态与重试"
         actions={
-          <button onClick={dispatch} disabled={busy} className="btn-primary btn-sm min-h-11 lg:min-h-0 disabled:opacity-50">
-            {busy ? '派发中…' : '手动派发'}
-          </button>
+          canDispatch ? (
+            <button onClick={dispatch} disabled={busy} className="btn-primary btn-sm min-h-11 lg:min-h-0 disabled:opacity-50">
+              {busy ? '派发中…' : '手动派发'}
+            </button>
+          ) : null
         }
       />
 

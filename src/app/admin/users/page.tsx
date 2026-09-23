@@ -1,7 +1,6 @@
 'use client';
 
 import { useId, useState } from 'react';
-import Link from 'next/link';
 import { apiGet, apiPatch, apiDelete, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
@@ -10,11 +9,12 @@ import { useConfirmNav } from '@/lib/confirm';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import Portal from '@/components/Portal';
 import { formatDate } from '@/lib/format';
-import {
+import { canEnterAdmin,
   AdminLayout,
   AdminSelect,
   Empty,
   ErrorBox,
+  Loading,
   PageHead,
   Pagination,
   RoleBadge,
@@ -23,6 +23,7 @@ import {
   TableSkeleton,
   Th,
   Toolbar,
+  AccessState,
 } from '../_components';
 import type { AdminUser } from '../_components';
 
@@ -33,8 +34,12 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const pageSize = 15;
 
-  const path = `/admin/users${qs({ q, role, page, pageSize })}`;
-  const { data, loading, error, reload } = useApi<{ items: AdminUser[]; total: number }>(path, [q, role, page]);
+  // /admin/users 的 GET / PATCH / DELETE 全是 requireRole(['admin'])，接口里写得很明白：
+  // 「用户管理属于系统治理权，审核员不参与」。原来页面按 staff 放行，审核员进来是一趟 403
+  // 加一句红色错误框，八个操作按钮全禁用；匿名更是一趟必然 401。
+  const canSee = canEnterAdmin(user, '/admin/users');
+  const path = canSee ? `/admin/users${qs({ q, role, page, pageSize })}` : null;
+  const { data, loading, error, reload } = useApi<{ items: AdminUser[]; total: number }>(path, [canSee, q, role, page]);
 
   const { run, pending } = useAction();
   const notice = useNotice();
@@ -58,17 +63,20 @@ export default function AdminUsersPage() {
   const resetPwdRef = useDialogFocus(!!resetPwdFor);
   const resetPwdTitleId = useId();
 
-  if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
-  if (user === null)
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">
-        请先登录以访问管理后台。 <Link className="btn-primary ml-2" href="/login?next=/admin/users">去登录</Link>
-      </div>
+      <AdminLayout>
+        <AccessState title="请先登录" desc="用户管理只对平台管理员开放，请先用管理员账号登录。" href="/login?next=/admin/users" />
+      </AdminLayout>
     );
-  if (user.role !== 'moderator' && user.role !== 'admin')
-    return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">无权限访问（需要审核员或管理员角色）。</div>;
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="调整角色、封禁账号与重置密码属于系统治理权，仅平台管理员可操作。" />
+      </AdminLayout>
+    );
 
-  const canManage = user.role === 'admin';
   // 手里已经有一页数据时不再整页换成「加载中…」：刷新会把表格抹成一行字再弹回来
   const refreshing = loading && data != null;
 
@@ -189,9 +197,6 @@ export default function AdminUsersPage() {
             { value: 'admin', label: '管理员' },
           ]}
         />
-        {!canManage ? (
-          <span className="self-center text-xs text-ink-400">（仅管理员可调整角色与封禁）</span>
-        ) : null}
       </Toolbar>
 
       {loading && !data ? (
@@ -228,7 +233,7 @@ export default function AdminUsersPage() {
                 <tbody>
                   {data.items.map((u) => {
                     const self = isSelf(u);
-                    const disabled = !canManage || self || pending;
+                    const disabled = self || pending;
                     return (
                       <tr key={u.id} className="border-t border-ink-100 hover:bg-ink-50/50">
                         <td className="px-3 py-3 text-ink-800 whitespace-nowrap">{u.username}{self ? <span className="text-xs text-ink-400">（我）</span> : ''}</td>
@@ -245,7 +250,7 @@ export default function AdminUsersPage() {
                               className="btn-chip"
                               disabled={disabled || u.role === 'moderator'}
                               onClick={() => changeRole(u, 'moderator')}
-                              title={self ? '不能修改自己' : canManage ? '' : '仅管理员可操作'}
+                              title={self ? '不能修改自己' : undefined}
                             >
                               升审核员
                             </button>
@@ -253,7 +258,7 @@ export default function AdminUsersPage() {
                               className="btn-chip btn-chip-accent"
                               disabled={disabled || u.role === 'admin'}
                               onClick={() => changeRole(u, 'admin')}
-                              title={self ? '不能修改自己' : canManage ? '' : '仅管理员可操作'}
+                              title={self ? '不能修改自己' : undefined}
                             >
                               升管理员
                             </button>
@@ -261,7 +266,7 @@ export default function AdminUsersPage() {
                               className="btn-chip"
                               disabled={disabled || u.role === 'member'}
                               onClick={() => changeRole(u, 'member')}
-                              title={self ? '不能修改自己' : canManage ? '' : '仅管理员可操作'}
+                              title={self ? '不能修改自己' : undefined}
                             >
                               降成员
                             </button>
@@ -269,7 +274,7 @@ export default function AdminUsersPage() {
                               className={`btn-chip ${u.status === 'suspended' ? 'btn-chip-safe' : 'btn-chip-danger'}`}
                               disabled={disabled}
                               onClick={() => toggleBan(u)}
-                              title={self ? '不能修改自己' : canManage ? '' : '仅管理员可操作'}
+                              title={self ? '不能修改自己' : undefined}
                             >
                               {u.status === 'suspended' ? '解封' : '封禁'}
                             </button>
@@ -277,20 +282,18 @@ export default function AdminUsersPage() {
                               className="btn-chip"
                               disabled={disabled}
                               onClick={() => resetPassword(u)}
-                              title={self ? '不能重置自己' : canManage ? '生成随机新密码，仅显示一次' : '仅管理员可操作'}
+                              title={self ? '不能重置自己' : '生成随机新密码，仅显示一次'}
                             >
                               重置密码
                             </button>
-                            {canManage ? (
-                              <button
-                                className="btn-chip btn-chip-danger"
-                                disabled={disabled}
-                                onClick={() => deleteUser(u)}
-                                title={self ? '不能删除自己' : '删除账号及其全部内容（不可恢复）'}
-                              >
-                                删除
-                              </button>
-                            ) : null}
+                            <button
+                              className="btn-chip btn-chip-danger"
+                              disabled={disabled}
+                              onClick={() => deleteUser(u)}
+                              title={self ? '不能删除自己' : '删除账号及其全部内容（不可恢复）'}
+                            >
+                              删除
+                            </button>
                           </div>
                         </td>
                       </tr>

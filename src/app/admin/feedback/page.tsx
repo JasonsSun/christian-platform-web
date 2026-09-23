@@ -5,7 +5,7 @@ import { apiPatch, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
-import { AdminLayout, Loading, Empty, ErrorBox, PageHead, AccessState, AdminSelect } from '@/app/admin/_components';
+import { canEnterAdmin, AdminLayout, Loading, Empty, ErrorBox, PageHead, AccessState, AdminSelect } from '@/app/admin/_components';
 import { IconCheck } from '@/components/icons';
 
 interface FeedbackItem {
@@ -51,7 +51,7 @@ export default function AdminFeedbackPage() {
   const [status, setStatus] = useState<StatusKey>('new');
 
   const { data, loading, error, reload } = useApi<{ items: FeedbackItem[] }>(
-    user && (user.role === 'moderator' || user.role === 'admin')
+    canEnterAdmin(user, '/admin/feedback')
       ? `/admin/feedback${qs({ status })}`
       : null,
     [user, status]
@@ -70,10 +70,10 @@ export default function AdminFeedbackPage() {
     );
   }
 
-  if (user.role !== 'moderator' && user.role !== 'admin') {
+  if (!canEnterAdmin(user, '/admin/feedback')) {
     return (
       <AdminLayout>
-        <AccessState kind="ban" title="无权限" desc="仅审核员或管理员可查看平台建议" />
+        <AccessState kind="ban" title="无权限访问" desc="需要建议模块的审核权限，或管理员账号，才能查看与回复平台建议" />
       </AdminLayout>
     );
   }

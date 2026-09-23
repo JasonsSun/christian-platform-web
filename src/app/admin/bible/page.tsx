@@ -6,7 +6,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { apiPatch, qs } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { versionLabel } from '@/lib/bibleMeta';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
+import { canEnterAdmin, AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar, AccessState } from '../_components';
 
 /* ----------------------------- 类型 ----------------------------- */
 
@@ -38,11 +38,13 @@ const SELECT_CLS =
   'rounded-xl border border-ink-200 bg-white px-3 py-2 text-sm text-ink-800 focus:outline-none focus:ring-2 focus:ring-primary-200';
 
 export default function AdminBiblePage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  // /admin/bible 要 admin 或 moderator；/bible 是公开经文元数据，照旧匿名可取。
+  const canSee = canEnterAdmin(user, '/admin/bible');
   const canEdit = user?.role === 'admin';
 
   const meta = useApi<BibleMeta>('/bible', []);
-  const admin = useApi<BibleData>('/admin/bible', []);
+  const admin = useApi<BibleData>(canSee ? '/admin/bible' : null, [canSee]);
 
   const [version, setVersion] = useState('cuv');
   const [bookId, setBookId] = useState('genesis');
@@ -122,6 +124,20 @@ export default function AdminBiblePage() {
   }
 
   const problemCount = health.emptyText + health.longText + health.missingBooks.length;
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="圣经管理只对管理员开放，请先用管理员账号登录。" href="/login?next=/admin/bible" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要管理员账号，才能查看经文收录完整度与修订经文。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

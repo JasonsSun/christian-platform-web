@@ -8,8 +8,8 @@ import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { formatDate } from '@/lib/format';
 import { GROUP_CATEGORY_LABEL } from '@/lib/labels';
-import {
-  AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar,
+import { canEnterAdmin,
+  AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar, AccessState,
 } from '../_components';
 
 interface AdminGroup {
@@ -156,7 +156,10 @@ function MemberPanel({
 }
 
 export default function AdminGroupsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  // 读列表要「团契模块的审核员」或管理员。匿名原来照发这一趟：撞回 401 之后，
+  // 头顶的命中群组/成员/动态三张卡按 ?? 0 渲染，看着像真没有一个团契。
+  const canSee = canEnterAdmin(user, '/admin/groups');
   const canManage = user?.role === 'admin';
   const [q, setQ] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -164,7 +167,7 @@ export default function AdminGroupsPage() {
   const notice = useNotice();
 
   const { data, loading, error, reload } = useApi<{ items: AdminGroup[]; total: number }>(
-    `/admin/groups?q=${encodeURIComponent(q)}`, [q],
+    canSee ? `/admin/groups?q=${encodeURIComponent(q)}` : null, [canSee, q],
   );
   const items = data?.items || [];
   const totalMembers = items.reduce((a, b) => a + b.memberCount, 0);
@@ -185,6 +188,20 @@ export default function AdminGroupsPage() {
     },
     [confirmNav, notice, reload],
   );
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="群组管理只对团契模块审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/groups" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要团契模块的审核员或管理员账号，才能查看成员与动态。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

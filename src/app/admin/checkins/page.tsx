@@ -4,7 +4,7 @@ import { useState, Fragment } from 'react';
 import { apiGet } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
-import { AdminLayout, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, AccessState } from '@/app/admin/_components';
+import { canEnterAdmin, AdminLayout, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, AccessState } from '@/app/admin/_components';
 import { IconChevronRight } from '@/components/icons';
 import { timeAgo } from '@/lib/format';
 
@@ -31,15 +31,14 @@ interface Attendee {
 
 export default function AdminCheckinsPage() {
   const { user, loading: authLoading } = useAuth();
+  const canSee = canEnterAdmin(user, '/admin/checkins');
   const { data, loading, error, reload } = useApi<{ items: ActivityRow[] }>(
-    user && (user.role === 'moderator' || user.role === 'admin') ? '/admin/checkins' : null,
-    [user]
+    canSee ? '/admin/checkins' : null,
+    [canSee]
   );
   const [openId, setOpenId] = useState<string | null>(null);
   const [detail, setDetail] = useState<{ id: string; attendees: Attendee[]; total: number; registrations: number } | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-
-  const isStaff = user && (user.role === 'moderator' || user.role === 'admin');
 
   async function toggle(id: string) {
     if (openId === id) { setOpenId(null); return; }
@@ -65,10 +64,10 @@ export default function AdminCheckinsPage() {
       </AdminLayout>
     );
   }
-  if (!isStaff) {
+  if (!canSee) {
     return (
       <AdminLayout>
-        <AccessState kind="ban" title="无权限" desc="仅审核员或管理员可访问签到报表" />
+        <AccessState kind="ban" title="无权限访问" desc="需要活动模块的审核权限，或管理员账号，才能查看签到报表" />
       </AdminLayout>
     );
   }

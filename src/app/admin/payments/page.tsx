@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiPatch } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
-import { AdminLayout, Loading, ErrorBox, Badge, PageHead, Panel } from '../_components';
+import { useAuth } from '@/lib/auth';
+import { canEnterAdmin, AdminLayout, Loading, ErrorBox, Badge, PageHead, Panel, AccessState } from '../_components';
 
 /**
  * 支付配置(仅管理员)
@@ -38,9 +39,13 @@ const KEEP = '****';
 const CLEAR = '__CLEAR__';
 
 export default function AdminPaymentsPage() {
+  const { user, loading: authLoading } = useAuth();
+  // 文件注释写着「仅管理员」，读写接口也确实只认 admin —— 但页面自己没拦：
+  // 匿名打开换回一行红色 401，审核员打开则是一整页填得动、保存必失败的密钥输入框。
+  const canSee = canEnterAdmin(user, '/admin/payments');
   const { data, loading, error, reload } = useApi<{ fields: PayField[]; onlineEnabled: boolean }>(
-    '/admin/payments',
-    []
+    canSee ? '/admin/payments' : null,
+    [canSee]
   );
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [reveal, setReveal] = useState<Record<string, boolean>>({});
@@ -84,6 +89,20 @@ export default function AdminPaymentsPage() {
       setBusy(false);
     }
   }
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="支付配置只对管理员开放，请先用管理员账号登录。" href="/login?next=/admin/payments" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="商户密钥的读取与保存仅限平台管理员，审核员无法操作。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

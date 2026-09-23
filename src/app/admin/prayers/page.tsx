@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useConfirmNav } from '@/lib/confirm';
 import { useNotice } from '@/lib/notice';
 import { timeAgo } from '@/lib/format';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, Pagination } from '../_components';
+import { canEnterAdmin, AdminLayout, SectionTitle, StatCard, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, Pagination, AccessState } from '../_components';
 
 interface PrayerRow {
   id: string;
@@ -44,7 +44,7 @@ export default function AdminPrayersPage() {
   const [scope, setScope] = useState<ScopeKey>('all');
   const [page, setPage] = useState(1);
 
-  const isStaff = !!user && (user.role === 'admin' || user.role === 'moderator');
+  const isStaff = canEnterAdmin(user, '/admin/prayers');
   const isAdmin = !!user && user.role === 'admin';
 
   const { data, loading, error, reload, setData } = useApi<Resp>(
@@ -92,10 +92,18 @@ export default function AdminPrayersPage() {
     );
   }
 
-  if (!user || !isStaff) {
+  if (!user) {
     return (
       <AdminLayout>
-        <ErrorBox message="需要管理员或审核员权限" />
+        <AccessState title="请先登录" desc="代祷管理只对代祷模块的审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/prayers" />
+      </AdminLayout>
+    );
+  }
+
+  if (!isStaff) {
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要代祷模块的审核权限，或管理员账号，才能查看与移除代祷。" />
       </AdminLayout>
     );
   }

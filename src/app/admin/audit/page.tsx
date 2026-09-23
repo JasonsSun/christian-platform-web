@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { apiGet, qs } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime, formatIp } from '@/lib/format';
 import { auditActionLabel, entityTypeLabel } from '@/lib/labels';
-import { AdminLayout, AdminSelect, Badge, Empty, ErrorBox, PageHead, Pagination, TableShell, TableSkeleton, Th, Toolbar } from '../_components';
+import { canEnterAdmin, AdminLayout, AdminSelect, Badge, Empty, ErrorBox, Loading, PageHead, Pagination, TableShell, TableSkeleton, Th, Toolbar, AccessState } from '../_components';
 import type { AuditLog } from '../_components';
 
 const ACTIONS: { value: string; label: string }[] = [
@@ -28,18 +27,24 @@ export default function AdminAuditPage() {
   const [page, setPage] = useState(1);
   const pageSize = 15;
 
-  const path = `/admin/audit${qs({ action, page, pageSize })}`;
-  const { data, loading, error, reload } = useApi<{ items: AuditLog[]; total: number }>(path, [action, page]);
+  // /admin/audit 是 requireRole(['admin','moderator'])，而且审的就是「谁在什么时候处置了什么」
+  const canSee = canEnterAdmin(user, '/admin/audit');
+  const path = canSee ? `/admin/audit${qs({ action, page, pageSize })}` : null;
+  const { data, loading, error, reload } = useApi<{ items: AuditLog[]; total: number }>(path, [canSee, action, page]);
 
-  if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
-  if (user === null)
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">
-        请先登录以访问管理后台。 <Link className="btn-primary ml-2" href="/login?next=/admin/audit">去登录</Link>
-      </div>
+      <AdminLayout>
+        <AccessState title="请先登录" desc="审计日志只对管理员开放，请先用管理员账号登录。" href="/login?next=/admin/audit" />
+      </AdminLayout>
     );
-  if (user.role !== 'moderator' && user.role !== 'admin')
-    return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">无权限访问（需要审核员或管理员角色）。</div>;
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="审计日志记录全站处置留痕，仅限平台管理员查看。" />
+      </AdminLayout>
+    );
 
   function onAction(v: string) {
     setAction(v);

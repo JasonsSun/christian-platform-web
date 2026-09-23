@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
-import type { ReviewTask } from '@/lib/types';
+import type { ReviewTask, User } from '@/lib/types';
 import { useAuth } from '@/lib/auth';
 import { useEscape } from '@/lib/a11y';
 import { contentStatusLabel } from '@/lib/labels';
@@ -191,9 +191,28 @@ const NAV_GROUPS: {
   ] },
 ];
 
+/**
+ * 后台准入的唯一判据。侧栏入口和页面内容必须读同一份 NAV_GROUPS 元数据：
+ * 页面自己写一句 `role === 'admin' || role === 'moderator'`，侧栏却按模块藏入口，
+ * 那么只分到「文章」模块的审核员手动输 /admin/sermons 就能进到完整的讲道管理页，
+ * 新建/编辑/删除一个不少，点下去全是 403 —— 门看着立着，其实量的是角色这一个字。
+ */
+function navItemVisible(user: User | null, item: { adminOnly?: boolean; module?: ModuleKey }) {
+  if (!user || (user.role !== 'admin' && user.role !== 'moderator')) return false;
+  if (item.adminOnly) return user.role === 'admin';
+  if (!item.module) return true;
+  return user.role === 'admin' || (user.moderatorScopes || []).includes(item.module);
+}
+
+export function canEnterAdmin(user: User | null, href: string) {
+  const item = NAV_GROUPS.flatMap((g) => g.items).find((it) => it.href === href);
+  // 没登记进侧栏的后台路径按最宽的管理角色兜底，而不是因为它不在表里就放开。
+  return item ? navItemVisible(user, item) : !!user && (user.role === 'admin' || user.role === 'moderator');
+}
+
 export function AdminNav() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isAdmin = user?.role === 'admin';
   const scopes = user?.moderatorScopes || [];
   const [query, setQuery] = useState('');
@@ -209,11 +228,8 @@ export function AdminNav() {
   const flat = NAV_GROUPS.flatMap((g) => g.items.map((it) => ({ ...it, group: g.group })));
   const current = flat.filter((it) => isActive(it.href)).sort((a, b) => b.href.length - a.href.length)[0];
 
-  const canSee = (it: { adminOnly?: boolean; module?: ModuleKey }) => {
-    if (it.adminOnly) return isAdmin;
-    if (!it.module) return true;
-    return isAdmin || scopes.includes(it.module);
-  };
+  // 与页面门共用 navItemVisible：入口藏了、页面却放行，等于把后台路径留给会手动输网址的人。
+  const canSee = (it: { adminOnly?: boolean; module?: ModuleKey }) => navItemVisible(user, it);
 
   const kw = query.trim();
   const groups = NAV_GROUPS.map((g) => ({
@@ -258,7 +274,9 @@ export function AdminNav() {
           {/* 治理范围在标题行只留一枚小点 + 计数，剩下的字数交给下面的说明块，
               免得 11px 的附属字和 15px 的条目挤在同一视觉重量上 */}
           <span className="ml-auto">
-            <NavMeta>{isAdmin ? '全量' : user ? `${scopes.length} 模块` : '校验中'}</NavMeta>
+            {/* 「校验中」只在登录态真没回来之前说；访客那里它是一句永远兑现不了的承诺，
+                和这一页刚立的「请先登录」门自相矛盾。 */}
+            <NavMeta>{isAdmin ? '全量' : user ? `${scopes.length} 模块` : authLoading ? '校验中' : '未登录'}</NavMeta>
           </span>
         </div>
 
@@ -347,7 +365,11 @@ export function AdminNav() {
           </nav>
           ) : null}
           {user && !groups.length ? (
-            <p className="px-2 py-4 text-xs text-ink-500">没有匹配「{kw}」的功能</p>
+            /* 非管理成员现在一个条目都没有（原来能看到「仪表盘 / 管理消息」），
+               这句要是只按搜索词写，就会漏成一句引号里空着的话。 */
+            <p className="px-2 py-4 text-xs text-ink-500">
+              {kw ? `没有匹配「${kw}」的功能` : '此账号没有可进入的后台模块'}
+            </p>
           ) : null}
         </div>
       </div>
@@ -967,7 +989,7 @@ export function AccessState({
       >
         <Icon className="w-7 h-7" strokeWidth={1.5} />
       </div>
-      <h2 className="font-display text-xl sm:text-2xl font-bold text-ink-900 mt-4">{title}</h2>
+      <h1 className="font-display text-xl sm:text-2xl font-bold text-ink-900 mt-4">{title}</h1>
       {desc ? <p className="text-ink-500 text-sm mt-2 max-w-md mx-auto leading-relaxed">{desc}</p> : null}
       {href ? (
         <Link href={href} className="btn-primary btn-sm min-h-11 lg:min-h-0 inline-flex mt-5">

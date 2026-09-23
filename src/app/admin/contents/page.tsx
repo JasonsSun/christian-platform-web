@@ -9,7 +9,7 @@ import { timeAgo } from '@/lib/format';
 import { CONTENT_TYPE_LABEL, CONTENT_STATUS_LABEL } from '@/lib/labels';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import Portal from '@/components/Portal';
-import { AdminLayout, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, AdminSelect, Pagination, AccessState } from '../_components';
+import { canEnterAdmin, AdminLayout, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, AdminSelect, Pagination, AccessState } from '../_components';
 
 interface ContentRow {
   id: string;
@@ -49,7 +49,7 @@ export default function AdminContentsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 20;
 
-  const canSee = !!user && (user.role === 'admin' || user.role === 'moderator');
+  const canSee = canEnterAdmin(user, '/admin/contents');
   const path = useMemo(
     () => (canSee ? `/admin/contents${qs({ status, type, q: search, page, pageSize })}` : null),
     [canSee, status, type, search, page]

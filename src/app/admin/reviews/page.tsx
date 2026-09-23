@@ -7,7 +7,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
 import { contentTypeLabel } from '@/lib/labels';
-import { AdminLayout, StatusBadge, Loading, Empty, ErrorBox, Badge, PageHead, Toolbar, Pagination, AccessState } from '../_components';
+import { canEnterAdmin, AdminLayout, StatusBadge, Loading, Empty, ErrorBox, Badge, PageHead, Toolbar, Pagination, AccessState } from '../_components';
 import type { ReviewTask } from '@/lib/types';
 
 const TABS = [
@@ -128,8 +128,11 @@ export default function AdminReviewsPage() {
   const pageSize = 12;
   const [notice, setNotice] = useState<string | null>(null);
 
+  // /moderation/queue 要内容模块的审核权限：原来这一趟对匿名和普通成员照发，
+  // 门却只在渲染时挡，于是进页面先撞一个必然 401 的请求。
+  const canSee = canEnterAdmin(user, '/admin/reviews');
   const path = `/moderation/queue${qs({ status: tab, page, pageSize })}`;
-  const { data, loading, error, reload } = useApi<{ items: ReviewTask[]; total: number }>(path, [tab, page]);
+  const { data, loading, error, reload } = useApi<{ items: ReviewTask[]; total: number }>(canSee ? path : null, [canSee, tab, page]);
   const { run, pending } = useAction();
 
   if (authLoading) return <AdminLayout><Loading rows={4} /></AdminLayout>;
@@ -139,10 +142,10 @@ export default function AdminReviewsPage() {
         <AccessState title="请先登录" desc="登录审核员或管理员账号后查看审核队列。" href="/login?next=/admin/reviews" />
       </AdminLayout>
     );
-  if (user.role !== 'moderator' && user.role !== 'admin')
+  if (!canSee)
     return (
       <AdminLayout>
-        <AccessState kind="ban" title="无权限访问" desc="需要审核员或管理员角色。" />
+        <AccessState kind="ban" title="无权限访问" desc="需要内容模块的审核权限，或管理员账号，才能处理审核队列。" />
       </AdminLayout>
     );
 

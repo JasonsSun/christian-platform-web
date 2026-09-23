@@ -9,7 +9,7 @@ import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { formatDateTime } from '@/lib/format';
 import { scrollBehavior } from '@/lib/motion';
-import { AdminLayout, StatCard, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
+import { canEnterAdmin, AdminLayout, StatCard, Badge, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, PageHead, Toolbar, AccessState } from '../_components';
 import type { AdminExpense, AdminExpenseResult } from '@/lib/types';
 
 /**
@@ -45,8 +45,10 @@ export default function AdminExpensesPage() {
   const [page, setPage] = useState(1);
   const pageSize = 15;
 
-  const path = `/admin/expenses${qs({ status, category, page, pageSize })}`;
-  const { data, loading, error, reload } = useApi<AdminExpenseResult>(path, [status, category, page]);
+  // /admin/expenses 的读与写都是 requireRole(['admin'])：审核员进来是一整页填得动、保存必失败的表单。
+  const canSee = canEnterAdmin(user, '/admin/expenses');
+  const path = canSee ? `/admin/expenses${qs({ status, category, page, pageSize })}` : null;
+  const { data, loading, error, reload } = useApi<AdminExpenseResult>(path, [canSee, status, category, page]);
 
   const { run, pending } = useAction();
   const notice = useNotice();
@@ -62,15 +64,19 @@ export default function AdminExpensesPage() {
   const [fPeriod, setFPeriod] = useState('');
   const [fStatus, setFStatus] = useState('published');
 
-  if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
-  if (user === null)
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">
-        请先登录以访问管理后台。 <Link className="btn-primary ml-2" href="/login?next=/admin/expenses">去登录</Link>
-      </div>
+      <AdminLayout>
+        <AccessState title="请先登录" desc="支出公示只对平台管理员开放，请先用管理员账号登录。" href="/login?next=/admin/expenses" />
+      </AdminLayout>
     );
-  if (user.role !== 'admin')
-    return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">无权限访问（支出公示仅平台管理员可维护）。</div>;
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="支出条目的录入与发布仅平台管理员可维护。" />
+      </AdminLayout>
+    );
 
   function resetForm() {
     setEditId(null);

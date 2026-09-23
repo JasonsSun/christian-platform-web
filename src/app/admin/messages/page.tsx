@@ -6,7 +6,7 @@ import { apiGet, apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { scrollBehavior } from '@/lib/motion';
 import { formatDateTime } from '@/lib/format';
-import { AdminLayout, SectionTitle, Loading, ErrorBox, Empty, PageHead } from '../_components';
+import { canEnterAdmin, AdminLayout, SectionTitle, Loading, ErrorBox, Empty, PageHead, AccessState } from '../_components';
 import { StaffBadges } from '@/components/ModeratorBadge';
 
 /**
@@ -51,8 +51,11 @@ interface Inbox {
 }
 
 export default function AdminMessagesPage() {
-  const { user } = useAuth();
-  const { data, loading, error, reload } = useApi<Inbox>('/admin/messages', []);
+  const { user, loading: authLoading } = useAuth();
+  // 注释里写了「入口只在后台、接口要 admin/moderator」，但页面本身没拦：匿名打开
+  // /admin/messages 照样发这一趟请求，回来是一行红色 401。门补上，请求才真的不发。
+  const canSee = canEnterAdmin(user, '/admin/messages');
+  const { data, loading, error, reload } = useApi<Inbox>(canSee ? '/admin/messages' : null, [canSee]);
   const [peerId, setPeerId] = useState<string>('');
   const [thread, setThread] = useState<Thread | null>(null);
   const [loadingThread, setLoadingThread] = useState(false);
@@ -125,6 +128,20 @@ export default function AdminMessagesPage() {
       {(p.displayName || '?').slice(0, 1)}
     </div>
   );
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="管理消息只对管理员与审核员开放，请先用管理账号登录。" href="/login?next=/admin/messages" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="这是管理员与审核员之间的内部沟通渠道，普通成员无法访问。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

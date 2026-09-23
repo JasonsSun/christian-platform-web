@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useApi, useAction } from '@/lib/useApi';
 import { apiPost } from '@/lib/api';
@@ -8,22 +8,31 @@ import { useConfirmNav } from '@/lib/confirm';
 import { useNotice } from '@/lib/notice';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
-import { AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
+import { canEnterAdmin, AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox, PageHead, Toolbar, AccessState } from '../_components';
 import type { LiveRoomListItem } from '@/lib/types';
 
 type Tab = 'all' | 'pending' | 'live' | 'closed';
 
 export default function AdminLivePage() {
+  const { user, loading: authLoading } = useAuth();
+  // /live?review=1 的放行条件是「staff 且带 review=1」，服务端不会漏数据，但匿名打开
+  // 这一页会拿到一份公开房间列表，渲染成一页看起来正常可用的「直播管理」。
+  const canSee = canEnterAdmin(user, '/admin/live');
   // review=1:管理端可见全部房间(含待审/驳回/取消/过期)
-  const { data, loading, error, reload } = useApi<{ rooms: LiveRoomListItem[] }>(`/live?review=1`, []);
+  const { data, loading, error, reload } = useApi<{ rooms: LiveRoomListItem[] }>(canSee ? `/live?review=1` : null, [canSee]);
   const { run, pending: busy } = useAction();
-  const { user } = useAuth();
   const confirmNav = useConfirmNav();
   const notice = useNotice();
   const canManage = user?.role === 'admin';
   const isModerator = user?.role === 'moderator';
   // 审核员只需处理待审核,默认锁定在「待审核」tab,且不可切换到其他管理视角
   const [tab, setTab] = useState<Tab>(isModerator ? 'pending' : 'all');
+
+  // 登录态是异步解析的：首屏 user 还没到，上面的初值就成了「全部」。审核员此后再
+  // 看不到别的页签（下面只渲染「待审核」一个），人被停在管理视角里出不来。校正一次。
+  useEffect(() => {
+    if (isModerator && tab !== 'pending') setTab('pending');
+  }, [isModerator, tab]);
 
   /* ---------- 录像清理运维入口（仅管理员） ---------- */
   const [cleanupHours, setCleanupHours] = useState(24);
@@ -116,6 +125,20 @@ export default function AdminLivePage() {
 
   const canReview = (r: LiveRoomListItem) =>
     r.status === 'created' && !r.cancelled && !r.expired && r.reviewStatus === 'pending';
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="直播管理只对直播模块的审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/live" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要直播模块的审核权限，或管理员账号，才能审核直播间与处理违规。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
 import { logLevelLabel, errorScopeLabel } from '@/lib/labels';
 import { channelLabel, notifJobReasonLabel, notifJobStatusLabel, notifTypeLabel } from '@/lib/notificationMeta';
-import { AdminLayout, Badge, Loading, Empty, ErrorBox, SectionTitle, PageHead, Panel, AccessState } from '../_components';
+import { canEnterAdmin, AdminLayout, Badge, Loading, Empty, ErrorBox, SectionTitle, PageHead, Panel, AccessState } from '../_components';
 
 interface HealthData {
   status: string;
@@ -115,13 +115,13 @@ export default function AdminSystemPage() {
   if (user === null)
     return (
       <AdminLayout>
-        <AccessState title="请先登录" desc="登录审核员或管理员账号后查看系统信息。" href="/login?next=/admin/system" />
+        <AccessState title="请先登录" desc="系统诊断只对管理员开放，请先用管理员账号登录。" href="/login?next=/admin/system" />
       </AdminLayout>
     );
-  if (user.role !== 'moderator' && user.role !== 'admin')
+  if (!canEnterAdmin(user, '/admin/system'))
     return (
       <AdminLayout>
-        <AccessState kind="ban" title="无权限访问" desc="需要审核员或管理员角色。" />
+        <AccessState kind="ban" title="无权限访问" desc="运行时诊断与错误日志的读取、冲刷属于系统治理权，仅限平台管理员。" />
       </AdminLayout>
     );
 

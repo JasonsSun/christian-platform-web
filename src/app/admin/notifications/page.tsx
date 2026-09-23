@@ -4,7 +4,8 @@ import { Fragment, useState } from 'react';
 import { apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
 import { useApi } from '@/lib/useApi';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
+import { useAuth } from '@/lib/auth';
+import { canEnterAdmin, AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, Toolbar, AccessState } from '../_components';
 import {
   CHANNEL_LABEL, notifTypeLabel, channelLabel, NOTIF_TYPE_ICON,
 } from '@/lib/notificationMeta';
@@ -26,7 +27,11 @@ const CHANNELS = ['inapp', 'push', 'email', 'sms', 'wechat'];
 const EMPTY_FORM = { code: '', channel: 'inapp', titleTpl: '', bodyTpl: '', enabled: true };
 
 export default function AdminNotificationsPage() {
-  const { data, loading, error, reload } = useApi<NotifData>('/admin/notifications', []);
+  const { user, loading: authLoading } = useAuth();
+  // /admin/notifications 要 admin 或 moderator。匿名原来照发这一趟，页面上是
+  // 一趟 401 的红框 + 三张按 ?? 0 渲染的「未读 0 / 模板数 0」，看着像系统没发过通知。
+  const canSee = canEnterAdmin(user, '/admin/notifications');
+  const { data, loading, error, reload } = useApi<NotifData>(canSee ? '/admin/notifications' : null, [canSee]);
   const [form, setForm] = useState<typeof EMPTY_FORM | null>(null);   // 新增表单
   const [editing, setEditing] = useState<string | null>(null);        // 正在编辑的模板 id
   const [draft, setDraft] = useState<typeof EMPTY_FORM | null>(null);
@@ -167,6 +172,20 @@ export default function AdminNotificationsPage() {
       </tr>
     );
   }
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="通知模板与收发统计只对管理员开放，请先用管理员账号登录。" href="/login?next=/admin/notifications" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要管理员账号，才能查看模板、收发统计与手动发送。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

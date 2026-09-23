@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { apiPatch } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
-import { AdminLayout, Loading, ErrorBox, Badge, PageHead, Panel } from '../_components';
+import { useAuth } from '@/lib/auth';
+import { canEnterAdmin, AdminLayout, Loading, ErrorBox, Badge, PageHead, Panel, AccessState } from '../_components';
 
 interface SettingItem {
   key: string; value: string; label: string; group: string; updatedAt: string;
@@ -18,7 +19,14 @@ const GROUP_HINT: Record<string, string> = {
 };
 
 export default function AdminSettingsPage() {
-  const { data, loading, error, reload } = useApi<{ items: SettingItem[] }>('/admin/settings', []);
+  const { user, loading: authLoading } = useAuth();
+  // 读写两端都是 requireRole(['admin'])：审核员进来每一下都是 403，匿名更是先发一趟
+  // 必然 401 的请求再看到红框。门立在请求前面。
+  const canSee = canEnterAdmin(user, '/admin/settings');
+  const { data, loading, error, reload } = useApi<{ items: SettingItem[] }>(
+    canSee ? '/admin/settings' : null,
+    [canSee]
+  );
   const [draft, setDraft] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -52,6 +60,20 @@ export default function AdminSettingsPage() {
       setBusy(false);
     }
   }
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="系统设置只对管理员开放，请先用管理员账号登录。" href="/login?next=/admin/settings" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要管理员账号才能修改运行配置，审核员无权读写。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

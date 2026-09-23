@@ -5,11 +5,12 @@ import { apiPatch } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
+import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
 import { activityCategoryLabel } from '@/lib/labels';
-import {
-  AdminLayout, StatCard, Badge, TableSkeleton, TableShell, Th, Empty, ErrorBox,
-  PageHead, Toolbar,
+import { canEnterAdmin,
+  AdminLayout, Loading, StatCard, Badge, TableSkeleton, TableShell, Th, Empty, ErrorBox,
+  PageHead, Toolbar, AccessState,
 } from '../_components';
 
 interface AdminActivity {
@@ -28,6 +29,10 @@ const STATUS_MAP: Record<string, { tone: 'green' | 'gold' | 'red' | 'gray'; labe
 export default function AdminActivitiesPage() {
   const notice = useNotice();
   const confirmNav = useConfirmNav();
+  const { user, loading: authLoading } = useAuth();
+  // 读和写都要「活动模块的审核员」或管理员：匿名进来原来是一趟必然 401 的请求，
+  // 上面四张 StatCard 却照常渲染成 0，红框和假 0 同屏。门立在请求前面。
+  const canSee = canEnterAdmin(user, '/admin/activities');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
@@ -36,7 +41,7 @@ export default function AdminActivitiesPage() {
     items: AdminActivity[];
     total: number;
     byStatus: { status: string; c: number }[];
-  }>(`/admin/activities?q=${encodeURIComponent(q)}&status=${status}`, [q, status]);
+  }>(canSee ? `/admin/activities?q=${encodeURIComponent(q)}&status=${status}` : null, [canSee, q, status]);
 
   async function changeStatus(id: string, next: string) {
     setBusy(id); setMsg('');
@@ -76,6 +81,20 @@ export default function AdminActivitiesPage() {
   // 状态筛选走。原先筛「待审核」时「活动总数」悄悄变成待审核的条数，和旁边「上线中 /
   // 待审核」对不上，看着像数据错了。
   const allCount = (data?.byStatus ?? []).reduce((n, s) => n + s.c, 0);
+
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="活动管理只对活动模块审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/activities" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要活动模块的审核员或管理员账号，才能查看报名与签到并上下架活动。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

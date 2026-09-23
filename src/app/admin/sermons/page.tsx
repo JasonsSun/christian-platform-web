@@ -9,7 +9,7 @@ import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { useI18n } from '@/lib/i18n/I18nProvider';
-import { AdminLayout, SectionTitle, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, Badge, PageHead, Toolbar, AdminSelect } from '../_components';
+import { canEnterAdmin, AdminLayout, SectionTitle, Loading, TableSkeleton, TableShell, Th, Empty, ErrorBox, Badge, PageHead, Toolbar, AdminSelect, AccessState } from '../_components';
 import { IconPlus } from '@/components/icons';
 import Portal from '@/components/Portal';
 
@@ -46,10 +46,16 @@ export default function AdminSermonsPage() {
   const [tab, setTab] = useState<'sermons' | 'series'>('sermons');
 
   if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
-  if (!user || (user.role !== 'admin' && user.role !== 'moderator'))
+  if (!user)
     return (
       <AdminLayout>
-        <div className="text-center text-ink-500 py-20">无权限访问（需要媒体模块审核员或管理员角色）。</div>
+        <AccessState title="请先登录" desc="讲道管理只对管理员与审核员开放，请先用管理账号登录。" href="/login?next=/admin/sermons" />
+      </AdminLayout>
+    );
+  if (!canEnterAdmin(user, '/admin/sermons'))
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要媒体模块的审核员或管理员账号，才能维护讲道与系列。" />
       </AdminLayout>
     );
 

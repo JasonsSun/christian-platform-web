@@ -6,7 +6,7 @@ import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { timeAgo } from '@/lib/format';
 import { reportStatusLabel } from '@/lib/labels';
-import { AdminLayout, Loading, Empty, ErrorBox, PageHead, AccessState } from '@/app/admin/_components';
+import { canEnterAdmin, AdminLayout, Loading, Empty, ErrorBox, PageHead, AccessState } from '@/app/admin/_components';
 
 interface ReportItem {
   id: string;
@@ -44,7 +44,7 @@ export default function AdminReportsPage() {
   const [status, setStatus] = useState<StatusKey>('open');
 
   const { data, loading, error, reload } = useApi<{ items: ReportItem[] }>(
-    user && (user.role === 'moderator' || user.role === 'admin')
+    canEnterAdmin(user, '/admin/reports')
       ? `/admin/reports${qs({ status })}`
       : null,
     [user, status]
@@ -67,10 +67,10 @@ export default function AdminReportsPage() {
     );
   }
 
-  if (user.role !== 'moderator' && user.role !== 'admin') {
+  if (!canEnterAdmin(user, '/admin/reports')) {
     return (
       <AdminLayout>
-        <AccessState kind="ban" title="无权限" desc="仅审核员或管理员可访问举报处理队列" />
+        <AccessState kind="ban" title="无权限访问" desc="需要举报模块的审核权限，或管理员账号，才能处理举报" />
       </AdminLayout>
     );
   }

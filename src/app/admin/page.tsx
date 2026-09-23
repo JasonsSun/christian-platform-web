@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { formatClock, timeAgo } from '@/lib/format';
 import { contentStatusLabel, auditActionLabel } from '@/lib/labels';
 import { IconArrowRight, IconChatDots, IconEye, IconHeart, IconRefresh } from '@/components/icons';
-import { AdminLayout, PageHead, StatCard, StatusBadge, Loading, Empty, ErrorBox, SectionTitle, Badge } from './_components';
+import { canEnterAdmin, AdminLayout, PageHead, StatCard, StatusBadge, Loading, Empty, ErrorBox, SectionTitle, Badge, AccessState } from './_components';
 import type { AdminStats } from './_components';
 
 /** 状态条的颜色按归一化后的状态取：接口里 pending_review 和 pending 是同义，
@@ -40,22 +40,30 @@ function last7Days() {
 
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
-  const { data, loading, error, reload } = useApi<AdminStats>('/admin/stats');
+  // /admin/stats 是 requireRole(['admin','moderator'])：匿名进来先撞一趟必然 401 的请求。
+  const canSee = canEnterAdmin(user, '/admin');
+  const { data, loading, error, reload } = useApi<AdminStats>(canSee ? '/admin/stats' : null, [canSee]);
   const [updatedAt, setUpdatedAt] = useState('');
 
   useEffect(() => {
     if (data) setUpdatedAt(formatClock(new Date()));
   }, [data]);
 
-  if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
-  if (user === null)
+  // 三道门都立在 AdminLayout 里：原来它们是一句裸文本，没有后台外壳、也没有页头标题，
+  // 匿名访客看到的是白底上一行小字，读起来像页面坏了。
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">
-        请先登录以访问管理后台。 <Link className="btn-primary ml-2" href="/login?next=/admin">去登录</Link>
-      </div>
+      <AdminLayout>
+        <AccessState title="请先登录" desc="管理后台只对管理员与审核员开放，请先用管理账号登录。" href="/login?next=/admin" />
+      </AdminLayout>
     );
-  if (user.role !== 'moderator' && user.role !== 'admin')
-    return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">无权限访问（需要审核员或管理员角色）。</div>;
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要管理员或审核员角色，才能查看平台仪表盘。" />
+      </AdminLayout>
+    );
 
   // 手里已经有一屏数据时不再整页换成「加载中…」：刷新会把 6 张卡抹成一行字再弹回来
   const refreshing = loading && data != null;

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { apiPatch, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
-import { AdminLayout, AdminSelect, Loading, Empty, ErrorBox, PageHead, Toolbar } from '../_components';
+import { canEnterAdmin, AdminLayout, AdminSelect, Loading, Empty, ErrorBox, PageHead, Toolbar, AccessState } from '../_components';
 
 interface TagRow {
   name: string;
@@ -22,7 +22,7 @@ export default function AdminTagsPage() {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState<'count' | 'name'>('count');
 
-  const canSee = !!user && (user.role === 'admin' || user.role === 'moderator');
+  const canSee = canEnterAdmin(user, '/admin/tags');
   const { data, loading, error, reload } = useApi<{ items: TagRow[]; total: number }>(
     canSee ? `/admin/tags${qs({ q: search, sort })}` : null,
     [canSee, search, sort]
@@ -47,8 +47,18 @@ export default function AdminTagsPage() {
   }
 
   if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
-  if (!user) return <AdminLayout><Empty label="请先登录" /></AdminLayout>;
-  if (!canSee) return <AdminLayout><Empty label="无权限访问（需要内容模块审核员或管理员）" /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="标签治理只对内容模块审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/tags" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要内容模块的审核员或管理员账号，才能改名与合并标签。" />
+      </AdminLayout>
+    );
 
   return (
     <AdminLayout>

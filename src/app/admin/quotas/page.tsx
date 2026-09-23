@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
-import Link from 'next/link';
 import { apiPatch, apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { formatSize, formatDuration } from '@/lib/format';
-import { AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox, RoleBadge, PageHead, Toolbar, AdminSelect, TableShell, Th, TableSkeleton } from '../_components';
+import { canEnterAdmin, AdminLayout, StatCard, SectionTitle, Loading, Empty, ErrorBox, RoleBadge, PageHead, Toolbar, AdminSelect, TableShell, Th, TableSkeleton, AccessState } from '../_components';
 
 interface Policy {
   level: number; name: string; minScore: number;
@@ -56,21 +55,26 @@ export default function AdminQuotasPage() {
   const { run, pending } = useAction();
   const [msg, setMsg] = useState('');
 
+  // 读是 requireRole(['admin','moderator'])，写是 requireRole(['admin'])：
+  // 匿名进来先撞一趟必然 401 的统计请求，看到的是一排假 0。
+  const canSee = canEnterAdmin(user, '/admin/quotas');
   const { data, loading, error, reload } = useApi<{
     policies: Policy[]; stats: any; users: GrowthUser[]; total: number;
-  }>(`/admin/quotas${qs({ kw, level, page, pageSize })}`, [kw, level, page]);
+  }>(canSee ? `/admin/quotas${qs({ kw, level, page, pageSize })}` : null, [canSee, kw, level, page]);
 
-  if (authLoading) return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
-  if (user === null) {
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">
-        请先登录以访问管理后台。 <Link className="btn-primary ml-2" href="/login?next=/admin/quotas">去登录</Link>
-      </div>
+      <AdminLayout>
+        <AccessState title="请先登录" desc="成长配额只对管理员开放，请先用管理员账号登录。" href="/login?next=/admin/quotas" />
+      </AdminLayout>
     );
-  }
-  if (user.role !== 'moderator' && user.role !== 'admin') {
-    return <div className="max-w-7xl mx-auto px-4 py-20 text-center text-ink-500">无权限访问（需要审核员或管理员角色）。</div>;
-  }
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要管理员账号，才能查看配额画像与调整策略。" />
+      </AdminLayout>
+    );
   const isAdmin = user.role === 'admin';
 
   function setDraft(levelNum: number, key: string, value: string) {

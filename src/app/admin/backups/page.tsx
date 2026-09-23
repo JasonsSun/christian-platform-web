@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
 import { formatDateTime, formatSize } from '@/lib/format';
 import { backupKindLabel } from '@/lib/labels';
-import { AdminLayout, Loading, ErrorBox, Empty, Badge, PageHead, Panel, AccessState } from '../_components';
+import { canEnterAdmin, AdminLayout, Loading, ErrorBox, Empty, Badge, PageHead, Panel, AccessState } from '../_components';
 import Portal from '@/components/Portal';
 
 interface BackupFile {
@@ -20,8 +20,15 @@ interface BackupFile {
 }
 
 export default function AdminBackupsPage() {
-  const { user } = useAuth();
-  const { data, loading, error, reload } = useApi<{ files: BackupFile[]; cron: { schedule: string; note: string }; lastBackupAt: string | null; lastAppBackupAt: string | null }>('/admin/backups');
+  const { user, loading: authLoading } = useAuth();
+  // /admin/backups 的读、写、恢复、删除四处全是 requireRole(['admin'])。
+  // 原来这里只挡「登录了但角色不对」，匿名与普通成员照样先发一趟必然 401 的请求，
+  // 页面上是一句红色「未登录或令牌无效」加一个重试按钮。
+  const canSee = canEnterAdmin(user, '/admin/backups');
+  const { data, loading, error, reload } = useApi<{ files: BackupFile[]; cron: { schedule: string; note: string }; lastBackupAt: string | null; lastAppBackupAt: string | null }>(
+    canSee ? '/admin/backups' : null,
+    [canSee]
+  );
   const createAction = useAction();
   const delAction = useAction();
   const restoreAction = useAction();
@@ -42,13 +49,19 @@ export default function AdminBackupsPage() {
   const restoreRef = useDialogFocus(!!confirmRestore);
   const restoreTitleId = useId();
 
-  if (user && user.role !== 'moderator' && user.role !== 'admin') {
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
     return (
       <AdminLayout>
-        <AccessState kind="ban" title="无权限访问" desc="备份管理仅限管理员与审核员，且所有备份操作都会记入审计日志。" />
+        <AccessState title="请先登录" desc="备份管理只对平台管理员开放，请先用管理员账号登录。" href="/login?next=/admin/backups" />
       </AdminLayout>
     );
-  }
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="备份的创建、恢复与删除仅限平台管理员，且每一次操作都会记入审计日志。" />
+      </AdminLayout>
+    );
   if (loading) return <AdminLayout><Loading /></AdminLayout>;
   if (error) return <AdminLayout><ErrorBox message={error} onRetry={reload} /></AdminLayout>;
   if (!data) return <AdminLayout><Empty label="暂无数据" /></AdminLayout>;

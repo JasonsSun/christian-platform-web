@@ -2,8 +2,9 @@
 
 import { Fragment, useId, useState } from 'react';
 import { useApi } from '@/lib/useApi';
+import { useAuth } from '@/lib/auth';
 import { apiPatch, apiPost } from '@/lib/api';
-import { AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead } from '../_components';
+import { canEnterAdmin, AdminLayout, SectionTitle, StatCard, Badge, Loading, Empty, ErrorBox, PageHead, AccessState } from '../_components';
 
 interface AdminSong {
   id: string; title: string; author: string; category: string; tags: string;
@@ -36,6 +37,11 @@ interface Editor {
 }
 
 export default function AdminSongsPage() {
+  const { user, loading: authLoading } = useAuth();
+  // 读要「诗歌模块的审核员」或管理员；批量导入的接口只认 admin。
+  // 匿名原来照发这一趟：红色 401 和一排 ?? 0 的统计卡同屏。
+  const canSee = canEnterAdmin(user, '/admin/songs');
+  const isAdmin = user?.role === 'admin';
   const [q, setQ] = useState('');
   const [busyId, setBusyId] = useState('');
   const [tip, setTip] = useState('');
@@ -53,7 +59,7 @@ export default function AdminSongsPage() {
     items: AdminSong[]; total: number;
     byCategory: { category: string; c: number }[];
     byAudioType: { audioType: string; c: number }[];
-  }>(`/admin/songs?q=${encodeURIComponent(q)}`, [q]);
+  }>(canSee ? `/admin/songs?q=${encodeURIComponent(q)}` : null, [canSee, q]);
   const items = data?.items || [];
   const totalPlays = items.reduce((a, b) => a + b.playCount, 0);
   const totalFav = items.reduce((a, b) => a + b.favoriteCount, 0);
@@ -160,6 +166,20 @@ export default function AdminSongsPage() {
     }
   }
 
+  if (authLoading) return <AdminLayout><Loading /></AdminLayout>;
+  if (!user)
+    return (
+      <AdminLayout>
+        <AccessState title="请先登录" desc="赞美诗管理只对诗歌模块审核员与管理员开放，请先用管理账号登录。" href="/login?next=/admin/songs" />
+      </AdminLayout>
+    );
+  if (!canSee)
+    return (
+      <AdminLayout>
+        <AccessState kind="ban" title="无权限访问" desc="需要诗歌模块的审核员或管理员账号，才能校对歌词、曲谱与音频类型。" />
+      </AdminLayout>
+    );
+
   return (
     <AdminLayout>
       <PageHead eyebrow="内容 · 诗歌" title="赞美诗管理" sub="诗歌、歌词、曲谱、音频与播放/收藏统计" />
@@ -195,13 +215,15 @@ export default function AdminSongsPage() {
             <Badge key={c.category} tone="gold">{c.category} · {c.c}</Badge>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={() => { setBatchOpen(true); setBatchResult(null); setBatchErr(''); }}
-          className="ml-auto text-sm px-4 py-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700 whitespace-nowrap"
-        >
-          批量导入
-        </button>
+        {isAdmin ? (
+          <button
+            type="button"
+            onClick={() => { setBatchOpen(true); setBatchResult(null); setBatchErr(''); }}
+            className="ml-auto text-sm px-4 py-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700 whitespace-nowrap"
+          >
+            批量导入
+          </button>
+        ) : null}
       </div>
 
       {loading && !data ? (
