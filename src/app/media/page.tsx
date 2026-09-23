@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { formatDate, formatSize } from '@/lib/format';
 import { usePlayer, formatTime } from '@/lib/player';
 import RecentPlays from '@/components/RecentPlays';
+import { Empty } from '@/components/ui';
 import {
   IconMusicNote,
   IconDocument,
@@ -196,17 +197,25 @@ export default function MediaPage() {
       ) : error && items.length === 0 ? (
         <div className="py-20 text-center text-rose-600">{error} <button onClick={reload} className="underline ml-2">重试</button></div>
       ) : items.length === 0 ? (
-        <div className="py-20 text-center text-ink-400 border border-dashed border-ink-200 rounded-2xl">
-          {kind || source || q ? '没有符合当前筛选的媒体' : '暂无已审核通过的媒体'}
-          {kind || source || q ? (
+        kind || source || q ? (
+          <Empty label="没有符合当前筛选的媒体" hint="换一个类型或关键词，或者把筛选清掉看看全部。">
             <button
               onClick={() => { setKind(''); setSource(''); setInput(''); setQ(''); }}
-              className="block mx-auto mt-3 text-sm text-primary-600 hover:underline"
+              className="btn-secondary btn-sm min-h-11 lg:min-h-0"
             >
               清除筛选
             </button>
-          ) : null}
-        </div>
+          </Empty>
+        ) : (
+          <Empty
+            label="暂无已审核通过的媒体"
+            hint="弟兄姐妹上传的图片、诗歌与讲稿，要经同工审核通过后才对外展示。"
+          >
+            <Link href="/upload" className="btn-secondary btn-sm min-h-11 lg:min-h-0">
+              上传文件
+            </Link>
+          </Empty>
+        )
       ) : (
         <div data-reveal-group className={`grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 transition-opacity duration-200 ${busy ? 'opacity-60' : 'opacity-100'}`}>
           {items.map((m) => (

@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useApi } from '@/lib/useApi';
 import { apiGet } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n/I18nProvider';
 import { timeAgo, formatTimestamp } from '@/lib/format';
+import { Empty } from '@/components/ui';
 import { IconMicWave, IconBookOpen, IconPlay, IconHeart } from '@/components/icons';
 
 interface Sermon {
@@ -38,6 +40,8 @@ const PAGE_SIZE = 24;
 
 export default function SermonsPage() {
   const { t, convert } = useI18n();
+  const { user } = useAuth();
+  const isStaff = !!user && (user.role === 'admin' || user.role === 'moderator');
   const [input, setInput] = useState('');
   const [q, setQ] = useState('');
   const [seriesId, setSeriesId] = useState('');
@@ -115,9 +119,13 @@ export default function SermonsPage() {
           <h1 className="font-display text-3xl font-bold text-ink-900">{titleEl}</h1>
           <p className="text-ink-500 mt-1">教会讲道录音与视频，按系列与讲员整理，供反复聆听、喂养灵命。</p>
         </div>
-        <Link href="/admin/sermons" className="btn-secondary text-sm">
-          管理讲道
-        </Link>
+        {/* 只有 admin / moderator 进得去 /admin/sermons（页面自己会挡「无权限访问」），
+            对匿名访客和普通成员画这颗按钮等于把人领进一扇锁着的门 */}
+        {isStaff ? (
+          <Link href="/admin/sermons" className="btn-secondary text-sm">
+            管理讲道
+          </Link>
+        ) : null}
       </div>
 
       {/* 筛选条：.input-styled 自带 w-full，放在 flex-wrap 里会各占一行
@@ -156,17 +164,30 @@ export default function SermonsPage() {
           {error} <button onClick={reload} className="underline ml-2">重试</button>
         </div>
       ) : items.length === 0 ? (
-        <div className="text-center text-ink-400 py-20">
-          {q || seriesId || speaker ? '没有符合当前筛选的讲道。' : '暂无讲道，敬请期待。'}
-          {q || seriesId || speaker ? (
+        q || seriesId || speaker ? (
+          <Empty label="没有符合当前筛选的讲道" hint="换一个关键词，或者把筛选清掉看看全部讲道。">
             <button
               onClick={() => { setInput(''); setQ(''); setSeriesId(''); setSpeaker(''); }}
-              className="block mx-auto mt-3 text-sm text-primary-600 hover:underline"
+              className="btn-secondary btn-sm min-h-11 lg:min-h-0"
             >
               清除筛选
             </button>
-          ) : null}
-        </div>
+          </Empty>
+        ) : (
+          <Empty
+            label="暂无讲道"
+            hint="讲道由同工在后台录入，发布之后才会出现在这里。主日信息也可以先到媒体与资料里听录音。"
+          >
+            <Link href="/media" className="btn-secondary btn-sm min-h-11 lg:min-h-0">
+              浏览媒体与资料
+            </Link>
+            {isStaff ? (
+              <Link href="/admin/sermons" className="btn-primary btn-sm min-h-11 lg:min-h-0">
+                管理讲道
+              </Link>
+            ) : null}
+          </Empty>
+        )
       ) : (
         <div data-reveal-group className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 transition-opacity duration-200 ${busy ? 'opacity-60' : 'opacity-100'}`}>
           {items.map((s) => (
