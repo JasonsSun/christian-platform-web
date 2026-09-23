@@ -48,7 +48,7 @@ export default function GroupChat({
   const [since, setSince] = useState<string | undefined>(undefined);
   const [wsReady, setWsReady] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const boxRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const session = useRef(Math.random().toString(36).slice(2));
   const sendAction = useAction();
@@ -140,8 +140,12 @@ export default function GroupChat({
     return () => clearInterval(t);
   }, [isMember, wsReady, load]);
 
+  // 只滚聊天框自己：以前是对框尾的哨兵调 scrollIntoView，那个方法会连带滚动所有可滚祖先，
+  // 而群聊卡片在团契详情页下方 —— 消息一到，整页就被无声滚下去 900 多像素
+  // （实测页头 h1 从 top=188 滑到 -725）。
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: scrollBehavior() });
+    const box = boxRef.current;
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: scrollBehavior() });
   }, [messages]);
 
   const send = useCallback(async () => {
@@ -182,7 +186,7 @@ export default function GroupChat({
           {wsReady ? '实时已连接' : loaded ? '轮询模式' : '连接中…'}
         </span>
       </div>
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+      <div ref={boxRef} className="flex-1 overflow-y-auto space-y-3 pr-1">
         {messages.length === 0 && (
           <p className="text-center py-8 text-ink-400 text-sm">还没有聊天记录，来打个招呼吧～</p>
         )}
@@ -216,7 +220,6 @@ export default function GroupChat({
             </div>
           );
         })}
-        <div ref={endRef} />
       </div>
       <div className="flex gap-2 mt-3">
         <input

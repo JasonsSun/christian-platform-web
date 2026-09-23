@@ -60,7 +60,7 @@ export default function AdminMessagesPage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const boxRef = useRef<HTMLDivElement | null>(null);
 
   const convs = data?.items || [];
   const staff = data?.staff || [];
@@ -89,7 +89,8 @@ export default function AdminMessagesPage() {
   }, [peerId, load]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: 'end', behavior: scrollBehavior() });
+    const box = boxRef.current;
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: scrollBehavior() });
   }, [thread?.items?.length]);
 
   const send = async () => {
@@ -214,7 +215,7 @@ export default function AdminMessagesPage() {
                   )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-5 space-y-3 max-h-[420px]">
+                <div ref={boxRef} className="flex-1 overflow-y-auto p-5 space-y-3 max-h-[420px]">
                   {loadingThread && !thread ? <Loading /> : null}
                   {!loadingThread && threadError && (
                     <div className="text-center py-10">
@@ -241,7 +242,6 @@ export default function AdminMessagesPage() {
                       </div>
                     );
                   })}
-                  <div ref={bottomRef} />
                 </div>
 
                 <div className="border-t border-ink-100 p-3 flex gap-2">

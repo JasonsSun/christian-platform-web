@@ -60,7 +60,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
   const [danmakuOn, setDanmakuOn] = useState(false);     // 弹幕开关(默认关闭)
   const [danmakuOpacity, setDanmakuOpacity] = useState(1); // 弹幕透明度(默认不透明)
   const [hovering, setHovering] = useState(false);       // 鼠标是否悬停在视频区(用于暂停滚动)
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatBoxRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [wsReady, setWsReady] = useState(false);
 
@@ -245,7 +245,11 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
     return () => clearInterval(t);
   }, [live, wsReady, id]);
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: scrollBehavior() }); }, [messages]);
+  // 同 GroupChat：scrollIntoView 会连带滚动窗口，直播页会被自己弹出的聊天拉到页面下方
+  useEffect(() => {
+    const box = chatBoxRef.current;
+    if (box) box.scrollTo({ top: box.scrollHeight, behavior: scrollBehavior() });
+  }, [messages]);
 
   // 录像生成：后端落盘最长约 15 秒，期间自动刷新房间状态；
   // 超过 2 分钟仍没有 recordingMediaId 就判定失败，避免页面永久停在「生成中」。
@@ -590,7 +594,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
         {/* 聊天室 */}
         <div className="glass rounded-2xl flex flex-col h-[70vh]">
           <div className="px-4 py-3 border-b border-ink-100 font-semibold text-ink-900">直播聊天</div>
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+          <div ref={chatBoxRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
             {room.cancelled ? (
               <p className="text-sm text-ink-400">该直播间已取消，聊天已关闭。</p>
             ) : messages.length === 0 ? <p className="text-sm text-ink-400">还没有人发言，来抢沙发~</p> : null}
@@ -617,7 +621,6 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                 </div>
               );
             })}
-            <div ref={chatEndRef} />
           </div>
           {!room.cancelled && (
             <div className="p-3 border-t border-ink-100 flex items-center gap-2">
