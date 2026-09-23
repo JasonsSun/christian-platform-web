@@ -62,6 +62,7 @@ export function LiveGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
         className="w-full flex items-center justify-between gap-2 px-4 sm:px-5 py-4 text-left hover:bg-ink-50/60 transition-colors"
       >
         <span className="flex items-center gap-2.5">
@@ -101,16 +102,23 @@ export function LiveGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
                 key={i}
                 type="button"
                 onClick={() => setStep(step === i ? null : i)}
+                aria-expanded={step === i}
                 className="w-full text-left rounded-xl border border-ui-border p-3 hover:bg-ui-hover transition-colors"
               >
-                <div className="flex items-center gap-3">
+                {/* 320px 下这一行只剩 188px 内容宽：徽标 24 + 图标 20 + 箭头 14 + 三段间距 36，
+                    留给标题 92px，而「点「开播」最容易忘」是 9 个全角字（126px），
+                    五步里只有它裂成两行、比别的高出一截。
+                    断点用 360 而不是 sm(640)：行宽随视口 1:1 增长（实测行宽 = 视口 - 108），
+                    360px 起图标连同 gap-3 一起回来，标题实得 132px，够用且不吊字；
+                    再窄才收起装饰性图标 —— 序号徽标本身已经表达了顺序。 */}
+                <div className="flex items-center gap-2 min-[360px]:gap-3">
                   <span className="shrink-0 w-6 h-6 rounded-full bg-primary-600 text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>
-                  <span className="shrink-0 flex items-center text-primary-600">{s.icon}</span>
-                  <span className="font-semibold text-ink-800 text-sm flex-1">{s.title}</span>
-                  <IconChevronDown className={`w-3.5 h-3.5 text-ink-500 transition-transform duration-200 ${step === i ? 'rotate-180' : ''}`} strokeWidth={1.8} />
+                  <span className="hidden min-[360px]:flex shrink-0 items-center text-primary-600">{s.icon}</span>
+                  <span className="font-semibold text-ink-800 text-sm flex-1 min-w-0">{s.title}</span>
+                  <IconChevronDown className={`w-3.5 h-3.5 shrink-0 text-ink-500 transition-transform duration-200 ${step === i ? 'rotate-180' : ''}`} strokeWidth={1.8} />
                 </div>
                 {step === i && (
-                  <div className="mt-2.5 pl-9 text-sm space-y-1.5">
+                  <div className="mt-2.5 pl-8 min-[360px]:pl-9 text-sm space-y-1.5">
                     <p className="text-ink-600">{s.desc}</p>
                     <p className="text-xs text-amber-700 inline-flex items-start gap-1">
                       <IconAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={2} />
