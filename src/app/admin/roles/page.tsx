@@ -224,7 +224,7 @@ export default function AdminRolesPage() {
                 return (
                   <div key={row.id} className="rounded-xl border border-ink-100 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-ink-800">{row.displayName}</span>
                         <span className="text-xs text-ink-400">@{row.username}</span>
                         <StaffBadges role={row.role} scopes={cur} compact />
@@ -257,7 +257,7 @@ export default function AdminRolesPage() {
                 return (
                   <div key={p.id} className="rounded-xl border border-dashed border-primary-300 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium text-ink-800">{p.displayName}</span>
                         <span className="text-xs text-ink-400">@{p.username}</span>
                         <Badge tone="gray">待分配模块</Badge>

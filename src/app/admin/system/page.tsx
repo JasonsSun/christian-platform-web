@@ -166,7 +166,9 @@ export default function AdminSystemPage() {
 
       {/* 外发通知队列运维 */}
       <div className="glass rounded-2xl p-5 shadow-soft mb-6">
-        <div className="flex items-center justify-between">
+        {/* flex-wrap：右侧两个按钮是固定宽度，中文标题的「最小宽度」只有一个字，
+            不换行的话 320px 下「外发通知队列」会被挤成一列竖排。 */}
+        <div className="flex flex-wrap items-center justify-between gap-y-2">
           <SectionTitle>外发通知队列</SectionTitle>
           <div className="flex items-center gap-2">
             <button className="btn-secondary btn-sm" onClick={loadNotify} disabled={notifyLoading}>刷新</button>
@@ -258,7 +260,7 @@ export default function AdminSystemPage() {
       {/* 最近错误（仅管理员） */}
       {isAdmin && (
         <div className="glass rounded-2xl p-5 shadow-soft mb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-y-2">
             <SectionTitle>最近错误（进程内最近 100 条）</SectionTitle>
             <button className="btn-secondary text-xs" onClick={reloadErrors}>刷新</button>
           </div>
