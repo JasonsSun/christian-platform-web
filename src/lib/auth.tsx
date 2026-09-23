@@ -27,12 +27,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       return;
     }
+    const me = async () => (await import('./api')).apiGet<User>('/auth/me');
     try {
-      const me = await (await import('./api')).apiGet<User>('/auth/me');
-      setUser(me);
-    } catch {
-      tokenStore.clear();
-      setUser(null);
+      setUser(await me());
+    } catch (e: any) {
+      // 只有服务器明确拒收令牌才算登录失效。/auth/me 撞上 5xx、超时或断网时旧代码把
+      // access+refresh 一起清掉：用户在 /donate/new 填了一半，刷新一下就被踢回登录页，
+      // 还得重输密码（实测复验里三条路由整体「落在 /login」就是这么来的）。
+      if (e?.status === 401) {
+        tokenStore.clear();
+        setUser(null);
+        return;
+      }
+      await new Promise((r) => setTimeout(r, 1200));
+      try {
+        setUser(await me());
+      } catch {
+        // 还是不行：这一趟当未登录，令牌留着 —— 网络恢复后再进页面就回来了
+        setUser(null);
+      }
     }
   }, []);
 
