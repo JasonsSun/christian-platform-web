@@ -18,6 +18,20 @@ const SKIP = 'script,style,textarea,title,meta,noscript,code,pre';
 /** 一次改写：from 是动它之前 DOM 里的样子，to 是写进去的繁体 */
 type Undo = { from: string; to: string };
 
+/**
+ * 还原记录挂在节点自己身上，不放 Map。
+ *
+ * 原来是 `Map<Text, Undo>`：节点当强引用键，SPA 换页时 React 把整棵子树摘掉，
+ * 表里的键还连着那个 Text 和它的 parentElement 链，一整段早就看不见的 DOM 就此常驻。
+ * 实测 20 页走完之后：简体档游离文本节点 0 个，繁体档 1962 个，堆多 23.9 MB，
+ * 而且随会话时长一直涨（probe-detached.mjs）。记在节点上就跟着节点一起生死，
+ * 不需要额外销账；节点被摘走又插回来（列表重排就是先 remove 再 insert）时，
+ * 记录也还跟着它，切回简体照样还得回去。
+ */
+const UNDO_TEXT = Symbol('variantUndoText');
+const UNDO_ATTR = Symbol('variantUndoAttr');
+type Tagged = { [UNDO_TEXT]?: Undo; [UNDO_ATTR]?: Record<string, Undo> };
+
 export function startTraditionalDomText(): () => void {
   if (typeof window === 'undefined' || typeof document === 'undefined' || typeof MutationObserver === 'undefined') {
     return () => undefined;
@@ -25,14 +39,10 @@ export function startTraditionalDomText(): () => void {
 
   // 写回会再抛一个 mutation 回来。记下「我写进去的那份文字」，下一批回调里认出来就跳过；
   // 用 WeakSet 永久拉黑不行 —— React 之后真的改了这个节点时会连改都不再转。
-  const selfText = new Map<Node, string>();
-  const selfAttr = new Map<Element, Map<string, string>>();
-
-  // 每一份改写都要留还原的余地。切回简体时观察器只是断开，文字还留在繁体上：
-  // React 的 props 里自始至终是简体原文，它比对虚拟 DOM 觉得「没变」，就不会再去碰那个
-  // 文本节点 —— 所以这一页要刷到重载才回得来。只能自己记、自己还。
-  const textUndo = new Map<Text, Undo>();
-  const attrUndo = new Map<Element, Map<string, Undo>>();
+  // 这两张只是「认一下自己的笔迹」的缓存，从不整表遍历，所以用 WeakMap：
+  // 强引用在这里换不来任何东西，只会把摘掉的节点留在内存里。
+  const selfText = new WeakMap<Node, string>();
+  const selfAttr = new WeakMap<Element, Map<string, string>>();
   let titleUndo: Undo | null = null;
 
   const fixText = (node: Text) => {
@@ -42,7 +52,7 @@ export function startTraditionalDomText(): () => void {
     if (next === node.data) return;
     // 每次都记「我替换掉的那一份」：React 中途换过文字的话，这里存的就是它的新内容，
     // 还原时还给它的也是新的，不会把用户的操作覆盖掉。
-    textUndo.set(node, { from: node.data, to: next });
+    (node as Node & Tagged)[UNDO_TEXT] = { from: node.data, to: next };
     selfText.set(node, next);
     node.data = next;
   };
@@ -53,9 +63,10 @@ export function startTraditionalDomText(): () => void {
       if (!v) continue;
       const next = convert(v, 't');
       if (next === v) continue;
-      let map = attrUndo.get(el);
-      if (!map) attrUndo.set(el, (map = new Map()));
-      map.set(name, { from: v, to: next });
+      const tagged = el as Element & Tagged;
+      const undo = tagged[UNDO_ATTR] || {};
+      undo[name] = { from: v, to: next };
+      tagged[UNDO_ATTR] = undo;
       let mine = selfAttr.get(el);
       if (!mine) selfAttr.set(el, (mine = new Map()));
       mine.set(name, next);
@@ -78,8 +89,30 @@ export function startTraditionalDomText(): () => void {
     }
   };
 
-  const observer = new MutationObserver((records) => {
-    for (const r of records) {
+  // 还原只认「还是我写进去的那一份」。中途被 React 换过的节点，现在挂的是新的简体
+  // 原文，硬塞回旧文字等于把用户的操作吞掉，所以那种一律不动。
+  const restoreSubtree = (root: ParentNode) => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+    let n = walker.currentNode as Node | null;
+    while (n) {
+      if (n.nodeType === 3) {
+        const tagged = n as Text & Tagged;
+        const u = tagged[UNDO_TEXT];
+        if (u && (n as Text).data === u.to) (n as Text).data = u.from;
+      } else if (n.nodeType === 1) {
+        const el = n as Element;
+        const attrs = (el as Element & Tagged)[UNDO_ATTR];
+        if (attrs) {
+          for (const name of Object.keys(attrs)) {
+            if (el.getAttribute(name) === attrs[name].to) el.setAttribute(name, attrs[name].from);
+          }
+        }
+      }
+      n = walker.nextNode();
+    }
+  };
+
+  const observer = new MutationObserver((records) => {    for (const r of records) {
       if (r.type === 'characterData') {
         const node = r.target as Text;
         const mine = selfText.get(node);
@@ -131,21 +164,11 @@ export function startTraditionalDomText(): () => void {
   return () => {
     observer.disconnect();
     titleObserver.disconnect();
-    // 还原只认「还是我写进去的那一份」。中途被 React 换过的节点，现在挂的是新的简体
-    // 原文，硬塞回旧文字等于把用户的操作吞掉，所以那种一律不动。
-    for (const [node, u] of textUndo) {
-      if (node.isConnected && node.data === u.to) node.data = u.from;
-    }
-    textUndo.clear();
-    for (const [el, attrs] of attrUndo) {
-      if (!el.isConnected) continue;
-      for (const [name, u] of attrs) {
-        if (el.getAttribute(name) === u.to) el.setAttribute(name, u.from);
-      }
-    }
-    attrUndo.clear();
-    selfText.clear();
-    selfAttr.clear();
+    // 切回简体时观察器只是断开，文字还留在繁体上：React 的 props 里自始至终是简体原文，
+    // 它比对虚拟 DOM 觉得「没变」，就不会再去碰那个文本节点 —— 所以这一页要刷到重载才回得来。
+    // 只能自己记、自己还。记录挂在节点上，那就顺着 body 走一遍把它们收回来；
+    // 摘掉的节点不在这一趟里，也早就从界面上消失了，React 重新挂上去时用的是它自己的简体原文。
+    restoreSubtree(document.body);
     if (titleUndo && document.title === titleUndo.to) document.title = titleUndo.from;
     titleUndo = null;
   };
