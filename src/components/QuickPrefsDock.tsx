@@ -10,8 +10,8 @@
  *
  * 停靠位不再是一个写死的常数：挂载和换页时按当前这一页量一个出来，往下让开每一颗
  * 「要瞄准才点得到」的小控件（见 AIM_W / AIM_H），也让开铺到圆点那一列上的每一行字
- * （见 textLinesInColumn —— 副标题末尾被啃掉两三个字，按盒面积是量不出来的）。
- * 用户拖过之后完全听他的。
+ * （见 textLinesInColumn —— 副标题末尾被啃掉两三个字，按盒面积是量不出来的），
+ * 并且和它们之间空出 GAP 的缝。用户拖过之后完全听他的。
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -24,6 +24,9 @@ const DOT = 44;
 const EDGE = 8;
 const TOP_MIN = 72; // 导航栏 64 + 8：圆点不再压进导航的命中区
 const TABBAR = 64;
+/* 停靠时与字/控件之间留的缝。0 就够躲开重叠，但 /feed 量到过 164 对 164 这种"贴着放"：
+   矩形干净，看上去却是圆点顶住了句尾。和吸边的 EDGE 同宽。 */
+const GAP = 8;
 const SIDE_DEFAULT: Side = 'right';
 /* 默认位置的起点，不是终点：真正停在哪由下面 parkY 按当前这一页量。
    读经页的「阅读排版与主题」齿轮在 y 97..141，通知中心的页签条在 y 160..200，
@@ -148,13 +151,20 @@ function parkY(root: HTMLElement | null, side: Side): number {
   const start = clampY(Y_DEFAULT);
   const lowest = Math.min(HEAD_BAND, Math.max(TOP_MIN, innerHeight - TABBAR - DOT - EDGE));
   const boxes = aimBoxesInColumn(root, side).concat(textLinesInColumn(root, side));
-  const blockedAt = (y: number) => boxBottom(boxes, y) !== null;
-  if (!blockedAt(start)) return start;
-  for (let d = 1; d <= HEAD_BAND; d += 1) {
-    if (start - d >= TOP_MIN && !blockedAt(start - d)) return start - d;
-    if (start + d <= lowest && !blockedAt(start + d)) return start + d;
-  }
-  return start;
+  /* 先按「留缝」找，找不到再按「不压上」找，最后才回起点。
+     留缝这一步是量出来的：/feed 的圆点停在 y=120，下沿 164 正好压在副标题那一行的上沿 164 上——
+     按矩形是零重叠，看上去却是圆点把句尾顶住了。 */
+  const find = (gap: number) => {
+    const list = gap ? boxes.map((b) => ({ top: b.top - gap, bottom: b.bottom + gap })) : boxes;
+    const blockedAt = (y: number) => boxBottom(list, y) !== null;
+    if (!blockedAt(start)) return start;
+    for (let d = 1; d <= HEAD_BAND; d += 1) {
+      if (start - d >= TOP_MIN && !blockedAt(start - d)) return start - d;
+      if (start + d <= lowest && !blockedAt(start + d)) return start + d;
+    }
+    return null;
+  };
+  return find(GAP) ?? find(0) ?? start;
 }
 
 export default function QuickPrefsDock() {
