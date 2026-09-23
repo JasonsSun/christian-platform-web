@@ -66,6 +66,9 @@ export const GET = withApi(async (req: NextRequest) => {
   );
 
   const totalCents = byCategory.reduce((acc: number, r: any) => acc + Number(r.s || 0), 0);
+  // byPeriod 只给最近 12 个月（月份胶囊要的量），「覆盖月份」要的却是全量：
+  // 一旦公示满 13 个月，卡片就会永远停在 12。行已经全取回来了，直接数一遍。
+  const periodTotal = new Set(rows.map((r: any) => r.period)).size;
 
   return ok({
     items: rows.map((r) => ({
@@ -94,6 +97,7 @@ export const GET = withApi(async (req: NextRequest) => {
     })),
     totalCents,
     totalAmountText: formatMoney(totalCents),
+    periodTotal,
     categories: Object.entries(CATEGORY_LABEL).map(([id, label]) => ({ id, label })),
   });
 });

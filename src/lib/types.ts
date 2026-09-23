@@ -469,6 +469,8 @@ export interface ExpenseListResult {
   byPeriod: ExpensePeriodStat[];
   totalCents: number;
   totalAmountText: string;
+  /** 全量去重月份数，不受 byPeriod 的 12 条上限影响 */
+  periodTotal: number;
   categories: { id: string; label: string }[];
 }
 

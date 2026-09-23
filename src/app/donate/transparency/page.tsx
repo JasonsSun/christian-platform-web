@@ -95,7 +95,7 @@ export default function TransparencyPage() {
         <div className="glass rounded-2xl p-5 shadow-soft">
           <div className="text-sm text-ink-500">覆盖月份</div>
           <div className="font-display text-3xl font-bold text-ink-900 mt-1">
-            {overview ? overview.byPeriod.length : '—'}
+            {overview ? overview.periodTotal : '—'}
             <span className="text-base font-medium text-ink-400 ml-1">个月</span>
           </div>
         </div>
