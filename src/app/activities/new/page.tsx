@@ -7,14 +7,16 @@
  * 抽出为独立页面：发布成功后跳回活动详情页，取消则返回活动列表。
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import { Glyph } from '@/components/icons';
+import { Empty } from '@/components/ui';
 import { useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
+import { useGoLogin } from '@/lib/nav';
 import { ACTIVITY_CATEGORY_LABEL } from '@/lib/labels';
 import dynamic from 'next/dynamic';
 
@@ -40,6 +42,7 @@ export default function NewActivityPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
   const notice = useNotice();
+  const goLogin = useGoLogin();
   const { run, pending, error } = useAction();
 
   const [form, setForm] = useState({
@@ -88,13 +91,11 @@ export default function NewActivityPage() {
     }
   }
 
-  useEffect(() => {
-    if (!loading && !user) {
-      notice.info('请先登录后再发布活动');
-      router.replace('/login?next=' + encodeURIComponent('/activities/new'));
-    }
-  }, [loading, user, router, notice]);
-
+  // 匿名不再「先画一张能填的表单、再由 effect 送去 /login」：
+  // 访客看到的是表单闪一下就被传送走，后退键还回不来；复验量具也被同一件事骗了
+  // （/activities/new 的采样一半在出发页、一半在登录页，两帧之差被读成「页头被重排」）。
+  // 改成原地立一道登录门：页头保留，正文换成说明 + 去登录。
+  const needsLogin = !loading && !user;
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLocalError('');
@@ -164,6 +165,16 @@ export default function NewActivityPage() {
 
       <section className="py-8">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          {needsLogin ? (
+            <Empty label="登录后即可发布活动" hint="活动会对全平台开放报名，请先用教会账号登录。">
+              <button type="button" className="btn-primary" onClick={() => goLogin()}>
+                去登录
+              </button>
+              <Link href="/activities" className="btn-secondary">
+                先看看别的活动
+              </Link>
+            </Empty>
+          ) : (
           <form onSubmit={submit} className="bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 space-y-5">
             {(localError || error) && (
               <div role="alert" className="rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm px-4 py-3">
@@ -336,6 +347,7 @@ export default function NewActivityPage() {
               </button>
             </div>
           </form>
+          )}
         </div>
       </section>
     </div>

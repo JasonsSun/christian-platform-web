@@ -8,6 +8,7 @@ import { useAuth } from '@/lib/auth';
 import { useAction, useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
 import { useGoLogin } from '@/lib/nav';
+import { Empty } from '@/components/ui';
 import type { ContentItem, MediaItem } from '@/lib/types';
 import { Glyph, IconCheck, IconPencil, IconPray, IconSparkles } from '@/components/icons';
 
@@ -48,12 +49,8 @@ export default function CreateContentPage() {
 
   const action = useAction();
 
-  useEffect(() => {
-    if (!loading && !user) {
-      notice.info('请先登录后再发布内容');
-      goLogin();
-    }
-  }, [loading, user, goLogin, notice]);
+  // 同 /activities/new：匿名不再「先画表单再 effect 送去 /login」，改成原地登录门。
+  const needsLogin = !loading && !user;
 
   // 编辑模式：从 URL ?edit=<id> 载入原文
   useEffect(() => {
@@ -145,6 +142,16 @@ export default function CreateContentPage() {
 
       <section className="py-8">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          {needsLogin ? (
+            <Empty label="登录后即可发布内容" hint="文章、见证、灵修都需先登录才能提交，也便于审核后通知你。">
+              <button type="button" className="btn-primary" onClick={() => goLogin()}>
+                去登录
+              </button>
+              <Link href="/community" className="btn-secondary">
+                先看看社区
+              </Link>
+            </Empty>
+          ) : (
           <div data-spot className="spot bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 space-y-6">
             {loadingEdit && (
               <div className="space-y-3 py-2">
@@ -316,6 +323,7 @@ export default function CreateContentPage() {
               </>
             )}
           </div>
+          )}
         </div>
       </section>
     </div>

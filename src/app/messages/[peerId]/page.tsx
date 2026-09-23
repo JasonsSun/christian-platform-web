@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { apiPost, apiPatch, apiDelete, apiForm } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { Empty } from '@/components/ui';
 import { formatDateTime } from '@/lib/format';
 import { scrollBehavior } from '@/lib/motion';
 import type { MessageItem } from '@/lib/types';
@@ -112,7 +113,22 @@ export default function MessageThreadPage() {
   }
 
   if (!user) {
-    return <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center text-ink-400">请先登录</div>;
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <Empty
+          label="登录后即可查看这条私信"
+          hint="私信只在收发双方登录后可见，请先用账号登录。"
+        >
+          <Link
+            className="btn-primary"
+            href={`/login?next=${encodeURIComponent(`/messages/${peerId}`)}`}
+          >
+            去登录
+          </Link>
+          <Link href="/messages" className="btn-secondary">返回私信列表</Link>
+        </Empty>
+      </div>
+    );
   }
 
   if (loading && !data) {

@@ -6,14 +6,15 @@ import { useRouter } from 'next/navigation';
 import { apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useAction } from '@/lib/useApi';
-import { useGoLogin } from '@/lib/nav';
 import { useNotice } from '@/lib/notice';
+import { Empty } from '@/components/ui';
 
 /**
  * 捐赠登记
  *
- * 无弹框约定:未登录 -> 跳转登录页并带回跳;校验失败/请求失败 -> 顶部内联提示条。
- * 提交成功后跳回 /donate 并展示成功提示。
+ * 无弹框约定：未登录 -> 页头下方立地给出登录门（不画可填表单，也不自动跳走）；
+ * 校验失败/请求失败 -> 顶部内联提示条。
+ * 提交成功后进入支付页。
  */
 
 type DonorType = 'personal' | 'church';
@@ -22,7 +23,6 @@ const PRESET_AMOUNTS = [10, 20, 50, 100, 200, 500];
 
 export default function DonateNewPage() {
   const { user, loading: authLoading } = useAuth();
-  const goLogin = useGoLogin();
   const router = useRouter();
   const notice = useNotice();
   const { run, pending, setError } = useAction();
@@ -34,11 +34,9 @@ export default function DonateNewPage() {
   const [message, setMessage] = useState('');
   const [anonymous, setAnonymous] = useState(false);
 
-  // 未登录：直接跳登录页（带回跳），不使用弹框
-  useEffect(() => {
-    if (!authLoading && !user) goLogin('/donate/new');
-  }, [authLoading, user, goLogin]);
-
+  // 未登录由下面那块原地登录门接手。原先还配一个 effect 把人 replace 去 /login：
+  // 门刚画出来就被拽走，访客看到「捐赠登记需要先登录」闪一下，后退键也回不来；
+  // 复验量具因此永远量不到这一页（采到的是登录页的矩形）。
   // 登录后预填昵称
   useEffect(() => {
     if (user && !displayName) setDisplayName(user.displayName || '');
@@ -84,14 +82,8 @@ export default function DonateNewPage() {
     return <div className="max-w-3xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
   }
 
-  if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <p className="text-ink-500 mb-4">捐赠登记需要先登录账号。</p>
-        <Link className="btn-primary" href="/login?next=%2Fdonate%2Fnew">去登录</Link>
-      </div>
-    );
-  }
+  // 未登录不再送去 /login：页头和说明照常给出，表单位置换成立在原地的登录门
+  const needsLogin = !user;
 
   const previewName =
     donorType === 'church'
@@ -112,6 +104,15 @@ export default function DonateNewPage() {
         </p>
       </div>
 
+      {needsLogin ? (
+        <Empty
+          label="登录后即可登记捐赠"
+          hint="捐赠记录需要挂到你的账号下，便于管理员确认后展示在爱心名录中。"
+        >
+          <Link className="btn-primary" href="/login?next=%2Fdonate%2Fnew">去登录</Link>
+          <Link href="/donate" className="btn-secondary">先看看爱心名录</Link>
+        </Empty>
+      ) : (
       <form onSubmit={submit} className="bg-white rounded-3xl p-5 md:p-8 shadow-soft border border-ink-100 space-y-6">
         {/* 捐赠名义 */}
         <div>
@@ -263,6 +264,7 @@ export default function DonateNewPage() {
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 }

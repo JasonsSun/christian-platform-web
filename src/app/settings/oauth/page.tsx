@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiDelete, apiGet } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useGoLogin } from '@/lib/nav';
 import { useNotice } from '@/lib/notice';
 import { IconLink } from '@/components/icons';
+import { Empty } from '@/components/ui';
 import { formatDate } from '@/lib/format';
 
 /**
@@ -29,7 +29,6 @@ type LinkedItem = {
 
 export default function SettingsOAuthPage() {
   const { user, loading: authLoading } = useAuth();
-  const goLogin = useGoLogin();
   const notice = useNotice();
 
   const [providers, setProviders] = useState<Provider[]>([]);
@@ -56,9 +55,9 @@ export default function SettingsOAuthPage() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!authLoading && !user) goLogin('/settings/oauth');
-  }, [authLoading, user, goLogin]);
+  // 未登录由下面那块原地登录门接手，不再用 effect 把人 replace 去 /login
+  // （门刚画出来就被拽走，量具永远量不到这一页真实版式）。
+  const needsLogin = !authLoading && !user;
 
   useEffect(() => {
     if (!user) return;
@@ -119,17 +118,10 @@ export default function SettingsOAuthPage() {
     [load, notice]
   );
 
-  if (authLoading || loading) {
+  // 登录门必须排在 loading 之前：load() 对匿名根本不发请求，loading 永远不会落地，
+  // 先判 loading 会把这一页永久停在「加载中…」，下面的门成了死代码。
+  if (!needsLogin && (authLoading || loading)) {
     return <div className="max-w-3xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
-  }
-
-  if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <p className="text-ink-500 mb-4">管理第三方账号需要先登录。</p>
-        <Link className="btn-primary" href="/login?next=%2Fsettings%2Foauth">去登录</Link>
-      </div>
-    );
   }
 
   const linkedMap = new Map(linked.map((l) => [l.provider, l]));
@@ -148,7 +140,17 @@ export default function SettingsOAuthPage() {
         <div className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       )}
 
-      {providers.length === 0 && linked.length === 0 ? (
+      {needsLogin ? (
+        <Empty
+          label="登录后即可管理第三方账号"
+          hint="绑定需要登录，第三方授权的结果才能挂到你的账号下。"
+        >
+          <Link className="btn-primary" href="/login?next=%2Fsettings%2Foauth">去登录</Link>
+          <Link href="/me" className="btn-secondary">返回个人中心</Link>
+        </Empty>
+      ) : null}
+
+      {!needsLogin && (providers.length === 0 && linked.length === 0 ? (
         <div className="bg-white rounded-3xl p-8 shadow-soft border border-ink-100 text-center">
           <div className="w-14 h-14 mb-3 mx-auto rounded-2xl bg-primary-50 text-primary-600 grid place-items-center"><IconLink className="w-7 h-7" strokeWidth={1.5} /></div>
           <p className="text-ink-600 font-medium">尚未启用第三方登录</p>
@@ -278,12 +280,14 @@ export default function SettingsOAuthPage() {
               );
             })}
         </div>
-      )}
+      ))}
 
-      <p className="text-xs text-ink-400 mt-6 leading-relaxed">
-        安全提示：解绑后该第三方将无法再用于登录本站。若你从未设置过密码，
-        可通过「忘记密码」用邮箱重置后继续登录。
-      </p>
+      {!needsLogin && (
+        <p className="text-xs text-ink-400 mt-6 leading-relaxed">
+          安全提示：解绑后该第三方将无法再用于登录本站。若你从未设置过密码，
+          可通过「忘记密码」用邮箱重置后继续登录。
+        </p>
+      )}
     </div>
   );
 }

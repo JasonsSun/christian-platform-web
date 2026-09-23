@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { apiGet, apiPost } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useGoLogin } from '@/lib/nav';
 import { useNotice } from '@/lib/notice';
 import { formatMoney } from '@/lib/format';
+import { Empty } from '@/components/ui';
 import { IconPray } from '@/components/icons';
 
 /**
@@ -66,7 +66,6 @@ export default function DonatePayPage() {
   const params = useParams<{ id: string }>();
   const donationId = params?.id as string;
   const { user, loading: authLoading } = useAuth();
-  const goLogin = useGoLogin();
   const router = useRouter();
   const notice = useNotice();
 
@@ -80,10 +79,6 @@ export default function DonatePayPage() {
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const roundsRef = useRef(0);
-
-  useEffect(() => {
-    if (!authLoading && !user) goLogin(`/donate/pay/${donationId}`);
-  }, [authLoading, user, goLogin, donationId]);
 
   // 加载可用通道与当前捐赠状态
   useEffect(() => {
@@ -219,15 +214,35 @@ export default function DonatePayPage() {
     return list;
   }, [gateways]);
 
-  if (authLoading || loading) {
+  // 未登录不再用 effect 把人 replace 去 /login：改成立在原地的登录门。
+  // 门必须排在 loading 判断之前：取数对匿名根本不发请求，loading 永远不会落地，
+  // 先判 loading 会把这一页永久停在「加载中…」。原来的门上还写着 next=/donate/new，
+  // 登录完人回不到这笔支付。
+  const needsLogin = !authLoading && !user;
+
+  if (!needsLogin && (authLoading || loading)) {
     return <div className="max-w-3xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
   }
 
-  if (!user) {
+  if (needsLogin) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <p className="text-ink-500 mb-4">支付需要先登录账号。</p>
-        <Link className="btn-primary" href="/login?next=%2Fdonate%2Fnew">去登录</Link>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6">
+          <Link href="/donate" className="inline-flex items-center py-3 -my-3 text-sm text-primary-600 hover:text-primary-700">← 返回捐赠专区</Link>
+          <h1 className="font-display text-2xl font-bold text-ink-900 mt-3">完成支付</h1>
+          <p className="text-sm text-ink-500 mt-1.5 leading-relaxed">
+            登录后即可继续完成本次奉献，支付状态会实时回写到这笔记录。
+          </p>
+        </div>
+        <Empty label="登录后即可完成支付" hint="支付要和你的捐赠记录对上，需要先确认身份。">
+          <Link
+            className="btn-primary"
+            href={`/login?next=${encodeURIComponent(`/donate/pay/${donationId}`)}`}
+          >
+            去登录
+          </Link>
+          <Link href="/donate" className="btn-secondary">先看看爱心名录</Link>
+        </Empty>
       </div>
     );
   }
