@@ -656,7 +656,7 @@ function PlayerBar() {
           <button
             onClick={p.cycleMode}
             title={PLAY_MODE_META[p.mode].label}
-            aria-label={`播放模式:${PLAY_MODE_META[p.mode].label}`}
+            aria-label={`播放模式：${PLAY_MODE_META[p.mode].label}`}
             className="w-8 h-8 rounded-full text-ink-500 hover:bg-ink-100 flex items-center justify-center text-sm"
           >
             {PLAY_MODE_META[p.mode].icon}

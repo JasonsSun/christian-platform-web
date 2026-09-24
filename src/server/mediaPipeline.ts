@@ -127,7 +127,7 @@ export async function runMediaPipeline(mediaId: string, storageKey: string, kind
         const posterRel = await commitToStorage(out.tmpAbs, out.rel, 'image/jpeg');
         await exec(`UPDATE media_files SET poster_key=? WHERE id=?`, [posterRel, mediaId]);
         result.poster = posterRel;
-        await upsertTask(mediaId, 'poster', 'done', `已生成封面: ${posterRel}`);
+        await upsertTask(mediaId, 'poster', 'done', `已生成封面：${posterRel}`);
       } else {
         await upsertTask(mediaId, 'poster', 'failed', '', '封面抽取失败');
       }
@@ -139,7 +139,7 @@ export async function runMediaPipeline(mediaId: string, storageKey: string, kind
       if (okt) {
         const thumbRel = await commitToStorage(out.tmpAbs, out.rel, 'image/jpeg');
         result.thumbnail = thumbRel;
-        await upsertTask(mediaId, 'thumbnail', 'done', `已生成缩略图: ${thumbRel}`);
+        await upsertTask(mediaId, 'thumbnail', 'done', `已生成缩略图：${thumbRel}`);
       } else {
         await upsertTask(mediaId, 'thumbnail', 'failed', '', '缩略图生成失败');
       }

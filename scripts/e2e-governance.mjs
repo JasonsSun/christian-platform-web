@@ -14,6 +14,7 @@
 //      8) 他人报名 → confirmed 人数 +1
 //      9) 创建人取消活动 → 状态 cancelled，且全部参与人收到通知
 //     10) 取消后报名 → 409
+//     11) 管理员改上下架 → 主办方收到的通知写成中文，不递裸 code
 //
 // 结束时清理全部测试数据。
 
@@ -234,6 +235,36 @@ console.log('\nB. 活动取消治理');
   check('非创建人取消被拒（403）', asOther.status === 403, `得到 ${asOther.status}`);
 }
 
+// 管理员改上下架：收件人是主办方（普通用户），通知措辞不能把 code 直接递给他
+{
+  const [admins] = await conn.query(
+    "SELECT id, role FROM users WHERE role='admin' AND status='active' LIMIT 1"
+  );
+  const startAt = new Date(Date.now() + 6 * 86400000).toISOString();
+  const r = await api(uA, 'POST', '/activities', {
+    title: 'E2E 上下架通知活动', description: '用于验证状态更新通知的中文口径，结束后清理。',
+    category: 'fellowship', location: '测试地点', city: '测试', startAt, capacity: 10,
+  });
+  const aid = r.json?.id;
+  created.activities.push(aid);
+  if (!admins.length) {
+    console.log('  · 库里无可用管理员，跳过状态更新通知检查');
+  } else {
+    const patch = await api(admins[0], 'PATCH', '/admin/activities', { activityId: aid, status: 'offline' });
+    check('管理员可下架活动', patch.status === 200, `得到 ${patch.status} ${JSON.stringify(patch.json)}`);
+    const [rows] = await conn.query(
+      "SELECT body FROM notifications WHERE user_id=? AND type='activity' AND body LIKE ?"
+      + ' ORDER BY created_at DESC LIMIT 1',
+      [uA.id, '%E2E 上下架通知活动%']
+    );
+    const body = rows[0]?.body || '';
+    check('状态更新通知写成中文（含「已下架」）', body.includes('已下架'), `得到「${body}」`);
+    // 反向对照：一句「状态已更新为 offline」在这道门上必须挂
+    check('通知正文不含裸英文状态码',
+      !/\b(published|offline|cancelled|pending)\b/.test(body), `得到「${body}」`);
+  }
+}
+
 /* ================= 清理 ================= */
 console.log('\n清理测试数据…');
 for (const gid of created.groups) {
@@ -248,6 +279,9 @@ for (const aid of created.activities) {
 }
 await conn.query(
   "DELETE FROM notifications WHERE type IN ('group_owner','group_dissolved','activity_cancelled') AND created_at >= NOW() - INTERVAL 30 MINUTE"
+);
+await conn.query(
+  "DELETE FROM notifications WHERE type='activity' AND body LIKE '「E2E 上下架通知活动%' AND created_at >= NOW() - INTERVAL 30 MINUTE"
 );
 await conn.end();
 

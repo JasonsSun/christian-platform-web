@@ -58,7 +58,7 @@ function VocalWantedCard({ song, onSubmit }: { song: SongDetail; onSubmit: () =>
       </div>
       <p className="text-white/70 text-[11px] mt-3 leading-relaxed">
         平台不转载版权录音：试听会跳转到 {target.source} 播放
-        {target.verified ? '（该链接已由管理员核实是人声演唱）' : ',请自行挑选演唱版本'};
+        {target.verified ? '（该链接已由管理员核实是人声演唱）' : '，请自行挑选演唱版本'}；
         上传的录音请确保你拥有版权或已获授权。
       </p>
     </div>

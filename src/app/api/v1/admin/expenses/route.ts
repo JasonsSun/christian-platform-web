@@ -111,7 +111,7 @@ export const POST = withApi(async (req: NextRequest) => {
 
   const yuanVal = Number(body.amount);
   if (!Number.isFinite(yuanVal) || yuanVal <= 0) throw new HttpError(422, 'VALIDATION_FAILED', '请填写有效的支出金额');
-  if (yuanVal > 10000000) throw new HttpError(422, 'VALIDATION_FAILED', '单笔金额过大,请核对后录入');
+  if (yuanVal > 10000000) throw new HttpError(422, 'VALIDATION_FAILED', '单笔金额过大，请核对后录入');
   const cents = Math.round(yuanVal * 100);
   if (cents < 1) throw new HttpError(422, 'VALIDATION_FAILED', '支出金额不低于 0.01 元');
 

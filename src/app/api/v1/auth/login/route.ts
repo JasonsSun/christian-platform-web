@@ -27,7 +27,7 @@ export const POST = withApi(async (req: NextRequest) => {
 
   const user = await findUserByIdentifier(identifier);
   if (!user || !checkPassword(password, user.password_hash)) {
-    await audit(user?.id || null, 'LOGIN_FAILURE', 'user', user?.id || '', `登录失败:${identifier}`, ip);
+    await audit(user?.id || null, 'LOGIN_FAILURE', 'user', user?.id || '', `登录失败：${identifier}`, ip);
     recordFailure(ip); // 撞库防护：凭证错误也计入失败次数
     throw new HttpError(401, 'INVALID_CREDENTIALS', '账号或密码不正确');
   }

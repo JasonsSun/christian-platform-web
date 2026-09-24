@@ -35,6 +35,6 @@ export const GET = withApi(async (req: NextRequest) => {
     });
     return ok(payload);
   } catch (e: any) {
-    return fail(503, 'DB_UNAVAILABLE', `数据库不可用: ${e.message}`);
+    return fail(503, 'DB_UNAVAILABLE', `数据库不可用：${e.message}`);
   }
 });

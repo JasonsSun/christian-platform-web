@@ -92,10 +92,10 @@ export async function listRooms(opts: { onlyPublic?: boolean; ownerId?: string; 
 /** 起播:注册媒体服务器路径 + 置为 live。
  *  前置校验:审核必须已通过、未取消、未过期 —— 任一不满足抛 HttpError,防止"瞎播"。 */
 export async function startRoom(room: LiveRoomRow): Promise<{ live: boolean }> {
-  if (room.cancel_reason) throw new LiveConflictError('该直播间已被取消,无法开播');
-  if (room.review_status === 'pending') throw new LiveConflictError('直播间审核中,请等待管理员通过后再开播');
-  if (room.review_status === 'rejected') throw new LiveConflictError('直播间未通过审核,无法开播');
-  if (isRoomExpired(room)) throw new LiveConflictError('已过约定直播时间,该直播间已过期,无法开播');
+  if (room.cancel_reason) throw new LiveConflictError('该直播间已被取消，无法开播');
+  if (room.review_status === 'pending') throw new LiveConflictError('直播间审核中，请等待管理员通过后再开播');
+  if (room.review_status === 'rejected') throw new LiveConflictError('直播间未通过审核，无法开播');
+  if (isRoomExpired(room)) throw new LiveConflictError('已过约定直播时间，该直播间已过期，无法开播');
   const okReg = await registerPath(room.stream_key);
   await exec(`UPDATE live_rooms SET status='live', started_at=?, updated_at=? WHERE id=?`, [ts(), ts(), room.id]);
   return { live: okReg };
@@ -130,7 +130,7 @@ export async function reviewRoom(room: LiveRoomRow, reviewerId: string, approve:
 /** 取消直播间(仅预告状态;live 中须走 endRoom 强制关闭)。
  *  创建人可取消自己的预告;管理员可取消任意直播间。取消不删除数据,标记 cancel_reason。 */
 export async function cancelRoom(room: LiveRoomRow, reason: string): Promise<LiveRoomRow | null> {
-  if (room.status === 'live') throw new LiveConflictError('直播正在进行,请先强制结束再取消');
+  if (room.status === 'live') throw new LiveConflictError('直播正在进行，请先强制结束再取消');
   if (room.status === 'ended') throw new LiveConflictError('该直播间已结束');
   const rsn = (reason || '已取消').trim().slice(0, 250);
   await exec(

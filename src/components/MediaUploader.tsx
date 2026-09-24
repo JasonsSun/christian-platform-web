@@ -267,7 +267,7 @@ export function MediaUploader({
         <div className="font-medium text-ink-800">点击选择或拖拽文件到此处</div>
         <div className="text-sm text-ink-400 mt-1">
           支持图片、音乐、视频、文档{multiple ? `(最多 ${maxFiles} 个)` : ''}
-          {maxSize ? `,单文件 ≤ ${formatSize(maxSize)}` : ''}
+          {maxSize ? `，单文件 ≤ ${formatSize(maxSize)}` : ''}
         </div>
       </div>
 

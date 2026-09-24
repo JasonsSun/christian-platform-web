@@ -50,6 +50,6 @@ export const PATCH = withApi(async (req: NextRequest) => {
 
   await exec(`UPDATE quota_policies SET ${sets.join(', ')} WHERE level = ?`, args);
   await audit(staff.id, 'QUOTA_POLICY_UPDATE', 'quota', String(level),
-    `调整等级 ${level} 配额:${Object.keys(body).join(',')}`, clientIp(req));
+    `调整等级 ${level} 配额：${Object.keys(body).join(',')}`, clientIp(req));
   return ok({ level, updated: true });
 });

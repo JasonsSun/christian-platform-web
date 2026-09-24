@@ -52,8 +52,8 @@ export default function UploadPage() {
 
   const hint = useMemo(() => {
     if (!quota) return '加载配额中…';
-    if (kind === 'video') return `≤ ${quota.policy.maxVideoMb}MB,时长 ≤ ${formatDuration(quota.policy.maxVideoSeconds)}`;
-    if (kind === 'audio') return `≤ ${quota.policy.maxAudioMb}MB,时长 ≤ ${formatDuration(quota.policy.maxAudioSeconds)}`;
+    if (kind === 'video') return `≤ ${quota.policy.maxVideoMb}MB，时长 ≤ ${formatDuration(quota.policy.maxVideoSeconds)}`;
+    if (kind === 'audio') return `≤ ${quota.policy.maxAudioMb}MB，时长 ≤ ${formatDuration(quota.policy.maxAudioSeconds)}`;
     if (kind === 'image') return `≤ ${quota.policy.maxImageMb}MB,JPG/PNG/WEBP/GIF`;
     return `≤ ${quota.policy.maxDocMb}MB,PDF/Word/PPT/Excel/TXT`;
   }, [kind, quota]);
@@ -62,7 +62,7 @@ export default function UploadPage() {
     setError(''); setResult(null);
     if (!f) { setFile(null); return; }
     if (limitBytes && f.size > limitBytes) {
-      setError(`文件 ${formatSize(f.size)} 超过你当前等级的单文件上限 ${formatSize(limitBytes)},请压缩后再上传或先提升等级`);
+      setError(`文件 ${formatSize(f.size)} 超过你当前等级的单文件上限 ${formatSize(limitBytes)}，请压缩后再上传或先提升等级`);
       setFile(null);
       return;
     }
@@ -79,7 +79,7 @@ export default function UploadPage() {
   function submit() {
     if (!file) { setError('请先选择文件'); return; }
     if (quota && quota.usage.todayCount >= quota.policy.dailyUploads) {
-      setError(`今日上传次数已用完(${quota.policy.dailyUploads} 个),明天再来或提升等级`);
+      setError(`今日上传次数已用完（${quota.policy.dailyUploads} 个），明天再来或提升等级`);
       return;
     }
     setBusy(true); setError(''); setResult(null); setProgress(0);

@@ -27,7 +27,7 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
 
   // 直播中:创建人无权强制取消,只有管理员可以(结束 + 标记取消)
   if (room.status === 'live' && !isAdmin) {
-    throw new HttpError(403, 'FORBIDDEN', '直播正在进行,只有管理员可以强制关闭');
+    throw new HttpError(403, 'FORBIDDEN', '直播正在进行，只有管理员可以强制关闭');
   }
 
   try {
@@ -42,7 +42,7 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
       updated = await cancelRoom(room, reason);
     }
     await audit(user.id, 'LIVE_CANCEL', 'live', room.id,
-      `取消直播间:${room.title}${reason ? `(${reason})` : ''}${room.status === 'live' ? '[强制]' : ''}`, clientIp(req));
+      `取消直播间：${room.title}${reason ? `(${reason})` : ''}${room.status === 'live' ? '[强制]' : ''}`, clientIp(req));
     // 推流字段仅对超管/房主可见
     return ok(publicRoomView(updated || room, isAdmin || isOwner));
   } catch (e) {

@@ -19,11 +19,11 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const canManage = user.role === 'admin' || user.id === room.owner_id;
   if (!canManage) throw new HttpError(403, 'FORBIDDEN', '只有主播或管理员可以开播');
 
-  if (room.status === 'ended') throw new HttpError(409, 'CONFLICT', '该直播间已结束,请新建一场');
+  if (room.status === 'ended') throw new HttpError(409, 'CONFLICT', '该直播间已结束，请新建一场');
 
   try {
     const { live } = await startRoom(room);
-    await audit(user.id, 'LIVE_START', 'live', room.id, `开播:${room.title}`, clientIp(req));
+    await audit(user.id, 'LIVE_START', 'live', room.id, `开播：${room.title}`, clientIp(req));
     const fresh = await getRoom(id);
     // 推流字段仅超管/房主可见;审核员开播后亦不返回密钥
     const canSeeStream = user.role === 'admin' || user.id === room.owner_id;

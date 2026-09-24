@@ -66,7 +66,7 @@ export async function validateUpload(name: string, mime: string, sizeBytes: numb
   const kind = kindOf(name, mime);
   if (!kind) return { ok: false, reason: `不支持的文件类型(.${ext || '未知'})`, kind: 'doc' };
   if (!ALLOWED[kind].includes(ext)) {
-    return { ok: false, reason: `扩展名 .${ext} 不允许，可用:${ALLOWED[kind].join('/')}`, kind };
+    return { ok: false, reason: `扩展名 .${ext} 不允许，可用：${ALLOWED[kind].join('/')}`, kind };
   }
   // 大小上限:优先读设置
   const setKey = `upload.max_${kind}_mb`;

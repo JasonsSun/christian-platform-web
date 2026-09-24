@@ -5,6 +5,7 @@ import { requireRole, UserRow } from '@/server/auth';
 import { audit, notify } from '@/server/services';
 import { cancelActivity } from '@/server/activities';
 import { requireModeratorModule } from '@/server/moderation';
+import { activityStatusLabel } from '@/lib/labels';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,7 +80,7 @@ export const PATCH = withApi(async (req: NextRequest) => {
   await exec(`UPDATE activities SET status = ? WHERE id = ?`, [body.status, body.activityId]);
   await audit(admin.id, 'ACTIVITY_STATUS_CHANGE', 'activity', body.activityId, `${act.title} -> ${body.status}`, clientIp(req));
   if (act.organizer_id) {
-    await notify(act.organizer_id, 'activity', '活动状态更新', `「${act.title}」状态已更新为 ${body.status}`, `/activities/${body.activityId}`);
+    await notify(act.organizer_id, 'activity', '活动状态更新', `「${act.title}」状态已更新为${activityStatusLabel(body.status)}`, `/activities/${body.activityId}`);
   }
   return ok({ id: body.activityId, status: body.status, updated: true });
 });

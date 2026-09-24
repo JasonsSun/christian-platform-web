@@ -73,7 +73,7 @@ export async function openidFromCode(code: string): Promise<string> {
   const res = await fetch(url, { cache: 'no-store' });
   const json: any = await res.json().catch(() => ({}));
   if (!json?.openid) {
-    throw new HttpError(400, 'WECHAT_CODE_INVALID', `换取 openid 失败:${json?.errcode || 'unknown'}`);
+    throw new HttpError(400, 'WECHAT_CODE_INVALID', `换取 openid 失败：${json?.errcode || 'unknown'}`);
   }
   return String(json.openid);
 }
@@ -98,7 +98,7 @@ export async function bindByScene(scene: string, openid: string): Promise<{ user
   if (row.status !== 'pending') throw new HttpError(400, 'TOKEN_INVALID', '绑定令牌已失效');
   if (new Date(row.expires_at).getTime() < Date.now()) {
     await exec(`UPDATE wechat_bind_tokens SET status='expired' WHERE token=?`, [row.token]);
-    throw new HttpError(400, 'TOKEN_EXPIRED', '二维码已过期,请重新获取');
+    throw new HttpError(400, 'TOKEN_EXPIRED', '二维码已过期，请重新获取');
   }
 
   // 一个微信只能绑一个账号

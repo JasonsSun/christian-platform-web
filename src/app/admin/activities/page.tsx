@@ -7,7 +7,7 @@ import { useNotice } from '@/lib/notice';
 import { useConfirmNav } from '@/lib/confirm';
 import { useAuth } from '@/lib/auth';
 import { formatDateTime } from '@/lib/format';
-import { activityCategoryLabel } from '@/lib/labels';
+import { activityCategoryLabel, activityStatusLabel } from '@/lib/labels';
 import { canEnterAdmin,
   AdminLayout, Loading, StatCard, Badge, TableSkeleton, TableShell, Th, Empty, ErrorBox,
   PageHead, Toolbar, AccessState,
@@ -19,11 +19,11 @@ interface AdminActivity {
   organizer: string; confirmed: number; waitlist: number; checkins: number;
 }
 
-const STATUS_MAP: Record<string, { tone: 'green' | 'gold' | 'red' | 'gray'; label: string }> = {
-  published: { tone: 'green', label: '已上线' },
-  offline: { tone: 'gray', label: '已下架' },
-  cancelled: { tone: 'red', label: '已取消' },
-  pending: { tone: 'gold', label: '待审核' },
+const STATUS_TONE: Record<string, 'green' | 'gold' | 'red' | 'gray'> = {
+  published: 'green',
+  offline: 'gray',
+  cancelled: 'red',
+  pending: 'gold',
 };
 
 export default function AdminActivitiesPage() {
@@ -133,7 +133,7 @@ export default function AdminActivitiesPage() {
               status === s ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600 hover:bg-ink-200'
             }`}
           >
-            {s === '' ? '全部' : STATUS_MAP[s]?.label || s}
+            {s === '' ? '全部' : activityStatusLabel(s)}
           </button>
         ))}
       </Toolbar>
@@ -183,7 +183,7 @@ export default function AdminActivitiesPage() {
                   </td>
                   <td className="num px-4 py-3 text-center text-ink-700">{a.checkins}</td>
                   <td className="px-4 py-3 text-center">
-                    <Badge tone={STATUS_MAP[a.status]?.tone || 'gray'}>{STATUS_MAP[a.status]?.label || a.status}</Badge>
+                    <Badge tone={STATUS_TONE[a.status] || 'gray'}>{activityStatusLabel(a.status)}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right whitespace-nowrap">
                     <div className="inline-flex flex-wrap justify-end gap-1">

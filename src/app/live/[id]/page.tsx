@@ -121,13 +121,13 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
   // 开播拦截原因(审核/取消/过期)
   const startBlock = room
     ? room.cancelled
-      ? (room.cancelReason ? `该直播间已被取消:${room.cancelReason}` : '该直播间已被取消')
+      ? (room.cancelReason ? `该直播间已被取消：${room.cancelReason}` : '该直播间已被取消')
       : room.expired
         ? '已过约定开播时间，该直播间已过期，无法开播'
         : room.reviewStatus === 'pending'
           ? '直播间审核中，请等待管理员通过后再开播'
           : room.reviewStatus === 'rejected'
-            ? (room.reviewNote ? `直播间未通过审核:${room.reviewNote}` : '直播间未通过审核，无法开播')
+            ? (room.reviewNote ? `直播间未通过审核：${room.reviewNote}` : '直播间未通过审核，无法开播')
             : null
     : null;
 
@@ -285,7 +285,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
   async function endLive() {
     confirmNav({
       title: '结束本场直播',
-      desc: `结束后观众将无法继续观看「${room?.title || '本场直播'}」,且不可恢复。`,
+      desc: `结束后观众将无法继续观看「${room?.title || '本场直播'}」，且不可恢复。`,
       danger: true,
       confirmText: '确认结束直播',
       cancelText: '继续直播',
@@ -476,7 +476,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
           {room.reviewStatus === 'pending' && !room.cancelled ? (
             <div className="rounded-xl px-4 py-3 bg-amber-50/80 border border-amber-200 text-sm text-amber-700 flex items-start gap-2">
               <IconHourglass className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={1.8} />
-              <span>直播间审核中{(isOwner || isStaff) ? '' : ',通过前暂不对外展示'},通过后即可开播。</span>
+              <span>直播间审核中{(isOwner || isStaff) ? '' : '，通过前暂不对外展示'}，通过后即可开播。</span>
             </div>
           ) : null}
           {room.reviewStatus === 'rejected' && !room.cancelled ? (
@@ -520,7 +520,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                   )}
                   {room.reviewStatus === 'pending' && room.reviewVideoId && (
                     <div className="w-full text-sm space-y-2 border-t border-ink-100 pt-3">
-                      <p className="text-ink-500">已提交现场视频审核材料:</p>
+                      <p className="text-ink-500">已提交现场视频审核材料：</p>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">media/{room.reviewVideoId}</code>
                         <Link href={`/media/${room.reviewVideoId}`} target="_blank" rel="noopener noreferrer" className="btn-ghost">查看视频</Link>
@@ -554,13 +554,13 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               {/* 推流信息:仅主播本人 + 超管可见(后端 canSeeStream 控制 room.rtmpUrl 是否存在,审核员拿不到) */}
               {canManage && room.status !== 'ended' && !room.cancelled && !startBlock && room.rtmpUrl && (
                 <div className="text-sm space-y-2">
-                  <p className="text-ink-500">在 OBS / 手机推流软件中填入以下信息即可开播:</p>
+                  <p className="text-ink-500">在 OBS / 手机推流软件中填入以下信息即可开播：</p>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">服务器: {room.rtmpServerUrl || `rtmp://${location.hostname}:8080/live`}</code>
+                    <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">服务器：{room.rtmpServerUrl || `rtmp://${location.hostname}:8080/live`}</code>
                     <button className="btn-ghost" onClick={() => copy(room.rtmpServerUrl || `rtmp://${location.hostname}:8080/live`, 'srv')}>{copied === 'srv' ? '已复制' : '复制'}</button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">串流密钥: {room.streamKey}</code>
+                    <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">串流密钥：{room.streamKey}</code>
                     <button className="btn-ghost" onClick={() => copy(room.streamKey!, 'key')}>{copied === 'key' ? '已复制' : '复制'}</button>
                   </div>
                   <p className="text-xs text-ink-400">

@@ -29,7 +29,7 @@ export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
      VALUES (?,?,?,?,?,?,?,?)`,
     [newId('rpt'), user.id, 'content', contentId, reason, (b.detail || '').slice(0, 500), 'open', ts()]
   );
-  await audit(user.id, 'CONTENT_REPORT', 'content', contentId, `举报原因:${REASON_LABEL[reason] || reason}`, '');
+  await audit(user.id, 'CONTENT_REPORT', 'content', contentId, `举报原因：${REASON_LABEL[reason] || reason}`, '');
   await notifyRole(['moderator', 'admin'], 'content_reported', '收到内容举报',
     `《${content.title}》被举报：${REASON_LABEL[reason] || reason}`, '/admin/reports');
   return ok({ ok: true });

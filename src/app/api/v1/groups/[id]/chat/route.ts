@@ -47,7 +47,7 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const user = await requireUser(req);
   if (!(await isGroupMember(user.id, id))) throw new HttpError(403, 'FORBIDDEN', '仅团契成员可发言');
   const rl = await rateLimitAsync(`group-chat:${user.id}`, 20, 10_000);
-  if (!rl.ok) throw new HttpError(429, 'RATE_LIMITED', '发言过于频繁,请稍后再试');
+  if (!rl.ok) throw new HttpError(429, 'RATE_LIMITED', '发言过于频繁，请稍后再试');
 
   const b = await readJson<{ content?: string }>(req);
   const content = (b.content || '').trim();

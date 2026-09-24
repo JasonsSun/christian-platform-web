@@ -109,6 +109,6 @@ export const DELETE = withApi(async (req: NextRequest, ctx: { params: { id: stri
   if (refCount > 0) throw conflict(`该文件被 ${refCount} 个内容引用，请先解除引用后再删除`);
 
   await exec(`UPDATE media_files SET status='trashed', updated_at=? WHERE id=?`, [ts(), m.id]);
-  await audit(user.id, 'MEDIA_TRASH', 'media', m.id, `软删除:${m.file_name}`, clientIp(req));
+  await audit(user.id, 'MEDIA_TRASH', 'media', m.id, `软删除：${m.file_name}`, clientIp(req));
   return ok({ id: m.id, status: 'trashed', trashed: true });
 });

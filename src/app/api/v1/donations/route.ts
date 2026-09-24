@@ -111,7 +111,7 @@ export const POST = withApi(async (req: NextRequest) => {
   const donorType = body.donorType === 'church' ? 'church' : 'personal';
   const yuan = Number(body.amount);
   if (!Number.isFinite(yuan) || yuan <= 0) throw new HttpError(422, 'VALIDATION_FAILED', '请填写有效的捐赠金额');
-  if (yuan > 1000000) throw new HttpError(422, 'VALIDATION_FAILED', '单笔金额过大,请分次捐赠或联系管理员');
+  if (yuan > 1000000) throw new HttpError(422, 'VALIDATION_FAILED', '单笔金额过大，请分次捐赠或联系管理员');
   const cents = Math.round(yuan * 100);
   if (cents < 100) throw new HttpError(422, 'VALIDATION_FAILED', '单笔捐赠不低于 1 元');
 

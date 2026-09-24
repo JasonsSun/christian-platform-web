@@ -20,7 +20,7 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
   await endRoom(room);
   const isStaff = user.role === 'admin' || user.role === 'moderator';
   const who = isStaff && user.id !== room.owner_id ? '(管理员强制关闭) ' : '';
-  await audit(user.id, 'LIVE_END', 'live', room.id, `结束直播:${who}${room.title}`, clientIp(req));
+  await audit(user.id, 'LIVE_END', 'live', room.id, `结束直播：${who}${room.title}`, clientIp(req));
   const fresh = await getRoom(id);
   return ok({ id: room.id, status: 'ended' });
 });

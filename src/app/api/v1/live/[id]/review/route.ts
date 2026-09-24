@@ -14,17 +14,17 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const user = await requireModeratorModule(req, 'live');
   const room = await getRoom(id);
   if (!room) throw notFound('直播间不存在');
-  if (room.status !== 'created') throw new HttpError(409, 'CONFLICT', '该直播间已起播或结束,无法再审核');
+  if (room.status !== 'created') throw new HttpError(409, 'CONFLICT', '该直播间已起播或结束，无法再审核');
   if (room.cancel_reason) throw new HttpError(409, 'CONFLICT', '该直播间已被取消');
 
   const b = await readJson<{ approve?: boolean; note?: string }>(req);
   // 显式校验:approve 必须为布尔值,缺失/类型错误一律 422,防止参数名打错被误判为"通过"
   if (typeof b.approve !== 'boolean') {
-    throw new HttpError(422, 'VALIDATION_FAILED', '参数错误:approve 必须为 true(通过) 或 false(驳回)');
+    throw new HttpError(422, 'VALIDATION_FAILED', '参数错误：approve 必须为 true（通过）或 false（驳回）');
   }
   const updated = await reviewRoom(room, user.id, b.approve, b.note?.trim());
   await audit(user.id, b.approve ? 'LIVE_REVIEW_APPROVE' : 'LIVE_REVIEW_REJECT', 'live', room.id,
-    `${b.approve ? '通过' : '驳回'}直播间:${room.title}${b.note?.trim() ? `(${b.note.trim()})` : ''}`, clientIp(req));
+    `${b.approve ? '通过' : '驳回'}直播间：${room.title}${b.note?.trim() ? `(${b.note.trim()})` : ''}`, clientIp(req));
 
   // 审核通过:给房主发"允许直播"通知,点通知直达开播页(详情页控制台内已有开播指南引导)
   if (b.approve) {

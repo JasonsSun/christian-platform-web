@@ -30,7 +30,7 @@ export const PATCH = withApi(async (req: NextRequest, ctx: Ctx) => {
     `UPDATE platform_feedback SET status = ?, admin_reply = ?, handled_by = ?, handled_at = ? WHERE id = ?`,
     [status, reply, user.id, ts(), id]
   );
-  await audit(user.id, 'FEEDBACK_HANDLE', 'feedback', id, `状态:${status}`, '');
+  await audit(user.id, 'FEEDBACK_HANDLE', 'feedback', id, `状态：${status}`, '');
 
   // 提交人有账号且回复内容有变化时，回一条站内通知
   const replyChanged = reply && reply !== (row.admin_reply || '');

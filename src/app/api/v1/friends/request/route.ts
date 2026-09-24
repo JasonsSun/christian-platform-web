@@ -26,10 +26,10 @@ export const POST = withApi(async (req: NextRequest) => {
   ]);
 
   if (exist?.status === 'accepted' || incoming?.status === 'accepted') throw conflict('你们已经是好友');
-  if (incoming?.status === 'pending') throw conflict('对方已向你发送好友申请,请到「好友申请」中处理');
+  if (incoming?.status === 'pending') throw conflict('对方已向你发送好友申请，请到「好友申请」中处理');
 
   if (exist) {
-    if (exist.status === 'pending') throw conflict('已发送好友申请,等待对方确认');
+    if (exist.status === 'pending') throw conflict('已发送好友申请，等待对方确认');
     // declined / cancelled -> 允许重新发送
     await exec(`UPDATE friend_requests SET status='pending', message=?, updated_at=? WHERE id=?`, [message || '', ts(), exist.id]);
     await notify(addresseeId, 'friend_request', '新的好友申请', `${user.display_name} 想加你为好友`, '/friends?tab=requests');

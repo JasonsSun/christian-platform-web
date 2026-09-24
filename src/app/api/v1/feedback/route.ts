@@ -59,7 +59,7 @@ export const POST = withApi(async (req: NextRequest) => {
     ]
   );
 
-  await audit(user.id, 'FEEDBACK_SUBMIT', 'feedback', id, `平台建议:${CATEGORY_LABEL[category]}`, '');
+  await audit(user.id, 'FEEDBACK_SUBMIT', 'feedback', id, `平台建议：${CATEGORY_LABEL[category]}`, '');
   await notifyRole(
     ['admin'],
     'platform_feedback',

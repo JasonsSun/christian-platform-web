@@ -158,7 +158,7 @@ export async function rotateSession(refresh: string) {
   if (!session) throw unauthorized('会话不存在');
   if (session.revoked) {
     await exec(`UPDATE sessions SET revoked=1 WHERE user_id=?`, [userId]);
-    throw new HttpError(401, 'TOKEN_REPLAYED', '刷新令牌已被使用过,已撤销全部会话');
+    throw new HttpError(401, 'TOKEN_REPLAYED', '刷新令牌已被使用过，已撤销全部会话');
   }
   if (session.refresh_hash !== sha256(refresh)) throw unauthorized('刷新令牌不匹配');
 
@@ -245,7 +245,7 @@ export function currentSessionId(req: NextRequest | Request): string | null {
 export async function requireRole(req: NextRequest | Request, roles: string[]): Promise<UserRow> {
   const user = await requireUser(req);
   if (!roles.includes(user.role)) {
-    throw new HttpError(403, 'FORBIDDEN', `需要以下角色之一:${roles.join('/')}`);
+    throw new HttpError(403, 'FORBIDDEN', `需要以下角色之一：${roles.join('/')}`);
   }
   return user;
 }

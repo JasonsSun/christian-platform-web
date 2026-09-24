@@ -204,6 +204,20 @@ export function activityCategoryLabel(category?: string | null): string {
   return ACTIVITY_CATEGORY_LABEL[category || ''] || '活动';
 }
 
+/** 活动上下架状态：后台筛选条、行内徽章与「活动状态更新」通知共用一份口径。
+    通知的收件人是主办方（普通用户），把 code 直接递给他就是一句「状态已更新为 offline」。 */
+export const ACTIVITY_STATUS_LABEL: Record<string, string> = {
+  published: '已上线',
+  offline: '已下架',
+  cancelled: '已取消',
+  pending: '待审核',
+};
+
+export function activityStatusLabel(status?: string | null): string {
+  if (!status) return '-';
+  return ACTIVITY_STATUS_LABEL[status] || status;
+}
+
 /** 团契分类：与 /groups 的分类筛选保持一致 */
 export const GROUP_CATEGORY_LABEL: Record<string, string> = {
   fellowship: '青年团契',

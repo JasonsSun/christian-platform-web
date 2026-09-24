@@ -255,7 +255,7 @@ export default function AdminSongsPage() {
                 <tr className="border-t border-ink-100 hover:bg-primary-50/40">
                   <td className="px-4 py-3">
                     <div className="font-medium text-ink-900">{s.title}</div>
-                    <div className="text-xs text-ink-400">{s.author || '佚名'}{s.tags ? ` · ${s.tags}` : ''}</div>
+                    <div className="text-xs text-ink-400">{s.author || '佚名'}{s.tags ? ` · ${s.tags.split(/[,，、]/).map((t) => t.trim()).filter(Boolean).join('、')}` : ''}</div>
                   </td>
                   <td className="px-4 py-3"><Badge tone="primary">{s.category}</Badge></td>
                   <td className="px-4 py-3 text-center text-ink-600">{s.lyricsLen > 0 ? `${s.lyricsLen}字` : '—'}</td>

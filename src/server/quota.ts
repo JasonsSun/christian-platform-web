@@ -373,7 +373,7 @@ export async function assertUploadAllowed(userId: string, kind: MediaKind, sizeB
   }
   if (view.usage.todayCount >= p.dailyUploads) {
     throw new HttpError(429, 'QUOTA_DAILY_LIMIT',
-      `今日上传次数已达上限（${p.dailyUploads} 个），明天再来,或通过发布内容提升等级。`);
+      `今日上传次数已达上限（${p.dailyUploads} 个），明天再来，或通过发布内容提升等级。`);
   }
   if (view.usage.todayBytes + sizeBytes > p.dailyBytes) {
     throw new HttpError(429, 'QUOTA_DAILY_BYTES',

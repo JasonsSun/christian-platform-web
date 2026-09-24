@@ -26,10 +26,10 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const id = ctx.params.id as string;
   const user = await requireUser(req);
   const rl = await rateLimitAsync(`chat:${user.id}`, 10, 10_000);
-  if (!rl.ok) throw new HttpError(429, 'RATE_LIMITED', '发言过于频繁,请稍后再试');
+  if (!rl.ok) throw new HttpError(429, 'RATE_LIMITED', '发言过于频繁，请稍后再试');
   const room = await getRoom(id);
   if (!room) throw notFound('直播间不存在');
-  if (room.status === 'ended') throw new HttpError(409, 'CONFLICT', '直播已结束,聊天室已关闭');
+  if (room.status === 'ended') throw new HttpError(409, 'CONFLICT', '直播已结束，聊天室已关闭');
 
   const b = await readJson<{ content?: string }>(req);
   const content = (b.content || '').trim();

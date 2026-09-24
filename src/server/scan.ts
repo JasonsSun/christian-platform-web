@@ -126,7 +126,7 @@ export async function scanMediaFile(abs: string, ext: string): Promise<ScanResul
     await fh.read(head, 0, 512, 0);
     await fh.close();
   } catch (e: any) {
-    return { clean: false, engine: 'read', reasons: [`无法读取文件: ${e?.message || ''}`] };
+    return { clean: false, engine: 'read', reasons: [`无法读取文件：${e?.message || ''}`] };
   }
 
   const reasons: string[] = [];
