@@ -74,6 +74,35 @@ function readPos(): Pos {
   }
 }
 
+/** 把一行字裁回它真正看得见的那块方框：祖先里凡是不让内容溢出的，都算一道裁切。
+ *
+ * 首页 hero 那串跑马灯是这条规则的来由：`.marquee-mask` 只有 192 宽（实测 x 107..299），
+ * 里面躺着一条两倍宽的 `.marquee-track`，Range.getClientRects 量到的是没被裁过的整条轨道
+ * （实测右沿 x=414，比 390 的视口还长出 24px，且随动画相位漂移）。圆点在 338..382 那一列，
+ * 和可见窗根本不相交 —— 它却为一个屏幕上画不出来的字尾往下让位。 */
+function clipToAncestors(el: HTMLElement, r: DOMRect) {
+  let { left, right, top, bottom } = r;
+  for (let n: HTMLElement | null = el; n && n !== document.body; n = n.parentElement) {
+    const cs = getComputedStyle(n);
+    const ox = cs.overflowX;
+    const oy = cs.overflowY;
+    if (ox === 'visible' && oy === 'visible') continue;
+    const b = n.getBoundingClientRect();
+    if (ox !== 'visible') {
+      left = Math.max(left, b.left);
+      right = Math.min(right, b.right);
+    }
+    if (oy !== 'visible') {
+      top = Math.max(top, b.top);
+      bottom = Math.min(bottom, b.bottom);
+    }
+    if (left >= right || top >= bottom) return null;
+    // 到了 fixed/sticky 这一层就停：再往上的祖先不在同一个视觉坐标系里，裁不着它
+    if (cs.position === 'fixed' || cs.position === 'sticky') break;
+  }
+  return { left, right, top, bottom };
+}
+
 /** 圆点那一列里所有「要瞄准才点得到」的控件盒。
  *
  * 和字形行盒一样不能打点采样：/groups 的「创建团契」占 y 117..161，圆点停在 80..124 只擦着
@@ -123,8 +152,10 @@ function textLinesInColumn(root: HTMLElement | null, side: Side): LineBox[] {
     range.selectNodeContents(node);
     for (const lr of Array.from(range.getClientRects())) {
       if (lr.width < 1 || lr.height < 1) continue;
-      if (lr.right <= cx - DOT / 2 || lr.left >= cx + DOT / 2) continue;
-      out.push({ top: lr.top, bottom: lr.bottom });
+      const c = clipToAncestors(el, lr);
+      if (!c || c.right - c.left < 1 || c.bottom - c.top < 1) continue;
+      if (c.right <= cx - DOT / 2 || c.left >= cx + DOT / 2) continue;
+      out.push({ top: c.top, bottom: c.bottom });
     }
   }
   return out;
