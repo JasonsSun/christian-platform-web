@@ -40,6 +40,21 @@ interface ErrorEntry {
   ctx: { scope?: string; userId?: string; [k: string]: unknown };
 }
 
+/** 落库的错误级记录（GET /admin/errors 的 stored）：跨重启可查，带堆栈 */
+interface StoredError {
+  id: string;
+  at: string;
+  level: string;
+  message: string;
+  stack: string;
+  scope: string;
+  method: string;
+  path: string;
+  status: number | null;
+  code: string;
+  userId: string;
+}
+
 /** 外发通知队列状态（GET /admin/notify） */
 interface NotifyInfo {
   pending: number;
@@ -70,7 +85,10 @@ export default function AdminSystemPage() {
     data: errData,
     loading: errLoading,
     reload: reloadErrors,
-  } = useApi<{ items: ErrorEntry[]; monitor: boolean }>(isAdmin ? '/admin/errors?limit=50' : null, [isAdmin]);
+  } = useApi<{ items: ErrorEntry[]; stored: StoredError[]; monitor: boolean }>(
+    isAdmin ? '/admin/errors?limit=50' : null,
+    [isAdmin]
+  );
 
   /* ---------- 外发通知队列（该接口原先没有任何 UI 挂载） ---------- */
   const [notifyData, setNotifyData] = useState<NotifyInfo | null>(null);
@@ -261,15 +279,57 @@ export default function AdminSystemPage() {
       {isAdmin && (
         <div className="glass rounded-2xl p-5 shadow-soft mb-6">
           <div className="flex flex-wrap items-center justify-between gap-y-2">
-            <SectionTitle>最近错误（进程内最近 100 条）</SectionTitle>
+            <SectionTitle>最近错误</SectionTitle>
             <button className="btn-secondary text-xs" onClick={reloadErrors}>刷新</button>
           </div>
+
+          {/* 落库的那份才是事后取证用的：内存环形缓冲重启即清空，而"刚才那页报错"往往就是重启后才发现 */}
+          <p className="text-xs font-medium text-ink-500 mt-4 mb-2">
+            错误级记录（已落库 error_events，保留 30 天，重启后仍可查）
+          </p>
           {errLoading ? (
             <Loading />
-          ) : !errData?.items?.length ? (
-            <Empty label="当前没有捕获到错误" />
+          ) : !errData?.stored?.length ? (
+            <Empty label="数据库里还没有错误级记录，说明近期没有 5xx 或未捕获异常" />
           ) : (
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            <div className="space-y-2 max-h-[28rem] overflow-y-auto scroll-slim">
+              {errData.stored.map((e) => (
+                <div key={e.id} className="rounded-xl bg-ink-50 px-4 py-2.5">
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    {/* 落库的只有 error/fatal，和下面环形缓冲里同级的行一个颜色 */}
+                    <Badge tone="red">{logLevelLabel(e.level)}</Badge>
+                    <span className="text-ink-400">{formatDateTime(e.at)}</span>
+                    {e.status != null && <span className="text-ink-500">HTTP {e.status}</span>}
+                    {e.code && <span className="font-mono text-ink-500">{e.code}</span>}
+                    {e.scope && <span className="text-ink-500">范围：{errorScopeLabel(e.scope)}</span>}
+                  </div>
+                  {(e.method || e.path) && (
+                    <p className="font-mono text-[11px] text-ink-500 mt-1 break-all">
+                      {e.method} {e.path}
+                    </p>
+                  )}
+                  <p className="text-sm text-ink-800 mt-1 break-words whitespace-pre-wrap">{e.message}</p>
+                  {e.stack && (
+                    <details className="mt-1.5">
+                      {/* py-3.5：这是本页唯一的手机端点击目标，裸 text-xs 只有 16px 高 */}
+                      <summary className="text-xs text-ink-500 cursor-pointer select-none py-3.5">查看堆栈</summary>
+                      <pre className="font-mono text-[11px] text-ink-600 mt-1.5 max-h-64 overflow-auto break-all whitespace-pre-wrap rounded-lg border border-ink-200 p-2.5 scroll-slim">
+                        {e.stack}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <p className="text-xs font-medium text-ink-500 mt-4 mb-2">
+            进程内环形缓冲（最近 100 条，含 4xx 等非错误级，重启即清空）
+          </p>
+          {!errData?.items?.length ? (
+            <Empty label="当前进程没有捕获到错误" />
+          ) : (
+            <div className="space-y-2 max-h-[28rem] overflow-y-auto scroll-slim">
               {errData.items.map((e, i) => (
                 <div key={`${e.at}-${i}`} className="rounded-xl bg-ink-50 px-4 py-2.5">
                   <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -283,7 +343,11 @@ export default function AdminSystemPage() {
             </div>
           )}
           <p className="text-xs text-ink-400 mt-3">
-            错误只在进程内存中保留，重启即清空；需要长期留存请配置 <code>SENTRY_DSN</code> 接入外部监控。
+            {'5xx 与未捕获异常会写进 '}
+            <code>error_events</code>
+            {' 表：限速 60 条/分钟、保留 30 天，重启后仍能查到堆栈；退回演示数据（mock）时不落库。需要长期留存或告警请配置 '}
+            <code>SENTRY_DSN</code>
+            {' 接入外部监控。'}
           </p>
         </div>
       )}

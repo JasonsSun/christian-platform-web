@@ -8,8 +8,12 @@
  * - 设了 SENTRY_DSN 则额外上报到 Sentry（走 HTTPS webhook，不需要装 SDK，
  *   保持零依赖；装了 @sentry/nextjs 的项目可直接替换 send 实现）。
  * - 4xx 业务错误只记 debug 不打错误级噪音；5xx 与未捕获异常才是错误级。
+ * - 错误级的那部分同时写进 MySQL 表 error_events（见 ./errorEvents）：进程内那份
+ *   环形缓冲重启就没了，本地边看边报的问题全靠它取证。
  * - 采样可配，避免异常风暴把监控配额打满。
  */
+
+import { recordErrorEvent } from './errorEvents';
 
 export type Severity = 'debug' | 'info' | 'warning' | 'error' | 'fatal';
 
@@ -149,6 +153,18 @@ export function captureException(err: unknown, ctx: ErrorContext = {}, level: Se
   pushRecent(effective, message, ctx);
   logLine(effective, message, ctx);
   if (effective === 'error' || effective === 'fatal') {
+    // 内存环形缓冲重启即清空，错误级的那部分同时落库，事后才查得到堆栈
+    recordErrorEvent({
+      level: effective,
+      message,
+      stack: (err as any)?.stack,
+      scope: ctx.scope,
+      method: ctx.method,
+      path: ctx.path,
+      status: ctx.status,
+      code: ctx.code,
+      userId: ctx.userId,
+    });
     if (sampleOk()) reportToSentry(effective, err, ctx);
   }
 }
