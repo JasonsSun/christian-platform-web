@@ -89,7 +89,7 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
     await notify(
       res.newOwnerId,
       'group_owner',
-      '👑 你已成为团契团长',
+      '你已成为团契团长',
       `「${own.name}」原团长已退出，团长身份已移交给你，请继续带领这个团契。`,
       `/groups/${groupId}`,
     );

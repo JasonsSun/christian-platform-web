@@ -108,7 +108,7 @@ export const DELETE = withApi(async (req: NextRequest, ctx: Ctx) => {
     await notify(
       promoted.userId,
       'activity_promoted',
-      '🎉 候补已转正',
+      '候补已转正',
       `「${act?.title || '活动'}」有参与者取消报名，你已从候补转为正式参与，请按时参加。`,
       `/activities/${activityId}`,
     );

@@ -31,6 +31,6 @@ export const POST = withApi(async (req: NextRequest, ctx: Ctx) => {
   );
   await audit(user.id, 'CONTENT_REPORT', 'content', contentId, `举报原因:${REASON_LABEL[reason] || reason}`, '');
   await notifyRole(['moderator', 'admin'], 'content_reported', '收到内容举报',
-    `《${content.title}》被举报:${REASON_LABEL[reason] || reason}`, '/admin/reports');
+    `《${content.title}》被举报：${REASON_LABEL[reason] || reason}`, '/admin/reports');
   return ok({ ok: true });
 });

@@ -94,7 +94,7 @@ export const PATCH = withApi(async (req: NextRequest, ctx: Ctx) => {
     await exec(`UPDATE \`groups\` SET owner_id = ? WHERE id = ?`, [userId, groupId]);
     await exec(`UPDATE group_members SET role = 'owner' WHERE group_id = ? AND user_id = ?`, [groupId, userId]);
     await exec(`UPDATE group_members SET role = 'member' WHERE group_id = ? AND user_id = ?`, [groupId, group.owner_id]);
-    await notify(userId, 'group_owner', '👑 你已成为团契团长',
+    await notify(userId, 'group_owner', '你已成为团契团长',
       `管理员已将团契「${group.name}」的团长移交给你。`, `/groups/${groupId}`);
     if (group.owner_id) {
       await notify(group.owner_id, 'group_owner_changed', '团契团长已变更',

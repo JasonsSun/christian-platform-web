@@ -98,7 +98,7 @@ async function handle(type: string, p: any) {
       break;
     case 'content.rejected':
       await notify(content?.author_id, 'content_rejected', '内容未通过审核',
-        `《${content?.title || ''}》未通过:${p.reason || '不符合社区规范'}`, '');
+        `《${content?.title || ''}》未通过：${p.reason || '不符合社区规范'}`, '');
       break;
     case 'comment.created':
       if (content && content.author_id !== p.actorId) {

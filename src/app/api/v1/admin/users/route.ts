@@ -75,7 +75,7 @@ export const PATCH = withApi(async (req: NextRequest) => {
     await exec(`UPDATE users SET password_hash = ? WHERE id = ?`, [hashPassword(newPassword), userId]);
     await exec(`UPDATE sessions SET revoked = 1 WHERE user_id = ?`, [userId]);
     await audit(admin.id, 'USER_PASSWORD_RESET', 'user', userId, `管理员重置了 ${target.username} 的密码`, clientIp(req));
-    await notify(userId, 'password_reset', '🔐 登录密码已被重置', '管理员重置了你的登录密码，请使用新密码登录后尽快修改。', '/me');
+    await notify(userId, 'password_reset', '登录密码已被重置', '管理员重置了你的登录密码，请使用新密码登录后尽快修改。', '/me');
     return ok({ id: userId, updated: true, newPassword });
   }
 

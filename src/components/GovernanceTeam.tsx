@@ -82,8 +82,8 @@ export default function GovernanceTeam() {
             style={{ backgroundColor: `${ADMIN_BADGE.color}12`, borderColor: `${ADMIN_BADGE.color}44` }}
           >
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-2">
-              <span className="text-lg" aria-hidden>
-                {ADMIN_BADGE.icon}
+              <span className="inline-flex" aria-hidden>
+                <Glyph glyph={ADMIN_BADGE.icon} className="w-5 h-5" strokeWidth={1.7} style={{ color: ADMIN_BADGE.color }} />
               </span>
               <span className="font-semibold text-ink-900">平台管理员</span>
               <span className="text-xs text-ink-500">统筹全部模块与系统治理</span>

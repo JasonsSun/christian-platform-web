@@ -28,12 +28,12 @@ export const POST = withApi(async (req: NextRequest, ctx: any) => {
 
   // 审核通过:给房主发"允许直播"通知,点通知直达开播页(详情页控制台内已有开播指南引导)
   if (b.approve) {
-    await notify(room.owner_id, 'live_approved', '✅ 直播审核通过,可以开播了',
-      `「${room.title}」已通过审核。点此进入直播间开播页,按指南配置推流软件即可开始直播。`,
+    await notify(room.owner_id, 'live_approved', '直播审核通过，可以开播了',
+      `「${room.title}」已通过审核。点此进入直播间开播页，按指南配置推流软件即可开始直播。`,
       `/live/${room.id}`);
   } else {
-    await notify(room.owner_id, 'live_rejected', '⚠️ 直播审核未通过',
-      b.note?.trim() ? `「${room.title}」未通过审核:${b.note.trim()}` : `「${room.title}」未通过审核,无法开播。`,
+    await notify(room.owner_id, 'live_rejected', '直播审核未通过',
+      b.note?.trim() ? `「${room.title}」未通过审核：${b.note.trim()}` : `「${room.title}」未通过审核，无法开播。`,
       `/live/${room.id}`);
   }
 

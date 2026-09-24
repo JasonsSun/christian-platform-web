@@ -145,10 +145,12 @@ console.log('A. 团契归属规则');
   check('多人团：团契未被解散', await groupExists(gid));
   check('多人团：团长自己的成员行已删除',
     Number((await conn.query('SELECT COUNT(*) AS c FROM group_members WHERE group_id=? AND user_id=?', [gid, uA.id]))[0][0].c) === 0);
-  check('多人团：新团长收到移交通知',
-    Number((await conn.query(
-      "SELECT COUNT(*) AS c FROM notifications WHERE user_id=? AND type='group_owner' AND link=?", [uC.id, `/groups/${gid}`]
-    ))[0][0].c) > 0);
+  const own = (await conn.query(
+    "SELECT title FROM notifications WHERE user_id=? AND type='group_owner' AND link=?", [uC.id, `/groups/${gid}`]
+  ))[0];
+  check('多人团：新团长收到移交通知', own.length > 0);
+  // 通知行左侧本来就按 NOTIF_TYPE_ICON 画了一枚皇冠 SVG，标题再带一个 👑 就是同一行两个图标
+  check('多人团：移交通知标题不带 emoji', !/^\p{Extended_Pictographic}/u.test(own[0]?.title || ''), `得到「${own[0]?.title}」`);
 }
 
 // 5) 多人团：dissolve → 整团删除，成员/动态级联清除

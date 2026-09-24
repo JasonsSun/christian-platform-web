@@ -4,6 +4,7 @@ import { ok, withApi, num, readJson, HttpError, notFound, clientIp } from '@/ser
 import { requireRole, UserRow } from '@/server/auth';
 import { audit, notify } from '@/server/services';
 import { requireModeratorModule } from '@/server/moderation';
+import { contentStatusLabel } from '@/lib/labels';
 
 export const dynamic = 'force-dynamic';
 
@@ -60,7 +61,7 @@ export const PATCH = withApi(async (req: NextRequest) => {
   await audit(staff.id, 'ORG_STATUS_CHANGE', 'organization', body.orgId, `${org.name} -> ${body.status}`, clientIp(req));
   if (org.owner_id) {
     await notify(org.owner_id, 'org_review', '组织审核结果',
-      `「${org.name}」审核状态:${body.status}`, '/nearby');
+      `「${org.name}」审核状态：${contentStatusLabel(body.status)}`, '/nearby');
   }
   return ok({ id: body.orgId, status: body.status, updated: true });
 });

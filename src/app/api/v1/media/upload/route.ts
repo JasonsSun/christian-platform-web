@@ -132,7 +132,7 @@ export const POST = withApi(async (req: NextRequest) => {
     `${user.display_name} 上传了${kindLabel(kind)}「${title}」`, '/admin/media');
   if (quota.next && quota.next.gap > 0) {
     await notify(user.id, 'quota_levelup_tip', '提升上传额度小贴士',
-      `再获得 ${quota.next.gap} 信任分即可升级为「${quota.next.name}」:${quota.next.gains}`, '/upload');
+      `再获得 ${quota.next.gap} 信任分即可升级为「${quota.next.name}」：${quota.next.gains}`, '/upload');
   }
 
   return ok({

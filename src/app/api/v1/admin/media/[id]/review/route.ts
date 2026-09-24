@@ -39,7 +39,7 @@ export const POST = withApi(async (req: NextRequest, ctx: { params: { id: string
     }
     await notify(m.owner_id, action === 'approve' ? 'media_approved' : 'media_rejected',
       action === 'approve' ? '媒体已通过审核' : '媒体未通过审核',
-      `「${m.title || m.file_name}」${action === 'approve' ? '已通过审核' : '未通过' + (body.reason ? ':' + body.reason : '')}`,
+      `「${m.title || m.file_name}」${action === 'approve' ? '已通过审核' : '未通过审核：' + (body.reason || '不符合社区规范')}`,
       action === 'approve' ? '/media' : '/me?tab=uploads');
   }
   return ok({ id: m.id, reviewStatus, updated: true });
