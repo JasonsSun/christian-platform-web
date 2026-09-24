@@ -115,8 +115,10 @@ export default function NotificationsPage() {
         ))}
       </div>
 
-      {/* 仅未读开关 */}
-      <div className="flex justify-end mb-4">
+      {/* 仅未读开关：靠左。它是筛选，归上面那排页签管，不该缩在右边缘 —— 而手机端
+          那颗偏好圆点就住在右边 8..46px 那一列里，右边一占位，页头下方就没有它能停的地方，
+          圆点只能骑到「系统」页签上（量过：这一页页头三排控件之间各只空 24px，塞不下 44px）。 */}
+      <div className="flex mb-4">
         <button
           onClick={() => setOnlyUnread(!onlyUnread)}
           className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${

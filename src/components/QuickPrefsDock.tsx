@@ -150,7 +150,9 @@ function boxBottom(boxes: LineBox[], top: number): number | null {
 function parkY(root: HTMLElement | null, side: Side): number {
   const start = clampY(Y_DEFAULT);
   const lowest = Math.min(HEAD_BAND, Math.max(TOP_MIN, innerHeight - TABBAR - DOT - EDGE));
-  const boxes = aimBoxesInColumn(root, side).concat(textLinesInColumn(root, side));
+  const ctrls = aimBoxesInColumn(root, side);
+  const lines = textLinesInColumn(root, side);
+  const boxes = ctrls.concat(lines);
   /* 先按「留缝」找，找不到再按「不压上」找，最后才回起点。
      留缝这一步是量出来的：/feed 的圆点停在 y=120，下沿 164 正好压在副标题那一行的上沿 164 上——
      按矩形是零重叠，看上去却是圆点把句尾顶住了。 */
@@ -164,7 +166,27 @@ function parkY(root: HTMLElement | null, side: Side): number {
     }
     return null;
   };
-  return find(GAP) ?? find(0) ?? start;
+  /* 带子里一格都腾不出来时的兜底。原先回 start：/notifications 的页头有三排要瞄准的控件
+     （提醒/全部已读 96..136、四格页签 160..200、仅未读 224..264），彼此只空 24px，
+     44px 的圆点在 72..300 里没有一个不压控件的位置（量出来「不压控件的空档：无」），
+     于是圆点就按 start=152 骑在「系统」页签上。兜底不该是「回原地」，而是挑一个压得最轻的：
+     盖掉要瞄准的控件是点不到，盖掉一行字只是难看，按 3:1 计，再按离起点的远近拆同分。 */
+  const press = (b: LineBox, y: number) => Math.max(0, Math.min(b.bottom, y + DOT) - Math.max(b.top, y));
+  const leastBad = () => {
+    let best = start;
+    let bestScore = Infinity;
+    for (let y = TOP_MIN; y + DOT <= lowest; y += 1) {
+      let s = Math.abs(y - start) / 1000;
+      for (const b of ctrls) s += press(b, y) * 3;
+      for (const b of lines) s += press(b, y);
+      if (s < bestScore) {
+        bestScore = s;
+        best = y;
+      }
+    }
+    return best;
+  };
+  return find(GAP) ?? find(0) ?? leastBad();
 }
 
 export default function QuickPrefsDock() {
