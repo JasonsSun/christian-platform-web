@@ -40,7 +40,12 @@ const RELEASE = process.env.APP_VERSION || process.env.npm_package_version || 'u
 
 /** 最近若干条错误，供 /api/v1/admin/errors 快速回看（不想接外部服务也能看到） */
 const RECENT_MAX = 100;
-const recent: Array<{ at: string; level: Severity; message: string; ctx: ErrorContext }> = [];
+/* 生产构建把每条 route 打进各自的 bundle，模块级 const 就变成「一条 route 一份副本」：
+   /me/favorites 抛的错记进它自己那份队列，/admin/errors 读的是自己那份 —— 永远空数组，
+   后台「最近错误」列表看着像「今天一个错都没出」。实测过：连发两个 401 之后 items 仍是 []。
+   挂到 globalThis 上，同一个进程里所有副本才共用这一条队列（落库那一半本来就是共享的）。 */
+const recent: Array<{ at: string; level: Severity; message: string; ctx: ErrorContext }> =
+  ((globalThis as any).__platformRecentErrors ||= []);
 
 function sampleOk(): boolean {
   if (SAMPLE_RATE >= 1) return true;

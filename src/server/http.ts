@@ -12,8 +12,21 @@ export class HttpError extends Error {
 
 export const ok = (data: unknown, status = 200) => NextResponse.json(data, { status });
 
-export const fail = (status: number, code: string, message?: string) =>
-  NextResponse.json({ code, message: message || code, timestamp: new Date().toISOString() }, { status });
+/**
+ * fail() 造出来的响应上的记账标记。抛 Response 的守卫（`throw forbidden()` 那一类）
+ * 到 catch 时只剩一个不透明 Response，读 body 又会把它消费掉，所以在造的那一刻就把
+ * status/code/message 挂在对象上。
+ */
+const BIZ = Symbol.for('platform.bizFail');
+
+export const fail = (status: number, code: string, message?: string) => {
+  const res = NextResponse.json(
+    { code, message: message || code, timestamp: new Date().toISOString() },
+    { status },
+  );
+  (res as any)[BIZ] = { status, code, message: message || code };
+  return res;
+};
 
 export const badRequest = (m = '参数错误') => fail(400, 'BAD_REQUEST', m);
 export const unauthorized = (m = '未登录或令牌无效') => fail(401, 'UNAUTHORIZED', m);
@@ -76,8 +89,26 @@ export function withApi<T extends any[]>(fn: (...args: T) => Promise<Response>) 
         });
         return fail(e.status, e.code, e.message);
       }
-      // 兼容 `throw notFound(...)` 这类直接抛出 Response 的写法
-      if (e instanceof Response) return e;
+      // 兼容 `throw notFound(...)` 这类直接抛出 Response 的写法。
+      // 以前这一支只 return、不记账，于是全站 139 处 `throw forbidden()/notFound()/...`
+      // 的失败在「最近错误」里根本不存在，同一个「没有权限」写成 HttpError 看得见、
+      // 写成 Response 就看不见。补上记账；401 单独排除 —— 它是令牌刷新流程的常规信号
+      // （#59 就是为了消 401 噪音才让未登录访客不再打 /me/*），让它灌进只有 100 格的
+      // 环形缓冲，真 500 会被挤出去。
+      if (e instanceof Response) {
+        const biz = (e as any)[BIZ];
+        if (biz && biz.status !== 401) {
+          const { captureException } = await import('./monitor');
+          captureException(new Error(biz.message), {
+            scope: 'api',
+            method: typeof first?.method === 'string' ? first.method : '',
+            path: typeof first?.url === 'string' ? safePath(first.url) : '',
+            status: biz.status,
+            code: biz.code,
+          });
+        }
+        return e;
+      }
       // 未捕获异常 = 真正的 500，必须进监控
       const { captureException } = await import('./monitor');
       captureException(e, {
