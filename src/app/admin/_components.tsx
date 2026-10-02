@@ -937,7 +937,7 @@ export function Empty({
   return (
     <div className="py-10 px-4 sm:py-12 text-center border border-dashed border-ink-200 rounded-2xl">
       <div
-        className="mx-auto w-11 h-11 rounded-xl bg-ink-100 text-ink-400 flex items-center justify-center"
+        className="mx-auto w-11 h-11 rounded-xl bg-ink-100 text-ink-500 flex items-center justify-center"
         aria-hidden="true"
       >
         <Icon className="w-5 h-5" strokeWidth={1.6} />
@@ -992,7 +992,7 @@ export function AccessState({
   return (
     <div className="py-16 px-4 text-center">
       <div
-        className="mx-auto w-14 h-14 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center"
+        className="mx-auto w-14 h-14 rounded-2xl bg-ink-100 text-ink-500 flex items-center justify-center"
         aria-hidden="true"
       >
         <Icon className="w-7 h-7" strokeWidth={1.5} />

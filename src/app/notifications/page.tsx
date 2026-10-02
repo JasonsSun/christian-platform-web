@@ -160,7 +160,7 @@ export default function NotificationsPage() {
 
       {!loading && !error && items.length === 0 && (
         <div className="text-center py-16 bg-white rounded-2xl border border-ink-100 shadow-soft">
-          <div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3">
+          <div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-500 flex items-center justify-center mx-auto mb-3">
             <IconBell className="w-7 h-7" strokeWidth={1.6} />
           </div>
           <h2 className="font-display text-lg font-bold text-ink-900 mb-1">还没有通知</h2>
@@ -172,7 +172,7 @@ export default function NotificationsPage() {
           旧列表是空的，这一句被 loading 撤掉后又换回一句「还没有通知」再换回来 */}
       {items.length > 0 && !error && filtered.length === 0 && (
         <div className="text-center py-16 bg-white rounded-2xl border border-ink-100 shadow-soft">
-          <div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3">
+          <div className="w-16 h-16 rounded-2xl bg-ink-100 text-ink-500 flex items-center justify-center mx-auto mb-3">
             <IconInbox className="w-7 h-7" strokeWidth={1.6} />
           </div>
           <p className="text-ink-500">该分类下暂无通知</p>

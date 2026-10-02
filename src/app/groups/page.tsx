@@ -290,7 +290,7 @@ export default function GroupsPage() {
           {error && <div role="alert" className="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-4 text-sm">{error}</div>}
           {!loading && !error && groups.length === 0 && (
             <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-ink-200">
-              <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-400 items-center justify-center mb-3">
+              <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-500 items-center justify-center mb-3">
                 <IconUsers className="w-6 h-6" strokeWidth={1.6} />
               </span>
               <p className="text-ink-400 text-sm">

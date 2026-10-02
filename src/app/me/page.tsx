@@ -149,7 +149,7 @@ export default function MePage() {
     return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="max-w-md mx-auto bg-white card-tech rounded-3xl border border-ink-100 px-6 py-10 text-center">
-          <span className="w-14 h-14 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-4">
+          <span className="w-14 h-14 rounded-2xl bg-ink-100 text-ink-500 flex items-center justify-center mx-auto mb-4">
             <IconLock className="w-7 h-7" strokeWidth={1.6} />
           </span>
           <div className="eyebrow justify-center mb-1.5">需要登录</div>

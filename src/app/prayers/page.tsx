@@ -229,7 +229,7 @@ export default function PrayersPage() {
       )}
       {!loading && !error && items.length === 0 && (
         <div className="bg-white rounded-3xl border border-dashed border-ink-200 px-6 py-16 text-center">
-          <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-400 items-center justify-center mb-3">
+          <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-500 items-center justify-center mb-3">
             <IconPray className="w-6 h-6" strokeWidth={1.6} />
           </span>
           <p className="text-ink-400 text-sm">这里还没有代祷，成为第一个吧～</p>

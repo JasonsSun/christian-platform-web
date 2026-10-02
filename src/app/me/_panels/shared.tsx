@@ -28,7 +28,7 @@ export function ErrorBlock({ msg, onRetry }: { msg: string; onRetry: () => void 
 export function EmptyBlock({ text, action }: { text: string; action: { label: string; href: string } }) {
   return (
     <div className="text-center py-12 rounded-2xl border border-dashed border-ink-200 bg-white">
-      <span className="w-14 h-14 rounded-2xl bg-ink-100 text-ink-400 flex items-center justify-center mx-auto mb-3">
+      <span className="w-14 h-14 rounded-2xl bg-ink-100 text-ink-500 flex items-center justify-center mx-auto mb-3">
         <IconInbox className="w-7 h-7" strokeWidth={1.6} />
       </span>
       <p className="text-ink-500 mb-4">{text}</p>

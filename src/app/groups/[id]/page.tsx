@@ -216,7 +216,7 @@ export default function GroupDetailPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-4">
         <div className="bg-white rounded-3xl border border-dashed border-ink-200 px-8 py-10 text-center max-w-sm w-full">
-          <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-400 items-center justify-center mb-3">
+          <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-500 items-center justify-center mb-3">
             <IconUsers className="w-6 h-6" strokeWidth={1.6} />
           </span>
           <p className="text-ink-500 text-sm mb-5">{error || '团契不存在'}</p>

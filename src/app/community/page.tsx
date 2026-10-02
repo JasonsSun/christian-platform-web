@@ -298,7 +298,7 @@ export default function CommunityPage() {
 
               {!loading && !error && items.length === 0 && (
                 <div className="bg-white rounded-2xl p-10 text-center border border-dashed border-ink-200">
-                  <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 items-center justify-center text-ink-400 mb-3">
+                  <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 items-center justify-center text-ink-500 mb-3">
                     <IconDocument className="w-6 h-6" strokeWidth={1.6} />
                   </span>
                   <p className="text-ink-500 text-sm">

@@ -46,7 +46,7 @@ export function MyUploads() {
       <div className="grid sm:grid-cols-2 gap-4">
         {items.map((m) => (
           <div key={m.id} className="bg-white card-tech rounded-2xl p-4 border border-ink-100 flex gap-3">
-            <div className="w-20 h-20 rounded-xl bg-ink-100 flex items-center justify-center overflow-hidden flex-shrink-0 text-ink-400">
+            <div className="w-20 h-20 rounded-xl bg-ink-100 flex items-center justify-center overflow-hidden flex-shrink-0 text-ink-500">
               {m.kind === 'image' ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img loading="lazy" src={m.url} alt={m.title} className="w-full h-full object-cover"  decoding="async" />

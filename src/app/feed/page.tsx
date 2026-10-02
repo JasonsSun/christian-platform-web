@@ -42,7 +42,7 @@ export default function FeedPage() {
       {!needsLogin && error ? <ErrorBox message={error} onRetry={reload} /> : null}
       {!needsLogin && !loading && !items.length ? (
         <div className="bg-white rounded-3xl border border-dashed border-ink-200 px-6 py-16 text-center">
-          <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-400 items-center justify-center mb-3">
+          <span className="inline-flex w-12 h-12 rounded-2xl bg-ink-50 text-ink-500 items-center justify-center mb-3">
             <IconHandshake className="w-6 h-6" strokeWidth={1.6} />
           </span>
           <p className="text-ink-500 mb-4">还没有关注动态，去关注一些弟兄姐妹吧</p>
