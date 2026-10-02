@@ -52,6 +52,19 @@ export function useApi<T = any>(path: string | null, deps: any[] = [], initial: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reload]);
 
+  /* 失败的面板得自己好起来，不能把「按 F5」留给用户。服务器重建过一次、网络抖了一下，
+     面板就永远钉在红框上 —— 切页签不重新挂载的话，它连一次重试都不会发。
+     这里只在「当前是错误态」且「用户切回这个标签页」时补一次重拉：成功态不自动重试，
+     否则全站几十个列表页每次切回标签都要多打一轮请求。 */
+  useEffect(() => {
+    if (!path || !error) return;
+    const onShow = () => {
+      if (document.visibilityState === 'visible') reload();
+    };
+    document.addEventListener('visibilitychange', onShow);
+    return () => document.removeEventListener('visibilitychange', onShow);
+  }, [path, error, reload]);
+
   return { data, loading, error, reload, setData };
 }
 
