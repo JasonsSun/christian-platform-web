@@ -68,6 +68,10 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  // 不写这一行，iOS 上 env(safe-area-inset-bottom) 恒为 0：底部页签、播放条、body 的
+  // 那几处 safe-area 留白全部白写，Home 指示条直接压在「我的」这一格上。桌面和
+  // 无刘海的安卓量不出来 —— 视口里没有安全区，只有真机能看见。
+  viewportFit: 'cover',
   themeColor: '#1e2664',
 }
 
