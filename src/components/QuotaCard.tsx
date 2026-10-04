@@ -1,5 +1,3 @@
-'use client';
-
 import { formatSize, formatDuration } from '@/lib/format';
 
 export interface QuotaData {

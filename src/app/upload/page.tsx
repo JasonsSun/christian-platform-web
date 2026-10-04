@@ -4,10 +4,11 @@ import { useRef, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { API_BASE, tokenStore } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { LoginGate } from '@/components/LoginGate';
 import { formatSize, formatDuration } from '@/lib/format';
 import { useApi } from '@/lib/useApi';
 import QuotaCard, { QuotaData } from '@/components/QuotaCard';
-import { IconCheck, IconDocument, IconFilm, IconImage, IconLock, IconMusicNote } from '@/components/icons';
+import { IconCheck, IconDocument, IconFilm, IconImage, IconMusicNote } from '@/components/icons';
 
 const KINDS = [
   { key: 'image', label: '图片', accept: '.jpg,.jpeg,.png,.webp,.gif', icon: IconImage },
@@ -108,16 +109,7 @@ export default function UploadPage() {
 
   if (authLoading) return <div className="max-w-3xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
   if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center mx-auto mb-4">
-          <IconLock className="w-8 h-8 text-ink-500" strokeWidth={1.6} />
-        </div>
-        <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
-        <p className="text-ink-500 mb-6">登录后即可上传图片、音乐、视频与资料</p>
-        <Link href="/login?next=/upload" className="btn-primary">去登录</Link>
-      </div>
-    );
+    return <LoginGate hint="登录后即可上传图片、音乐、视频与资料" next="/upload" />;
   }
 
   return (

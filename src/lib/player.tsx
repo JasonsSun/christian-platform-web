@@ -559,7 +559,7 @@ function PlayerBar() {
               </span>
               {t.poster ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img loading="lazy" decoding="async" src={t.poster} alt="" className="w-9 h-9 rounded-lg object-cover" />
+                <img loading="lazy" decoding="async" src={t.poster} alt={t.title} className="w-9 h-9 rounded-lg object-cover" />
               ) : (
                 <span className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white">
                   <IconMusicNote className="w-4 h-4" strokeWidth={1.7} />
@@ -618,7 +618,7 @@ function PlayerBar() {
           {/* 封面 */}
           {p.current.poster ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img loading="lazy" decoding="async" src={p.current.poster} alt="" className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
+            <img loading="lazy" decoding="async" src={p.current.poster} alt={p.current.title} className="w-11 h-11 rounded-xl object-cover flex-shrink-0" />
           ) : (
             <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white flex-shrink-0">
               <IconMusicNote className="w-5 h-5" strokeWidth={1.7} />

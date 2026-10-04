@@ -48,7 +48,7 @@ export default function RecentPlays({ limit = 8 }: { limit?: number }) {
               <div className="relative aspect-video rounded-xl overflow-hidden bg-gradient-to-br from-ink-800 to-primary-900 shadow-card group-hover:shadow-card-hover transition-shadow">
                 {it.poster ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img loading="lazy" decoding="async" src={it.poster} alt="" className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={it.poster} alt={it.title} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-white/45">
                     {it.kind === 'video'

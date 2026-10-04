@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
+import { LoginGate } from '@/components/LoginGate';
 import { apiGet, apiDelete } from '@/lib/api';
 import { timeAgo } from '@/lib/format';
-import { IconLock } from '@/components/icons';
 
 type SessionItem = {
   id: string;
@@ -76,14 +76,7 @@ export default function SessionsPage() {
   }
 
   if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mx-auto mb-4"><IconLock className="w-7 h-7" strokeWidth={1.5} /></div>
-        <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
-        <p className="text-ink-500 mb-6">登录后即可查看和管理你的登录设备</p>
-        <Link href="/login?next=/settings/sessions" className="btn-primary">去登录</Link>
-      </div>
-    );
+    return <LoginGate hint="登录后即可查看和管理你的登录设备" next="/settings/sessions" />;
   }
 
   const others = items.filter((x) => !x.current);

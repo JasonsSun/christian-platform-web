@@ -1,5 +1,3 @@
-'use client';
-
 /**
  * 统一 SVG 图标库（Heroicons outline 风格，stroke 1.5~2）。
  * 全站复用：用 className 控制尺寸/颜色，避免 emoji 与文本字符图标在跨平台渲染风格不一。

@@ -1,5 +1,3 @@
-'use client';
-
 import {
   ADMIN_BADGE,
   MODULE_META,

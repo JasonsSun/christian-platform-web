@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { apiPost, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { LoginGate } from '@/components/LoginGate';
 import { timeAgo } from '@/lib/format';
 import { NOTIF_TYPE_ICON, categoryOfNotif } from '@/lib/notificationMeta';
 import { Glyph, IconBell, IconCalendar, IconChatDots, IconInbox, IconSettings } from '@/components/icons';
@@ -59,13 +60,7 @@ export default function NotificationsPage() {
   }
 
   if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
-        <p className="text-ink-500 mb-6">登录后可查看你的通知</p>
-        <button onClick={() => router.push('/login?next=/notifications')} className="btn-primary">去登录</button>
-      </div>
-    );
+    return <LoginGate hint="登录后可查看你的通知" next="/notifications" />;
   }
 
   return (

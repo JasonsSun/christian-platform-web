@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { apiGet, apiPatch, apiPost, apiDelete, apiForm, qs } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { LoginGate } from '@/components/LoginGate';
 import { useConfirmNav } from '@/lib/confirm';
 import Portal from '@/components/Portal';
 import { useEscape, useDialogFocus } from '@/lib/a11y';
@@ -22,7 +23,6 @@ import {
   IconArrowRight,
   IconBookOpen,
   IconChurch,
-  IconLock,
   IconMapPin,
   IconPencil,
   IconWallet,
@@ -146,19 +146,7 @@ export default function MePage() {
   }
 
   if (!user) {
-    return (
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="max-w-md mx-auto bg-white card-tech rounded-3xl border border-ink-100 px-6 py-10 text-center">
-          <span className="w-14 h-14 rounded-2xl bg-ink-100 text-ink-500 flex items-center justify-center mx-auto mb-4">
-            <IconLock className="w-7 h-7" strokeWidth={1.6} />
-          </span>
-          <div className="eyebrow justify-center mb-1.5">需要登录</div>
-          <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
-          <p className="text-ink-500 mb-6 text-sm">登录后即可查看和管理你的个人中心</p>
-          <button onClick={() => router.push('/login?next=/me')} className="btn-primary">去登录</button>
-        </div>
-      </div>
-    );
+    return <LoginGate hint="登录后即可查看和管理你的个人中心" next="/me" />;
   }
 
   return (

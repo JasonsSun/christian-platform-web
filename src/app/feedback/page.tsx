@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { apiPost } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { LoginGate } from '@/components/LoginGate';
 import { useNotice } from '@/lib/notice';
 import { timeAgo } from '@/lib/format';
 import {
@@ -12,7 +13,6 @@ import {
   IconBookOpen,
   IconChatDots,
   IconLightbulb,
-  IconLock,
   IconSparkles,
 } from '@/components/icons';
 
@@ -86,16 +86,7 @@ export default function FeedbackPage() {
   }
 
   if (!user) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-ink-100 flex items-center justify-center mx-auto mb-4">
-          <IconLock className="w-8 h-8 text-ink-500" strokeWidth={1.6} />
-        </div>
-        <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
-        <p className="text-ink-500 mb-6">登录后即可给平台提建议，我们会认真阅读每一条</p>
-        <Link href="/login?next=/feedback" className="btn-primary inline-block">去登录</Link>
-      </div>
-    );
+    return <LoginGate hint="登录后即可给平台提建议，我们会认真阅读每一条" next="/feedback" />;
   }
 
   return (

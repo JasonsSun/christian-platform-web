@@ -200,7 +200,7 @@ export default function SermonsPage() {
               <div className="aspect-video bg-gradient-to-br from-primary-600 to-primary-800 relative flex items-center justify-center">
                 {s.cover ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={s.cover} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
+                  <img src={s.cover} alt={s.title} loading="lazy" decoding="async" className="w-full h-full object-cover" />
                 ) : (
                   <IconMicWave className="w-14 h-14 text-white/70" strokeWidth={1.2} />
                 )}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApi } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { LoginGate } from '@/components/LoginGate';
 import { timeAgo } from '@/lib/format';
 import { IconMail, IconSearch } from '@/components/icons';
 import type { Conversation } from '@/lib/types';
@@ -42,13 +43,7 @@ export default function MessagesPage() {
   const unreadTotal = items.reduce((s, c) => s + (c.unread || 0), 0);
 
   if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <h2 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h2>
-        <p className="text-ink-500 mb-6">登录后可查看你的私信</p>
-        <button onClick={() => router.push('/login?next=/messages')} className="btn-primary">去登录</button>
-      </div>
-    );
+    return <LoginGate hint="登录后可查看你的私信" next="/messages" />;
   }
 
   return (

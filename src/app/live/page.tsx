@@ -287,7 +287,7 @@ export default function LiveListPage() {
               <div className="relative aspect-video bg-ink-900 flex items-center justify-center">
                 {r.posterUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img loading="lazy" decoding="async" src={r.posterUrl} alt="" className="w-full h-full object-cover" />
+                  <img loading="lazy" decoding="async" src={r.posterUrl} alt={r.title} className="w-full h-full object-cover" />
                 ) : (
                   <IconFilm className="w-10 h-10 text-white/40" strokeWidth={1.4} />
                 )}
@@ -333,7 +333,7 @@ export default function LiveListPage() {
               <Link href={`/live/${r.id}`} className="block">
                 <div className="relative aspect-video bg-ink-900 flex items-center justify-center">
                   {r.coverUrl ? (
-                    <img loading="lazy" decoding="async" src={r.coverUrl} alt="" className="w-full h-full object-cover" />
+                    <img loading="lazy" decoding="async" src={r.coverUrl} alt={r.title} className="w-full h-full object-cover" />
                   ) : (
                     <IconBroadcast className="w-10 h-10 text-white/40" strokeWidth={1.4} />
                   )}

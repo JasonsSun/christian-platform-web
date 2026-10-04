@@ -194,7 +194,7 @@ export default function MediaDetailPage() {
           <div className="relative aspect-[21/9] md:aspect-[21/7] bg-gradient-to-br from-ink-900 via-primary-900 to-ink-800 flex items-center justify-center">
             {d.posterUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img loading="lazy" decoding="async" src={d.posterUrl} alt="" className="absolute inset-0 w-full h-full object-cover opacity-35" />
+              <img loading="lazy" decoding="async" src={d.posterUrl} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover opacity-35" />
             ) : null}
             <div className="relative z-10 flex flex-col items-center gap-4 px-4">
               <button
@@ -335,10 +335,10 @@ export default function MediaDetailPage() {
                     <div className="w-16 h-16 rounded-lg bg-ink-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
                       {r.kind === 'image' ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img loading="lazy" decoding="async" src={r.url} alt="" className="w-full h-full object-cover" />
+                        <img loading="lazy" decoding="async" src={r.url} alt={r.title} className="w-full h-full object-cover" />
                       ) : r.posterUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img loading="lazy" decoding="async" src={r.posterUrl} alt="" className="w-full h-full object-cover" />
+                        <img loading="lazy" decoding="async" src={r.posterUrl} alt={r.title} className="w-full h-full object-cover" />
                       ) : (
                         <RelIcon className="w-6 h-6 text-ink-500" strokeWidth={1.5} />
                       )}

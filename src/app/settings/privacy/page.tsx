@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { apiPatch } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
+import { LoginGate } from '@/components/LoginGate';
 import { IconArrowRight, IconBellOff, IconBroadcast, IconUsers } from '@/components/icons';
 
 type DmPolicy = 'everyone' | 'followers' | 'none';
@@ -49,13 +50,7 @@ export default function PrivacySettingsPage() {
   }
 
   if (!user) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
-        <p className="text-ink-500 mb-6">登录后管理你的隐私设置</p>
-        <button onClick={() => router.push('/login?next=/settings/privacy')} className="btn-primary">去登录</button>
-      </div>
-    );
+    return <LoginGate hint="登录后管理你的隐私设置" next="/settings/privacy" />;
   }
 
   return (

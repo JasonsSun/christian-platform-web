@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
+import { LoginGate } from '@/components/LoginGate';
 import { apiGet, apiPost, apiPatch } from '@/lib/api';
-import { IconAlert, IconCheck, IconLock } from '@/components/icons';
+import { IconAlert, IconCheck } from '@/components/icons';
 
 type Status = { enabled: boolean; confirmed: boolean; recoveryLeft: number };
 
@@ -112,15 +113,7 @@ export default function TwoFactorPage() {
   if (authLoading) return <div className="max-w-2xl mx-auto px-4 py-20 text-center text-ink-400">加载中…</div>;
 
   if (!user) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-primary-50 text-primary-700 flex items-center justify-center mx-auto mb-4">
-          <IconLock className="w-7 h-7" strokeWidth={1.6} />
-        </div>
-        <h1 className="font-display text-2xl font-bold text-ink-900 mb-2">请先登录</h1>
-        <Link href="/login?next=/settings/two-factor" className="btn-primary">去登录</Link>
-      </div>
-    );
+    return <LoginGate hint="登录后即可开启两步验证保护账号" next="/settings/two-factor" />;
   }
 
   return (
