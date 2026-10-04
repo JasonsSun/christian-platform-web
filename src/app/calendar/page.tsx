@@ -436,7 +436,7 @@ export default function CalendarPage() {
 
                 {data?.loggedIn === false && (
                   <div className="mt-4 p-3 rounded-xl bg-ink-50 text-xs text-ink-600">
-                    <Link href="/login?next=/calendar" className="text-primary-600 hover:underline">
+                    <Link href="/login?next=/calendar" className="text-primary-600 hover:underline inline-flex items-center min-h-[40px] md:min-h-0">
                       登录
                     </Link>
                     后可在这里看到你的读经打卡与计划进度，也能订阅活动提醒

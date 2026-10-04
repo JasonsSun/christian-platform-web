@@ -929,7 +929,7 @@ export default function ReadChapter() {
                   onClick={() => setFontSize(size)}
                   aria-label={FONT_LABEL[size]}
                   aria-pressed={fontSize === size}
-                  className={`w-10 h-9 md:h-8 inline-flex items-center justify-center rounded-full font-bold font-serif transition-colors ${
+                  className={`w-10 h-10 md:h-8 inline-flex items-center justify-center rounded-full font-bold font-serif transition-colors ${
                     fontSize === size ? 'bg-primary-600 text-white' : 'text-ink-500 hover:text-primary-600'
                   }`}
                   title={FONT_LABEL[size]}
@@ -1376,7 +1376,7 @@ export default function ReadChapter() {
                       type="button"
                       onClick={(e) => { e.stopPropagation(); selectVerse(v.verse); }}
                       title="点击点亮本节；正在朗读时从本节续读"
-                      className={`absolute left-4 top-2 w-7 h-7 max-md:left-2 max-md:top-1 max-md:w-9 max-md:h-9 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
+                      className={`absolute left-4 top-2 w-7 h-7 max-md:left-2 max-md:top-1 max-md:w-10 max-md:h-10 flex items-center justify-center text-xs font-bold rounded-full transition-all duration-300 ${
                         speaking
                           ? 'bg-amber-500 text-ink-950 scale-110 shadow-md'
                           : targeted
@@ -1482,7 +1482,7 @@ export default function ReadChapter() {
                         onClick={(e) => { e.stopPropagation(); setVerseMenu(verseMenu === v.verse ? null : v.verse); }}
                         aria-expanded={verseMenu === v.verse}
                         title="本节操作"
-                        className={`md:hidden absolute right-1 top-1 w-9 h-9 flex items-center justify-center rounded-lg transition-colors duration-200 ${
+                        className={`md:hidden absolute right-1 top-1 w-10 h-10 flex items-center justify-center rounded-lg transition-colors duration-200 ${
                           verseMenu === v.verse ? 'bg-primary-50/80 text-primary-700' : vb ? 'text-amber-500' : 'text-ink-500'
                         }`}
                       >

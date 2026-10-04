@@ -233,7 +233,7 @@ export default function ContentDetailPage() {
                 text: (data.excerpt || data.body || data.title || '').slice(0, 220),
                 reference: `《${data.title}》${data.author?.displayName ? ` · ${data.author.displayName}` : ''}`,
               } : undefined}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/15 transition-colors"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white/80 hover:text-white hover:bg-white/15 transition-colors"
             />
             {reportMsg ? (
               <span className="inline-flex items-center gap-1.5 text-white/90 bg-emerald-500/30 px-3 py-1.5 rounded-full text-sm">

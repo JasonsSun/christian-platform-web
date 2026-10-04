@@ -2105,3 +2105,46 @@ html[data-a11y-contrast="high"] .ambient { display: none; }
   .js-reveal { opacity: 1 !important; transform: none !important; }
   .ambient { display: none !important; }
 }
+
+/* =====================================================================
+   全站无障碍增强（2026-10-04 补）
+   下面三块是此前遗漏、影响所有页面的通用缺口：
+   1) 键盘焦点可见——只有 .input-styled / .skip-link 做了 focus 环，
+      普通按钮、裸链接、自定义控件键盘 Tab 时看不到焦点在哪；
+   2) 减少动效只覆盖了 .js-reveal / .ambient / .skeleton-sheen 三个类，
+      其余无限装饰动画（marquee / aurora / gradient / card-hover /
+      shimmer / menuIn / itemIn 等）在系统「减少动效」下仍跑；
+   3) 页内锚点跳转被固定顶部导航遮挡。
+   ===================================================================== */
+
+/* 1) 键盘焦点环：用 :focus-visible 区分键鼠，鼠标点击不出现环。
+   :where() 优先级为 0，不会盖掉已有的 .input-styled:focus-visible 等更高优先级规则。 */
+:where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"]), [role="button"]):focus-visible {
+  outline: 2px solid var(--ui-accent, #3d52d9);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* 2a) 系统开启「减少动效」：停掉全站所有动画与过渡（含无限循环装饰动画）。
+   lib/motion.ts 已处理 JS 滚动，这里补齐 CSS 层。 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 2b) 无障碍开关 data-a11y-reduce-motion=1：与系统偏好同等对待 */
+html[data-a11y-reduce-motion="1"] *,
+html[data-a11y-reduce-motion="1"] *::before,
+html[data-a11y-reduce-motion="1"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* 3) 页内锚点 / 读经目录跳转避开固定顶部导航，避免标题被遮挡 */
+html { scroll-padding-top: 5rem; }

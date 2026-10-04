@@ -521,7 +521,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
           <button
             type="button"
             onClick={() => window.dispatchEvent(new Event(COMMAND_PALETTE_EVENT))}
-            className="xl:hidden ml-auto p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+            className="xl:hidden ml-auto p-2 rounded-lg text-white hover:bg-white/10 transition-colors min-w-[40px] min-h-[40px]"
             aria-label="全站搜索"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -531,7 +531,7 @@ export default function Navbar({ disabledModules = [] }: { disabledModules?: str
 
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="xl:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+            className="xl:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors min-w-[40px] min-h-[40px]"
             aria-label={t('nav.toggleMenu')}
             aria-expanded={isMobileMenuOpen}
           >
