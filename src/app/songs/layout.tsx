@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react';
 import ModuleClosed from '@/components/ModuleClosed';
 import { isModuleEnabled } from '@/server/modules';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: '赞美诗歌',
+  description: '颂主新歌与经典圣诗，按歌谱、音频与分类浏览，支持歌词朗读与分享。',
+  alternates: { canonical: '/songs' },
+};
 
 /** songs 归属于「songs」模块：后台开关关闭时不渲染内容，改为模块已暂停的占位页。 */
 export const revalidate = 60;
