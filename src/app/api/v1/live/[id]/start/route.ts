@@ -9,7 +9,7 @@ import { audit, notify } from '@/server/services';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-/** 开播:仅主播本人或管理员/审核员;且须审核通过、未取消、未过期 */
+/** 开播:仅主播本人或管理员(不含审核员);且须审核通过、未取消、未过期 */
 export const POST = withApi(async (req: NextRequest, ctx: any) => {
   const id = ctx.params.id as string;
   const user = await requireUser(req);

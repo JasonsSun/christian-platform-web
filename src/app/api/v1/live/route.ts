@@ -3,7 +3,8 @@ import { ok, withApi, HttpError, readJson } from '@/server/http';
 import { requireUser, requireRole } from '@/server/auth';
 import { createRoom, listRooms, publicRoomView, countViewersBatch, listMessages, isRoomExpired } from '@/server/live';
 import { listPathsLive, hlsPlayUrl } from '@/server/mediamtx';
-import { ts, exec, q } from '@/server/db';
+import { getRecordingReviewStatus } from '@/server/liveRecord';
+import { q } from '@/server/db';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -38,14 +39,15 @@ export const GET = withApi(async (req: NextRequest) => {
     countViewersBatch(liveIds),
   ]);
 
-  const out = visible.map((r) => {
+  const out = await Promise.all(visible.map(async (r) => {
     const isLive = r.status === 'live';
     return publicRoomView(r, false, {
       hlsUrl: hlsPlayUrl(r.stream_key),
       viewerCount: isLive ? (viewers.get(r.id) || 0) : 0,
       live: isLive ? (pathLive.get(r.stream_key) ?? false) : false,
+      recordingReviewStatus: await getRecordingReviewStatus(r.recording_media_id),
     });
-  });
+  }));
   return ok({ rooms: out });
 });
 
@@ -55,6 +57,9 @@ export const POST = withApi(async (req: NextRequest) => {
   const b = await readJson<{ title?: string; description?: string; coverUrl?: string; recordEnabled?: boolean; scheduledAt?: string; reviewVideoId?: string }>(req);
   if (!b.title || !b.title.trim()) throw new HttpError(422, 'VALIDATION_FAILED', '请填写直播标题');
   const isStaff = user.role === 'admin' || user.role === 'moderator';
+  // recordEnabled 一并写进 INSERT：原先建完房间再 UPDATE 一遍，
+  // 而 createRoom 内部的 getRoom 已把「未含 record_enabled 的旧行」写进 2 秒缓存，
+  // 结果是「勾了保存录像，结束直播却没生成录像」。
   const room = await createRoom({
     ownerId: user.id,
     title: b.title.trim(),
@@ -63,13 +68,9 @@ export const POST = withApi(async (req: NextRequest) => {
     scheduledAt: b.scheduledAt?.trim() || undefined,
     reviewStatus: isStaff ? 'approved' : 'pending',
     reviewVideoId: b.reviewVideoId?.trim() || undefined,
+    recordEnabled: !!b.recordEnabled,
   });
-  // 主播可选择"保存录像":写入 record_enabled,直播结束后自动落入待审媒体库
-  if (b.recordEnabled) {
-    await exec(`UPDATE live_rooms SET record_enabled = 1, updated_at = ? WHERE id = ?`, [ts(), room.id]);
-    (room as any).record_enabled = 1;
-  }
   const canSeeStream = true; // 创建者即房主本人,可见自己的推流信息
-  const view = publicRoomView(room, canSeeStream, { hlsUrl: hlsPlayUrl(room.stream_key) });
+  const view = publicRoomView(room!, canSeeStream, { hlsUrl: hlsPlayUrl(room!.stream_key) });
   return ok(view, 201);
 });

@@ -65,6 +65,16 @@ export function rtmpPushUrl(streamKey: string): string {
 }
 
 /**
+ * 录像落盘根目录。必须与 liveRecord.ts 的 RECORD_DIR 完全一致,
+ * 否则平台在 recordings 里找不到 MediaMTX 写出的文件(页面永远卡在「录像生成中」)。
+ */
+export function recordBaseDir(): string {
+  const env = process.env.RECORD_DIR;
+  if (env) return env.replace(/[/\\]+$/, '');
+  return './recordings';
+}
+
+/**
  * 网页 HLS 播放地址。生产经 nginx HTTPS 反代(/hls/...)，本地开发直连 MediaMTX :8888。
  *
  * 关键坑(必须带 cookieCheck=1)：
@@ -107,11 +117,30 @@ async function api(method: string, path: string, body?: unknown): Promise<{ ok: 
   }
 }
 
-/** 注册一条直播路径(接受推流)。安全由随机不可猜的 streamKey 保证。 */
-export async function registerPath(streamKey: string): Promise<boolean> {
-  const r = await api('POST', `/v3/config/paths/add/${encodeURIComponent(mediaPath(streamKey))}`, {
-    source: 'publisher',
-  });
+/** 注册一条直播路径(接受推流)。安全由随机不可猜的 streamKey 保证。
+ *
+ *  record: 主播勾了「保存录像」时必须显式带上 record:true + recordPath。
+ *  平台的直播路径是这里动态 add 出来的,不依赖 mediamtx.yml 的 pathDefaults
+ *  (那份配置里 record 默认 false),不显式传就等于「勾了也不录」。
+ *  路径模板刻意避开 %path:动态加的路径名含 RTMP_APP 前缀,不同版本展开行为不一致,
+ *  用固定的 live 段 + streamKey 目录,和 liveRecord.ts 的查找逻辑严格对齐。 */
+export async function registerPath(streamKey: string, opts: { record?: boolean } = {}): Promise<boolean> {
+  const body: Record<string, unknown> = { source: 'publisher' };
+  if (opts.record) {
+    body.record = true;
+    // 整场直播落一个文件:recordSegmentDuration 调大到 24h,
+    // 否则超过 1h 的直播会被切成多段,回放只剩最后一小时。
+    body.recordPath = `${recordBaseDir()}/live/${streamKey}/%Y-%m-%d_%H-%M-%S-%f`;
+    body.recordFormat = 'fmp4';
+    body.recordSegmentDuration = '24h';
+    body.recordDeleteAfter = '168h'; // 3 天，配合 finalizeLiveRecording 的 24h 待审窗口兜底
+  }
+  const r = await api('POST', `/v3/config/paths/add/${encodeURIComponent(mediaPath(streamKey))}`, body);
+  if (!r.ok && opts.record) {
+    // 首次 add 可能因路径已存在而失败,退化成「更新该路径」
+    const u = await api('PATCH', `/v3/config/paths/patch/${encodeURIComponent(mediaPath(streamKey))}`, body);
+    return u.ok || u.status === 200;
+  }
   return r.ok || r.status === 200;
 }
 

@@ -12,7 +12,8 @@ async function loadMedia(id: string) {
   return one<any>(`SELECT * FROM media_files WHERE id = ?`, [id]);
 }
 
-/** 媒体详情:审核通过对所有人可见;否则仅作者/管理员可见 */
+/** 媒体详情:审核通过对所有人可见;否则仅作者/管理员可见。
+ *  例外:直播回放(source='live')被驳回后录像已被物理清理,任何人(含主播本人)都看不了。 */
 export const GET = withApi(async (req: NextRequest, ctx: { params: { id: string } }) => {
   // 已审核媒体允许匿名访问;未审核仅作者/管理员可见
   let user: UserRow | null = null;
@@ -23,9 +24,17 @@ export const GET = withApi(async (req: NextRequest, ctx: { params: { id: string 
   }
   const m = await loadMedia(ctx.params.id);
   if (!m) throw notFound('文件不存在');
+  // 直播回放被驳回 = 录像已删,连主播本人也不能回看
+  if (m.source === 'live' && m.review_status === 'rejected') {
+    throw forbidden('该直播回放已被驳回，不能回看');
+  }
   const isStaff = user?.role === 'admin' || user?.role === 'moderator';
   const isOwner = !!user && m.owner_id === user.id;
-  if (m.review_status !== 'approved' && !isStaff && !isOwner) throw forbidden('该文件尚未通过审核');
+  if (m.review_status !== 'approved' && !isStaff && !isOwner) {
+    throw forbidden(m.source === 'live'
+      ? '该直播回放正在审核中，通过后即可观看'
+      : '该文件尚未通过审核');
+  }
 
   const tasks = await q<any>(
     `SELECT id, task_type, status, attempts, error_message, output,

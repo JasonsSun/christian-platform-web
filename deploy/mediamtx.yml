@@ -587,17 +587,18 @@ pathDefaults:
   # Default path settings -> Record
 
   # Record streams to disk.
-  # 【本项目改动】官方默认 false：不开则直播结束不会生成录像，平台「保存录像」形同虚设。
-  # 落盘目录 /recordings 由 docker-compose 挂载到宿主机 ./data/recordings，
-  # 且必须同时挂给 web 容器（见 compose 的 RECORD_DIR），否则 web 读不到 mediamtx 写的文件。
-  record: true
+  # 【本项目改动】官方默认 false。但这里保持 false —— 平台在 startRoom 时按房间的
+  # 「保存录像」勾选，通过 registerPath 显式给该 path 下发 record:true + recordPath
+  # （见 src/server/mediamtx.ts）。全局开 true 会让没勾录像的直播间也白占磁盘。
+  record: false
   # Path of recording segments.
   # Extension is added automatically.
   # Available variables are %path (path name), %Y %m %d (year, month, day),
   # %H %M %S (hours, minutes, seconds), %f (microseconds), %z (time zone), %s (unix epoch).
   # 【本项目改动】用绝对路径，避免相对 ./ 受容器工作目录影响。
-  # 注意 %path 会展开为 "live/<streamKey>"，即多一层子目录 —— 平台侧已按此递归查找。
-  recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  # 前缀固定为 live/：平台侧查找逻辑按 <RECORD_DIR>/live/<streamKey>/ 定位，
+  # 不依赖 %path 的展开（不同 MediaMTX 版本对含 '/' 的 path 展开行为不一致）。
+  recordPath: /recordings/live/%path/%Y-%m-%d_%H-%M-%S-%f
   # Format of recorded segments.
   # Available formats are "fmp4" (fragmented MP4) and "mpegts" (MPEG-TS).
   recordFormat: fmp4
@@ -609,10 +610,14 @@ pathDefaults:
   # This prevents RAM exhaustion.
   recordMaxPartSize: 50M
   # Minimum duration of each segment.
-  recordSegmentDuration: 1h
+  # 【本项目改动】1h → 24h：一场敬拜/特会常超过 1 小时，按 1h 切段会让回放只剩最后一段，
+  # 表现为「录像打开只有一小时」。拉长后整场基本落成一个文件。
+  recordSegmentDuration: 24h
   # Delete segments after this timespan.
   # Set to 0s to disable automatic deletion.
-  recordDeleteAfter: 1d
+  # 【本项目改动】1d → 7d：给 finalizeLiveRecording 的落盘入库 + 人工审核留足窗口，
+  # 1 天太紧（审核员第二天才看到就已被删）。
+  recordDeleteAfter: 168h
 
   ###############################################
   # Default path settings -> Publisher source (when source is "publisher")

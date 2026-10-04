@@ -342,14 +342,14 @@ export function MediaUploader({
                   {item.status === 'error' ? (
                     <button
                       onClick={() => retryItem(item.id)}
-                      className="text-xs px-2 py-1 rounded-lg bg-ink-100 hover:bg-ink-200 text-ink-700 transition-colors"
+                      className="text-xs px-2.5 py-1.5 rounded-lg bg-ink-100 hover:bg-ink-200 text-ink-700 transition-colors min-h-[36px]"
                     >
                       重试
                     </button>
                   ) : null}
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="text-ink-400 hover:text-rose-600 text-sm w-6 h-6 flex items-center justify-center rounded-lg hover:bg-ink-100 transition-colors"
+                    className="text-ink-400 hover:text-rose-600 text-sm w-8 h-8 flex items-center justify-center rounded-lg hover:bg-ink-100 transition-colors"
                     aria-label="移除"
                   >
                     <IconClose className="w-4 h-4" strokeWidth={2} />

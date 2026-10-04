@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { useNotice } from '@/lib/notice';
@@ -23,6 +24,7 @@ import type { LiveRoom } from '@/lib/types';
 
 export default function LiveListPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const isStaff = user?.role === 'admin' || user?.role === 'moderator';
   const notice = useNotice();
   const [tab, setTab] = useState<'live' | 'all' | 'recordings' | 'reminded'>('live');
@@ -41,20 +43,24 @@ export default function LiveListPage() {
 
   async function createRoom() {
     if (!title.trim() || !user) return;
-    const r = await run(() => apiPost<{ reviewStatus?: string }>('/live', {
+    const r = await run(() => apiPost<{ id?: string; reviewStatus?: string }>('/live', {
       title: title.trim(),
       description: desc.trim(),
       recordEnabled,
       scheduledAt: scheduledAt || undefined,
+      reviewVideoId: reviewVideoId || undefined,
     }));
     if (r) {
-      setTitle(''); setDesc(''); setScheduledAt(''); setShowCreate(false);
+      setTitle(''); setDesc(''); setScheduledAt(''); setReviewVideoId(null); setShowCreate(false);
       notice.success(
         r.reviewStatus === 'pending'
           ? '直播间已创建，等待管理员审核后即可开播'
           : '直播间已创建，可直接开播'
       );
-      reload();
+      // 创建完直接进详情页:推流地址/密钥只在那里展示,
+      // 停在列表页 creator 看不到任何推流信息,像是「创建了却什么也没有」。
+      if (r.id) router.push(`/live/${r.id}`);
+      else reload();
     }
   }
 
@@ -226,11 +232,11 @@ export default function LiveListPage() {
       )}
 
       <div className="flex gap-2 mt-5 flex-wrap" role="group" aria-label="直播列表筛选">
-        <button aria-pressed={tab === 'live'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'live' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('live')}>正在直播</button>
-        <button aria-pressed={tab === 'all'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'all' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('all')}>全部直播</button>
-        <button aria-pressed={tab === 'recordings'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'recordings' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('recordings')}>直播回放</button>
+        <button aria-pressed={tab === 'live'} className={`px-3 py-1.5 min-h-[40px] sm:min-h-0 rounded-full text-sm ${tab === 'live' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('live')}>正在直播</button>
+        <button aria-pressed={tab === 'all'} className={`px-3 py-1.5 min-h-[40px] sm:min-h-0 rounded-full text-sm ${tab === 'all' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('all')}>全部直播</button>
+        <button aria-pressed={tab === 'recordings'} className={`px-3 py-1.5 min-h-[40px] sm:min-h-0 rounded-full text-sm ${tab === 'recordings' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('recordings')}>直播回放</button>
         {user && (
-          <button aria-pressed={tab === 'reminded'} className={`px-3 py-1.5 rounded-full text-sm ${tab === 'reminded' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('reminded')}>我的预约</button>
+          <button aria-pressed={tab === 'reminded'} className={`px-3 py-1.5 min-h-[40px] sm:min-h-0 rounded-full text-sm ${tab === 'reminded' ? 'bg-primary-600 text-white' : 'bg-ink-100 text-ink-600'}`} onClick={() => setTab('reminded')}>我的预约</button>
         )}
       </div>
 
@@ -291,6 +297,8 @@ export default function LiveListPage() {
                 <p className="text-xs text-ink-400 mt-1">
                   {r.viewerPeak} 次观看
                   {r.durationSec ? ` · ${formatTimestamp(r.durationSec)}` : ''}
+                  {/* 待审核的回放只有主播/管理员能打开（后端 recordings 接口按审核态过滤） */}
+                  {r.reviewStatus === 'pending' ? ' · 待审核，仅自己可见' : ''}
                 </p>
               </div>
             </Link>

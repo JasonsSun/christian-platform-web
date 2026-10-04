@@ -24,12 +24,32 @@ export interface LiveRoomRow {
   viewer_peak: number;
   record_enabled: number | null;       // 0 | 1
   recording_media_id: string | null;
+  recording_error: string;              // 录像生成失败原因(空=无失败/已成功)
   created_at: string;
   updated_at: string;
 }
 
 function rand(len: number): string {
   return crypto.randomBytes(len).toString('hex');
+}
+
+let recErrColChecked = false;
+/**
+ * 幂等补 live_rooms.recording_error 列。
+ * 按项目约定新列一律运行时补，不写进 schema.sql —— schema.sql 里外键名整库唯一，
+ * 改动它有让整段 bootstrap throw、进而静默回退 mock 模式的风险。
+ */
+async function ensureRecordingErrorColumn(): Promise<void> {
+  if (recErrColChecked) return;
+  recErrColChecked = true;
+  try {
+    await exec(
+      `ALTER TABLE live_rooms
+       ADD COLUMN recording_error VARCHAR(250) NOT NULL DEFAULT '' AFTER recording_media_id`
+    );
+  } catch {
+    /* 列已存在 */
+  }
 }
 
 /** 约定开播时间过期判定:过了 scheduled_at + 24h 宽限仍未起播即视为过期(只读,不影响数据) */
@@ -51,20 +71,28 @@ export async function createRoom(opts: {
   scheduledAt?: string;      // ISO/本地时间串,写入前转 UTC
   reviewStatus?: 'pending' | 'approved';
   reviewVideoId?: string;    // 普通用户申请开播时提交的现场视频审核材料(media_files.id)
+  recordEnabled?: boolean;   // 是否保存直播录像(开播时 MediaMTX 才会 record)
 }): Promise<LiveRoomRow | null> {
   const id = newId('live');
   const streamKey = rand(9);
   const publishSecret = rand(12);
   const scheduledUtc = opts.scheduledAt ? ts(new Date(opts.scheduledAt)) : null;
+  // record_enabled 必须在 INSERT 里一次写清：原先是建完房间再 UPDATE 一遍，
+  // 而 createRoom 内部的 getRoom 会把「还没写 record_enabled 的那一版」塞进
+  // 2 秒缓存(getRoom 走 cacheGetOrSet)，缓存过期后又被旧值覆盖回去，
+  // 表现为「勾了保存录像，结束直播却没生成录像」。
   await exec(
-    `INSERT INTO live_rooms (id, title, description, cover_url, stream_key, publish_secret, owner_id, status, review_status, review_video_id, scheduled_at, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?, 'created', ?, ?, ?, ?, ?)`,
-    [id, opts.title, opts.description || null, opts.coverUrl || null, streamKey, publishSecret, opts.ownerId, opts.reviewStatus || 'pending', opts.reviewVideoId || null, scheduledUtc, ts(), ts()]
+    `INSERT INTO live_rooms (id, title, description, cover_url, stream_key, publish_secret, owner_id, status, review_status, review_video_id, scheduled_at, record_enabled, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?, 'created', ?, ?, ?, ?, ?, ?)`,
+    [id, opts.title, opts.description || null, opts.coverUrl || null, streamKey, publishSecret, opts.ownerId,
+     opts.reviewStatus || 'pending', opts.reviewVideoId || null, scheduledUtc,
+     opts.recordEnabled ? 1 : 0, ts(), ts()]
   );
   return getRoom(id);
 }
 
 export async function getRoom(id: string): Promise<LiveRoomRow | null> {
+  await ensureRecordingErrorColumn();
   // 短 TTL 缓存:直播间状态变更(开播/结束)最多 2s 后才在列表/详情生效,
   // 前端在 start/end 后会主动 reload 补偿,不影响体验,但能大幅削减热点房间的重复读。
   return cacheGetOrSet(`live:room:${id}`, 2000, () =>
@@ -96,7 +124,7 @@ export async function startRoom(room: LiveRoomRow): Promise<{ live: boolean }> {
   if (room.review_status === 'pending') throw new LiveConflictError('直播间审核中，请等待管理员通过后再开播');
   if (room.review_status === 'rejected') throw new LiveConflictError('直播间未通过审核，无法开播');
   if (isRoomExpired(room)) throw new LiveConflictError('已过约定直播时间，该直播间已过期，无法开播');
-  const okReg = await registerPath(room.stream_key);
+  const okReg = await registerPath(room.stream_key, { record: !!room.record_enabled });
   await exec(`UPDATE live_rooms SET status='live', started_at=?, updated_at=? WHERE id=?`, [ts(), ts(), room.id]);
   return { live: okReg };
 }
@@ -212,6 +240,7 @@ export async function listMessages(roomId: string, since?: string, limit = 200) 
  *  审核员(moderator)虽属 staff,但按权限模型不含在内 —— 审核员只能看开播指南,看不到推流信息。 */
 export function publicRoomView(room: LiveRoomRow, canSeeStream: boolean, extra: {
   owner?: any; hlsUrl?: string; rtmpUrl?: string; viewerCount?: number; messages?: any[]; live?: boolean;
+  recordingReviewStatus?: string | null;
 } = {}) {
   const expired = isRoomExpired(room);
   const base: any = {
@@ -232,6 +261,9 @@ export function publicRoomView(room: LiveRoomRow, canSeeStream: boolean, extra: 
     viewerPeak: room.viewer_peak,
     recordEnabled: !!room.record_enabled,
     recordingMediaId: room.recording_media_id || null,
+    // 录像审核状态:pending=待审(主播自己可看,他人不可);approved=已公开;rejected=已驳回(任何人不可回看)
+    recordingReviewStatus: extra.recordingReviewStatus ?? null,
+    recordingError: room.recording_error || null,
     owner: extra.owner,
     viewerCount: extra.viewerCount ?? 0,
     messages: extra.messages ?? [],

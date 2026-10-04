@@ -7,6 +7,7 @@ import {
   IconBroadcast,
   IconChevronDown,
   IconLaptop,
+  IconLink,
   IconLock,
   IconPlay,
   IconSettings,
@@ -28,32 +29,38 @@ export function LiveGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
     {
       title: '创建直播间',
       icon: <IconBroadcast className="w-5 h-5" strokeWidth={1.7} />,
-      desc: '进入「直播」页，点右上角「＋ 创建直播」，填好标题和简介后点「创建」。',
-      note: '只有管理员 / 版主角色能看到创建按钮。',
+      desc: '进入「直播」页，点右上角「＋ 创建直播」，填好标题、简介，按需勾上「保存录像」。创建后会自动进入直播间详情页。',
+      note: '所有登录用户都能创建。管理员/审核员免审核；普通用户需管理员审核通过后才能开播。',
     },
     {
-      title: '点「开播」最容易忘',
+      title: '复制推流信息',
+      icon: <IconLink className="w-5 h-5" strokeWidth={1.7} />,
+      desc: '详情页的「控制台」里有服务器地址和串流密钥，各有一个复制按钮，直接粘贴，不用手打。',
+      note: '这两项只有主播本人和管理员能看到，截图别发群里——拿到密钥的人能顶掉你的直播。',
+    },
+    {
+      title: '点「开始直播」',
       icon: <IconPlay className="w-5 h-5" />,
-      desc: '进入刚建的房间详情页，点「开始直播」。这一步会为你的房间开通专属通道。',
+      desc: '回到详情页点「开始直播」。这一步会为你的房间开通专属通道。',
       note: '不点这个，OBS 推流会被拒绝。',
     },
     {
       title: '配置推流软件',
       icon: <IconSettings className="w-5 h-5" strokeWidth={1.7} />,
-      desc: '打开推流软件（推荐 OBS，免费），进入「设置 → 推流」，服务选「自定义」。',
-      note: '服务器和串流密钥在房间详情页都有，点复制按钮粘贴，别手打。',
+      desc: '打开推流软件（推荐 OBS，免费），进入「设置 → 推流」，服务选「自定义」，把上面复制的服务器与串流密钥填进去。',
+      note: '手机推流 App（Larix 等）需要完整地址，详情页也给了完整 URL 一行，串流密钥留空。',
     },
     {
       title: '开始推流',
       icon: <IconUpload className="w-5 h-5" strokeWidth={1.7} />,
-      desc: '点推流软件的「开始推流」，等 5~10 秒，回到网页刷新，画面就出来了。',
+      desc: '点推流软件的「开始推流」，等 5~10 秒，回到网页画面就出来了。把详情页的直播间链接发给会友，他们不登录也能看。',
       note: '建议输出设置：比特率 1500~2500 Kbps，关键帧间隔 2 秒，分辨率 1280×720。',
     },
     {
-      title: '结束直播',
+      title: '结束直播与回放',
       icon: <IconStop className="w-5 h-5" strokeWidth={1.7} />,
-      desc: '讲完后回网页点「结束直播」。下次再播，要重新点一次「开播」。',
-      note: '结束前把房间链接发给会友即可，观众不用登录就能看。',
+      desc: '讲完后回详情页点「结束直播」。若开播前勾了「保存录像」，结束后系统自动落盘入库，生成回放视频。',
+      note: '回放需管理员审核通过才对外发布；审核通过前你自己可以先看。被驳回则录像会被清理，不能回看。',
     },
   ];
 
@@ -136,7 +143,8 @@ export function LiveGuide({ defaultOpen = false }: { defaultOpen?: boolean }) {
               <IconLock className="w-4 h-4 shrink-0" strokeWidth={1.8} />
               安全提醒
             </p>
-            <p>房间详情页上有推流密钥，<b>不要把详情页截图发给会友</b>——拿到密钥的人能顶掉你的直播。观众用房间链接即可，不用登录。</p>
+            <p>详情页控制台里有推流密钥，<b>不要把控制台截图发给会友</b>——拿到密钥的人能顶掉你的直播。观众用房间链接即可，不用登录。</p>
+            <p className="mt-1.5">直播进行中任何人都可以观看和聊天，无需登录。</p>
           </div>
         </div>
       )}

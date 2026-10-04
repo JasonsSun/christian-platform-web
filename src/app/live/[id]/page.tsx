@@ -23,7 +23,6 @@ import {
   IconFilm,
   IconHourglass,
   IconLink,
-  IconLock,
 } from '@/components/icons';
 
 interface ChatMsg { id: string; roomId: string; userId: string | null; displayName: string; avatarColor: string | null; content: string; createdAt: string; }
@@ -31,6 +30,8 @@ interface LiveRoom {
   id: string; title: string; description: string | null; coverUrl: string | null;
   status: 'created' | 'live' | 'ended'; startedAt: string | null; endedAt: string | null; viewerPeak: number;
   recordEnabled?: boolean; recordingMediaId?: string | null;
+  recordingReviewStatus?: 'pending' | 'approved' | 'rejected' | null;
+  recordingError?: string | null;
   owner?: { id: string; displayName: string; avatarColor: string | null };
   viewerCount: number; messages: ChatMsg[]; live: boolean; hlsUrl?: string;
   streamKey?: string; publishSecret?: string; rtmpUrl?: string; rtmpServerUrl?: string;
@@ -92,11 +93,11 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
   const room = data as LiveRoom | undefined;
   const isStaff = !!user && (user.role === 'admin' || user.role === 'moderator');
   const isOwner = !!user && !!room && user.id === room.owner?.id;
-  // 权限模型:主播本人 + 超管可管理/看推流信息(不含审核员);审核员仅可看开播指南;
-  // 普通用户/游客无权观看进行中的直播流,但回放视频所有人可看。
+  // 权限模型:主播本人 + 超管可开播/看推流信息(不含审核员);审核员仅可看开播指南。
+  // 观看直播与聊天对所有人开放(含游客)—— 直播的意义就是有人看,
+  // 曾经按「仅主播+超管可看进行中直播」拦截,导致直播间互动形同虚设。
   const canManage = !!user && (user.role === 'admin' || isOwner);
   const canSeeGuide = canManage || (!!user && user.role === 'moderator');
-  const canWatchLive = canManage || (!!user && user.role === 'moderator');
 
   // 直播预约开播提醒:本地状态 + 与接口返回的 reminded 同步
   const [reminded, setReminded] = useState(false);
@@ -251,12 +252,15 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
     if (box) box.scrollTo({ top: box.scrollHeight, behavior: scrollBehavior() });
   }, [messages]);
 
-  // 录像生成：后端落盘最长约 15 秒，期间自动刷新房间状态；
+  // 录像生成：后端落盘最长约 30 秒，期间自动刷新房间状态；
   // 超过 2 分钟仍没有 recordingMediaId 就判定失败，避免页面永久停在「生成中」。
-  const recordPending = !!room && !!room.recordEnabled && room.status === 'ended' && !room.recordingMediaId;
+  // 后端把失败原因写进 recordingError，有值就直接显示真原因，不再空转。
+  const recordPending = !!room && !!room.recordEnabled && room.status === 'ended'
+    && !room.recordingMediaId && !room.recordingError;
+  const recordError = room?.recordingError || '';
   // 后端 ts() 写的是 UTC 的 "YYYY-MM-DD HH:mm:ss"，前端必须按 UTC 解析，否则会差 8 小时
   const endedAtMs = room?.endedAt ? Date.parse(room.endedAt.replace(' ', 'T') + 'Z') || 0 : 0;
-  const recordTimeout = !!recordPending && endedAtMs > 0 && Date.now() - endedAtMs > 120_000;
+  const recordTimeout = !!recordPending && endedAtMs > 0 && Date.now() - endedAtMs > 180_000;
   useEffect(() => {
     if (!recordPending || recordTimeout) return;
     const t = setInterval(() => reload(), 6000);
@@ -361,14 +365,9 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}
           >
-            {room.live && canWatchLive ? (
+            {room.live ? (
+              /* 进行中的直播:所有人可看。播放器自己会处理「主播还没推流」的等待态。 */
               <HlsPlayer src={room.hlsUrl || null} poster={room.coverUrl} live={room.status === 'live'} />
-            ) : room.live && !canWatchLive ? (
-              <div className="relative aspect-video bg-ink-900/90 rounded-xl flex flex-col items-center justify-center text-center px-6">
-                <IconLock className="w-14 h-14 mb-3 text-white/70" strokeWidth={1.4} />
-                <p className="text-white/90 font-medium">无权限观看直播</p>
-                <p className="text-white/50 text-sm mt-1">仅主播本人与超管可观看进行中的直播；回放视频所有人可看。</p>
-              </div>
             ) : (
               <HlsPlayer src={null} poster={room.coverUrl} live={false} />
             )}
@@ -396,21 +395,34 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               <button
                 type="button"
                 onClick={toggleDanmaku}
-                className={`text-xs px-2 py-1 rounded-full backdrop-blur-sm transition-colors ${danmakuOn ? 'bg-amber-400 text-ink-950' : 'bg-black/50 text-white/90'}`}
+                className={`text-xs px-2.5 py-1.5 rounded-full backdrop-blur-sm transition-colors ${danmakuOn ? 'bg-amber-400 text-ink-950' : 'bg-black/50 text-white/90'}`}
               >
                 {danmakuOn ? '弹幕开' : '弹幕关'}
               </button>
             </div>
           </div>
 
-          {/* 回放视频:已结束且已生成录像的直播,所有人(含普通用户)均可观看 */}
-          {room.status === 'ended' && room.recordingMediaId && (
-            <Link
-              href={`/media/${room.recordingMediaId}`}
-              className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors"
-            >
-              <IconFilm className="w-4 h-4 shrink-0" strokeWidth={1.8} /> 观看回放视频
-            </Link>
+          {/* 回放:审核通过后所有人可看;待审核时仅主播本人/管理员可自看;
+              被管理或超管驳回后录像已物理清理,任何人不可回看。 */}
+          {room.status === 'ended' && room.recordingMediaId && room.recordingReviewStatus !== 'rejected' && (
+            (room.recordingReviewStatus === 'approved' || canManage || isStaff) ? (
+              <Link
+                href={`/media/${room.recordingMediaId}`}
+                className="inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+              >
+                <IconFilm className="w-4 h-4 shrink-0" strokeWidth={1.8} /> 观看回放视频
+              </Link>
+            ) : (
+              <p className="rounded-xl px-4 py-3 bg-ink-100/80 border border-ink-200 text-sm text-ink-600">
+                本场回放正在审核中，通过后即可观看。
+              </p>
+            )
+          )}
+          {room.status === 'ended' && room.recordingReviewStatus === 'rejected' && (
+            <p role="alert" className="rounded-xl px-4 py-3 bg-rose-50/80 border border-rose-200 text-sm text-rose-700 flex items-start gap-2">
+              <IconClose className="w-4 h-4 shrink-0 mt-0.5" strokeWidth={2} />
+              <span>该直播回放已被驳回，不能回看。录像文件已清理。</span>
+            </p>
           )}
 
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -432,7 +444,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
               <ShareButton
                 title={`直播 · ${room.title}`}
                 text={`推荐你来看圣约社区直播「${room.title}」，一起在线团契。`}
-                className="w-9 h-9 rounded-full flex items-center justify-center text-ink-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-ink-500 hover:text-primary-600 hover:bg-primary-50 transition-colors"
               />
             </div>
             {/* 直播预约开播提醒:仅预告态、且非主播本人时可见 */}
@@ -521,9 +533,9 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                   {room.reviewStatus === 'pending' && room.reviewVideoId && (
                     <div className="w-full text-sm space-y-2 border-t border-ink-100 pt-3">
                       <p className="text-ink-500">已提交现场视频审核材料：</p>
-                      <div className="flex items-center gap-2">
-                        <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">media/{room.reviewVideoId}</code>
-                        <Link href={`/media/${room.reviewVideoId}`} target="_blank" rel="noopener noreferrer" className="btn-ghost">查看视频</Link>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <code className="flex-1 min-w-0 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg break-all">media/{room.reviewVideoId}</code>
+                        <Link href={`/media/${room.reviewVideoId}`} target="_blank" rel="noopener noreferrer" className="btn-ghost shrink-0 self-start sm:self-auto min-h-[44px]">查看视频</Link>
                       </div>
                       <p className="text-xs text-amber-700">审核通过后系统会发通知，点通知回到本页即可开播。</p>
                     </div>
@@ -536,11 +548,15 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                     <button className="btn-danger" disabled={pending} onClick={() => cancelRoom(true)}>强制关闭</button>
                   )}
                   {room.recordEnabled && room.status === 'ended' && (
-                    room.recordingMediaId
-                      ? <Link href={`/media/${room.recordingMediaId}`} className="btn-secondary text-sm"><IconFilm className="w-4 h-4 shrink-0" strokeWidth={1.8} />查看录像</Link>
-                      : recordTimeout
-                        ? <span className="text-xs text-ink-400">本次未生成录像（服务端未录制或时长过短），可在管理台手动上传回放</span>
-                        : <span className="text-xs text-amber-700 inline-flex items-center gap-1"><IconHourglass className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />录像生成中，自动刷新…</span>
+                    room.recordingReviewStatus === 'rejected'
+                      ? <span className="text-xs text-rose-600">回放已被驳回并清理</span>
+                      : room.recordingMediaId
+                        ? <Link href={`/media/${room.recordingMediaId}`} className="btn-secondary text-sm"><IconFilm className="w-4 h-4 shrink-0" strokeWidth={1.8} />查看录像{room.recordingReviewStatus === 'pending' ? '（待审核，仅自己可看）' : ''}</Link>
+                        : recordError
+                          ? <span className="text-xs text-rose-600">未生成录像：{recordError}</span>
+                          : recordTimeout
+                            ? <span className="text-xs text-ink-400">本次未生成录像（服务端未录制或时长过短），可在管理台手动上传回放</span>
+                            : <span className="text-xs text-amber-700 inline-flex items-center gap-1"><IconHourglass className="w-3.5 h-3.5 shrink-0" strokeWidth={1.8} />录像生成中，自动刷新…</span>
                   )}
                   {room.recordEnabled && room.status !== 'ended' && (
                     <span className="text-xs text-ink-400">本场已开启保存录像，结束后自动入库审核</span>
@@ -551,34 +567,93 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                 </div>
               )}
 
-              {/* 推流信息:仅主播本人 + 超管可见(后端 canSeeStream 控制 room.rtmpUrl 是否存在,审核员拿不到) */}
-              {canManage && room.status !== 'ended' && !room.cancelled && !startBlock && room.rtmpUrl && (
-                <div className="text-sm space-y-2">
+              {/* 推流信息:仅主播本人 + 超管可见(后端 canSeeStream 控制 room.rtmpUrl 是否存在,审核员拿不到)。
+                  注意这里刻意不排除了 startBlock(审核中/已取消):推流信息是主播自己的资产,
+                  审核期间也应当看得见(可以先把 OBS 配好等通过),否则表现为「创建直播的人看不到推流信息」。
+                  真正的开播拦截只在上面的「开始直播」按钮上。 */}
+              {canManage && room.status !== 'ended' && room.rtmpUrl && (
+                <div className="text-sm space-y-3" data-push-info="1">
                   <p className="text-ink-500">在 OBS / 手机推流软件中填入以下信息即可开播：</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">服务器：{room.rtmpServerUrl || `rtmp://${location.hostname}:8080/live`}</code>
-                    <button className="btn-ghost" onClick={() => copy(room.rtmpServerUrl || `rtmp://${location.hostname}:8080/live`, 'srv')}>{copied === 'srv' ? '已复制' : '复制'}</button>
+                  {/* 窄屏(手机)上这一行原本是「代码块 flex-1 + 复制按钮」并排：
+                      长推流地址(30+ 字符)撑不宽 flex-1,又因为 overflow-x-auto 变成
+                      横向滚动 —— 主播在手机上只能看到「rtmp://rtmp.amen...」被截断,
+                      完整地址得横着拖才看得到,等于「信息展示不全」。
+                      改为:标签独占一行,值独占一行并允许任意位置折行(wrapping),
+                      复制按钮独立成行。宽屏下自动并排(用 sm:flex-row)。 */}
+                  <div className="rounded-xl border border-ink-200 bg-ink-50/60 p-3 space-y-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="text-xs font-medium text-ink-500 sm:w-16 sm:shrink-0">服务器</span>
+                      <code
+                        data-push-server="1"
+                        className="flex-1 min-w-0 font-mono text-xs text-emerald-800 bg-white/80 px-2.5 py-2 rounded-lg break-all"
+                      >{room.rtmpServerUrl || `rtmp://${location.hostname}:8080/live`}</code>
+                      <button
+                        className="btn-ghost shrink-0 self-start sm:self-auto min-h-[44px]"
+                        onClick={() => copy(room.rtmpServerUrl || `rtmp://${location.hostname}:8080/live`, 'srv')}
+                      >{copied === 'srv' ? '已复制' : '复制'}</button>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="text-xs font-medium text-ink-500 sm:w-16 sm:shrink-0">串流密钥</span>
+                      <code
+                        data-push-key="1"
+                        className="flex-1 min-w-0 font-mono text-xs text-emerald-800 bg-white/80 px-2.5 py-2 rounded-lg break-all"
+                      >{room.streamKey}</code>
+                      <button
+                        className="btn-ghost shrink-0 self-start sm:self-auto min-h-[44px]"
+                        onClick={() => copy(room.streamKey!, 'key')}
+                      >{copied === 'key' ? '已复制' : '复制'}</button>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                      <span className="text-xs font-medium text-ink-500 sm:w-16 sm:shrink-0">完整地址</span>
+                      <code
+                        data-push-url="1"
+                        className="flex-1 min-w-0 font-mono text-xs text-emerald-800 bg-white/80 px-2.5 py-2 rounded-lg break-all"
+                      >{room.rtmpUrl}</code>
+                      <button
+                        className="btn-ghost shrink-0 self-start sm:self-auto min-h-[44px]"
+                        onClick={() => copy(room.rtmpUrl!, 'url')}
+                      >{copied === 'url' ? '已复制' : '复制'}</button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-ink-900 text-emerald-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">串流密钥：{room.streamKey}</code>
-                    <button className="btn-ghost" onClick={() => copy(room.streamKey!, 'key')}>{copied === 'key' ? '已复制' : '复制'}</button>
-                  </div>
-                  <p className="text-xs text-ink-400">
-                    也可直接把完整地址 <code className="text-emerald-200">{room.rtmpUrl}</code> 作为服务器填入(串流密钥留空)。
-                    直播地址随机生成，他人无法猜到。
+                  {/* 手机上 OBS 往往不支持粘贴长串,再加一个「一键复制全部」,
+                      省得主播逐个字段长按复制。 */}
+                  <button
+                    className="btn-secondary w-full sm:w-auto"
+                    onClick={() => copy(
+                      `${room.rtmpServerUrl || `rtmp://${location.hostname}:8080/live`}\n${room.streamKey}`,
+                      'all'
+                    )}
+                  >
+                    {copied === 'all' ? '已复制服务器与密钥' : '一键复制服务器 + 密钥'}
+                  </button>
+                  <p className="text-xs text-ink-400 leading-relaxed">
+                    手机推流 App 需要完整地址，把「完整地址」整行填进服务器栏，串流密钥留空。
+                    直播地址随机生成，他人无法猜到；<b className="text-ink-600">但不要把本页截图发给会友</b>，密钥泄露别人能顶掉你的直播。
                   </p>
+                  {startBlock ? (
+                    <p className="text-xs text-amber-700 flex items-start gap-1">
+                      <IconAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={2} />
+                      <span>可以先把推流软件配好，但{startBlock}，暂时还不能开播。</span>
+                    </p>
+                  ) : null}
                 </div>
               )}
 
-              {/* 开播后:展示直播间链接,方便主播分享给会友 */}
+              {/* 开播后:展示直播间链接,方便主播分享给会友(同样不用横向滚动,窄屏直接折行) */}
               {canManage && room.live && (
                 <div className="text-sm space-y-2 border-t border-ink-100 pt-3">
                   <p className="text-ink-500">本场正在直播，把下面的链接发给会友即可观看：</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-ink-900 text-sky-200 text-xs px-3 py-2 rounded-lg overflow-x-auto">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <code
+                      data-room-link="1"
+                      className="flex-1 min-w-0 font-mono text-xs text-sky-800 bg-ink-50/80 px-2.5 py-2 rounded-lg break-all"
+                    >
                       {typeof window !== 'undefined' ? `${window.location.origin}/live/${room.id}` : `/live/${room.id}`}
                     </code>
-                    <button className="btn-ghost" onClick={() => copy(`${window.location.origin}/live/${room.id}`, 'roomlink')}>
+                    <button
+                      className="btn-ghost shrink-0 self-start sm:self-auto min-h-[44px]"
+                      onClick={() => copy(`${window.location.origin}/live/${room.id}`, 'roomlink')}
+                    >
                       {copied === 'roomlink' ? '已复制' : '复制'}
                     </button>
                   </div>
@@ -592,7 +667,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
         </div>
 
         {/* 聊天室 */}
-        <div className="glass rounded-2xl flex flex-col h-[70vh]">
+        <div className="glass rounded-2xl flex flex-col h-[60vh] sm:h-[70vh]">
           <div className="px-4 py-3 border-b border-ink-100 font-semibold text-ink-900">直播聊天</div>
           <div ref={chatBoxRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
             {room.cancelled ? (
@@ -633,6 +708,7 @@ export default function LiveWatchPage({ params }: { params: { id: string } }) {
                 disabled={!user}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') sendMsg(); }}
+                onFocus={(e) => e.currentTarget.scrollIntoView({ block: 'center' })}
               />
               <button className="btn-primary" disabled={!user || pending || !draft.trim()} onClick={sendMsg}>发送</button>
             </div>

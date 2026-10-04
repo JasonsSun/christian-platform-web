@@ -456,7 +456,7 @@ html, body {
   }
 
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg
+    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg min-h-[44px] md:min-h-0
            text-sm font-medium text-ink-600
            bg-ink-100/70 border border-ink-200
            transition-colors duration-200

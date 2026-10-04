@@ -323,6 +323,12 @@ export interface LiveRoom {
   startedAt: string | null;
   endedAt: string | null;
   viewerPeak: number;
+  /** 直播回放:待审时仅主播/管理员可见;rejected 表示已被驳回并清理,任何人不可回看 */
+  recordEnabled?: boolean;
+  recordingMediaId?: string | null;
+  recordingReviewStatus?: 'pending' | 'approved' | 'rejected' | null;
+  /** 录像生成失败原因(后端写入,避免页面永远停在「生成中」) */
+  recordingError?: string | null;
   owner?: { id: string; displayName: string; avatarColor: string | null };
   viewerCount: number;
   messages: LiveChatMessage[];
@@ -331,6 +337,7 @@ export interface LiveRoom {
   streamKey?: string;
   publishSecret?: string;
   rtmpUrl?: string;
+  rtmpServerUrl?: string;
   reminderCount?: number;
   reminded?: boolean;
 }

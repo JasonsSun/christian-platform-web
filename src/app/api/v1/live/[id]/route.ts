@@ -3,6 +3,7 @@ import { ok, withApi, notFound } from '@/server/http';
 import { requireUser, findUserById } from '@/server/auth';
 import { getRoom, publicRoomView, countViewers, listMessages } from '@/server/live';
 import { isPathLive, hlsPlayUrl, rtmpPushUrl } from '@/server/mediamtx';
+import { getRecordingReviewStatus } from '@/server/liveRecord';
 import { q } from '@/server/db';
 import { whiteSafeColor } from '@/server/mappers';
 
@@ -37,6 +38,7 @@ export const GET = withApi(async (req: NextRequest, ctx: any) => {
     messages,
     live,
     owner: owner ? { id: owner.id, displayName: owner.display_name, avatarColor: whiteSafeColor(owner.avatar_color) } : undefined,
+    recordingReviewStatus: await getRecordingReviewStatus(room.recording_media_id),
   });
   return ok({ ...view, reminded, reminderCount });
 });

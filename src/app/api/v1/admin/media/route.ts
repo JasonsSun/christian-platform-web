@@ -53,6 +53,8 @@ export const GET = withApi(async (req: NextRequest) => {
       extension: r.extension, sizeBytes: Number(r.size_bytes), storageKey: r.storage_key, status: r.status,
       reviewStatus: r.review_status, reviewReason: r.review_reason, refCount: Number(r.ref_count),
       taskCount: Number(r.task_count), taskFailed: Number(r.task_failed),
+      // source='live' 的条目是直播回放：驳回时会连带删掉录像文件并清空 live_rooms 关联
+      source: r.source || 'upload', sourceRef: r.source_ref || null,
       url: r.storage_key ? '/' + String(r.storage_key).replace(/\\/g, '/') : '',
       createdAt: r.created_at_fmt, owner: r.owner_name || '',
     })),

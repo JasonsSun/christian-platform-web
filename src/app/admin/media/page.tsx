@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { apiPatch, apiPost } from '@/lib/api';
 import { useApi } from '@/lib/useApi';
 import { useNotice } from '@/lib/notice';
@@ -14,6 +15,7 @@ interface MediaFile {
   id: string; fileName: string; title: string; mimeType: string; kind: string; extension: string;
   sizeBytes: number; storageKey: string; status: string; reviewStatus: string; reviewReason: string;
   refCount: number; taskCount: number; taskFailed: number; createdAt: string; owner: string; url: string;
+  source?: string; sourceRef?: string | null;
 }
 
 const STATUS_MAP: Record<string, { tone: 'green' | 'gold' | 'red' | 'gray'; label: string }> = {
@@ -65,7 +67,10 @@ export default function AdminMediaPage() {
       // 驳回需要填写原因 —— 跳转到独立确认页完成输入，不使用 prompt 弹框
       confirmNav({
         title: '驳回该媒体文件',
-        desc: '驳回后该文件将不对会员展示，上传者可在「我的媒体」中看到驳回原因。',
+        // 直播回放驳回 = 真删录像文件（主播本人也不能再回看），文案必须说清楚
+        desc: items.find((x) => x.id === id)?.source === 'live'
+          ? '这是直播回放。驳回后录像文件会被直接清理，主播本人也无法再回看，且不可恢复。'
+          : '驳回后该文件将不对会员展示，上传者可在「我的媒体」中看到驳回原因。',
         danger: true,
         confirmText: '确认驳回',
         cancelText: '取消',
@@ -78,8 +83,9 @@ export default function AdminMediaPage() {
           multiline: true,
         },
         onConfirm: async (reason) => {
-          await apiPost(`/admin/media/${id}/review`, { action: 'reject', reason });
-          notice.success('已驳回');
+          const r = await apiPost<{ purgedLive?: boolean }>(`/admin/media/${id}/review`, { action: 'reject', reason });
+          notice.success(r?.purgedLive ? '已驳回，直播录像已清理' : '已驳回');
+          reload();
         },
       });
       return;
@@ -214,6 +220,12 @@ export default function AdminMediaPage() {
                     <td className="px-4 py-3">
                       <div className="font-medium text-ink-900 line-clamp-1 max-w-[240px]">{m.title || m.fileName}</div>
                       <div className="text-xs text-ink-400">{m.owner || '系统'} · {formatDate(m.createdAt) || '—'} · 引用{m.refCount}</div>
+                      {/* 直播回放与普通上传混在一张表里，管理员看不出哪个能驳回删文件 */}
+                      {m.source === 'live' && m.sourceRef ? (
+                        <Link href={`/live/${m.sourceRef}`} target="_blank" className="inline-block text-xs text-primary-600 hover:underline mt-0.5">
+                          直播回放 · 查看直播间 →
+                        </Link>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3"><Badge tone="primary">{mediaKindLabel(m.kind)}</Badge></td>
                     <td className="px-4 py-3 text-right text-ink-600">{formatSize(m.sizeBytes)}</td>

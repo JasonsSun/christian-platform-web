@@ -12,6 +12,7 @@ import { AccessibilityProvider, a11yNoFlashScript } from '@/lib/a11y'
 import { ThemeProvider, themeNoFlashScript } from '@/lib/theme'
 import { NotificationProvider } from '@/lib/notifyStream'
 import SWRegister from '@/components/SWRegister'
+import InstallPrompt from '@/components/InstallPrompt'
 import ErrorReporter from '@/components/ErrorReporter'
 import NetworkBanner from '@/components/NetworkBanner'
 import SiteNoticeBar from '@/components/SiteNoticeBar'
@@ -41,7 +42,15 @@ export const metadata: Metadata = {
   applicationName: '圣约社区',
   keywords: ['圣经', '读经', '读经计划', '每日经文', '赞美诗', '诗歌', '见证', '代祷', '团契', '基督教', '和合本', '主内社区'],
   authors: [{ name: '圣约社区' }],
-  icons: { icon: '/icon.svg', apple: '/icon.svg' },
+  icons: {
+    icon: [
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: '圣约社区' },
   alternates: { canonical: '/' },
   // 不发送 Referer：朗读的「浏览器直连兜底」会从本站请求百度 TTS，
   // 百度对携带非自身域 Referer 的请求返回 HTML 风控页（音频加载失败 code=4）；
@@ -124,6 +133,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   <main id="main-content" className="pt-16 md:pt-20 pb-20 md:pb-0">{children}</main>
                   <Footer />
                   <MobileNav disabledModules={offModules} />
+                  <InstallPrompt />
                 </NoticeProvider>
                 </SpeechHostProvider>
               </PlayerProvider>

@@ -43,6 +43,7 @@ const FONT: Record<string, string> = {
   md: 'text-lg sm:text-xl',
   lg: 'text-xl sm:text-2xl',
   xl: 'text-2xl sm:text-3xl',
+  xxl: 'text-4xl sm:text-5xl',
 };
 const LH: Record<string, string> = {
   tight: 'leading-relaxed',
@@ -55,7 +56,7 @@ const WIDTH: Record<string, string> = {
   wide: 'max-w-4xl',
 };
 type ReadTheme = 'light' | 'dark' | 'sepia';
-type FontSize = 'sm' | 'md' | 'lg' | 'xl';
+type FontSize = 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 type LineHeight = 'tight' | 'normal' | 'loose';
 type ReadWidth = 'narrow' | 'medium' | 'wide';
 // 四个字号按钮的可见内容都只是「A」字形，读屏里靠这套名字区分
@@ -64,6 +65,7 @@ const FONT_LABEL: Record<FontSize, string> = {
   md: '标准字号',
   lg: '大号字',
   xl: '特大字',
+  xxl: '最大字',
 };
 
 export default function ReadChapter() {
@@ -410,7 +412,7 @@ export default function ReadChapter() {
   useEffect(() => {
     try {
       const f = localStorage.getItem('bible:font');
-      if (f === 'sm' || f === 'md' || f === 'lg' || f === 'xl') setFontSize(f);
+      if (f === 'sm' || f === 'md' || f === 'lg' || f === 'xl' || f === 'xxl') setFontSize(f);
       const lh = localStorage.getItem('bible:lh');
       if (lh === 'tight' || lh === 'normal' || lh === 'loose') setLineHeight(lh);
       const sf = localStorage.getItem('bible:serif');
@@ -921,7 +923,7 @@ export default function ReadChapter() {
           {/* 字号调节 + 排版/主题设置 */}
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 bg-white rounded-full p-1 shadow-soft border border-ink-100">
-              {(['sm', 'md', 'lg', 'xl'] as const).map((size) => (
+              {(['sm', 'md', 'lg', 'xl', 'xxl'] as const).map((size) => (
                 <button
                   key={size}
                   onClick={() => setFontSize(size)}
@@ -932,7 +934,7 @@ export default function ReadChapter() {
                   }`}
                   title={FONT_LABEL[size]}
                 >
-                  <span className={size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : size === 'lg' ? 'text-lg' : 'text-xl'}>A</span>
+                  <span className={size === 'sm' ? 'text-sm' : size === 'md' ? 'text-base' : size === 'lg' ? 'text-lg' : size === 'xl' ? 'text-xl' : 'text-2xl'}>A</span>
                 </button>
               ))}
             </div>
