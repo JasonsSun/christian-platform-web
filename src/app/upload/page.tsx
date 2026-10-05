@@ -164,6 +164,7 @@ export default function UploadPage() {
             ref={inputRef}
             type="file"
             accept={active.accept}
+            aria-label={`选择${active.label}文件`}
             className="hidden"
             onChange={(e) => pick(e.target.files?.[0] || null)}
           />
