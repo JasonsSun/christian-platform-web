@@ -7,6 +7,7 @@ import { apiPatch } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { LoginGate } from '@/components/LoginGate';
+import { useNotice } from '@/lib/notice';
 import { IconArrowRight, IconBellOff, IconBroadcast, IconUsers } from '@/components/icons';
 
 type DmPolicy = 'everyone' | 'followers' | 'none';
@@ -28,8 +29,8 @@ export default function PrivacySettingsPage() {
   const router = useRouter();
   const { data, reload } = useApi<MePayload>(user ? '/auth/me' : null, [user?.id]);
   const { run, pending } = useAction();
+  const { success } = useNotice();
   const [current, setCurrent] = useState<DmPolicy | null>(null);
-  const [toast, setToast] = useState<string>('');
 
   useEffect(() => {
     if (data?.allowDm) setCurrent(data.allowDm);
@@ -38,10 +39,9 @@ export default function PrivacySettingsPage() {
   async function choose(policy: DmPolicy) {
     if (policy === current) return;
     setCurrent(policy);
-    setToast('');
     const res = await run(() => apiPatch<MePayload>('/auth/me', { allowDm: policy }));
     if (res) {
-      setToast('已保存');
+      success('已保存');
       reload();
     } else {
       // 失败回滚到服务端值
@@ -57,12 +57,6 @@ export default function PrivacySettingsPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="font-display text-2xl font-bold text-ink-900 mb-1">隐私设置</h1>
       <p className="text-ink-500 text-sm mb-6">控制谁可以给你发送私信。被你屏蔽的用户始终无法联系你。</p>
-
-      {toast && (
-        <div className="mb-5 px-4 py-2.5 rounded-xl bg-primary-50 border border-primary-200 text-primary-700 text-sm">
-          {toast}
-        </div>
-      )}
 
       {/* 选项列表本身是静态的，只有选中态要等接口；再叠一层骨架会把下面的区块顶上去 264px */}
       <section className="space-y-3">

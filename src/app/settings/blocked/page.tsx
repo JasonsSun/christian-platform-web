@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiDelete } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { LoginGate } from '@/components/LoginGate';
+import { useNotice } from '@/lib/notice';
 
 type BlockedUser = {
   id: string;
@@ -23,12 +23,12 @@ export default function BlockedUsersPage() {
   const router = useRouter();
   const { data, loading, error, reload } = useApi<{ items: BlockedUser[] }>(user ? '/me/blocks' : null, [user?.id]);
   const { run } = useAction();
-  const [toast, setToast] = useState<string>('');
+  const { success } = useNotice();
 
   async function unblock(id: string) {
     const res = await run(() => apiDelete<{ blocked: boolean }>(`/users/${id}/block`));
     if (res) {
-      setToast('已解除屏蔽');
+      success('已解除屏蔽');
       reload();
     }
   }
@@ -43,12 +43,6 @@ export default function BlockedUsersPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="font-display text-2xl font-bold text-ink-900 mb-1">屏蔽列表</h1>
       <p className="text-ink-500 text-sm mb-6">被你屏蔽的用户无法给你发私信，也不会出现在你的关注动态与公开推荐中。</p>
-
-      {toast && (
-        <div className="mb-5 px-4 py-2.5 rounded-xl bg-primary-50 border border-primary-200 text-primary-700 text-sm">
-          {toast}
-        </div>
-      )}
 
       {loading && items.length === 0 && (
         <div className="space-y-3">

@@ -6,6 +6,7 @@ import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 import { useApi, useAction } from '@/lib/useApi';
 import { useAuth } from '@/lib/auth';
 import { LoginGate } from '@/components/LoginGate';
+import { useNotice } from '@/lib/notice';
 import DailyReminderSettings from '@/components/DailyReminderSettings';
 import { IconBell, IconChat, IconChatDots, IconMail } from '@/components/icons';
 
@@ -67,13 +68,13 @@ export default function NotificationSettingsPage() {
   const path = user ? '/me/notification-prefs' : null;
   const { data, loading, error: prefsError, reload } = useApi<PrefsPayload>(path, [user?.id]);
   const { run, pending } = useAction();
+  const { success, error } = useNotice();
 
   const [prefs, setPrefs] = useState<Prefs | null>(null);
   const [bind, setBind] = useState<BindState | null>(null);
   // 拉不到绑定状态时不能当成「未绑定」—— 那会让已绑定的用户以为掉线，重新扫一遍码。
   const [bindError, setBindError] = useState<string | null>(null);
   const [qr, setQr] = useState<{ qrSvg: string; scene: string; expiresAt: string; mode: string } | null>(null);
-  const [toast, setToast] = useState<string>('');
 
   useEffect(() => {
     if (data?.prefs) setPrefs(data.prefs);
@@ -94,8 +95,8 @@ export default function NotificationSettingsPage() {
   }, [user?.id, refreshBind]);
 
   useEffect(() => {
-    if (wxResult === 'bound') setToast('微信绑定成功');
-    else if (wxResult === 'error') setToast(`绑定失败：${wxMsg || '未知原因'}`);
+    if (wxResult === 'bound') success('微信绑定成功');
+    else if (wxResult === 'error') error(`绑定失败：${wxMsg || '未知原因'}`);
     if (wxResult) router.replace('/settings/notifications');
   }, [wxResult, wxMsg, router]);
 
@@ -112,7 +113,7 @@ export default function NotificationSettingsPage() {
         setBindError(null);
         if (s.bound) {
           setQr(null);
-          setToast('微信绑定成功');
+          success('微信绑定成功');
           reload();
         }
       } catch (e: any) {
@@ -130,7 +131,7 @@ export default function NotificationSettingsPage() {
       const next = { ...prefs, ...patch };
       setPrefs(next);
       const res = await run(() => apiPatch<{ prefs: Prefs }>('/me/notification-prefs', { prefs: next }));
-      if (res) setToast('已保存');
+      if (res) success('已保存');
     },
     [prefs, run]
   );
@@ -147,7 +148,7 @@ export default function NotificationSettingsPage() {
     const ok = await run(() => apiDelete('/me/wechat/bind').then(() => true));
     setQr(null);
     await refreshBind();
-    setToast(ok ? '已解除绑定' : '解绑失败，请稍后重试');
+    ok ? success('已解除绑定') : error('解绑失败，请稍后重试');
   }
 
   if (!user) {
@@ -160,12 +161,6 @@ export default function NotificationSettingsPage() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="font-display text-2xl font-bold text-ink-900 mb-1">提醒设置</h1>
       <p className="text-ink-500 text-sm mb-6">选择你希望接收提醒的方式。站内通知始终可用，其余通道需要额外配置或绑定。</p>
-
-      {toast && (
-        <div className="mb-5 px-4 py-2.5 rounded-xl bg-primary-50 border border-primary-200 text-primary-700 text-sm">
-          {toast}
-        </div>
-      )}
 
       {loading && !prefs && (
         <div className="space-y-3">
